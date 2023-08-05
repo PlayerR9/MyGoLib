@@ -129,3 +129,73 @@ func DefaultTokenization(str string) ([]string, error) {
 	return tokens, nil
 
 }*/
+
+// ExtractContent extracts the content between the opening and closing characters, and returns the content, the remaining content, and an error if one occurred.
+// The opening and closing characters are not included in the content.
+//
+// Parameters:
+//
+//	op_char: The opening character.
+//	cl_char: The closing character.
+//	content: The content to extract from.
+//
+// Returns:
+//
+//	[]string: The content between the opening and closing characters.
+//	[]string: The remaining content.
+//	error: An error if one occurred.
+func ExtractContent(op_char, cl_char string, content []string) ([]string, []string, error) {
+	if len(content) == 0 || content[0] != op_char {
+		return nil, nil, fmt.Errorf("no opening character")
+	}
+
+	if op_char == "" {
+		return nil, nil, fmt.Errorf("opening character cannot be empty")
+	}
+
+	if cl_char == "" {
+		return nil, nil, fmt.Errorf("closing character cannot be empty")
+	}
+
+	counter := 1
+
+	for i := 1; i < len(content); i++ {
+		if content[i] == cl_char {
+			counter--
+		} else if content[i] == op_char {
+			counter++
+		}
+
+		if counter == 0 {
+			return content[1:i], content[i+1:], nil
+		}
+	}
+
+	if cl_char != "\n" {
+		return nil, nil, fmt.Errorf("no closing character found; expected %s", cl_char)
+	}
+
+	return content[1:], nil, nil
+}
+
+func ExtractUpTo(cl_char string, content []string) ([]string, []string, error) {
+	if len(content) == 0 {
+		return nil, nil, fmt.Errorf("no opening character")
+	}
+
+	if cl_char == "" {
+		return nil, nil, fmt.Errorf("closing character cannot be empty")
+	}
+
+	for i := 0; i < len(content); i++ {
+		if content[i] == cl_char {
+			return content[:i], content[i+1:], nil
+		}
+	}
+
+	if cl_char != "\n" {
+		return nil, nil, fmt.Errorf("no closing character found; expected %s", cl_char)
+	}
+
+	return content[:len(content)-1], nil, nil
+}
