@@ -6,7 +6,7 @@ import (
 	"os"
 	"runtime"
 
-	sext "github.com/MyGoLib/StrExt"
+	sext "github.com/PlayerR9/MyGoLib/StrExt"
 )
 
 const (
