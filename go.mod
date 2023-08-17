@@ -1,3 +1,3 @@
-module github.com/PlayerR9/MyGoLib
+module github.com/MyGoLib
 
 go 1.20
