@@ -1,3 +1,3 @@
-module PR9GoLib
+module MyGoLib
 
 go 1.20

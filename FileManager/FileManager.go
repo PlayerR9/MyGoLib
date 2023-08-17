@@ -5,18 +5,14 @@ import (
 	"os"
 )
 
-/*
-	ReadWholeFile reads a file and returns a slice of strings, each string representing a line in the file.
-
-Parameters:
-
-	path: The path to the file to read.
-
-Returns:
-
-	A slice of strings, each string representing a line in the file.
-	Error: If the file could not be opened, or if there was an error reading the file.
-*/
+// ReadWholeFile reads a file and returns a slice of strings, each string representing a line in the file.
+//
+// Parameters:
+//   - path: The path to the file to read.
+//
+// Returns:
+//   - []string: A slice of strings, each string representing a line in the file.
+//   - error: If the file could not be opened, or if there was an error reading the file.
 func ReadWholeFile(path string) ([]string, error) {
 	f, err := os.Open(path)
 	if err != nil {
