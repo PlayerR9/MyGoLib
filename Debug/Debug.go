@@ -1,11 +1,12 @@
 package Debug
 
 import (
-	sext "MyGoLib/StrExt"
 	"fmt"
 	"log"
 	"os"
 	"runtime"
+
+	sext "github.com/PlayerR9/MyGoLib/StrExt"
 )
 
 const (

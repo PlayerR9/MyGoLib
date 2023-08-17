@@ -2,6 +2,7 @@ package FileManager
 
 import (
 	"bufio"
+	"fmt"
 	"os"
 )
 
@@ -28,4 +29,29 @@ func ReadWholeFile(path string) ([]string, error) {
 	}
 
 	return lines, scanner.Err()
+}
+
+// WriteToFile writes the given content to the given file. If the file does not exist, it will be created. If the file does exist, it will be overwritten.
+//
+// Parameters:
+//   - file_path: The path to the file to write to.
+//   - content: The content to write to the file.
+//
+// Returns:
+//   - Error: If the file could not be created or written to.
+//
+// Information:
+//   - Each string in the content slice will be written to the file consecutively. To write a new line, add a newline character to the end of the string.
+func WriteToFile(file_path string, content []string) error {
+	file, err := os.Create(file_path)
+	if err != nil {
+		return fmt.Errorf("could not create file: %v", err)
+	}
+	defer file.Close()
+
+	for _, line := range content {
+		file.WriteString(line)
+	}
+
+	return nil
 }
