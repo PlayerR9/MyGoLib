@@ -81,7 +81,7 @@ type LinkedStack[T any] struct {
 //
 // Returns:
 //   - LinkedStack: A new LinkedStack.
-func NewLinkedStack[T any](elements []T) LinkedStack[T] {
+func NewLinkedStack[T any](elements ...T) LinkedStack[T] {
 	stack := LinkedStack[T]{
 		top:  nil,
 		size: 0,
@@ -208,7 +208,7 @@ type ArrayStack[T any] struct {
 //
 // Returns:
 //   - ArrayStack: A new ArrayStack.
-func NewArrayStack[T any](elements []T) ArrayStack[T] {
+func NewArrayStack[T any](elements ...T) ArrayStack[T] {
 	if elements == nil {
 		elements = make([]T, 0)
 	}

@@ -82,7 +82,7 @@ type LinkedQueue[T any] struct {
 //
 // Returns:
 //   - LinkedQueue: A new LinkedQueue.
-func NewLinkedQueue[T any](elements []T) LinkedQueue[T] {
+func NewLinkedQueue[T any](elements ...T) LinkedQueue[T] {
 	queue := LinkedQueue[T]{
 		front: nil,
 		back:  nil,
@@ -224,7 +224,7 @@ type ArrayQueue[T any] struct {
 //
 // Returns:
 //   - ArrayQueue: A new ArrayQueue.
-func NewArrayQueue[T any](elements []T) ArrayQueue[T] {
+func NewArrayQueue[T any](elements ...T) ArrayQueue[T] {
 	queue := ArrayQueue[T]{
 		elements: make([]T, len(elements)),
 		front:    0,
