@@ -6,26 +6,24 @@ func (e ErrEmptyStack) Error() string {
 	return "Empty stack"
 }
 
-// node is a node in a linked list.
-type node[T any] struct {
-	value T        // The value of the node.
-	next  *node[T] // The next node in the linked list.
-}
-
 // A stack is a data structure that is used to store values. It is a LIFO (Last In First Out) data structure, meaning that the last value inserted into the stack is the
 // first one to be removed.
 type Stack[T any] interface {
-	// Push is a function that is used insert a value into the stack at the top.
+	// push is a function that is used insert a value into the stack at the top.
 	//
 	// Parameters:
 	//   - value: The value to insert into the stack.
-	Push(value T)
+	//
+	// Returns:
+	//   - Stack[T]: The stack.
+	Push(value T) Stack[T]
 
-	// Pop is a function that is used to remove a value from the stack at the top. Panics if the stack is empty.
+	// pop is a function that is used to remove a value from the stack at the top. Panics if the stack is empty.
 	//
 	// Returns:
 	//   - T: The value removed from the stack.
-	Pop() T
+	//   - Stack[T]: The stack.
+	Pop() (T, Stack[T])
 
 	// Peek is a function that is used to peek at the top value of the stack, without removing it. Panics if the stack is empty.
 	//
@@ -66,6 +64,21 @@ type Stack[T any] interface {
 	// Information:
 	//   - The first element of the string is the top of the stack.
 	ToString(f func(T) string, sep string) string
+
+	// Copy is a function that is used to copy the stack.
+	//
+	// Parameters:
+	//   - f: The function to copy the values.
+	//
+	// Returns:
+	//   - Stack[T]: The copy of the stack.
+	Copy(f func(T) T) Stack[T]
+}
+
+// node is a node in a linked list.
+type node[T any] struct {
+	value T        // The value of the node.
+	next  *node[T] // The next node in the linked list.
 }
 
 // LinkedStack is a stack implemented using a linked list.
@@ -88,7 +101,7 @@ func NewLinkedStack[T any](elements ...T) LinkedStack[T] {
 	}
 
 	for _, element := range elements {
-		stack.Push(element)
+		stack = stack.Push(element).(LinkedStack[T])
 	}
 
 	return stack
@@ -98,7 +111,7 @@ func NewLinkedStack[T any](elements ...T) LinkedStack[T] {
 //
 // Parameters:
 //   - value: The value to insert into the stack.
-func (stack *LinkedStack[T]) Push(value T) {
+func (stack LinkedStack[T]) Push(value T) Stack[T] {
 	new_node := node[T]{
 		value: value,
 		next:  stack.top,
@@ -107,13 +120,15 @@ func (stack *LinkedStack[T]) Push(value T) {
 	stack.top = &new_node
 
 	stack.size++
+
+	return stack
 }
 
 // Pop is a function that is used to remove a value from the stack at the top. Panics if the stack is empty.
 //
 // Returns:
 //   - T: The value removed from the stack.
-func (stack *LinkedStack[T]) Pop() T {
+func (stack LinkedStack[T]) Pop() (T, Stack[T]) {
 	if stack.top == nil {
 		panic(ErrEmptyStack{}.Error())
 	}
@@ -123,7 +138,7 @@ func (stack *LinkedStack[T]) Pop() T {
 
 	stack.size--
 
-	return value
+	return value, stack
 }
 
 // Peek is a function that is used to peek at the top value of the stack, without removing it. Panics if the stack is empty.
@@ -196,6 +211,42 @@ func (stack LinkedStack[T]) ToString(f func(T) string, sep string) string {
 	return str
 }
 
+func (stack LinkedStack[T]) Copy(f func(T) T) Stack[T] {
+	new_stack := LinkedStack[T]{
+		top:  nil,
+		size: stack.size,
+	}
+
+	if stack.top == nil {
+		return new_stack
+	}
+
+	new_stack.top = &node[T]{
+		value: f(stack.top.value),
+		next:  nil,
+	}
+
+	for n := stack.top.next; n != nil; n = n.next {
+		// Create a new node.
+		new_node := node[T]{
+			value: f(n.value),
+			next:  nil,
+		}
+
+		// Find the last node.
+		last_node := new_stack.top
+
+		for last_node.next != nil {
+			last_node = last_node.next
+		}
+
+		// Add the new node to the end.
+		last_node.next = &new_node
+	}
+
+	return new_stack
+}
+
 // ArrayStack is a stack implemented using an array.
 type ArrayStack[T any] struct {
 	elements []T // The elements of the stack.
@@ -222,15 +273,17 @@ func NewArrayStack[T any](elements ...T) ArrayStack[T] {
 //
 // Parameters:
 //   - value: The value to insert into the stack.
-func (stack *ArrayStack[T]) Push(value T) {
+func (stack ArrayStack[T]) Push(value T) Stack[T] {
 	stack.elements = append(stack.elements, value)
+
+	return stack
 }
 
 // Pop is a function that is used to remove a value from the stack at the top. Panics if the stack is empty.
 //
 // Returns:
 //   - T: The value removed from the stack.
-func (stack *ArrayStack[T]) Pop() T {
+func (stack ArrayStack[T]) Pop() (T, Stack[T]) {
 	if len(stack.elements) == 0 {
 		panic(ErrEmptyStack{}.Error())
 	}
@@ -238,7 +291,7 @@ func (stack *ArrayStack[T]) Pop() T {
 	value := stack.elements[len(stack.elements)-1]
 	stack.elements = stack.elements[:len(stack.elements)-1]
 
-	return value
+	return value, stack
 }
 
 // Peek is a function that is used to peek at the top value of the stack, without removing it. Panics if the stack is empty.
@@ -306,4 +359,16 @@ func (stack ArrayStack[T]) ToString(f func(T) string, sep string) string {
 	}
 
 	return str
+}
+
+func (stack ArrayStack[T]) Copy(f func(T) T) Stack[T] {
+	new_stack := ArrayStack[T]{
+		elements: make([]T, len(stack.elements)),
+	}
+
+	for i, element := range stack.elements {
+		new_stack.elements[i] = f(element)
+	}
+
+	return new_stack
 }
