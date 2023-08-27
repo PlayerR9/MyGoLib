@@ -60,34 +60,77 @@ func Compare(n1, n2 int) int {
 	return n1 - n2
 }
 
-// PrimeFactorization returns a slice of all the factors of a number (including 1) in ascending order.
-// Panics if num is 0. For example, PrimeFactorization(12) returns []int{1, 2, 2, 3}. Negative numbers are converted to positive.
+// PrimeFactorization returns a slice of all the factors of a number (excluding 1 and itself, unless it is a prime).
+// Panics if num is 0. For example, PrimeFactorization(12) returns []int{2, 2, 3}. Negative numbers are converted to positive.
 //
 // Parameters:
 // 	- num: The number to factorize.
 //
 // Returns:
-// 	- []int: A slice of all the factors of num in ascending order.
-func PrimeFactorization(num int) []int {
+// 	- map[int]int: A map of the factors of the number, with the key being the factor and the value being the number of times it is a factor.
+//
+// Information:
+// 	- The factors are not sorted.
+//  - The number 1 and -1 are factorized to map[int]int{1: 1} (the only time 1 appears in the map is as a key with a value of 1)
+func PrimeFactorization(num int) map[int]int {
+	// Check for 0
 	if num == 0 {
 		panic("Cannot factorize 0")
 	}
 
+	// Check for 1 and -1
+	if num == 1 || num == -1 {
+		return map[int]int{1: 1}
+	}
+
+	// Convert to positive if negative
 	if num < 0 {
 		num = -num
 	}
 
-	factors := []int{1}
+	// Factorize
+	factors := make(map[int]int) // The map of factors
+	current_factor := 2          // The current factor
 
-	factor := 2
+	for num > 1 {
+		// Skip current factors that are not prime
+		for {
+			// Check if current_factor is prime
+			found := false
 
-	for num >= 2 && factor < num/2 {
-		if num%factor == 0 {
-			factors = append(factors, factor)
-			num /= factor
-		} else {
-			factor++
+			for key := range factors {
+				if current_factor%key != 0 {
+					found = true
+					break
+				}
+			}
+
+			if !found {
+				break
+			}
+
+			current_factor++
 		}
+
+		// Check if current_factor is the number itself
+		if current_factor == num {
+			factors[current_factor] = 1
+			return factors
+		}
+
+		// Otherwise, find the number of times current_factor is a factor
+		factor_count := 0 // The number of times the current factor is a factor
+
+		for num > 1 && (num%current_factor) == 0 {
+			factor_count++
+			num /= current_factor
+		}
+
+		if factor_count != 0 {
+			factors[current_factor] = factor_count
+		}
+
+		current_factor++
 	}
 
 	return factors
