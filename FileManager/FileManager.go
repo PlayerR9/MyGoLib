@@ -31,6 +31,28 @@ func ReadWholeFile(path string) ([]string, error) {
 	return lines, scanner.Err()
 }
 
+// FileExists checks if a file exists at the given path.
+//
+// Parameters:
+//   - path: The path to the file to check.
+//
+// Returns:
+//   - bool: True if the file exists, false if it does not.
+//   - error: If there was an error checking if the file exists.
+func FileExists(path string) (bool, error) {
+	_, err := os.Stat(path)
+
+	if err == nil {
+		return true, nil
+	}
+
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+
+	return false, err
+}
+
 // WriteToFile writes the given content to the given file. If the file does not exist, it will be created. If the file does exist, it will be overwritten.
 //
 // Parameters:
