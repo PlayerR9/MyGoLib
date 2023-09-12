@@ -77,3 +77,45 @@ func WriteToFile(file_path string, content ...string) error {
 
 	return nil
 }
+
+// CreateEmptyFile creates an empty file at the given path. If the file already exists, it will be overwritten.
+//
+// Parameters:
+//   - file_path: The path to the file to create.
+//
+// Returns:
+//   - Error: If the file could not be created.
+func CreateEmptyFile(file_path string) error {
+	file, err := os.Create(file_path)
+	if err != nil {
+		return fmt.Errorf("could not create file: %v", err)
+	}
+	defer file.Close()
+
+	return nil
+}
+
+// AppendToFile appends the given content to the given file. If the file does not exist, it will give an error.
+//
+// Parameters:
+//   - file_path: The path to the file to append to.
+//   - content: The content to append to the file.
+//
+// Returns:
+//   - Error: If the file could not be created or written to.
+//
+// Information:
+//   - Each string in the content slice will be written to the file consecutively. To write a new line, add a newline character to the end of the string.
+func AppendToFile(file_path string, content ...string) error {
+	file, err := os.OpenFile(file_path, os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		return fmt.Errorf("could not open file: %v", err)
+	}
+	defer file.Close()
+
+	for _, line := range content {
+		file.WriteString(line)
+	}
+
+	return nil
+}
