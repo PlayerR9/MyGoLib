@@ -64,7 +64,7 @@ func FileExists(path string) (bool, error) {
 //
 // Information:
 //   - Each string in the content slice will be written to the file consecutively. To write a new line, add a newline character to the end of the string.
-func WriteToFile(file_path string, content []string) error {
+func WriteToFile(file_path string, content ...string) error {
 	file, err := os.Create(file_path)
 	if err != nil {
 		return fmt.Errorf("could not create file: %v", err)

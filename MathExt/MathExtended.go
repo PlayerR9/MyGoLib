@@ -16,7 +16,7 @@ func Max(numbers ...int) int {
 
 	max := numbers[0]
 
-	for _, number := range numbers {
+	for _, number := range numbers[1:] {
 		if number > max {
 			max = number
 		}
@@ -39,7 +39,7 @@ func Min(numbers ...int) int {
 
 	min := numbers[0]
 
-	for _, number := range numbers {
+	for _, number := range numbers[1:] {
 		if number < min {
 			min = number
 		}
@@ -58,6 +58,16 @@ func Min(numbers ...int) int {
 // 	- int: > 0 if n1 > n2, 0 if n1 == n2, < 0 if n1 < n2.
 func Compare(n1, n2 int) int {
 	return n1 - n2
+}
+
+func is_in_map(n int, m map[int]int) bool {
+	for k := range m {
+		if n%k != 0 {
+			return true
+		}
+	}
+
+	return false
 }
 
 // PrimeFactorization returns a slice of all the factors of a number (excluding 1 and itself, unless it is a prime).
@@ -94,31 +104,11 @@ func PrimeFactorization(num int) map[int]int {
 
 	for num > 1 {
 		// Skip current factors that are not prime
-		for {
-			// Check if current_factor is prime
-			found := false
-
-			for key := range factors {
-				if current_factor%key != 0 {
-					found = true
-					break
-				}
-			}
-
-			if !found {
-				break
-			}
-
+		for is_in_map(current_factor, factors) {
 			current_factor++
 		}
 
-		// Check if current_factor is the number itself
-		if current_factor == num {
-			factors[current_factor] = 1
-			return factors
-		}
-
-		// Otherwise, find the number of times current_factor is a factor
+		// Find the number of times current_factor is a factor
 		factor_count := 0 // The number of times the current factor is a factor
 
 		for num > 1 && (num%current_factor) == 0 {

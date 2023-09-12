@@ -21,3 +21,31 @@ func PressEnterToExit(exit_code int) {
 
 	os.Exit(exit_code)
 }
+
+// BinarySearch searches for an element in a sorted slice of integers using the binary search algorithm.
+//
+// Parameters:
+//   - elements: The slice of integers to search in.
+//   - e: The element to search for.
+//
+// Returns:
+//   - int: The index of the element in the slice, or -1 if the element is not in the slice.
+func BinarySearch(elements []int, e int) int {
+	sx := 0
+	dx := len(elements) - 1
+	pos := -1
+
+	for sx < dx && pos == -1 {
+		m := (sx + dx) / 2
+
+		if elements[m] == e {
+			pos = m
+		} else if elements[m] < e {
+			sx = m + 1
+		} else {
+			dx = m
+		}
+	}
+
+	return pos
+}
