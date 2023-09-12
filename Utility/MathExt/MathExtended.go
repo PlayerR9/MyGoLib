@@ -1,91 +1,51 @@
 package MathExt
 
-import "strconv"
+import (
+	"log"
+	"os"
+	"strconv"
+)
 
-// Max returns the maximum of a slice of numbers. Panics if the slice is empty. For example, Max(1, 2, 3, 4) returns 4.
-//
-// Parameters:
-// 	- numbers: The slice of numbers to get the maximum of.
-//
-// Returns:
-// 	- int: The maximum of the slice of numbers.
-func Max(numbers ...int) int {
-	if len(numbers) == 0 {
-		panic("Cannot get max of no numbers")
-	}
+// GLOBAL VARIABLES
+var (
+	// DebugMode is a boolean that is used to enable or disable debug mode. When debug mode is enabled, the package will print debug messages.
+	// **Note:** Debug mode is disabled by default.
+	DebugMode bool = false
 
-	max := numbers[0]
-
-	for _, number := range numbers[1:] {
-		if number > max {
-			max = number
-		}
-	}
-
-	return max
-}
-
-// Min returns the minimum of a slice of numbers. Panics if the slice is empty. For example, Min(1, 2, 3, 4) returns 1.
-//
-// Parameters:
-// 	- numbers: The slice of numbers to get the minimum of.
-//
-// Returns:
-// 	- int: The minimum of the slice of numbers.
-func Min(numbers ...int) int {
-	if len(numbers) == 0 {
-		panic("Cannot get min of no numbers")
-	}
-
-	min := numbers[0]
-
-	for _, number := range numbers[1:] {
-		if number < min {
-			min = number
-		}
-	}
-
-	return min
-}
-
-// Compare returns whether n1 is greater than, equal to, or less than n2. For example, Compare(1, 2) returns -1.
-//
-// Parameters:
-// 	- n1: The first number to compare.
-// 	- n2: The second number to compare.
-//
-// Returns:
-// 	- int: > 0 if n1 > n2, 0 if n1 == n2, < 0 if n1 < n2.
-func Compare(n1, n2 int) int {
-	return n1 - n2
-}
-
-func is_in_map(n int, m map[int]int) bool {
-	for k := range m {
-		if n%k != 0 {
-			return true
-		}
-	}
-
-	return false
-}
+	debugger *log.Logger = log.New(os.Stdout, "[MathExt] ", log.LstdFlags) // Debugger
+)
 
 // PrimeFactorization returns a slice of all the factors of a number (excluding 1 and itself, unless it is a prime).
 // Panics if num is 0. For example, PrimeFactorization(12) returns []int{2, 2, 3}. Negative numbers are converted to positive.
 //
 // Parameters:
-// 	- num: The number to factorize.
+//   - num: The number to factorize.
 //
 // Returns:
-// 	- map[int]int: A map of the factors of the number, with the key being the factor and the value being the number of times it is a factor.
+//   - map[int]int: A map of the factors of the number, with the key being the factor and the value being the number of times it is a factor.
 //
 // Information:
-// 	- The factors are not sorted.
-//  - The number 1 and -1 are factorized to map[int]int{1: 1} (the only time 1 appears in the map is as a key with a value of 1)
+//   - The factors are not sorted.
+//   - The number 1 and -1 are factorized to map[int]int{1: 1} (the only time 1 appears in the map is as a key with a value of 1)
 func PrimeFactorization(num int) map[int]int {
-	// Check for 0
 	if num == 0 {
-		panic("Cannot factorize 0")
+		// Cannot factorize 0, so panic.
+		if DebugMode {
+			debugger.Panic("cannot factorize 0")
+		} else {
+			panic("Cannot factorize 0")
+		}
+	}
+
+	// isInMap returns true if n is not a factor of any of the keys in m, otherwise it returns false.
+	isInMap := func(n int, m map[int]int) bool {
+		for k := range m {
+			if n%k != 0 {
+				return true
+			}
+		}
+
+		return false
 	}
 
 	// Check for 1 and -1
@@ -104,7 +64,7 @@ func PrimeFactorization(num int) map[int]int {
 
 	for num > 1 {
 		// Skip current factors that are not prime
-		for is_in_map(current_factor, factors) {
+		for isInMap(current_factor, factors) {
 			current_factor++
 		}
 
@@ -117,6 +77,7 @@ func PrimeFactorization(num int) map[int]int {
 		}
 
 		if factor_count != 0 {
+			// Add the factor to the map if it is a factor
 			factors[current_factor] = factor_count
 		}
 
@@ -130,11 +91,11 @@ func PrimeFactorization(num int) map[int]int {
 // Negative numbers are converted to positive.
 //
 // Parameters:
-// 	- n1: The first number.
-// 	- n2: The second number.
+//   - n1: The first number.
+//   - n2: The second number.
 //
 // Returns:
-// 	- int: The greatest common divisor of n1 and n2.
+//   - int: The greatest common divisor of n1 and n2.
 func GetGCD(n1, n2 int) int {
 	if n1 == 0 {
 		panic("Cannot get GCD of 0 and " + strconv.Itoa(n2))
@@ -144,17 +105,21 @@ func GetGCD(n1, n2 int) int {
 		panic("Cannot get GCD of " + strconv.Itoa(n1) + " and 0")
 	}
 
-	if Compare(n1, n2) < 0 {
+	// Invert if n1 < n2. This is done to reduce the number of iterations.
+	if n1 < n2 {
 		n1, n2 = n2, n1
 	}
 
-	factors := PrimeFactorization(n1)
+	factors := PrimeFactorization(n1) // The factors of n1
 
-	gcd := 1
+	gcd := 1 // The greatest common divisor
 
-	for i := 0; i < len(factors); i++ {
-		if n2%factors[i] == 0 {
-			gcd *= factors[i]
+	// For each factor of n1, check if it is a factor of n2.
+	for factor, count := range factors {
+		for n2%factor == 0 && count > 0 {
+			// If it is a factor of n2, multiply it to the gcd until it is not a factor of n2.
+			gcd *= factor
+			count--
 		}
 	}
 

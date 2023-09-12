@@ -1,14 +1,24 @@
-package Utility
+package General
 
 import (
 	"fmt"
+	"log"
 	"os"
+)
+
+// GLOBAL VARIABLES
+var (
+	// DebugMode is a boolean that is used to enable or disable debug mode. When debug mode is enabled, the package will print debug messages.
+	// **Note:** Debug mode is disabled by default.
+	DebugMode bool = false
+
+	debugger *log.Logger = log.New(os.Stdout, "[General] ", log.LstdFlags) // Debugger
 )
 
 // PressEnterToContinue prints "Press enter to continue..." to the console and waits for the user to press enter.
 func PressEnterToContinue() {
-	fmt.Println("Press enter to continue...")
-	fmt.Scanln()
+	fmt.Println("Press enter to continue...") // Print "Press enter to continue..." to the console
+	fmt.Scanln()                              // Wait for the user to press enter
 }
 
 // PressEnterToExit prints "Press enter to exit..." to the console and waits for the user to press enter. Then, it exits the program with the given exit code.
@@ -16,36 +26,70 @@ func PressEnterToContinue() {
 // Parameters:
 //   - exit_code: The exit code to exit the program with.
 func PressEnterToExit(exit_code int) {
-	fmt.Println("Press enter to exit...")
-	fmt.Scanln()
+	fmt.Println("Press enter to exit...") // Print "Press enter to exit..." to the console
+	fmt.Scanln()                          // Wait for the user to press enter
 
-	os.Exit(exit_code)
+	os.Exit(exit_code) // Exit the program with the given exit code
 }
 
-// BinarySearch searches for an element in a sorted slice of integers using the binary search algorithm.
+// MaxFunc returns the index of the maximum element in a slice of values. Panics if the slice is empty.
+// For example, MaxFunc(func(a, b int) int { return a - b }, 1, 2, 3, 4) returns 3.
 //
 // Parameters:
-//   - elements: The slice of integers to search in.
-//   - e: The element to search for.
+//   - f: The function to use to compare the values. The function should return < 0 if a < b, 0 if a == b, > 0 if a > b.
+//   - values: The slice of values to get the maximum of.
 //
 // Returns:
-//   - int: The index of the element in the slice, or -1 if the element is not in the slice.
-func BinarySearch(elements []int, e int) int {
-	sx := 0
-	dx := len(elements) - 1
-	pos := -1
-
-	for sx < dx && pos == -1 {
-		m := (sx + dx) / 2
-
-		if elements[m] == e {
-			pos = m
-		} else if elements[m] < e {
-			sx = m + 1
+//   - int: The index of the first occurrence of the maximum element in the slice of values.
+func MaxFunc[T any](f func(T, T) int, values ...T) int {
+	if len(values) == 0 {
+		// Cannot get max of no values, so panic.
+		if DebugMode {
+			debugger.Panic("Cannot get max of no values")
 		} else {
-			dx = m
+			panic("Cannot get max of no values")
 		}
 	}
 
-	return pos
+	max := 0 // The index of the maximum element
+
+	// Find the index of the maximum element
+	for index, value := range values[1:] {
+		if f(value, values[max]) > 0 {
+			max = index
+		}
+	}
+
+	return max
+}
+
+// MinFunc returns the index of the minimum element in a slice of values. Panics if the slice is empty.
+// For example, MinFunc(func(a, b int) int { return a - b }, 1, 2, 3, 4) returns 0.
+//
+// Parameters:
+//   - f: The function to use to compare the values. The function should return < 0 if a < b, 0 if a == b, > 0 if a > b.
+//   - values: The slice of values to get the minimum of.
+//
+// Returns:
+//   - int: The index of the first occurrence of the minimum element in the slice of values.
+func MinFunc[T any](f func(T, T) int, values ...T) int {
+	if len(values) == 0 {
+		// Cannot get min of no values, so panic.
+		if DebugMode {
+			debugger.Panic("Cannot get min of no values")
+		} else {
+			panic("Cannot get min of no values")
+		}
+	}
+
+	min := 0 // The index of the minimum element
+
+	// Find the index of the minimum element
+	for index, value := range values[1:] {
+		if f(value, values[min]) < 0 {
+			min = index
+		}
+	}
+
+	return min
 }

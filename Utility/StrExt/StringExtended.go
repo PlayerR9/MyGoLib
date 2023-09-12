@@ -2,9 +2,20 @@ package StrExt
 
 import (
 	"fmt"
+	"log"
+	"os"
 	"strconv"
 	"unicode"
 	"unicode/utf8"
+)
+
+// GLOBAL VARIABLES
+var (
+	// DebugMode is a boolean that is used to enable or disable debug mode. When debug mode is enabled, the package will print debug messages.
+	// **Note:** Debug mode is disabled by default.
+	DebugMode bool = false
+
+	debugger *log.Logger = log.New(os.Stdout, "[StrExt] ", log.LstdFlags) // Debugger
 )
 
 // StringToUTF8 converts a string to a slice of runes.
@@ -16,17 +27,21 @@ import (
 //   - []rune: A slice of runes, each rune representing a character in the string.
 //   - error: If the string contains a character that is not a valid UTF-8 character.
 func StringToUTF8(str string) ([]rune, error) {
-	characters := make([]rune, 0)
+	characters := make([]rune, 0) // The characters in the string
 
-	for char_index := 0; len(str) > 0; char_index++ {
-		character, size := utf8.DecodeRuneInString(str)
+	// Loop through the string
+	char_index := 1 // The index of the character in the string
+
+	for current := 0; current < len(str); char_index++ {
+		character, size := utf8.DecodeRuneInString(str[current:]) // The character and its size in bytes
 
 		if character == utf8.RuneError {
-			return nil, fmt.Errorf("character at the %s index is not a valid UTF-8 character", PrintOrdinalNumber(char_index))
+			// The character is not a valid UTF-8 character
+			return nil, fmt.Errorf("%s character is not a valid UTF-8 character", PrintOrdinalNumber(char_index))
 		}
 
-		characters = append(characters, character)
-		str = str[size:]
+		characters = append(characters, character) // Add the character to the slice of characters
+		current += size                            // Move to the next character
 	}
 
 	return characters, nil
@@ -53,102 +68,144 @@ func IsNumber(str string) bool {
 // Returns:
 //   - bool: True if the string is a word, false otherwise.
 func IsWord(str string) bool {
-	for len(str) > 0 {
+	// Loop through the string
+	for current := 0; current < len(str); {
 		character, size := utf8.DecodeRuneInString(str)
 
 		if character == utf8.RuneError || !unicode.IsLetter(character) {
 			return false
 		}
 
-		str = str[size:]
+		current += size
 	}
 
 	return true
 }
 
-// ExtractContent extracts the content between the opening and closing characters, and returns the content, the remaining content, and an error if one occurred.
-// The opening and closing characters are not included in the content. Panics if the opening or closing character is empty.
+// ExtractContent extracts the content between the opening and closing strings, and returns the index of the content and an error if one occurred.
+// The opening and closing characters are not excluded from the indexes. Panics if the opening or closing character is empty.
 //
 // Parameters:
-//   - op_char: The opening character.
-//   - cl_char: The closing character.
-//   - content: The content to extract from.
+//   - opening: The opening character.
+//   - closing: The closing character.
+//   - tokens: The tokens to extract from.
 //
 // Returns:
-//   - []string: The content between the opening and closing characters.
-//   - []string: The remaining content.
+//   - int: The index of the last character of the content.)
 //   - error: An error if one occurred.
 //
-// Information:
-//   - The first element of the content must be the opening character.
-func ExtractContent(op_char, cl_char string, content []string) ([]string, []string, error) {
-	if len(content) == 0 || content[0] != op_char {
-		return nil, nil, fmt.Errorf("no opening character")
+// Example:
+//   - ExtractContent("(", ")", "(hello)") returns 6, nil; because the content is "hello" and the last character of the content is at index 6.
+
+// FindContentIndexes finds the first occurrence of a block of tokens (defined as 'content') between the opening and closing token so that
+// they match; which means they close each other. Best for extracting content between parentheses, brackets, etc. Panics if the opening or closing tokens are empty.
+//
+// Parameters:
+//   - opening: The opening token.
+//   - closing: The closing token.
+//   - tokens: The tokens to extract from.
+//
+// Returns:
+//   - int: The index of the first character of the content. (The opening token is included in the content)
+//   - int: The index of the last character of the content. (The closing token is included in the content)
+//   - error: An error if one occurred.
+//
+// Example:
+//   - FindContentIndexes("(", ")", ["a", "(", "hello", ")"]) returns 1, 3, nil; because the content is "(hello)" and the last character of the content is at index 3.
+func FindContentIndexes(opening, closing string, tokens []string) (int, int, error) {
+	if opening == "" {
+		// Opening character is empty, panic.
+		if DebugMode {
+			debugger.Panic("opening character cannot be empty")
+		} else {
+			panic("opening character cannot be empty")
+		}
 	}
 
-	if op_char == "" {
-		panic("opening character cannot be empty")
+	if closing == "" {
+		// Closing character is empty, panic.
+		if DebugMode {
+			debugger.Panic("closing character cannot be empty")
+		} else {
+			panic("closing character cannot be empty")
+		}
 	}
 
-	if cl_char == "" {
-		panic("closing character cannot be empty")
+	// Initialize the starting index
+	starting_index := 0
+
+	// Find the first opening character
+	for starting_index < len(tokens) && tokens[starting_index] != opening {
+		starting_index++
 	}
 
-	counter := 1
+	if starting_index == len(tokens) {
+		// No opening character found, return an error
+		return 0, 0, fmt.Errorf("no opening character found; expected %s", opening)
+	}
 
-	for i := 1; i < len(content); i++ {
-		if content[i] == cl_char {
+	// Find the closing character
+
+	counter := 1 // The number of opening characters minus the number of closing characters
+
+	for i := starting_index + 1; i < len(tokens); i++ {
+		if tokens[i] == closing {
 			counter--
-		} else if content[i] == op_char {
+		} else if tokens[i] == opening {
 			counter++
 		}
 
 		if counter == 0 {
-			return content[1:i], content[i+1:], nil
+			// Found the closing character, return the indexes
+			return starting_index, i, nil
 		}
 	}
 
-	if cl_char != "\n" {
-		return nil, nil, fmt.Errorf("no closing character found; expected %s", cl_char)
+	if closing != "\n" {
+		// No closing character found, return an error
+		return 0, 0, fmt.Errorf("no closing character found; expected %s", closing)
 	}
 
-	return content[1:], nil, nil
+	return starting_index, len(tokens) - 1, nil
 }
 
-// ExtractUpTo extracts the content up to the closing character, and returns the content, the remaining content, and an error if one occurred.
-// The closing character is not included in the content. Panics if the closing character is empty.
+// Similar to FindContentIndexes, but does not require an opening token. It returns the index of the first occurrence of the closing token.
+// Best for extracting content up to a closing token, like a newline character. Panics if the closing token is empty.
 //
 // Parameters:
-//   - cl_char: The closing character.
-//   - content: The content to extract from.
+//   - closing: The closing token.
+//   - tokens: The tokens to extract from.
 //
 // Returns:
-//   - []string: The content up to the closing character.
-//   - []string: The remaining content.
+//   - int: The index of the first occurrence of the closing token.
 //   - error: An error if one occurred.
-func ExtractUpTo(cl_char string, content []string) ([]string, []string, error) {
-	if len(content) == 0 {
-		return nil, nil, fmt.Errorf("no opening character")
-	}
-
-	if cl_char == "" {
-		panic("closing character cannot be empty")
-	}
-
-	for i := 0; i < len(content); i++ {
-		if content[i] == cl_char {
-			return content[:i], content[i+1:], nil
+func FindIndexesUpTo(closing string, tokens []string) (int, error) {
+	if closing == "" {
+		// Closing character is empty, panic.
+		if DebugMode {
+			debugger.Panic("closing character cannot be empty")
+		} else {
+			panic("closing character cannot be empty")
 		}
 	}
 
-	if cl_char != "\n" {
-		return nil, nil, fmt.Errorf("no closing character found; expected %s", cl_char)
+	// Find the closing character
+	for i := 0; i < len(tokens); i++ {
+		if tokens[i] == closing {
+			// Found the closing character, return the index
+			return i, nil
+		}
 	}
 
-	return content[:len(content)-1], nil, nil
+	if closing != "\n" {
+		// No closing character found, return an error
+		return 0, fmt.Errorf("no closing character found; expected %s", closing)
+	}
+
+	return len(tokens) - 1, nil
 }
 
-// PrintOrdinalNumber prints the ordinal number of a position. For example, if the position is 1, it will print 1st.
+// PrintOrdinalNumber prints the ordinal number of a position. For example, if the position is 1, it will print "1st". Panics if the position is negative.
 //
 // Parameters:
 //   - position: The position to print.
@@ -156,17 +213,35 @@ func ExtractUpTo(cl_char string, content []string) ([]string, []string, error) {
 // Returns:
 //   - string: The ordinal number of the position.
 func PrintOrdinalNumber(position int) string {
-	// Get the last digit
+	if position < 0 {
+		// Position is negative, panic.
+		if DebugMode {
+			debugger.Panic("position cannot be negative")
+		} else {
+			panic("position cannot be negative")
+		}
+	}
+
+	if position >= 11 && position < 20 {
+		// 11th, 12th, 13th, 14th, 15th, 16th, 17th, 18th, or 19th
+		return fmt.Sprintf("%dth", position)
+	}
+
+	// Get the last digit of the position
 	last_digit := position % 10
 
 	switch last_digit {
 	case 1:
+		// 1st
 		return fmt.Sprintf("%dst", position)
 	case 2:
+		// 2nd
 		return fmt.Sprintf("%dnd", position)
 	case 3:
+		// 3rd
 		return fmt.Sprintf("%drd", position)
 	default:
+		// 4th, 5th, 6th, 7th, 8th, 9th, 0th
 		return fmt.Sprintf("%dth", position)
 	}
 }
