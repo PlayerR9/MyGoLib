@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	sext "github.com/PlayerR9/MyGoLib/Utility/StrExt"
 )
@@ -144,4 +145,51 @@ func AppendToFile(file_path string, content ...string) error {
 	}
 
 	return nil
+}
+
+/* GetAllFileNamesInDirectory returns a map of all the file names in the given directory. The key is the file name, and the value is the file extension.
+ * The file extension includes the dot.
+ *
+ * Parameters:
+ *   - path: The path to the directory to search.
+ *
+ * Returns:
+ *   - map[string]string: A map of all the file names in the given directory. The key is the file name, and the value is the file extension.
+ *   - error: If the directory could not be opened.
+ *
+ * Information:
+ *   - If path is not a directory but a file, it will return a map with one element, the file name and extension.
+ *   - If path is not a directory or a file, it will return an error.
+ */
+func GetAllFileNamesInDirectory(path string) (map[string]string, error) {
+	pathLeftQueue := []string{path}
+	fileFound := make(map[string]string)
+
+	for i := 0; i < len(pathLeftQueue); i++ {
+		// Resize the pathLeftQueue slice
+		if i > len(pathLeftQueue)/2 {
+			pathLeftQueue = pathLeftQueue[i:]
+			i = 0
+		}
+
+		// Pop the first element of the pathLeftQueue slice
+		currentPath := pathLeftQueue[i]
+
+		// Open the directory
+		dirs, err := os.ReadDir(currentPath)
+		if err != nil {
+			return nil, fmt.Errorf("could not read directory: %v", err)
+		}
+
+		// Get the file names
+		for _, dir := range dirs {
+			if dir.IsDir() {
+				pathLeftQueue = append(pathLeftQueue, currentPath+"/"+dir.Name())
+			} else {
+				fileFound[currentPath+"/"+dir.Name()] = filepath.Ext(dir.Name())
+			}
+		}
+	}
+
+	return fileFound, nil
 }
