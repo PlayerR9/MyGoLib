@@ -245,3 +245,34 @@ func PrintOrdinalNumber(position int) string {
 		return fmt.Sprintf("%dth", position)
 	}
 }
+
+// DeEscapeSequence converts an escape sequence to its character. If the character is not an escape sequence, it returns the character as a string.
+// For example, if the character is '\n', it will return "\\n".
+//
+// Parameters:
+//   - char: The character to convert.
+//
+// Returns:
+//   - string: The character as a string.
+//
+// Escape sequences: [\a \b \f \n \r \t \v]
+func DeEscapeSequence(char rune) string {
+	switch char {
+	case '\a':
+		return "\\a"
+	case '\b':
+		return "\\b"
+	case '\f':
+		return "\\f"
+	case '\n':
+		return "\\n"
+	case '\r':
+		return "\\r"
+	case '\t':
+		return "\\t"
+	case '\v':
+		return "\\v"
+	default:
+		return string(char)
+	}
+}
