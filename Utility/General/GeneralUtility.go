@@ -15,6 +15,31 @@ var (
 	debugger *log.Logger = log.New(os.Stdout, "[General] ", log.LstdFlags) // Debugger
 )
 
+// ConsoleFlagInfo is a struct that contains information about a console flag.
+//
+// Fields:
+//   - Name: The name of the flag.
+//   - NumArgs: Number of arguments the flag takes.
+//   - Description: The description of the flag.
+//   - Required: Whether or not the flag is required.
+//   - Callback: A function that is called when the flag is parsed.
+type ConsoleFlagInfo struct {
+	// The name of the flag.
+	Name string
+
+	// Number of arguments the flag takes.
+	NumArgs int
+
+	// The description of the flag.
+	Description string
+
+	// Whether or not the flag is required.
+	Required bool
+
+	// A function that is called when the flag is parsed.
+	Callback func(args ...string) (interface{}, error)
+}
+
 // PressEnterToContinue prints "Press enter to continue..." to the console and waits for the user to press enter.
 func PressEnterToContinue() {
 	fmt.Println("Press enter to continue...") // Print "Press enter to continue..." to the console

@@ -147,20 +147,19 @@ func AppendToFile(file_path string, content ...string) error {
 	return nil
 }
 
-/* GetAllFileNamesInDirectory returns a map of all the file names in the given directory. The key is the file name, and the value is the file extension.
- * The file extension includes the dot.
- *
- * Parameters:
- *   - path: The path to the directory to search.
- *
- * Returns:
- *   - map[string]string: A map of all the file names in the given directory. The key is the file name, and the value is the file extension.
- *   - error: If the directory could not be opened.
- *
- * Information:
- *   - If path is not a directory but a file, it will return a map with one element, the file name and extension.
- *   - If path is not a directory or a file, it will return an error.
- */
+// GetAllFileNamesInDirectory returns a map of all the file names in the given directory. The key is the file name, and the value is the file extension.
+// The file extension includes the dot.
+//
+// Parameters:
+//   - path: The path to the directory to search.
+//
+// Returns:
+//   - map[string]string: A map of all the file names in the given directory. The key is the file name, and the value is the file extension.
+//   - error: If the directory could not be opened.
+//
+// Information:
+//   - If path is not a directory but a file, it will return a map with one element, the file name and extension.
+//   - If path is not a directory or a file, it will return an error.
 func GetAllFileNamesInDirectory(path string) (map[string]string, error) {
 	pathLeftQueue := []string{path}
 	fileFound := make(map[string]string)
@@ -192,4 +191,15 @@ func GetAllFileNamesInDirectory(path string) (map[string]string, error) {
 	}
 
 	return fileFound, nil
+}
+
+// DeleteFile deletes the file at the given path. WARNING: This function will permanently delete the file.
+//
+// Parameters:
+//   - path: The path to the file to delete.
+//
+// Returns:
+//   - error: If the file could not be deleted.
+func DeleteDirectory(path string) error {
+	return os.RemoveAll(path)
 }
