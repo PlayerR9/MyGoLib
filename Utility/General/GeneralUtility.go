@@ -21,7 +21,7 @@ var (
 //
 // Fields:
 //   - Name: The name of the flag.
-//   - NumArgs: Number of arguments the flag takes.
+//   - Args: The argument name of the flag.
 //   - Description: The description of the flag.
 //   - Required: Whether or not the flag is required.
 //   - Callback: A function that is called when the flag is parsed.
@@ -29,8 +29,8 @@ type ConsoleFlagInfo struct {
 	// The name of the flag.
 	Name string
 
-	// Number of arguments the flag takes.
-	NumArgs int
+	// The argument name of the flag.
+	Args []string
 
 	// The description of the flag.
 	Description string
@@ -40,6 +40,75 @@ type ConsoleFlagInfo struct {
 
 	// A function that is called when the flag is parsed.
 	Callback func(args ...string) (interface{}, error)
+}
+
+func (cfi ConsoleFlagInfo) ToString() string {
+	str := ""
+
+	str += "Name: " + cfi.Name + "\n"
+	str += "Args:"
+
+	for _, arg := range cfi.Args {
+		str += " " + arg
+	}
+
+	str += "\n"
+
+	str += "Description: " + cfi.Description + "\n"
+
+	str += "Required: "
+
+	if cfi.Required {
+		str += "Yes"
+	} else {
+		str += "No"
+	}
+
+	return str
+}
+
+func UsageToString(executable_name string, flags []ConsoleFlagInfo) string {
+	str := ""
+
+	str += "Usage: " + executable_name
+
+	for _, flag := range flags {
+		str += " "
+
+		if !flag.Required {
+			str += "["
+		}
+
+		str += flag.Name
+
+		for i, arg := range flag.Args {
+			if i != 0 {
+				str += " "
+			}
+
+			str += "<" + arg + ">"
+		}
+
+		if !flag.Required {
+			str += "]"
+		}
+	}
+
+	return str
+}
+
+func HelpToString(executable_name string, flags []ConsoleFlagInfo) string {
+	str := UsageToString(executable_name, flags) + "\n\n" + "Flags:\n"
+
+	for i, flag := range flags {
+		if i != 0 {
+			str += "\n\n"
+		}
+
+		str += flag.ToString()
+	}
+
+	return str
 }
 
 // PressEnterToContinue prints "Press enter to continue..." to the console and waits for the user to press enter.
