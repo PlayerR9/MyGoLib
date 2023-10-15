@@ -1,4 +1,4 @@
-// git tag v0.1.16
+// git tag v0.1.17
 
 package General
 
@@ -111,7 +111,7 @@ func HelpToString(executable_name string, flags []ConsoleFlagInfo) string {
 	return str
 }
 
-func ParseConsoleFlags(executable_name string, args []string, flags []ConsoleFlagInfo) (map[string]interface{}, error) {
+func ParseConsoleFlags(args []string, flags []ConsoleFlagInfo) (map[string]interface{}, error) {
 	results := make(map[string]interface{})
 
 	// Check if enough arguments are present
