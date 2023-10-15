@@ -1,4 +1,4 @@
-// git tag v0.1.14
+// git tag v0.1.16
 
 package General
 
@@ -82,7 +82,7 @@ func UsageToString(executable_name string, flags []ConsoleFlagInfo) string {
 		str += flag.Name
 
 		for i, arg := range flag.Args {
-			if i != 0 {
+			if i != 0 && flag.Required {
 				str += " "
 			}
 
@@ -109,6 +109,70 @@ func HelpToString(executable_name string, flags []ConsoleFlagInfo) string {
 	}
 
 	return str
+}
+
+func ParseConsoleFlags(executable_name string, args []string, flags []ConsoleFlagInfo) (map[string]interface{}, error) {
+	results := make(map[string]interface{})
+
+	// Check if enough arguments are present
+	var min int = 1
+	var max int = 1
+
+	for _, f := range flags {
+		if f.Required {
+			min += len(f.Args) + 1
+		}
+
+		max += len(f.Args) + 1
+	}
+
+	if len(args) < min {
+		return nil, fmt.Errorf("not enough arguments; expected at least %d, got %d", min, len(args))
+	} else if len(args) >= max {
+		return nil, fmt.Errorf("too many arguments; expected at most %d, got %d", max, len(args))
+	}
+
+	// Parse flags
+	arg_index := 1
+
+	for _, f := range flags {
+		if arg_index >= len(args) {
+			break
+		}
+
+		if f.Name != args[arg_index] {
+			if f.Required {
+				return nil, fmt.Errorf("required flag %s not present", f.Name)
+			}
+
+			continue
+		}
+
+		if len(f.Args)+arg_index >= len(args) {
+			return nil, fmt.Errorf("flag %s present but not enough arguments specified", f.Name)
+		}
+
+		arg_index++
+
+		args_tmp := make([]string, 0)
+
+		for i := 0; i < len(f.Args); i++ {
+			args_tmp = append(args_tmp, args[arg_index+i])
+		}
+
+		// Call callback function for flag
+		inf_tmp, err := f.Callback(args_tmp...)
+		if err != nil {
+			return nil, fmt.Errorf("invalid argument for flag %s: %s", f.Name, err)
+		}
+
+		// Set result
+		results[f.Name] = inf_tmp
+
+		arg_index += len(f.Args)
+	}
+
+	return results, nil
 }
 
 // PressEnterToContinue prints "Press enter to continue..." to the console and waits for the user to press enter.
