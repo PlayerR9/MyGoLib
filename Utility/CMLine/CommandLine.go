@@ -139,11 +139,6 @@ func (cfi ConsoleFlagInfo) ToString(indent_level int) (str string) {
 //   - interface{}: The solution of the command.
 //   - error: An error if one occurred.
 func ParseCommandLine(args []string, commands []ConsoleCommandInfo) (string, interface{}, error) {
-	// Check if the command is present
-	if len(args) == 0 {
-		return "", nil, fmt.Errorf("no command specified")
-	}
-
 	// Find the command
 	found_index := -1
 
@@ -190,8 +185,8 @@ func parse_console_flags(args []string, flags []ConsoleFlagInfo) (map[string]int
 	results := make(map[string]interface{})
 
 	// Check if enough arguments are present
-	var min int = 1
-	var max int = 1
+	var min int = 0
+	var max int = 0
 
 	for _, f := range flags {
 		if f.Required {
