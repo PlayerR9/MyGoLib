@@ -1,4 +1,4 @@
-// git tag v0.1.19
+// git tag v0.1.20
 
 package CMLine
 
@@ -91,7 +91,7 @@ type ConsoleFlagInfo struct {
 	Required bool
 
 	// A function that is called when the flag is parsed.
-	Callback func(args ...string) (interface{}, error)
+	Callback func(...string) (interface{}, error)
 }
 
 // ToString returns a string representation of the ConsoleFlagInfo struct.
@@ -150,38 +150,72 @@ func HelpToString(executable_name string, commands []ConsoleCommandInfo) (str st
 	return
 }
 
-// ParseConsoleFlags parses the flags of a command.
+// ParseCommandLine parses the command line arguments.
+//
+// Parameters:
+//   - args: The command line arguments.
+//   - commands: The commands to parse.
+//
+// Returns:
+//   - string: The name of the command.
+//   - interface{}: The solution of the command.
+//   - error: An error if one occurred.
+func ParseCommandLine(args []string, commands []ConsoleCommandInfo) (string, interface{}, error) {
+	// Check if the command is present
+	if len(args) == 0 {
+		return "", nil, fmt.Errorf("no command specified")
+	}
+
+	// Find the command
+	found_index := -1
+
+	for i, command := range commands {
+		if command.Name == args[0] {
+			if found_index != -1 {
+				return "", nil, fmt.Errorf("command %s and %s share the same name", commands[found_index].Name, command.Name)
+			}
+
+			found_index = i
+		}
+	}
+
+	if found_index == -1 {
+		return "", nil, fmt.Errorf("command %s not found", args[0])
+	}
+
+	// Parse flags
+	command := commands[found_index]
+
+	flags, err := parse_console_flags(args[1:], command.Flags)
+	if err != nil {
+		return "", nil, fmt.Errorf("could not parse flags of command %s: %v", command.Name, err)
+	}
+
+	solution, err := command.Callback(flags)
+	if err != nil {
+		return "", nil, fmt.Errorf("could not execute command %s: %v", command.Name, err)
+	}
+
+	return command.Name, solution, nil
+}
+
+// parse_console_flags parses the flags of a command.
 //
 // Parameters:
 //   - args: The arguments of the command.
 //   - flags: The flags of the command.
 //
 // Returns:
-//   - string: The name of the command.
 //   - map[string]interface{}: A map of the flags and their values.
 //   - error: An error if one occurred.
-func ParseConsoleFlags(args []string, flags map[string][]ConsoleFlagInfo) (string, map[string]interface{}, error) {
-	// Check if the command is present
-	if len(args) == 0 {
-		return "", nil, fmt.Errorf("no command specified")
-	}
-
-	command := args[0]
-
-	if _, ok := flags[command]; !ok {
-		return "", nil, fmt.Errorf("command %s not found", command)
-	}
-
-	// Parse flags
-	flas_set := flags[command]
-
+func parse_console_flags(args []string, flags []ConsoleFlagInfo) (map[string]interface{}, error) {
 	results := make(map[string]interface{})
 
 	// Check if enough arguments are present
 	var min int = 1
 	var max int = 1
 
-	for _, f := range flas_set {
+	for _, f := range flags {
 		if f.Required {
 			min += len(f.Args) + 1
 		}
@@ -190,29 +224,29 @@ func ParseConsoleFlags(args []string, flags map[string][]ConsoleFlagInfo) (strin
 	}
 
 	if len(args) < min {
-		return "", nil, fmt.Errorf("not enough arguments for command %s; expected at least %d, got %d", command, min, len(args))
+		return nil, fmt.Errorf("not enough arguments; expected at least %d, got %d", min, len(args))
 	} else if len(args) >= max {
-		return "", nil, fmt.Errorf("too many arguments for command %s; expected at most %d, got %d", command, max, len(args))
+		return nil, fmt.Errorf("too many arguments; expected at most %d, got %d", max, len(args))
 	}
 
 	// Parse flags
 	arg_index := 1
 
-	for _, f := range flas_set {
+	for _, f := range flags {
 		if arg_index >= len(args) {
 			break
 		}
 
 		if f.Name != args[arg_index] {
 			if f.Required {
-				return "", nil, fmt.Errorf("required flag %s not present for command %s", f.Name, command)
+				return nil, fmt.Errorf("required flag %s not present", f.Name)
 			}
 
 			continue
 		}
 
 		if len(f.Args)+arg_index >= len(args) {
-			return "", nil, fmt.Errorf("flag %s present but not enough arguments specified for command %s", f.Name, command)
+			return nil, fmt.Errorf("flag %s present but not enough arguments specified", f.Name)
 		}
 
 		arg_index++
@@ -226,7 +260,7 @@ func ParseConsoleFlags(args []string, flags map[string][]ConsoleFlagInfo) (strin
 		// Call callback function for flag
 		inf_tmp, err := f.Callback(args_tmp...)
 		if err != nil {
-			return "", nil, fmt.Errorf("invalid argument for flag %s of command %s: %v", f.Name, command, err)
+			return nil, fmt.Errorf("could not parse flag %s: %v", f.Name, err)
 		}
 
 		// Set result
@@ -235,5 +269,5 @@ func ParseConsoleFlags(args []string, flags map[string][]ConsoleFlagInfo) (strin
 		arg_index += len(f.Args)
 	}
 
-	return command, results, nil
+	return results, nil
 }
