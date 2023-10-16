@@ -1,4 +1,4 @@
-// git tag v0.1.17
+// git tag v0.1.18
 
 package General
 
@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 )
 
 // GLOBAL VARIABLES
@@ -42,51 +43,71 @@ type ConsoleFlagInfo struct {
 	Callback func(args ...string) (interface{}, error)
 }
 
-func (cfi ConsoleFlagInfo) ToString() string {
-	str := ""
+// ToString returns a string representation of the ConsoleFlagInfo struct.
+//
+// Returns:
+//   - string: A string representation of the ConsoleFlagInfo struct.
+func (cfi ConsoleFlagInfo) ToString(indent_level int) (str string) {
+	var indentation string
 
-	str += "Name: " + cfi.Name + "\n"
-	str += "Args:"
-
-	for _, arg := range cfi.Args {
-		str += " " + arg
+	for i := 0; i < indent_level; i++ {
+		indentation += "\t"
 	}
 
-	str += "\n"
+	str += fmt.Sprintf("%sName: %s\n%sArgs:", indentation, cfi.Name, indentation)
 
-	str += "Description: " + cfi.Description + "\n"
-
-	str += "Required: "
-
-	if cfi.Required {
-		str += "Yes"
+	if len(cfi.Args) == 0 {
+		str += " None"
 	} else {
-		str += "No"
+		for _, arg := range cfi.Args {
+			str += " <" + arg + ">"
+		}
 	}
 
-	return str
+	str += fmt.Sprintf("\n%sDescription: %s", indentation, cfi.Description)
+
+	if len(cfi.Args) != 0 {
+		str += fmt.Sprintf("\n%sRequired: ", indentation)
+
+		if cfi.Required {
+			str += "Yes"
+		} else {
+			str += "No"
+		}
+	}
+
+	return
 }
 
-func UsageToString(executable_name string, flags []ConsoleFlagInfo) string {
-	str := ""
+// UsageToString returns a string representation of the usage of a command.
+//
+// Parameters:
+//   - executable_name: The name of the executable.
+//   - command: The name of the command.
+//   - flags: The flags of the command.
+//
+// Returns:
+//   - string: A string representation of the usage of a command.
+func UsageToString(executable_name, command string, flags []ConsoleFlagInfo, indent_level int) (str string) {
+	var indentation string
 
-	str += "Usage: " + executable_name
+	for i := 0; i < indent_level; i++ {
+		indentation += "\t"
+	}
+
+	str += fmt.Sprintf("%sUsage: %s %s", indentation, executable_name, command)
 
 	for _, flag := range flags {
-		str += " "
-
 		if !flag.Required {
-			str += "["
+			str += " ["
+		} else {
+			str += " "
 		}
 
 		str += flag.Name
 
-		for i, arg := range flag.Args {
-			if i != 0 && flag.Required {
-				str += " "
-			}
-
-			str += "<" + arg + ">"
+		for _, arg := range flag.Args {
+			str += fmt.Sprintf(" <%s>", arg)
 		}
 
 		if !flag.Required {
@@ -97,28 +118,67 @@ func UsageToString(executable_name string, flags []ConsoleFlagInfo) string {
 	return str
 }
 
-func HelpToString(executable_name string, flags []ConsoleFlagInfo) string {
-	str := UsageToString(executable_name, flags) + "\n\n" + "Flags:\n"
+// HelpToString returns a string representation of the help of a command.
+//
+// Parameters:
+//   - executable_name: The name of the executable.
+//   - flags: The flags of the command.
+//
+// Returns:
+//   - string: A string representation of the help of a command.
+func HelpToString(executable_name string, flags map[string][]ConsoleFlagInfo) (str string) {
+	for command, flag_set := range flags {
+		str += UsageToString(executable_name, command, flag_set, 0)
 
-	for i, flag := range flags {
-		if i != 0 {
+		if len(flag_set) == 0 {
 			str += "\n\n"
+			continue
 		}
 
-		str += flag.ToString()
+		str += fmt.Sprintf("\nFlags:\n%s", flag_set[0].ToString(1))
+
+		for _, flag := range flag_set[1:] {
+			str += fmt.Sprintf("\n%s", flag.ToString(1))
+		}
+
+		str += "\n\n"
 	}
 
-	return str
+	return strings.TrimSuffix(str, "\n\n")
 }
 
-func ParseConsoleFlags(args []string, flags []ConsoleFlagInfo) (map[string]interface{}, error) {
+// ParseConsoleFlags parses the flags of a command.
+//
+// Parameters:
+//   - args: The arguments of the command.
+//   - flags: The flags of the command.
+//
+// Returns:
+//   - string: The name of the command.
+//   - map[string]interface{}: A map of the flags and their values.
+//   - error: An error if one occurred.
+func ParseConsoleFlags(args []string, flags map[string][]ConsoleFlagInfo) (string, map[string]interface{}, error) {
+	// Check if the command is present
+	if len(args) == 0 {
+		return "", nil, fmt.Errorf("no command specified")
+	}
+
+	command := args[0]
+
+	if _, ok := flags[command]; !ok {
+		return "", nil, fmt.Errorf("command %s not found", command)
+	}
+
+	// Parse flags
+	flas_set := flags[command]
+
 	results := make(map[string]interface{})
 
 	// Check if enough arguments are present
 	var min int = 1
 	var max int = 1
 
-	for _, f := range flags {
+	for _, f := range flas_set {
 		if f.Required {
 			min += len(f.Args) + 1
 		}
@@ -127,29 +187,29 @@ func ParseConsoleFlags(args []string, flags []ConsoleFlagInfo) (map[string]inter
 	}
 
 	if len(args) < min {
-		return nil, fmt.Errorf("not enough arguments; expected at least %d, got %d", min, len(args))
+		return "", nil, fmt.Errorf("not enough arguments for command %s; expected at least %d, got %d", command, min, len(args))
 	} else if len(args) >= max {
-		return nil, fmt.Errorf("too many arguments; expected at most %d, got %d", max, len(args))
+		return "", nil, fmt.Errorf("too many arguments for command %s; expected at most %d, got %d", command, max, len(args))
 	}
 
 	// Parse flags
 	arg_index := 1
 
-	for _, f := range flags {
+	for _, f := range flas_set {
 		if arg_index >= len(args) {
 			break
 		}
 
 		if f.Name != args[arg_index] {
 			if f.Required {
-				return nil, fmt.Errorf("required flag %s not present", f.Name)
+				return "", nil, fmt.Errorf("required flag %s not present for command %s", f.Name, command)
 			}
 
 			continue
 		}
 
 		if len(f.Args)+arg_index >= len(args) {
-			return nil, fmt.Errorf("flag %s present but not enough arguments specified", f.Name)
+			return "", nil, fmt.Errorf("flag %s present but not enough arguments specified for command %s", f.Name, command)
 		}
 
 		arg_index++
@@ -163,7 +223,7 @@ func ParseConsoleFlags(args []string, flags []ConsoleFlagInfo) (map[string]inter
 		// Call callback function for flag
 		inf_tmp, err := f.Callback(args_tmp...)
 		if err != nil {
-			return nil, fmt.Errorf("invalid argument for flag %s: %s", f.Name, err)
+			return "", nil, fmt.Errorf("invalid argument for flag %s of command %s: %v", f.Name, command, err)
 		}
 
 		// Set result
@@ -172,7 +232,7 @@ func ParseConsoleFlags(args []string, flags []ConsoleFlagInfo) (map[string]inter
 		arg_index += len(f.Args)
 	}
 
-	return results, nil
+	return command, results, nil
 }
 
 // PressEnterToContinue prints "Press enter to continue..." to the console and waits for the user to press enter.
