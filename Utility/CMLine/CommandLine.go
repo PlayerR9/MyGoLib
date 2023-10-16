@@ -128,28 +128,6 @@ func (cfi ConsoleFlagInfo) ToString(indent_level int) (str string) {
 	return
 }
 
-// HelpToString returns a string representation of the help of a command.
-//
-// Parameters:
-//   - executable_name: The name of the executable.
-//   - flags: The flags of the command.
-//
-// Returns:
-//   - string: A string representation of the help of a command.
-func HelpToString(executable_name string, commands []ConsoleCommandInfo) (str string) {
-	if len(commands) == 0 {
-		panic("no commands specified")
-	}
-
-	str += fmt.Sprintf("** HELP PAGE OF %s **\n\n", executable_name)
-
-	for _, command := range commands {
-		str += fmt.Sprintf("\n%s\n", command.ToString(executable_name))
-	}
-
-	return
-}
-
 // ParseCommandLine parses the command line arguments.
 //
 // Parameters:
@@ -170,7 +148,7 @@ func ParseCommandLine(args []string, commands []ConsoleCommandInfo) (string, int
 	found_index := -1
 
 	for i, command := range commands {
-		if command.Name == args[0] {
+		if command.Name == args[1] {
 			if found_index != -1 {
 				return "", nil, fmt.Errorf("command %s and %s share the same name", commands[found_index].Name, command.Name)
 			}
@@ -180,13 +158,13 @@ func ParseCommandLine(args []string, commands []ConsoleCommandInfo) (string, int
 	}
 
 	if found_index == -1 {
-		return "", nil, fmt.Errorf("command %s not found", args[0])
+		return "", nil, fmt.Errorf("command %s not found", args[1])
 	}
 
 	// Parse flags
 	command := commands[found_index]
 
-	flags, err := parse_console_flags(args[1:], command.Flags)
+	flags, err := parse_console_flags(args[2:], command.Flags)
 	if err != nil {
 		return "", nil, fmt.Errorf("could not parse flags of command %s: %v", command.Name, err)
 	}
