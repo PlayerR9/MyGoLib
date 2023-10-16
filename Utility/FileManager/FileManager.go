@@ -1,4 +1,4 @@
-// git tag v0.1.20
+// git tag v0.1.22
 
 package FileManager
 
@@ -196,25 +196,25 @@ func GetAllFileNamesInDirectory(path string) (map[string]string, error) {
 	return fileFound, nil
 }
 
-// DeleteFilesEndingIn deletes all the files in the given directory that end in the given extensions. WARNING: This function will permanently delete the files.
-// It just removes files in the given directory, not subdirectories.
+// GetFilesEndingIn returns a slice of all the file names in the given directory that end in the given extensions. The file extension includes the dot.
+// It just gets files in the given directory, not subdirectories.
 //
 // Parameters:
 //   - path: The path to the directory to search.
-//   - extensions: The extensions of the files to delete.
+//   - extensions: The extensions of the files to get.
 //
 // Returns:
-//   - int: The number of files deleted.
+//   - []string: A slice of all the file names in the given directory that end in the given extensions.
 //   - error: If the directory could not be opened.
-func DeleteFilesEndingIn(path string, extensions ...string) (int, error) {
+func GetFilesEndingIn(path string, extensions ...string) ([]string, error) {
 	// Open the directory
 	contents, err := os.ReadDir(path)
 	if err != nil {
-		return 0, fmt.Errorf("could not read directory: %v", err)
+		return nil, fmt.Errorf("could not read directory: %v", err)
 	}
 
 	// Delete the files
-	delete_count := 0
+	files := make([]string, 0)
 
 	for _, content := range contents {
 		if content.IsDir() {
@@ -222,14 +222,9 @@ func DeleteFilesEndingIn(path string, extensions ...string) (int, error) {
 		}
 
 		if slices.Contains(extensions, filepath.Ext(content.Name())) {
-			err := os.Remove(path + "/" + content.Name())
-			if err != nil {
-				return 0, fmt.Errorf("could not delete file: %v", err)
-			}
-
-			delete_count++
+			files = append(files, path+"/"+content.Name())
 		}
 	}
 
-	return delete_count, nil
+	return files, nil
 }
