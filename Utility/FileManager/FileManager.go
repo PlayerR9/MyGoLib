@@ -1,3 +1,5 @@
+// git tag v0.1.20
+
 package FileManager
 
 import (
@@ -7,6 +9,7 @@ import (
 	"path/filepath"
 
 	sext "github.com/PlayerR9/MyGoLib/Utility/StrExt"
+	"golang.org/x/exp/slices"
 )
 
 // GLOBAL VARIABLES
@@ -193,13 +196,40 @@ func GetAllFileNamesInDirectory(path string) (map[string]string, error) {
 	return fileFound, nil
 }
 
-// DeleteFile deletes the file at the given path. WARNING: This function will permanently delete the file.
+// DeleteFilesEndingIn deletes all the files in the given directory that end in the given extensions. WARNING: This function will permanently delete the files.
+// It just removes files in the given directory, not subdirectories.
 //
 // Parameters:
-//   - path: The path to the file to delete.
+//   - path: The path to the directory to search.
+//   - extensions: The extensions of the files to delete.
 //
 // Returns:
-//   - error: If the file could not be deleted.
-func DeleteDirectory(path string) error {
-	return os.RemoveAll(path)
+//   - int: The number of files deleted.
+//   - error: If the directory could not be opened.
+func DeleteFilesEndingIn(path string, extensions ...string) (int, error) {
+	// Open the directory
+	contents, err := os.ReadDir(path)
+	if err != nil {
+		return 0, fmt.Errorf("could not read directory: %v", err)
+	}
+
+	// Delete the files
+	delete_count := 0
+
+	for _, content := range contents {
+		if content.IsDir() {
+			continue
+		}
+
+		if slices.Contains(extensions, filepath.Ext(content.Name())) {
+			err := os.Remove(path + "/" + content.Name())
+			if err != nil {
+				return 0, fmt.Errorf("could not delete file: %v", err)
+			}
+
+			delete_count++
+		}
+	}
+
+	return delete_count, nil
 }
