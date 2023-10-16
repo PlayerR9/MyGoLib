@@ -1,4 +1,4 @@
-// git tag v0.1.20
+// git tag v0.1.26
 
 package CMLine
 
@@ -203,7 +203,7 @@ func parse_console_flags(args []string, flags []ConsoleFlagInfo) (map[string]int
 	}
 
 	// Parse flags
-	arg_index := 1
+	arg_index := 0
 
 	for _, f := range flags {
 		if arg_index >= len(args) {
