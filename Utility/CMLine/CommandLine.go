@@ -198,7 +198,7 @@ func parse_console_flags(args []string, flags []ConsoleFlagInfo) (map[string]int
 
 	if len(args) < min {
 		return nil, fmt.Errorf("not enough arguments; expected at least %d, got %d", min, len(args))
-	} else if len(args) >= max {
+	} else if len(args) > max {
 		return nil, fmt.Errorf("too many arguments; expected at most %d, got %d", max, len(args))
 	}
 
