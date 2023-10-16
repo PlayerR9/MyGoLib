@@ -148,7 +148,7 @@ func ParseCommandLine(args []string, commands []ConsoleCommandInfo) (string, int
 	found_index := -1
 
 	for i, command := range commands {
-		if command.Name == args[1] {
+		if command.Name == args[0] {
 			if found_index != -1 {
 				return "", nil, fmt.Errorf("command %s and %s share the same name", commands[found_index].Name, command.Name)
 			}
@@ -158,13 +158,13 @@ func ParseCommandLine(args []string, commands []ConsoleCommandInfo) (string, int
 	}
 
 	if found_index == -1 {
-		return "", nil, fmt.Errorf("command %s not found", args[1])
+		return "", nil, fmt.Errorf("command %s not found", args[0])
 	}
 
 	// Parse flags
 	command := commands[found_index]
 
-	flags, err := parse_console_flags(args[2:], command.Flags)
+	flags, err := parse_console_flags(args[1:], command.Flags)
 	if err != nil {
 		return "", nil, fmt.Errorf("could not parse flags of command %s: %v", command.Name, err)
 	}
