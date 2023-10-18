@@ -1,3 +1,5 @@
+// git tag v0.1.22
+
 package FileManager
 
 import (
@@ -7,6 +9,7 @@ import (
 	"path/filepath"
 
 	sext "github.com/PlayerR9/MyGoLib/Utility/StrExt"
+	"golang.org/x/exp/slices"
 )
 
 // GLOBAL VARIABLES
@@ -193,13 +196,35 @@ func GetAllFileNamesInDirectory(path string) (map[string]string, error) {
 	return fileFound, nil
 }
 
-// DeleteFile deletes the file at the given path. WARNING: This function will permanently delete the file.
+// GetFilesEndingIn returns a slice of all the file names in the given directory that end in the given extensions. The file extension includes the dot.
+// It just gets files in the given directory, not subdirectories.
 //
 // Parameters:
-//   - path: The path to the file to delete.
+//   - path: The path to the directory to search.
+//   - extensions: The extensions of the files to get.
 //
 // Returns:
-//   - error: If the file could not be deleted.
-func DeleteDirectory(path string) error {
-	return os.RemoveAll(path)
+//   - []string: A slice of all the file names in the given directory that end in the given extensions.
+//   - error: If the directory could not be opened.
+func GetFilesEndingIn(path string, extensions ...string) ([]string, error) {
+	// Open the directory
+	contents, err := os.ReadDir(path)
+	if err != nil {
+		return nil, fmt.Errorf("could not read directory: %v", err)
+	}
+
+	// Delete the files
+	files := make([]string, 0)
+
+	for _, content := range contents {
+		if content.IsDir() {
+			continue
+		}
+
+		if slices.Contains(extensions, filepath.Ext(content.Name())) {
+			files = append(files, path+"/"+content.Name())
+		}
+	}
+
+	return files, nil
 }
