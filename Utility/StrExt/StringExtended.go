@@ -82,21 +82,6 @@ func IsWord(str string) bool {
 	return true
 }
 
-// ExtractContent extracts the content between the opening and closing strings, and returns the index of the content and an error if one occurred.
-// The opening and closing characters are not excluded from the indexes. Panics if the opening or closing character is empty.
-//
-// Parameters:
-//   - opening: The opening character.
-//   - closing: The closing character.
-//   - tokens: The tokens to extract from.
-//
-// Returns:
-//   - int: The index of the last character of the content.)
-//   - error: An error if one occurred.
-//
-// Example:
-//   - ExtractContent("(", ")", "(hello)") returns 6, nil; because the content is "hello" and the last character of the content is at index 6.
-
 // FindContentIndexes finds the first occurrence of a block of tokens (defined as 'content') between the opening and closing token so that
 // they match; which means they close each other. Best for extracting content between parentheses, brackets, etc. Panics if the opening or closing tokens are empty.
 //
