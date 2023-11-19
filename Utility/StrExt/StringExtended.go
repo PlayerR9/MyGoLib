@@ -5,18 +5,18 @@ import (
 	"slices"
 )
 
-func FindContentIndexes(openingToken, closingToken string, contentTokens []string) (int, int, error) {
+func FindContentIndexes(openingToken, closingToken string, contentTokens []string) (int, int, bool) {
 	if openingToken == "" {
-		panic("Opening token cannot be empty")
+		panic("Invalid input: Opening token cannot be empty")
 	}
 
 	if closingToken == "" {
-		panic("Closing token cannot be empty")
+		panic("Invalid input: Closing token cannot be empty")
 	}
 
 	startIndex := slices.Index(contentTokens, openingToken)
 	if startIndex == -1 {
-		return 0, 0, fmt.Errorf("No opening token found; expected %s", openingToken)
+		panic("Invalid input: Opening token not found in the content")
 	}
 
 	tokenCounter := 1
@@ -29,15 +29,11 @@ func FindContentIndexes(openingToken, closingToken string, contentTokens []strin
 		}
 
 		if tokenCounter == 0 {
-			return startIndex, startIndex + i + 1, nil
+			return startIndex, startIndex + i + 1, true
 		}
 	}
 
-	if closingToken != "\n" {
-		return 0, 0, fmt.Errorf("No closing token found; expected %s", closingToken)
-	}
-
-	return startIndex, len(contentTokens) - 1, nil
+	return startIndex, len(contentTokens) - 1, closingToken == "\n"
 }
 
 func GetOrdinalSuffix(number int) string {
@@ -45,9 +41,14 @@ func GetOrdinalSuffix(number int) string {
 		return fmt.Sprintf("%dth", number)
 	}
 
-	lastDigit := number % 10
+	lastTwoDigits := number % 100
+	lastDigit := lastTwoDigits % 10
 
-	if (number%100 >= 11 && number%100 <= 13) || lastDigit > 3 || lastDigit == 0 {
+	if lastTwoDigits >= 11 && lastTwoDigits <= 13 {
+		return fmt.Sprintf("%dth", number)
+	}
+
+	if lastDigit == 0 || lastDigit > 3 {
 		return fmt.Sprintf("%dth", number)
 	}
 

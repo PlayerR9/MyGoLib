@@ -54,22 +54,24 @@ func PrimeFactorization(inputNumber int) map[int]int {
 	return primeFactors
 }
 
-func CalculateGreatestCommonDivisor(firstNumber, secondNumber int) int {
-	if firstNumber == 0 {
-		return secondNumber
+func GreatestCommonDivisor(a, b int) int {
+	// If one of the numbers is 0, return the other number
+	if a == 0 {
+		return b
+	}
+	if b == 0 {
+		return a
 	}
 
-	if secondNumber == 0 {
-		return firstNumber
+	// Ensure that 'a' is always the larger number
+	if a < b {
+		a, b = b, a
 	}
 
-	if firstNumber < secondNumber {
-		firstNumber, secondNumber = secondNumber, firstNumber
+	// Use Euclidean algorithm to find GCD
+	for b != 0 {
+		a, b = b, a%b
 	}
 
-	for secondNumber != 0 {
-		firstNumber, secondNumber = secondNumber, firstNumber%secondNumber
-	}
-
-	return firstNumber
+	return a
 }

@@ -88,6 +88,7 @@ func (cfi ConsoleFlagInfo) ToString(indent_level int) (str string) {
 
 	return
 }
+
 func ParseCommandLine(args []string, commands []ConsoleCommandInfo) (string, interface{}, error) {
 	found_index := -1
 
@@ -118,6 +119,7 @@ func ParseCommandLine(args []string, commands []ConsoleCommandInfo) (string, int
 
 	return command.Name, solution, nil
 }
+
 func parse_console_flags(args []string, flags []ConsoleFlagInfo) (map[string]interface{}, error) {
 	results := make(map[string]interface{})
 	var min int = 0
