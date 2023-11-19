@@ -3,228 +3,98 @@
 package FileManager
 
 import (
-	"bufio"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
-	sext "github.com/PlayerR9/MyGoLib/Utility/StrExt"
 	"golang.org/x/exp/slices"
 )
 
-// GLOBAL VARIABLES
-var (
-	// DebugMode is a boolean that is used to enable or disable debug mode. When debug mode is enabled, the package will print debug messages.
-	// **Note:** Debug mode is disabled by default.
-	DebugMode bool = false
-
-	// debugger *log.Logger = log.New(os.Stdout, "[FileManager] ", log.LstdFlags) // Debugger
-)
-
-// ReadWholeFile reads a file and returns a slice of strings, each string representing a line in the file.
-//
-// Parameters:
-//   - path: The path to the file to read.
-//
-// Returns:
-//   - []string: A slice of strings, each string representing a line in the file.
-//   - error: If the file could not be opened, or if there was an error reading the file.
-func ReadWholeFile(path string) ([]string, error) {
-	// Open the file
-	f, err := os.Open(path)
+func ReadWholeFile(filePath string) ([]string, error) {
+	fileContent, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
 
-	// Initialize variables
-	lines := make([]string, 0)
-	scanner := bufio.NewScanner(f)
-
-	// Read the file
-	for scanner.Scan() {
-		lines = append(lines, scanner.Text()) // Add the line to the slice of lines
-	}
-
-	return lines, scanner.Err()
+	return strings.Split(string(fileContent), "\n"), nil
 }
 
-// FileExists checks if a file exists at the given path.
-//
-// Parameters:
-//   - path: The path to the file to check.
-//
-// Returns:
-//   - bool: True if the file exists, false if it does not.
-//   - error: If there was an error checking if the file exists.
-func FileExists(path string) (bool, error) {
-	_, err := os.Stat(path) // Get the file info
-
-	// Check if the file exists
-	if err == nil {
+func FileExists(filePath string) (bool, error) {
+	_, fileStatError := os.Stat(filePath)
+	if fileStatError == nil {
 		return true, nil
-	} else if os.IsNotExist(err) {
+	}
+	if os.IsNotExist(fileStatError) {
 		return false, nil
-	} else {
-		return false, err
 	}
+	return false, fileStatError
 }
 
-// WriteToFile writes the given content to the given file. If the file does not exist, it will be created. If the file does exist, it will be overwritten.
-//
-// Parameters:
-//   - file_path: The path to the file to write to.
-//   - content: The content to write to the file.
-//
-// Returns:
-//   - Error: If the file could not be created or written to.
-//
-// Information:
-//   - Each string in the content slice will be written to the file consecutively. To write a new line, add a newline character to the end of the string.
-func WriteToFile(file_path string, content ...string) error {
-	// Create the file
-	file, err := os.Create(file_path)
-	if err != nil {
-		return fmt.Errorf("could not create file: %v", err)
+func WriteToFile(filePath string, content ...string) error {
+	writeError := os.WriteFile(filePath, []byte(strings.Join(content, "\n")), 0644)
+	if writeError != nil {
+		return fmt.Errorf("could not write to file: %v", writeError)
+	}
+	return nil
+}
+
+func CreateEmptyFile(filePath string) error {
+	_, createError := os.Create(filePath)
+	if createError != nil {
+		return fmt.Errorf("could not create file: %v", createError)
+	}
+	return nil
+}
+
+func AppendToFile(filePath string, content ...string) error {
+	file, openError := os.OpenFile(filePath, os.O_APPEND|os.O_WRONLY, 0644)
+	if openError != nil {
+		return fmt.Errorf("could not open file: %v", openError)
 	}
 	defer file.Close()
 
-	// Write to the file
-	for i, line := range content {
-		_, err := file.WriteString(line)
-		if err != nil {
-			// Could not write to file, return error.
-			return fmt.Errorf("could not write %s element of content to file: %v", sext.PrintOrdinalNumber(i+1), err)
-		}
+	_, writeError := file.WriteString(strings.Join(content, "\n"))
+	if writeError != nil {
+		return fmt.Errorf("could not write to file: %v", writeError)
 	}
 
 	return nil
 }
 
-// CreateEmptyFile creates an empty file at the given path. If the file already exists, it will be overwritten.
-//
-// Parameters:
-//   - file_path: The path to the file to create.
-//
-// Returns:
-//   - Error: If the file could not be created.
-func CreateEmptyFile(file_path string) error {
-	// Create the file
-	file, err := os.Create(file_path)
-	if err != nil {
-		return fmt.Errorf("could not create file: %v", err)
-	}
-	defer file.Close()
+func GetAllFileNamesInDirectory(directoryPath string) (map[string]string, error) {
+	fileExtensionMap := make(map[string]string)
 
-	return nil
-}
-
-// AppendToFile appends the given content to the given file. If the file does not exist, it will give an error.
-//
-// Parameters:
-//   - file_path: The path to the file to append to.
-//   - content: The content to append to the file.
-//
-// Returns:
-//   - Error: If the file could not be created or written to.
-//
-// Information:
-//   - Each string in the content slice will be written to the file consecutively. To write a new line, add a newline character to the end of the string.
-func AppendToFile(file_path string, content ...string) error {
-	// Open the file
-	file, err := os.OpenFile(file_path, os.O_APPEND|os.O_WRONLY, 0644)
-	if err != nil {
-		return fmt.Errorf("could not open file: %v", err)
-	}
-	defer file.Close()
-
-	// Write to the file
-	for i, line := range content {
-		_, err := file.WriteString(line)
+	walkError := filepath.Walk(directoryPath, func(currentPath string, info os.FileInfo, err error) error {
 		if err != nil {
-			// Could not write to file, return error.
-			return fmt.Errorf("could not write %s element of content to file: %v", sext.PrintOrdinalNumber(i+1), err)
+			return err
 		}
+		if !info.IsDir() {
+			fileExtensionMap[currentPath] = filepath.Ext(info.Name())
+		}
+		return nil
+	})
+
+	if walkError != nil {
+		return nil, fmt.Errorf("could not read directory: %v", walkError)
 	}
 
-	return nil
+	return fileExtensionMap, nil
 }
 
-// GetAllFileNamesInDirectory returns a map of all the file names in the given directory. The key is the file name, and the value is the file extension.
-// The file extension includes the dot.
-//
-// Parameters:
-//   - path: The path to the directory to search.
-//
-// Returns:
-//   - map[string]string: A map of all the file names in the given directory. The key is the file name, and the value is the file extension.
-//   - error: If the directory could not be opened.
-//
-// Information:
-//   - If path is not a directory but a file, it will return a map with one element, the file name and extension.
-//   - If path is not a directory or a file, it will return an error.
-func GetAllFileNamesInDirectory(path string) (map[string]string, error) {
-	pathLeftQueue := []string{path}
-	fileFound := make(map[string]string)
+func GetFilesEndingIn(directoryPath string, extensions ...string) ([]string, error) {
+	matchingFiles := make([]string, 0)
 
-	for i := 0; i < len(pathLeftQueue); i++ {
-		// Resize the pathLeftQueue slice
-		if i > len(pathLeftQueue)/2 {
-			pathLeftQueue = pathLeftQueue[i:]
-			i = 0
-		}
+	entries, readError := os.ReadDir(directoryPath)
+	if readError != nil {
+		return nil, fmt.Errorf("could not read directory: %v", readError)
+	}
 
-		// Pop the first element of the pathLeftQueue slice
-		currentPath := pathLeftQueue[i]
-
-		// Open the directory
-		dirs, err := os.ReadDir(currentPath)
-		if err != nil {
-			return nil, fmt.Errorf("could not read directory: %v", err)
-		}
-
-		// Get the file names
-		for _, dir := range dirs {
-			if dir.IsDir() {
-				pathLeftQueue = append(pathLeftQueue, currentPath+"/"+dir.Name())
-			} else {
-				fileFound[currentPath+"/"+dir.Name()] = filepath.Ext(dir.Name())
-			}
+	for _, entry := range entries {
+		if !entry.IsDir() && slices.Contains(extensions, filepath.Ext(entry.Name())) {
+			matchingFiles = append(matchingFiles, filepath.Join(directoryPath, entry.Name()))
 		}
 	}
 
-	return fileFound, nil
-}
-
-// GetFilesEndingIn returns a slice of all the file names in the given directory that end in the given extensions. The file extension includes the dot.
-// It just gets files in the given directory, not subdirectories.
-//
-// Parameters:
-//   - path: The path to the directory to search.
-//   - extensions: The extensions of the files to get.
-//
-// Returns:
-//   - []string: A slice of all the file names in the given directory that end in the given extensions.
-//   - error: If the directory could not be opened.
-func GetFilesEndingIn(path string, extensions ...string) ([]string, error) {
-	// Open the directory
-	contents, err := os.ReadDir(path)
-	if err != nil {
-		return nil, fmt.Errorf("could not read directory: %v", err)
-	}
-
-	// Delete the files
-	files := make([]string, 0)
-
-	for _, content := range contents {
-		if content.IsDir() {
-			continue
-		}
-
-		if slices.Contains(extensions, filepath.Ext(content.Name())) {
-			files = append(files, path+"/"+content.Name())
-		}
-	}
-
-	return files, nil
+	return matchingFiles, nil
 }

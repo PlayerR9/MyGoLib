@@ -6,31 +6,13 @@ import (
 	"fmt"
 )
 
-// ConsoleCommandInfo is a struct that contains information about a console command.
-//
-// Fields:
-//   - Name: The name of the command.
-//   - Description: The description of the command.
-//   - Flags: The flags of the command.
-//   - Callback: A function that is called when the command is parsed.
 type ConsoleCommandInfo struct {
-	// The name of the command.
-	Name string
-
-	// The description of the command.
+	Name        string
 	Description string
-
-	// The flags of the command.
-	Flags []ConsoleFlagInfo
-
-	// A function that is called when the command is parsed.
-	Callback func(args map[string]interface{}) (interface{}, error)
+	Flags       []ConsoleFlagInfo
+	Callback    func(args map[string]interface{}) (interface{}, error)
 }
 
-// ToString returns a string representation of the ConsoleCommandInfo struct.
-//
-// Returns:
-//   - string: A string representation of the ConsoleCommandInfo struct.
 func (cci ConsoleCommandInfo) ToString(executable_name string) (str string) {
 	str += fmt.Sprintf("Command: %s\nDescription:\n\t%s\n\nUsage: %s %s", cci.Name, cci.Description, executable_name, cci.Name)
 
@@ -69,35 +51,14 @@ func (cci ConsoleCommandInfo) ToString(executable_name string) (str string) {
 	return
 }
 
-// ConsoleFlagInfo is a struct that contains information about a console flag.
-//
-// Fields:
-//   - Name: The name of the flag.
-//   - Args: The argument name of the flag.
-//   - Description: The description of the flag.
-//   - Required: Whether or not the flag is required.
-//   - Callback: A function that is called when the flag is parsed.
 type ConsoleFlagInfo struct {
-	// The name of the flag.
-	Name string
-
-	// The argument name of the flag.
-	Args []string
-
-	// The description of the flag.
+	Name        string
+	Args        []string
 	Description string
-
-	// Whether or not the flag is required.
-	Required bool
-
-	// A function that is called when the flag is parsed.
-	Callback func(...string) (interface{}, error)
+	Required    bool
+	Callback    func(...string) (interface{}, error)
 }
 
-// ToString returns a string representation of the ConsoleFlagInfo struct.
-//
-// Returns:
-//   - string: A string representation of the ConsoleFlagInfo struct.
 func (cfi ConsoleFlagInfo) ToString(indent_level int) (str string) {
 	var indentation string
 
@@ -127,19 +88,7 @@ func (cfi ConsoleFlagInfo) ToString(indent_level int) (str string) {
 
 	return
 }
-
-// ParseCommandLine parses the command line arguments.
-//
-// Parameters:
-//   - args: The command line arguments.
-//   - commands: The commands to parse.
-//
-// Returns:
-//   - string: The name of the command.
-//   - interface{}: The solution of the command.
-//   - error: An error if one occurred.
 func ParseCommandLine(args []string, commands []ConsoleCommandInfo) (string, interface{}, error) {
-	// Find the command
 	found_index := -1
 
 	for i, command := range commands {
@@ -155,8 +104,6 @@ func ParseCommandLine(args []string, commands []ConsoleCommandInfo) (string, int
 	if found_index == -1 {
 		return "", nil, fmt.Errorf("command %s not found", args[0])
 	}
-
-	// Parse flags
 	command := commands[found_index]
 
 	flags, err := parse_console_flags(args[1:], command.Flags)
@@ -171,20 +118,8 @@ func ParseCommandLine(args []string, commands []ConsoleCommandInfo) (string, int
 
 	return command.Name, solution, nil
 }
-
-// parse_console_flags parses the flags of a command.
-//
-// Parameters:
-//   - args: The arguments of the command.
-//   - flags: The flags of the command.
-//
-// Returns:
-//   - map[string]interface{}: A map of the flags and their values.
-//   - error: An error if one occurred.
 func parse_console_flags(args []string, flags []ConsoleFlagInfo) (map[string]interface{}, error) {
 	results := make(map[string]interface{})
-
-	// Check if enough arguments are present
 	var min int = 0
 	var max int = 0
 
@@ -201,8 +136,6 @@ func parse_console_flags(args []string, flags []ConsoleFlagInfo) (map[string]int
 	} else if len(args) > max {
 		return nil, fmt.Errorf("too many arguments; expected at most %d, got %d", max, len(args))
 	}
-
-	// Parse flags
 	arg_index := 0
 
 	for _, f := range flags {
@@ -229,14 +162,10 @@ func parse_console_flags(args []string, flags []ConsoleFlagInfo) (map[string]int
 		for i := 0; i < len(f.Args); i++ {
 			args_tmp = append(args_tmp, args[arg_index+i])
 		}
-
-		// Call callback function for flag
 		inf_tmp, err := f.Callback(args_tmp...)
 		if err != nil {
 			return nil, fmt.Errorf("could not parse flag %s: %v", f.Name, err)
 		}
-
-		// Set result
 		results[f.Name] = inf_tmp
 
 		arg_index += len(f.Args)
