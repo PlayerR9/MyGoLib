@@ -12,13 +12,13 @@ import (
 const (
 	// Stack Implementation Types
 
-	// LinkedStack Implementation
+	// linked_stack with no maximum size Implementation
 	LINKED int = iota
 
-	// LinkedStack with a maximum size Implementation
+	// linked_stack with a maximum size Implementation
 	LINKED_SIZE
 
-	// ArrayStack Implementation
+	// ArrayStack with no maximum size Implementation
 	ARRAY
 
 	// ArrayStack with a maximum size Implementation
