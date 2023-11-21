@@ -3,11 +3,9 @@ package Queue
 import (
 	"fmt"
 	"strings"
-)
 
-type Item interface {
-	Copy() Item
-}
+	gen "github.com/PlayerR9/MyGoLib/Utility/General"
+)
 
 type ErrEmptyQueue struct{}
 
@@ -26,28 +24,29 @@ var (
 	QueueSep  string = " | "
 )
 
-type node[T Item] struct {
+type node[T any] struct {
 	value T
 	next  *node[T]
 }
 
-type Queue[T Item] interface {
+type Queue[T any] interface {
 	Enqueue(value T) Queue[T]
 	Dequeue() (T, Queue[T])
 	Peek() T
 	IsEmpty() bool
 	Size() int
 	ToSlice() []T
-	Copy() Queue[T]
+	DeepCopy() Queue[T]
+	Clear() Queue[T]
 }
 
-type LinkedQueue[T Item] struct {
+type LinkedQueue[T any] struct {
 	front *node[T]
 	back  *node[T]
 	size  int
 }
 
-func NewLinkedQueue[T Item](elements ...T) (queue LinkedQueue[T]) {
+func NewLinkedQueue[T any](elements ...T) (queue LinkedQueue[T]) {
 	for _, element := range elements {
 		queue = queue.Enqueue(element).(LinkedQueue[T])
 	}
@@ -58,7 +57,7 @@ func NewLinkedQueue[T Item](elements ...T) (queue LinkedQueue[T]) {
 func (queue LinkedQueue[T]) Enqueue(value T) Queue[T] {
 	var node node[T]
 
-	node.value = value.Copy().(T)
+	node.value = gen.DeepCopy(value).(T)
 
 	if queue.back == nil {
 		queue.front = &node
@@ -87,7 +86,7 @@ func (queue LinkedQueue[T]) Dequeue() (T, Queue[T]) {
 
 	queue.size--
 
-	return value.Copy().(T), queue
+	return value, queue
 }
 
 func (queue LinkedQueue[T]) Peek() T {
@@ -95,7 +94,7 @@ func (queue LinkedQueue[T]) Peek() T {
 		panic(ErrEmptyQueue{})
 	}
 
-	return queue.front.value.Copy().(T)
+	return gen.DeepCopy(queue.front.value).(T)
 }
 
 func (queue LinkedQueue[T]) IsEmpty() bool {
@@ -108,7 +107,7 @@ func (queue LinkedQueue[T]) Size() int {
 
 func (queue LinkedQueue[T]) ToSlice() (slice []T) {
 	for node := queue.front; node != nil; node = node.next {
-		slice = append(slice, node.value.Copy().(T))
+		slice = append(slice, gen.DeepCopy(node.value).(T))
 	}
 
 	return
@@ -132,30 +131,38 @@ func (queue LinkedQueue[T]) String() string {
 	return builder.String()
 }
 
-func (queue LinkedQueue[T]) Copy() (other Queue[T]) {
+func (queue LinkedQueue[T]) DeepCopy() (other Queue[T]) {
 	for node := queue.front; node != nil; node = node.next {
-		other = other.Enqueue(node.value.Copy().(T))
+		other = other.Enqueue(gen.DeepCopy(node.value).(T))
 	}
 
 	return
 }
 
-type ArrayQueue[T Item] struct {
+func (queue LinkedQueue[T]) Clear() Queue[T] {
+	return LinkedQueue[T]{
+		front: nil,
+		back:  nil,
+		size:  0,
+	}
+}
+
+type ArrayQueue[T any] struct {
 	elements   []T
 	hasMaxSize bool
 }
 
-func NewArrayQueue[T Item](elements ...T) ArrayQueue[T] {
+func NewArrayQueue[T any](elements ...T) ArrayQueue[T] {
 	other := make([]T, len(elements))
 
 	for i, element := range elements {
-		other[i] = element.Copy().(T)
+		other[i] = gen.DeepCopy(element).(T)
 	}
 
 	return ArrayQueue[T]{other, false}
 }
 
-func NewArrayQueueWithMaxSize[T Item](maxSize int, elements ...T) ArrayQueue[T] {
+func NewArrayQueueWithMaxSize[T any](maxSize int, elements ...T) ArrayQueue[T] {
 	if maxSize < 0 {
 		panic(fmt.Errorf("maxSize cannot be negative"))
 	}
@@ -167,7 +174,7 @@ func NewArrayQueueWithMaxSize[T Item](maxSize int, elements ...T) ArrayQueue[T] 
 	others := make([]T, len(elements), maxSize)
 
 	for i, element := range elements {
-		others[i] = element.Copy().(T)
+		others[i] = gen.DeepCopy(element).(T)
 	}
 
 	return ArrayQueue[T]{others, true}
@@ -178,7 +185,7 @@ func (queue ArrayQueue[T]) Enqueue(value T) Queue[T] {
 		panic(ErrFullQueue{})
 	}
 
-	queue.elements = append(queue.elements, value.Copy().(T))
+	queue.elements = append(queue.elements, gen.DeepCopy(value).(T))
 
 	return queue
 }
@@ -191,7 +198,7 @@ func (queue ArrayQueue[T]) Dequeue() (T, Queue[T]) {
 	value := queue.elements[0]
 	queue.elements = queue.elements[1:]
 
-	return value.Copy().(T), queue
+	return value, queue
 }
 
 func (queue ArrayQueue[T]) Peek() T {
@@ -199,7 +206,7 @@ func (queue ArrayQueue[T]) Peek() T {
 		panic(ErrEmptyQueue{})
 	}
 
-	return queue.elements[0].Copy().(T)
+	return gen.DeepCopy(queue.elements[0]).(T)
 }
 
 func (queue ArrayQueue[T]) IsEmpty() bool {
@@ -214,7 +221,7 @@ func (queue ArrayQueue[T]) ToSlice() []T {
 	slice := make([]T, len(queue.elements))
 
 	for i, element := range queue.elements {
-		slice[i] = element.Copy().(T)
+		slice[i] = gen.DeepCopy(element).(T)
 	}
 
 	return slice
@@ -239,7 +246,7 @@ func (queue ArrayQueue[T]) String() string {
 	return builder.String()
 }
 
-func (queue ArrayQueue[T]) Copy() Queue[T] {
+func (queue ArrayQueue[T]) DeepCopy() Queue[T] {
 	obj := ArrayQueue[T]{
 		hasMaxSize: queue.hasMaxSize,
 	}
@@ -251,8 +258,22 @@ func (queue ArrayQueue[T]) Copy() Queue[T] {
 	}
 
 	for _, element := range queue.elements {
-		obj.elements = append(obj.elements, element.Copy().(T))
+		obj.elements = append(obj.elements, gen.DeepCopy(element).(T))
 	}
 
 	return obj
+}
+
+func (queue ArrayQueue[T]) Clear() Queue[T] {
+	other := ArrayQueue[T]{
+		hasMaxSize: queue.hasMaxSize,
+	}
+
+	if queue.hasMaxSize {
+		other.elements = make([]T, 0, cap(queue.elements))
+	} else {
+		other.elements = make([]T, 0)
+	}
+
+	return other
 }

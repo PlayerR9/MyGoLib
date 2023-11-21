@@ -2,11 +2,280 @@ package Stack
 
 import (
 	"fmt"
+	"strings"
+
+	gen "github.com/PlayerR9/MyGoLib/Utility/General"
+	"github.com/markphelps/optional"
+	"golang.org/x/exp/slices"
 )
 
-type Item interface {
-	Copy() Item
+const (
+	// Stack Implementation Types
+
+	// LinkedStack Implementation
+	LINKED int = iota
+
+	// LinkedStack with a maximum size Implementation
+	LINKED_SIZE
+
+	// ArrayStack Implementation
+	ARRAY
+
+	// ArrayStack with a maximum size Implementation
+	ARRAY_SIZE
+)
+
+type Stack[T any] struct {
+	data     any
+	size     int
+	capacity optional.Int
+	methods  *stack_methods[T]
 }
+
+func (stack *Stack[T]) Initialize(values ...T) {
+	stack.size = 0
+	stack.data = stack.methods.new()
+
+	for _, element := range values {
+		stack.methods.push(stack, element)
+	}
+}
+
+func (stack *Stack[T]) Push(value T) {
+	if stack.capacity.Present() && stack.size >= stack.capacity.MustGet() {
+		panic(ErrFullStack{})
+	}
+
+	stack.methods.push(stack, value)
+	stack.size++
+}
+
+func (stack *Stack[T]) Pop() T {
+	if stack.size <= 0 {
+		panic(ErrEmptyStack{})
+	}
+
+	stack.size--
+
+	return stack.methods.pop(stack)
+}
+
+func (stack Stack[T]) Peek() T {
+	if stack.size == 0 {
+		panic(ErrEmptyStack{})
+	}
+
+	return stack.methods.peek(stack)
+}
+
+func (stack Stack[T]) IsEmpty() bool {
+	return stack.size == 0
+}
+
+func (stack Stack[T]) Size() int {
+	return stack.size
+}
+
+func (stack *Stack[T]) ToSlice() []T {
+	slice := make([]T, stack.size)
+
+	stack.methods.to_slice(*stack, slice)
+
+	slices.Reverse[[]T, T](slice)
+
+	return slice
+}
+
+func (stack *Stack[T]) Clear() {
+	stack.size = 0
+	stack.data = stack.methods.new()
+}
+
+func (stack Stack[T]) IsFull() bool {
+	return stack.capacity.Present() && stack.size == stack.capacity.MustGet()
+}
+
+func (stack *Stack[T]) String() string {
+	var str strings.Builder
+
+	if stack.size != 0 {
+		stack.methods.stringer(*stack, &str)
+	}
+
+	str.WriteString(StackHead)
+
+	return str.String()
+}
+
+type stack_methods[T any] struct {
+	new      func() any
+	push     func(any, T)
+	pop      func(any) T
+	peek     func(any) T
+	to_slice func(any, []T)
+	stringer func(any, *strings.Builder)
+}
+
+func NewStack[T any](implementation int, capacity optional.Int) Stack[T] {
+	var stack Stack[T]
+
+	switch implementation {
+	case LINKED, LINKED_SIZE:
+		stack.data = linked_stack[T]{
+			top: nil,
+		}
+
+		stack.size = 0
+
+		if implementation == LINKED_SIZE {
+			if !capacity.Present() {
+				panic("Must specify capacity for a linked stack with a maximum size")
+			}
+
+			if capacity.MustGet() < 0 {
+				panic("Cannot specify a negative capacity for a linked stack")
+			}
+
+			stack.capacity = capacity
+		}
+
+		if capacity.Present() && implementation != LINKED_SIZE {
+			panic("Cannot specify capacity for a linked stack with no maximum size")
+		}
+
+		stack.methods = &stack_methods[T]{
+			new: func() any {
+				return linked_stack[T]{
+					top: nil,
+				}
+			},
+
+			push: func(data any, value T) {
+				new_node := stack_node[T]{
+					value: gen.DeepCopy(value).(T),
+					next:  data.(linked_stack[T]).top,
+				}
+
+				tmp := data.(linked_stack[T])
+				tmp.top = &new_node
+				data = tmp
+			},
+
+			pop: func(data any) T {
+				value := data.(linked_stack[T]).top.value
+
+				tmp := data.(linked_stack[T])
+				tmp.top = tmp.top.next
+				data = tmp
+
+				return value
+			},
+
+			peek: func(data any) T {
+				return gen.DeepCopy(data.(linked_stack[T]).top.value).(T)
+			},
+
+			to_slice: func(data any, slice []T) {
+				i := 0
+
+				for node := data.(linked_stack[T]).top; node != nil; node = node.next {
+					slice[i] = gen.DeepCopy(node.value).(T)
+					i++
+				}
+			},
+
+			stringer: func(data any, str *strings.Builder) {
+				node := data.(linked_stack[T]).top
+
+				str.WriteString(fmt.Sprintf("%v", node.value))
+
+				for node.next != nil {
+					node = node.next
+					str.WriteString(fmt.Sprintf("%v", node.value))
+					str.WriteString(StackSep)
+				}
+			},
+		}
+	case ARRAY, ARRAY_SIZE:
+		stack.data = linked_stack[T]{
+			top: nil,
+		}
+
+		stack.size = 0
+
+		if capacity.Present() {
+			if implementation == ARRAY_SIZE {
+				stack.capacity = capacity
+			} else {
+				panic("Cannot specify capacity for an array stack with no maximum size")
+			}
+		} else if implementation == ARRAY_SIZE {
+			panic("Must specify capacity for an array stack with a maximum size")
+		}
+
+		stack.methods = &stack_methods[T]{
+			new: func() any {
+				return make([]T, 0)
+			},
+
+			push: func(data any, value T) {
+				tmp := data.([]T)
+				tmp = append(tmp, gen.DeepCopy(value).(T))
+				data = tmp
+			},
+
+			pop: func(data any) T {
+				tmp := data.([]T)
+				value := tmp[len(tmp)-1]
+
+				tmp = tmp[:len(tmp)-1]
+				data = tmp
+
+				return value
+			},
+
+			peek: func(data any) T {
+				tmp := data.([]T)
+
+				return gen.DeepCopy(tmp[len(tmp)-1]).(T)
+			},
+
+			to_slice: func(data any, slice []T) {
+				for i, element := range data.([]T) {
+					slice[i] = gen.DeepCopy(element).(T)
+				}
+			},
+
+			stringer: func(data any, str *strings.Builder) {
+				tmp := data.([]T)
+
+				str.WriteString(fmt.Sprintf("%v", tmp[0]))
+
+				for _, element := range tmp[1:] {
+					str.WriteString(fmt.Sprintf("%v", element))
+					str.WriteString(StackSep)
+				}
+			},
+		}
+	default:
+		panic(fmt.Sprintf("Invalid stack implementation type: %d", implementation))
+	}
+
+	return stack
+}
+
+// Stack Implementation Types
+
+type stack_node[T any] struct {
+	value T
+	next  *stack_node[T]
+}
+
+type linked_stack[T any] struct {
+	top *stack_node[T]
+}
+
+// Stack Errors
 
 type ErrEmptyStack struct{}
 
@@ -24,264 +293,3 @@ var (
 	StackHead string = " | →"
 	StackSep  string = " | "
 )
-
-type Stack[T Item] interface {
-	Push(value T) Stack[T]
-	Pop() (T, Stack[T])
-	Peek() T
-	IsEmpty() bool
-	Size() int
-	ToSlice() []T
-	Copy() Stack[T]
-}
-
-type node[T Item] struct {
-	value T
-	next  *node[T]
-}
-
-type LinkedStack[T Item] struct {
-	top  *node[T]
-	size int
-}
-
-func NewLinkedStack[T Item](elements ...T) LinkedStack[T] {
-	stack := LinkedStack[T]{
-		top:  nil,
-		size: 0,
-	}
-
-	for _, element := range elements {
-		stack = stack.Push(element).(LinkedStack[T])
-	}
-
-	return stack
-}
-
-func (stack LinkedStack[T]) Push(value T) Stack[T] {
-	new_node := node[T]{
-		value: value.Copy().(T),
-		next:  stack.top,
-	}
-
-	stack.top = &new_node
-
-	stack.size++
-
-	return stack
-}
-
-func (stack LinkedStack[T]) Pop() (T, Stack[T]) {
-	if stack.top == nil {
-		panic(ErrEmptyStack{})
-	}
-
-	value := stack.top.value
-	stack.top = stack.top.next
-
-	stack.size--
-
-	return value.Copy().(T), stack
-}
-
-func (stack LinkedStack[T]) Peek() T {
-	if stack.top == nil {
-		panic(ErrEmptyStack{})
-	}
-
-	return stack.top.value.Copy().(T)
-}
-
-func (stack LinkedStack[T]) IsEmpty() bool {
-	return stack.top == nil
-}
-
-func (stack LinkedStack[T]) Size() int {
-	return stack.size
-}
-
-func (stack LinkedStack[T]) ToSlice() []T {
-	slice := make([]T, stack.size)
-	i := 0
-
-	for node := stack.top; node != nil; node = node.next {
-		slice[i] = node.value.Copy().(T)
-		i++
-	}
-
-	for i := 0; i < len(slice)/2; i++ {
-		slice[i], slice[len(slice)-i-1] = slice[len(slice)-i-1], slice[i]
-	}
-
-	return slice
-}
-
-func (stack LinkedStack[T]) String() string {
-	if stack.top == nil {
-		return StackHead
-	}
-
-	var str string
-
-	node := stack.top
-
-	str += fmt.Sprintf("%v", node.value)
-
-	for node.next != nil {
-		node = node.next
-		str = fmt.Sprintf("%v%s", node.value, StackSep) + str
-	}
-
-	return fmt.Sprintf("%s%s", str, StackHead)
-}
-
-func (stack LinkedStack[T]) Copy() Stack[T] {
-	new_stack := LinkedStack[T]{
-		top:  nil,
-		size: stack.size,
-	}
-
-	if stack.top == nil {
-		return new_stack
-	}
-
-	new_stack.top = &node[T]{
-		value: stack.top.value.Copy().(T),
-		next:  nil,
-	}
-
-	for n := stack.top.next; n != nil; n = n.next {
-		new_node := node[T]{
-			value: n.value.Copy().(T),
-			next:  nil,
-		}
-
-		last_node := new_stack.top
-
-		for last_node.next != nil {
-			last_node = last_node.next
-		}
-
-		last_node.next = &new_node
-	}
-
-	return new_stack
-}
-
-type ArrayStack[T Item] struct {
-	elements   []T
-	hasMaxSize bool
-}
-
-func NewArrayStack[T Item](elements ...T) ArrayStack[T] {
-	obj := ArrayStack[T]{
-		elements:   make([]T, len(elements)),
-		hasMaxSize: false,
-	}
-
-	for i, element := range elements {
-		obj.elements[i] = element.Copy().(T)
-	}
-
-	return obj
-}
-
-func NewArrayStackWithMaxSize[T Item](max_size int, elements ...T) ArrayStack[T] {
-	obj := ArrayStack[T]{
-		elements:   make([]T, len(elements), max_size),
-		hasMaxSize: true,
-	}
-
-	for i, element := range elements {
-		obj.elements[i] = element.Copy().(T)
-	}
-
-	return obj
-}
-
-func (stack ArrayStack[T]) Push(value T) Stack[T] {
-	if stack.hasMaxSize && len(stack.elements) == cap(stack.elements) {
-		panic(ErrFullStack{})
-	}
-
-	stack.elements = append(stack.elements, value.Copy().(T))
-
-	return stack
-}
-
-func (stack ArrayStack[T]) Pop() (T, Stack[T]) {
-	if len(stack.elements) == 0 {
-		panic(ErrEmptyStack{})
-	}
-
-	value := stack.elements[len(stack.elements)-1]
-
-	stack.elements = stack.elements[:len(stack.elements)-1]
-
-	return value.Copy().(T), stack
-}
-
-func (stack ArrayStack[T]) Peek() T {
-	if len(stack.elements) == 0 {
-		panic(ErrEmptyStack{})
-	}
-
-	return stack.elements[len(stack.elements)-1].Copy().(T)
-}
-
-func (stack ArrayStack[T]) IsEmpty() bool {
-	return len(stack.elements) == 0
-}
-
-func (stack ArrayStack[T]) Size() int {
-	return len(stack.elements)
-}
-
-func (stack ArrayStack[T]) ToSlice() []T {
-	slice := make([]T, len(stack.elements))
-	for i, element := range stack.elements {
-		slice[i] = element.Copy().(T)
-	}
-	for i := 0; i < len(slice)/2; i++ {
-		slice[i], slice[len(slice)-i-1] = slice[len(slice)-i-1], slice[i]
-	}
-
-	return slice
-}
-
-func (stack ArrayStack[T]) String() string {
-	if len(stack.elements) == 0 {
-		return StackHead
-	}
-
-	var str string
-
-	str += fmt.Sprintf("%v", stack.elements[0])
-
-	for _, element := range stack.elements[1:] {
-		str += fmt.Sprintf("%v%s", element, StackSep)
-	}
-
-	return fmt.Sprintf("%s%s", str, StackHead)
-}
-
-func (stack ArrayStack[T]) Copy() Stack[T] {
-	var obj ArrayStack[T]
-
-	if stack.hasMaxSize {
-		obj = ArrayStack[T]{
-			elements:   make([]T, len(stack.elements), cap(stack.elements)),
-			hasMaxSize: true,
-		}
-	} else {
-		obj = ArrayStack[T]{
-			elements:   make([]T, len(stack.elements)),
-			hasMaxSize: false,
-		}
-	}
-	for i, element := range stack.elements {
-		obj.elements[i] = element.Copy().(T)
-	}
-
-	return obj
-}
