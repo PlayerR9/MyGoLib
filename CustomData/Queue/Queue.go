@@ -5,7 +5,270 @@ import (
 	"strings"
 
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
+	"github.com/markphelps/optional"
 )
+
+const (
+	// Queue Implementation Types
+
+	// linked_queue with no maximum size Implementation
+	LINKED int = iota
+
+	// linked_queue with a maximum size Implementation
+	LINKED_SIZE
+
+	// ArrayQueue with no maximum size Implementation
+	ARRAY
+
+	// ArrayQueue with a maximum size Implementation
+	ARRAY_SIZE
+)
+
+type Queue[T any] struct {
+	data     any
+	size     int
+	capacity optional.Int
+	methods  *queue_methods[T]
+}
+
+func (queue *Queue[T]) Initialize(values ...T) {
+	queue.size = 0
+	queue.data = queue.methods.new()
+
+	for _, element := range values {
+		queue.methods.enqueue(queue.data, element)
+	}
+}
+
+func (queue *Queue[T]) Enqueue(value T) {
+	if queue.capacity.Present() && queue.size >= queue.capacity.MustGet() {
+		panic(ErrFullQueue{})
+	}
+
+	queue.methods.enqueue(queue.data, value)
+	queue.size++
+}
+
+func (queue *Queue[T]) Dequeue() T {
+	if queue.size <= 0 {
+		panic(ErrEmptyQueue{})
+	}
+
+	queue.size--
+
+	return queue.methods.dequeue(queue.data)
+}
+
+func (queue Queue[T]) Peek() T {
+	if queue.size == 0 {
+		panic(ErrEmptyQueue{})
+	}
+
+	return queue.methods.peek(queue.data)
+}
+
+func (queue Queue[T]) IsEmpty() bool {
+	return queue.size == 0
+}
+
+func (queue Queue[T]) Size() int {
+	return queue.size
+}
+
+func (queue *Queue[T]) ToSlice() []T {
+	slice := make([]T, queue.size)
+
+	queue.methods.to_slice(queue.data, slice)
+
+	return slice
+}
+
+func (queue *Queue[T]) Clear() {
+	queue.size = 0
+	queue.data = queue.methods.new()
+}
+
+func (queue Queue[T]) IsFull() bool {
+	return queue.capacity.Present() && queue.size == queue.capacity.MustGet()
+}
+
+func (queue *Queue[T]) String() string {
+	var str strings.Builder
+
+	str.WriteString(QueueHead)
+
+	if queue.size != 0 {
+		queue.methods.stringer(queue.data, &str)
+	}
+
+	return str.String()
+}
+
+type queue_methods[T any] struct {
+	new      func() any
+	enqueue  func(any, T)
+	dequeue  func(any) T
+	peek     func(any) T
+	to_slice func(any, []T)
+	stringer func(any, *strings.Builder)
+}
+
+func NewQueue[T any](implementation int, capacity optional.Int) Queue[T] {
+	var queue Queue[T]
+
+	switch implementation {
+	case LINKED, LINKED_SIZE:
+		queue.data = linked_queue[T]{
+			front: nil,
+			back:  nil,
+		}
+
+		queue.size = 0
+
+		if implementation == LINKED_SIZE {
+			if !capacity.Present() {
+				panic("Must specify capacity for a linked queue with a maximum size")
+			}
+
+			if capacity.MustGet() < 0 {
+				panic("Cannot specify a negative capacity for a linked queue")
+			}
+
+			queue.capacity = capacity
+		}
+
+		if capacity.Present() && implementation != LINKED_SIZE {
+			panic("Cannot specify capacity for a linked queue with no maximum size")
+		}
+
+		queue.methods = &queue_methods[T]{
+			new: func() any {
+				return linked_queue[T]{
+					front: nil,
+					back:  nil,
+				}
+			},
+
+			enqueue: func(data any, value T) {
+				new_node := queue_node[T]{
+					value: gen.DeepCopy(value).(T),
+				}
+
+				tmp := data.(linked_queue[T])
+
+				if tmp.back == nil {
+					tmp.front = &new_node
+				} else {
+					tmp.back.next = &new_node
+				}
+
+				tmp.back = &new_node
+
+				data = tmp
+			},
+
+			dequeue: func(data any) T {
+				tmp := data.(linked_queue[T])
+
+				value := tmp.front.value
+
+				tmp.front = tmp.front.next
+
+				if tmp.front == nil {
+					tmp.back = nil
+				}
+
+				data = tmp
+
+				return value
+			},
+
+			peek: func(data any) T {
+				return gen.DeepCopy(data.(linked_queue[T]).front.value).(T)
+			},
+
+			to_slice: func(data any, slice []T) {
+				i := 0
+
+				for queue_node := data.(linked_queue[T]).front; queue_node != nil; queue_node = queue_node.next {
+					slice[i] = gen.DeepCopy(queue_node.value).(T)
+					i++
+				}
+			},
+
+			stringer: func(data any, str *strings.Builder) {
+				tmp := data.(linked_queue[T])
+
+				str.WriteString(fmt.Sprintf("%v", tmp.front.value))
+
+				for queue_node := tmp.front.next; queue_node != nil; queue_node = queue_node.next {
+					str.WriteString(QueueSep)
+					str.WriteString(fmt.Sprintf("%v", queue_node.value))
+				}
+			},
+		}
+	case ARRAY, ARRAY_SIZE:
+		queue.data = make([]T, 0)
+
+		queue.size = 0
+
+		if capacity.Present() {
+			if implementation == ARRAY_SIZE {
+				queue.capacity = capacity
+			} else {
+				panic("Cannot specify capacity for an array queue with no maximum size")
+			}
+		} else if implementation == ARRAY_SIZE {
+			panic("Must specify capacity for an array queue with a maximum size")
+		}
+
+		queue.methods = &queue_methods[T]{
+			new: func() any {
+				return make([]T, 0)
+			},
+
+			enqueue: func(data any, value T) {
+				tmp := data.([]T)
+				tmp = append(tmp, gen.DeepCopy(value).(T))
+				data = tmp
+			},
+
+			dequeue: func(data any) T {
+				tmp := data.([]T)
+				value := tmp[0]
+				data = tmp[1:]
+
+				return value
+			},
+
+			peek: func(data any) T {
+				tmp := data.([]T)
+				return gen.DeepCopy(tmp[0]).(T)
+			},
+
+			to_slice: func(data any, slice []T) {
+				for i, element := range data.([]T) {
+					slice[i] = gen.DeepCopy(element).(T)
+				}
+			},
+
+			stringer: func(data any, str *strings.Builder) {
+				tmp := data.([]T)
+
+				str.WriteString(fmt.Sprintf("%v", tmp[0]))
+
+				for _, element := range tmp[1:] {
+					str.WriteString(QueueSep)
+					str.WriteString(fmt.Sprintf("%v", element))
+				}
+			},
+		}
+	default:
+		panic(fmt.Sprintf("Invalid queue implementation type: %d", implementation))
+	}
+
+	return queue
+}
 
 type ErrEmptyQueue struct{}
 
@@ -24,256 +287,11 @@ var (
 	QueueSep  string = " | "
 )
 
-type node[T any] struct {
+type queue_node[T any] struct {
 	value T
-	next  *node[T]
+	next  *queue_node[T]
 }
 
-type Queue[T any] interface {
-	Enqueue(value T) Queue[T]
-	Dequeue() (T, Queue[T])
-	Peek() T
-	IsEmpty() bool
-	Size() int
-	ToSlice() []T
-	DeepCopy() Queue[T]
-	Clear() Queue[T]
-}
-
-type LinkedQueue[T any] struct {
-	front *node[T]
-	back  *node[T]
-	size  int
-}
-
-func NewLinkedQueue[T any](elements ...T) (queue LinkedQueue[T]) {
-	for _, element := range elements {
-		queue = queue.Enqueue(element).(LinkedQueue[T])
-	}
-
-	return
-}
-
-func (queue LinkedQueue[T]) Enqueue(value T) Queue[T] {
-	var node node[T]
-
-	node.value = gen.DeepCopy(value).(T)
-
-	if queue.back == nil {
-		queue.front = &node
-	} else {
-		queue.back.next = &node
-	}
-
-	queue.back = &node
-
-	queue.size++
-
-	return queue
-}
-
-func (queue LinkedQueue[T]) Dequeue() (T, Queue[T]) {
-	if queue.front == nil {
-		panic(ErrEmptyQueue{})
-	}
-
-	value := queue.front.value
-	queue.front = queue.front.next
-
-	if queue.front == nil {
-		queue.back = nil
-	}
-
-	queue.size--
-
-	return value, queue
-}
-
-func (queue LinkedQueue[T]) Peek() T {
-	if queue.front == nil {
-		panic(ErrEmptyQueue{})
-	}
-
-	return gen.DeepCopy(queue.front.value).(T)
-}
-
-func (queue LinkedQueue[T]) IsEmpty() bool {
-	return queue.front == nil
-}
-
-func (queue LinkedQueue[T]) Size() int {
-	return queue.size
-}
-
-func (queue LinkedQueue[T]) ToSlice() (slice []T) {
-	for node := queue.front; node != nil; node = node.next {
-		slice = append(slice, gen.DeepCopy(node.value).(T))
-	}
-
-	return
-}
-
-func (queue LinkedQueue[T]) String() string {
-	if queue.front == nil {
-		return QueueHead
-	}
-
-	var builder strings.Builder
-
-	builder.WriteString(QueueHead)
-
-	builder.WriteString(fmt.Sprintf("%v", queue.front.value))
-
-	for node := queue.front.next; node != nil; node = node.next {
-		builder.WriteString(fmt.Sprintf("%s%v", QueueSep, node.value))
-	}
-
-	return builder.String()
-}
-
-func (queue LinkedQueue[T]) DeepCopy() (other Queue[T]) {
-	for node := queue.front; node != nil; node = node.next {
-		other = other.Enqueue(gen.DeepCopy(node.value).(T))
-	}
-
-	return
-}
-
-func (queue LinkedQueue[T]) Clear() Queue[T] {
-	return LinkedQueue[T]{
-		front: nil,
-		back:  nil,
-		size:  0,
-	}
-}
-
-type ArrayQueue[T any] struct {
-	elements   []T
-	hasMaxSize bool
-}
-
-func NewArrayQueue[T any](elements ...T) ArrayQueue[T] {
-	other := make([]T, len(elements))
-
-	for i, element := range elements {
-		other[i] = gen.DeepCopy(element).(T)
-	}
-
-	return ArrayQueue[T]{other, false}
-}
-
-func NewArrayQueueWithMaxSize[T any](maxSize int, elements ...T) ArrayQueue[T] {
-	if maxSize < 0 {
-		panic(fmt.Errorf("maxSize cannot be negative"))
-	}
-
-	if len(elements) > maxSize {
-		panic(fmt.Errorf("maxSize is smaller than the number of elements"))
-	}
-
-	others := make([]T, len(elements), maxSize)
-
-	for i, element := range elements {
-		others[i] = gen.DeepCopy(element).(T)
-	}
-
-	return ArrayQueue[T]{others, true}
-}
-
-func (queue ArrayQueue[T]) Enqueue(value T) Queue[T] {
-	if queue.hasMaxSize && len(queue.elements) == cap(queue.elements) {
-		panic(ErrFullQueue{})
-	}
-
-	queue.elements = append(queue.elements, gen.DeepCopy(value).(T))
-
-	return queue
-}
-
-func (queue ArrayQueue[T]) Dequeue() (T, Queue[T]) {
-	if len(queue.elements) == 0 {
-		panic(ErrEmptyQueue{})
-	}
-
-	value := queue.elements[0]
-	queue.elements = queue.elements[1:]
-
-	return value, queue
-}
-
-func (queue ArrayQueue[T]) Peek() T {
-	if len(queue.elements) == 0 {
-		panic(ErrEmptyQueue{})
-	}
-
-	return gen.DeepCopy(queue.elements[0]).(T)
-}
-
-func (queue ArrayQueue[T]) IsEmpty() bool {
-	return len(queue.elements) == 0
-}
-
-func (queue ArrayQueue[T]) Size() int {
-	return len(queue.elements)
-}
-
-func (queue ArrayQueue[T]) ToSlice() []T {
-	slice := make([]T, len(queue.elements))
-
-	for i, element := range queue.elements {
-		slice[i] = gen.DeepCopy(element).(T)
-	}
-
-	return slice
-}
-
-func (queue ArrayQueue[T]) String() string {
-	if len(queue.elements) == 0 {
-		return QueueHead
-	}
-
-	var builder strings.Builder
-
-	builder.WriteString(QueueHead)
-
-	builder.WriteString(fmt.Sprintf("%v", queue.elements[0]))
-
-	for _, element := range queue.elements[1:] {
-		builder.WriteString(QueueSep)
-		builder.WriteString(fmt.Sprintf("%v", element))
-	}
-
-	return builder.String()
-}
-
-func (queue ArrayQueue[T]) DeepCopy() Queue[T] {
-	obj := ArrayQueue[T]{
-		hasMaxSize: queue.hasMaxSize,
-	}
-
-	if queue.hasMaxSize {
-		obj.elements = make([]T, 0, cap(queue.elements))
-	} else {
-		obj.elements = make([]T, 0)
-	}
-
-	for _, element := range queue.elements {
-		obj.elements = append(obj.elements, gen.DeepCopy(element).(T))
-	}
-
-	return obj
-}
-
-func (queue ArrayQueue[T]) Clear() Queue[T] {
-	other := ArrayQueue[T]{
-		hasMaxSize: queue.hasMaxSize,
-	}
-
-	if queue.hasMaxSize {
-		other.elements = make([]T, 0, cap(queue.elements))
-	} else {
-		other.elements = make([]T, 0)
-	}
-
-	return other
+type linked_queue[T any] struct {
+	front, back *queue_node[T]
 }

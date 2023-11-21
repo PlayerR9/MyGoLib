@@ -37,7 +37,7 @@ func (stack *Stack[T]) Initialize(values ...T) {
 	stack.data = stack.methods.new()
 
 	for _, element := range values {
-		stack.methods.push(stack, element)
+		stack.methods.push(stack.data, element)
 	}
 }
 
@@ -46,7 +46,7 @@ func (stack *Stack[T]) Push(value T) {
 		panic(ErrFullStack{})
 	}
 
-	stack.methods.push(stack, value)
+	stack.methods.push(stack.data, value)
 	stack.size++
 }
 
@@ -57,7 +57,7 @@ func (stack *Stack[T]) Pop() T {
 
 	stack.size--
 
-	return stack.methods.pop(stack)
+	return stack.methods.pop(stack.data)
 }
 
 func (stack Stack[T]) Peek() T {
@@ -65,7 +65,7 @@ func (stack Stack[T]) Peek() T {
 		panic(ErrEmptyStack{})
 	}
 
-	return stack.methods.peek(stack)
+	return stack.methods.peek(stack.data)
 }
 
 func (stack Stack[T]) IsEmpty() bool {
@@ -79,7 +79,7 @@ func (stack Stack[T]) Size() int {
 func (stack *Stack[T]) ToSlice() []T {
 	slice := make([]T, stack.size)
 
-	stack.methods.to_slice(*stack, slice)
+	stack.methods.to_slice(stack.data, slice)
 
 	slices.Reverse[[]T, T](slice)
 
@@ -99,7 +99,7 @@ func (stack *Stack[T]) String() string {
 	var str strings.Builder
 
 	if stack.size != 0 {
-		stack.methods.stringer(*stack, &str)
+		stack.methods.stringer(stack.data, &str)
 	}
 
 	str.WriteString(StackHead)
