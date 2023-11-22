@@ -81,7 +81,7 @@ func (stack *Stack[T]) ToSlice() []T {
 
 	stack.methods.to_slice(stack.data, slice)
 
-	slices.Reverse[[]T, T](slice)
+	slices.Reverse(slice)
 
 	return slice
 }
