@@ -197,9 +197,7 @@ func NewStack[T any](implementation int, capacity optional.Int) Stack[T] {
 			},
 		}
 	case ARRAY, ARRAY_SIZE:
-		stack.data = linked_stack[T]{
-			top: nil,
-		}
+		stack.data = make([]T, 0)
 
 		stack.size = 0
 
