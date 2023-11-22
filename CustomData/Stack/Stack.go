@@ -2,6 +2,7 @@ package Stack
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
@@ -180,14 +181,12 @@ func (stack *Stack[T]) ToSlice() []T {
 		}
 	}
 
+	slices.Reverse(slice)
+
 	return slice
 }
 
 func (stack *Stack[T]) Clear() {
-	var empty_stack Stack[T]
-
-	stack.implementation = empty_stack.implementation
-	stack.capacity = empty_stack.capacity
 	stack.size = 0
 
 	switch stack.implementation {
@@ -196,10 +195,12 @@ func (stack *Stack[T]) Clear() {
 			top: nil,
 		}
 	case ARRAY:
-		stack.data = make([]T, 0, stack.capacity.MustGet())
+		if stack.capacity.Present() {
+			stack.data = make([]T, 0, stack.capacity.MustGet())
+		} else {
+			stack.data = make([]T, 0)
+		}
 	}
-
-	stack = &empty_stack
 }
 
 func (stack Stack[T]) IsFull() bool {
