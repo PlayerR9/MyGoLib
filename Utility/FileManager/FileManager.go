@@ -1,50 +1,83 @@
-// git tag v0.1.22
+// git tag v0.1.35
 
 package FileManager
 
 import (
 	"fmt"
+	"io"
+	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
 	"golang.org/x/exp/slices"
 )
 
-func ReadWholeFile(filePath string) ([]string, error) {
-	fileContent, err := os.ReadFile(filePath)
+// MediaDownloader downloads a file from the given URL and saves it
+// to the specified destination.
+// The name of the file is extracted from the URL.
+// If the file already exists at the destination, the function returns
+// the path to the existing file.
+// If the file does not exist, the function checks if the file exists
+// on the server.
+// If the file exists on the server, the function downloads the file and
+// saves it to the destination.
+// The function returns the path to the downloaded file, or an error if
+// the download fails.
+//
+// dest is the directory where the file will be saved.
+// url is the URL of the file to download.
+//
+// Example:
+//
+//	file_path, err := MediaDownloader("/path/to/destination", "http://example.com/file.mp3")
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
+//	fmt.Println(file_path) // Output: /path/to/destination/file.mp3
+func MediaDownloader(dest, url string) (string, error) {
+	// Extract the name of the file from the URL
+	fields := strings.Split(url, "/")
+	file_path := path.Join(dest, fields[len(fields)-1])
+
+	// Check if the file already exists
+	_, err := os.Stat(file_path)
+	if err == nil {
+		return file_path, nil
+	} else if !os.IsNotExist(err) {
+		return "", err
+	}
+
+	// Check if the file exists on the server
+	resp, err := http.Head(url)
 	if err != nil {
-		return nil, err
+		return "", err
+	} else if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("failed to download the file: %s", resp.Status)
 	}
 
-	return strings.Split(string(fileContent), "\n"), nil
-}
+	// Download the file
+	resp, err = http.Get(url)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
 
-func FileExists(filePath string) (bool, error) {
-	_, fileStatError := os.Stat(filePath)
-	if fileStatError == nil {
-		return true, nil
+	// Create the file
+	file, err := os.Create(file_path)
+	if err != nil {
+		return "", err
 	}
-	if os.IsNotExist(fileStatError) {
-		return false, nil
-	}
-	return false, fileStatError
-}
+	defer file.Close()
 
-func WriteToFile(filePath string, content ...string) error {
-	writeError := os.WriteFile(filePath, []byte(strings.Join(content, "\n")), 0644)
-	if writeError != nil {
-		return fmt.Errorf("could not write to file: %v", writeError)
+	// Copy the data to the file
+	_, err = io.Copy(file, resp.Body)
+	if err != nil {
+		return "", err
 	}
-	return nil
-}
 
-func CreateEmptyFile(filePath string) error {
-	_, createError := os.Create(filePath)
-	if createError != nil {
-		return fmt.Errorf("could not create file: %v", createError)
-	}
-	return nil
+	return file_path, nil
 }
 
 func AppendToFile(filePath string, content ...string) error {
