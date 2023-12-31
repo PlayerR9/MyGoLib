@@ -13,11 +13,27 @@ func WaitForUserConfirmation() {
 	fmt.Scanln()
 }
 
-func WaitForExitConfirmation(exitCode int) {
-	fmt.Println("Press enter to confirm exit...")
+// ExitFromProgram is a utility function that handles program termination in
+// case of an error.
+// It prints the error message if the error is not nil, prompts the user to
+// press enter to exit, and then terminates the program with a status code of 1.
+//
+// Parameters:
+//
+//   - err: The error that caused the program termination. If err is nil, no error
+//     message is printed.
+//
+// Note: This function does not return. The program is terminated by calling
+// os.Exit(1).
+func ExitFromProgram(err error) {
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	fmt.Println("Press enter to exit...")
 	fmt.Scanln()
 
-	os.Exit(exitCode)
+	os.Exit(1)
 }
 
 func FindMaximumValue[T any](comparisonFunc func(T, T) int, inputValues ...T) T {
