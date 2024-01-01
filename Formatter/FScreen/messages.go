@@ -406,6 +406,18 @@ func MessageLineBreak(count int) Messager {
 	return msg
 }
 
+func MessageSuccess(content string, optionals ...string) Messager {
+	toSend, isEmpty := validateContents("SUCCESS:", content, optionals)
+	if isEmpty {
+		return EmptyMSG{}
+	}
+
+	return ImportantMSG{
+		contents: toSend,
+		style:    SuccessStyle,
+	}
+}
+
 type ImportantMSG struct {
 	contents []string
 	style    tcell.Style
