@@ -7,8 +7,8 @@ type RWSafe[T any] struct {
 	mutex sync.RWMutex
 }
 
-func NewRWSafe[T any](value T) RWSafe[T] {
-	return RWSafe[T]{
+func NewRWSafe[T any](value T) *RWSafe[T] {
+	return &RWSafe[T]{
 		value: value,
 	}
 }

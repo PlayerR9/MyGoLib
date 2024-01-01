@@ -10,23 +10,14 @@ import (
 	"github.com/gdamore/tcell"
 )
 
-const (
-	IndentLevel int = 2
-)
-
 type wScreen struct {
-	title, currentProcess *rws.RWSafe[string]
+	title, currentProcess rws.RWSafe[string]
 	counters              []*ScreenCounter
 
-	table         [][]*rws.RWSafe[rune]
-	styles        []*rws.RWSafe[tcell.Style]
-	maxLines      int
-	lastEmptyLine rws.RWSafe[int]
+	mb *MessageBox
 
-	// Screen Information
-	screenWidth      rws.RWSafe[int]
-	screenHeight     rws.RWSafe[int]
-	innerScreenWidth rws.RWSafe[int]
+	screenWidth  rws.RWSafe[int]
+	screenHeight rws.RWSafe[int]
 
 	closeSignal rws.RWSafe[bool]
 	hasPrinted  sync.Cond
@@ -35,151 +26,6 @@ type wScreen struct {
 	isShifting  rws.RWSafe[bool]
 	canShiftUp  sync.Cond
 	canPrint    sync.Cond
-}
-
-// Returns the first empty index after the last character
-func (ws *wScreen) writeWord(x, y int, word string) int {
-	row := ws.table[y]
-
-	for _, char := range word {
-		row[x].Set(char)
-		x++
-	}
-
-	return x
-}
-
-// Returns the first empty index after the last character
-func (ws *wScreen) canWriteWord(x int, word string) bool {
-	return x+len(word) <= ws.innerScreenWidth.Get()
-}
-
-func (ws *wScreen) WriteHorizontalBorder(y int) {
-	screen.SetContent(0, y, '+', nil, NormalStyle) // Left corner
-
-	for x := 1; x < ws.screenWidth.Get()-1; x++ {
-		screen.SetContent(x, y, '-', nil, NormalStyle)
-	}
-
-	screen.SetContent(ws.screenWidth.Get()-1, y, '+', nil, NormalStyle) // Right corner
-}
-
-func (ws *wScreen) writeFields(x, y int, fields []string) (int, int) {
-	if len(fields) == 1 {
-		if ws.canWriteWord(x, fields[0]) {
-			return ws.writeWord(x, y, fields[0]), y
-		}
-
-		x = ws.writeWord(x, y, fields[0][:ws.innerScreenWidth.Get()-x-HellipLen])
-		return ws.writeWord(x, y, Hellip), y
-	} else if !ws.canWriteWord(x, fields[0]) {
-		x = ws.writeWord(x, y, fields[0][:ws.innerScreenWidth.Get()-x-HellipLen])
-		x = ws.writeWord(x, y, Hellip)
-
-		return IndentLevel, y + 1
-	}
-
-	x = ws.writeWord(x, y, fields[0])
-
-	index := -1
-	for i, field := range fields[1:] {
-		if !ws.canWriteWord(x+2, field) {
-			index = i
-			break
-		}
-
-		x = ws.writeWord(x+2, y, field)
-	}
-
-	if index != -1 {
-		ws.writeWord(x, y, Hellip)
-
-		return IndentLevel, y + 1
-	}
-
-	return x, y
-}
-
-// -1 = no fields, >= 0 index of the last field that fits
-func (ws *wScreen) canWriteFields(x int, fields []string) int {
-	if !ws.canWriteWord(x, fields[0]) {
-		return -1
-	}
-
-	x += len(fields[0])
-
-	for i, field := range fields[1:] {
-		if !ws.canWriteWord(x+2, field) {
-			return i
-		}
-
-		x += len(field) + 2
-	}
-
-	return len(fields) - 1
-}
-
-func (ws *wScreen) WriteElement(yCoord int, contents []string, style tcell.Style, isIndented bool) (int, []string) {
-	if yCoord < 1 || yCoord >= ws.screenHeight.Get()-1 {
-		panic(fmt.Sprintf("y must be between 1 and %d", ws.screenHeight.Get()-1))
-	}
-
-	if yCoord >= len(ws.table) {
-		for i := len(ws.table); i < yCoord; i++ {
-			row := make([]*rws.RWSafe[rune], ws.innerScreenWidth.Get())
-
-			for j := 0; j < ws.innerScreenWidth.Get(); j++ {
-				row[j] = new(rws.RWSafe[rune])
-				row[j].Set(' ')
-			}
-
-			ws.table = append(ws.table, row)
-
-			style := new(rws.RWSafe[tcell.Style])
-			style.Set(NormalStyle)
-
-			ws.styles = append(ws.styles, style)
-		}
-	}
-
-	fields := strings.Fields(contents[0])
-	if len(fields) == 0 {
-		return yCoord, nil
-	}
-
-	xCoord := 0
-	if isIndented {
-		xCoord = IndentLevel
-	}
-
-	var newYCoord int
-	xCoord, newYCoord = ws.writeFields(xCoord, yCoord, fields)
-	if newYCoord != yCoord {
-		return newYCoord, contents[1:]
-	}
-
-	// Try to see if the next content fits on the same line
-	for index, content := range contents[1:] {
-		fields = strings.Fields(content)
-		if len(fields) == 0 {
-			continue // Skip empty lines
-		}
-
-		lastValidField := ws.canWriteFields(xCoord, fields)
-		if lastValidField == -1 {
-			return yCoord + 1, contents[index:]
-		}
-
-		for _, field := range fields[:lastValidField+1] {
-			xCoord = ws.writeWord(xCoord+2, yCoord, field)
-		}
-
-		if lastValidField != len(fields)-1 {
-			return yCoord + 1, append([]string{strings.Join(fields[lastValidField+1:], " ")}, contents[index+1:]...)
-		}
-	}
-
-	return yCoord, nil
 }
 
 func (ws *wScreen) AddElement(contents []string, style tcell.Style) {
@@ -195,36 +41,39 @@ func (ws *wScreen) AddElement(contents []string, style tcell.Style) {
 
 	ws.isAdding.Set(true)
 
-	yCoord, remaining := ws.WriteElement(ws.lastEmptyLine.Get(), contents, style, false)
-	ws.lastEmptyLine.Set(yCoord)
+	remaining := ws.mb.EnqueueContents(contents, style, false)
 
 	for len(remaining) > 0 {
-		for ws.lastEmptyLine.Get() >= ws.maxLines && !ws.closeSignal.Get() {
+		for ws.mb.firstEmptyLine >= ws.mb.height && !ws.closeSignal.Get() {
 			ws.canShiftUp.Wait() // FIXME: This is not working
 		}
 
-		yCoord, remaining = ws.WriteElement(ws.lastEmptyLine.Get(), remaining, style, true)
-		ws.lastEmptyLine.Set(yCoord)
+		remaining = ws.mb.EnqueueContents(remaining, style, true)
 	}
 
 	ws.isAdding.Set(false)
 }
 
-func (ws *wScreen) PrintScreen() {
-	screen.Clear()
+func DrawScreen(title, currentProcess string, counters []*ScreenCounter, mb *MessageBox) (int, int, int, int) {
+	DrawHorizontalBorder := func(y, width int) {
+		screen.SetContent(0, y, '+', nil, NormalStyle) // Left corner
+
+		for x := 1; x < width-1; x++ {
+			screen.SetContent(x, y, '-', nil, NormalStyle)
+		}
+
+		screen.SetContent(width-1, y, '+', nil, NormalStyle) // Right corner
+	}
 
 	// Initialize variables
 	width, height := screen.Size()
-	ws.screenWidth.Set(width)
-	ws.screenHeight.Set(height)
-	ws.innerScreenWidth.Set(width - 4) // Padding
+	innerWidth := width - 4   // Padding
+	innerHeight := height - 2 // Padding
 
 	y := 0 // y coordinate
 
 	// Print the title
-	title := ws.title.Get()
-	startPos := (ws.screenWidth.Get() - len(title)) / 2
-
+	startPos := (innerWidth - len(title)) / 2
 	for x, char := range title {
 		screen.SetContent(startPos+x, y, char, nil, NormalStyle)
 	}
@@ -232,8 +81,6 @@ func (ws *wScreen) PrintScreen() {
 	y += 2
 
 	// Print the current process (if any)
-	currentProcess := ws.currentProcess.Get()
-
 	if currentProcess != "" {
 		for x, char := range currentProcess {
 			screen.SetContent(x, y, char, nil, NormalStyle)
@@ -243,8 +90,8 @@ func (ws *wScreen) PrintScreen() {
 	}
 
 	// Print all the counters (if any)
-	if len(ws.counters) != 0 {
-		for _, counter := range ws.counters {
+	if len(counters) != 0 {
+		for _, counter := range counters {
 			for x, char := range counter.String() {
 				screen.SetContent(x, y, char, nil, NormalStyle)
 			}
@@ -255,42 +102,35 @@ func (ws *wScreen) PrintScreen() {
 		y++
 	}
 
-	// Draw the box and the elements
-	ws.WriteHorizontalBorder(y) // Top border
+	// Draw the message box
+	DrawHorizontalBorder(y, width) // Top border
 	y++
 
-	// 2. Element
-	for i, row := range ws.table {
+	for ; y < innerHeight; y++ {
 		screen.SetContent(0, y, '|', nil, NormalStyle) // Left border
-
-		styleOfRow := ws.styles[i].Get()
-		for x, char := range row {
-			screen.SetContent(x+2, y, char.Get(), nil, styleOfRow)
-		}
-
-		screen.SetContent(ws.screenWidth.Get()-1, y, '|', nil, NormalStyle) // Right border
-
-		y++
-
-		if i >= ws.lastEmptyLine.Get() {
-			break
-		}
+		mb.DrawLine(1, y)
+		screen.SetContent(width-1, y, '|', nil, NormalStyle) // Right border
 	}
 
-	// Fill the rest of the screen with empty lines
-	for y < ws.maxLines {
-		screen.SetContent(0, y, '|', nil, NormalStyle)                      // Left border
-		screen.SetContent(ws.screenWidth.Get()-1, y, '|', nil, NormalStyle) // Right border
+	DrawHorizontalBorder(y, width) // Bottom border
 
-		y++
-	}
+	return width, height, innerWidth, innerHeight
+}
 
-	ws.WriteHorizontalBorder(y) // Bottom border
+func (ws *wScreen) PrintScreen() {
+	screen.Clear()
+
+	DrawScreen(
+		ws.title.Get(),
+		ws.currentProcess.Get(),
+		ws.counters,
+		ws.mb,
+	)
 
 	// Print the screen
 	screen.Show()
 
-	if ws.CanShiftUp() {
+	if ws.mb.CanShiftUp() {
 		ws.canShiftUp.Signal()
 	}
 
@@ -300,45 +140,6 @@ func (ws *wScreen) PrintScreen() {
 
 	} else {
 		// Wait a bit before printing the next screen
-		time.Sleep(100 * time.Millisecond)
-	}
-}
-
-func (ws *wScreen) CanShiftUp() bool {
-	if ws.isShifting.Get() {
-		return ws.lastEmptyLine.Get() != 0
-	}
-
-	return ws.lastEmptyLine.Get() > ws.maxLines/2
-}
-
-func (ws *wScreen) ShiftUp() {
-	for {
-		ws.canShiftUp.L.Lock()
-		for !ws.CanShiftUp() && !ws.closeSignal.Get() {
-			ws.canShiftUp.Wait()
-		}
-
-		if ws.closeSignal.Get() {
-			return
-		}
-
-		ws.isShifting.Set(true)
-
-		// Shift up
-		limit := ws.lastEmptyLine.Get()
-
-		for i := 0; i < ws.maxLines-limit; i++ {
-			ws.table[i] = ws.table[i+limit]
-			ws.styles[i] = ws.styles[i+limit]
-		}
-
-		ws.lastEmptyLine.Set(ws.maxLines - limit)
-
-		ws.isShifting.Set(false)
-		ws.canShiftUp.L.Unlock()
-
-		// Wait some time before shifting up again
 		time.Sleep(100 * time.Millisecond)
 	}
 }
@@ -417,12 +218,26 @@ func Initialize(titleScreen string) error {
 
 	receiveChannel = make(chan Messager, BufferSize)
 
-	fscreen = &wScreen{
-		title:          &wElement{content: titleScreen, style: NormalStyle},
-		currentProcess: &wElement{content: "", style: NormalStyle},
-		counters:       make([]*ScreenCounter, 0),
-		elements:       make([]*wElement, 0),
-	}
+	width, height := screen.Size()
+
+	fscreen = new(wScreen)
+	fscreen.title = rws.NewRWSafe(titleScreen)
+	fscreen.currentProcess = rws.NewRWSafe("")
+	fscreen.counters = make([]*ScreenCounter, 0)
+	fscreen.table = make([][]*rws.RWSafe[rune], 0)
+	fscreen.styles = make([]*rws.RWSafe[tcell.Style], 0)
+	fscreen.maxLines = height - 2
+	fscreen.firstEmptyLine = rws.NewRWSafe(0)
+	fscreen.screenWidth = rws.NewRWSafe(width)
+	fscreen.screenHeight = rws.NewRWSafe(height)
+	fscreen.innerScreenWidth = rws.NewRWSafe(width - 4)
+	fscreen.closeSignal = rws.NewRWSafe(false)
+	fscreen.hasPrinted = *sync.NewCond(new(sync.Mutex))
+	fscreen.isAdding = rws.NewRWSafe(false)
+	fscreen.canAdd = *sync.NewCond(new(sync.Mutex))
+	fscreen.isShifting = rws.NewRWSafe(false)
+	fscreen.canShiftUp = *sync.NewCond(new(sync.Mutex))
+	fscreen.canPrint = *sync.NewCond(new(sync.Mutex))
 
 	isInitialized = true
 
@@ -475,43 +290,6 @@ func SendMessages(msg Messager, optionals ...Messager) {
 	}
 }
 
-func writeLines(contents []string) {
-	innerScreenWidth, _ := screen.Size()
-	innerScreenWidth -= 4 // Padding
-
-	trimIndex := make([]int, len(contents))
-	for i, content := range contents {
-		if len(content) > innerScreenWidth {
-			trimIndex[i] = strings.LastIndex(content[:innerScreenWidth-HellipLen], " ")
-		} else {
-			trimIndex[i] = -1
-		}
-	}
-
-	index := lineInsert(contents[0], trimIndex[0], 2)
-
-	for i, content := range contents[1:] {
-		if len(content)+index+1 <= innerScreenWidth {
-			// Add a space
-			screen[emptyLine][index] = ' '
-			index++
-
-			// Copy the content
-			copy(screen[emptyLine][index:], []rune(content))
-
-			index += len(content)
-		} else {
-			emptyLine++
-
-			index = lineInsert(content, trimIndex[i], 4)
-		}
-	}
-
-	emptyLine++
-
-	shouldPrint = MustPrint
-}
-
 //// OLD CODE ////
 
 const (
@@ -520,9 +298,6 @@ const (
 
 	Hellip    = "..."
 	HellipLen = 3
-
-	Space     = " "
-	Separator = "="
 
 	WaitTime = 100 * time.Millisecond
 )
