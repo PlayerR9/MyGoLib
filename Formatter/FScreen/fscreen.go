@@ -2,434 +2,301 @@ package FScreen
 
 import (
 	"fmt"
-	"strings"
 	"sync"
-	"time"
 
-	rws "github.com/PlayerR9/MyGoLib/CustomData/RWSafe"
+	bf "github.com/PlayerR9/MyGoLib/CustomData/Buffer"
+	h "github.com/PlayerR9/MyGoLib/Formatter/FScreen/Header"
+	mb "github.com/PlayerR9/MyGoLib/Formatter/FScreen/MessageBox"
 	"github.com/gdamore/tcell"
 )
-
-type wScreen struct {
-	title, currentProcess rws.RWSafe[string]
-	counters              []*ScreenCounter
-
-	mb *MessageBox
-
-	screenWidth  rws.RWSafe[int]
-	screenHeight rws.RWSafe[int]
-
-	closeSignal rws.RWSafe[bool]
-	hasPrinted  sync.Cond
-	isAdding    rws.RWSafe[bool]
-	canAdd      sync.Cond
-	isShifting  rws.RWSafe[bool]
-	canShiftUp  sync.Cond
-	canPrint    sync.Cond
-}
-
-func (ws *wScreen) AddElement(contents []string, style tcell.Style) {
-	ws.canAdd.L.Lock()
-	for ws.isAdding.Get() && !ws.closeSignal.Get() {
-		ws.canAdd.Wait()
-	}
-	defer ws.canAdd.L.Unlock()
-
-	if ws.closeSignal.Get() {
-		return
-	}
-
-	ws.isAdding.Set(true)
-
-	remaining := ws.mb.EnqueueContents(contents, style, false)
-
-	for len(remaining) > 0 {
-		for ws.mb.firstEmptyLine >= ws.mb.height && !ws.closeSignal.Get() {
-			ws.canShiftUp.Wait() // FIXME: This is not working
-		}
-
-		remaining = ws.mb.EnqueueContents(remaining, style, true)
-	}
-
-	ws.isAdding.Set(false)
-}
-
-func DrawScreen(title, currentProcess string, counters []*ScreenCounter, mb *MessageBox) (int, int, int, int) {
-	DrawHorizontalBorder := func(y, width int) {
-		screen.SetContent(0, y, '+', nil, NormalStyle) // Left corner
-
-		for x := 1; x < width-1; x++ {
-			screen.SetContent(x, y, '-', nil, NormalStyle)
-		}
-
-		screen.SetContent(width-1, y, '+', nil, NormalStyle) // Right corner
-	}
-
-	// Initialize variables
-	width, height := screen.Size()
-	innerWidth := width - 4   // Padding
-	innerHeight := height - 2 // Padding
-
-	y := 0 // y coordinate
-
-	// Print the title
-	startPos := (innerWidth - len(title)) / 2
-	for x, char := range title {
-		screen.SetContent(startPos+x, y, char, nil, NormalStyle)
-	}
-
-	y += 2
-
-	// Print the current process (if any)
-	if currentProcess != "" {
-		for x, char := range currentProcess {
-			screen.SetContent(x, y, char, nil, NormalStyle)
-		}
-
-		y += 2
-	}
-
-	// Print all the counters (if any)
-	if len(counters) != 0 {
-		for _, counter := range counters {
-			for x, char := range counter.String() {
-				screen.SetContent(x, y, char, nil, NormalStyle)
-			}
-
-			y++
-		}
-
-		y++
-	}
-
-	// Draw the message box
-	DrawHorizontalBorder(y, width) // Top border
-	y++
-
-	for ; y < innerHeight; y++ {
-		screen.SetContent(0, y, '|', nil, NormalStyle) // Left border
-		mb.DrawLine(1, y)
-		screen.SetContent(width-1, y, '|', nil, NormalStyle) // Right border
-	}
-
-	DrawHorizontalBorder(y, width) // Bottom border
-
-	return width, height, innerWidth, innerHeight
-}
-
-func (ws *wScreen) PrintScreen() {
-	screen.Clear()
-
-	DrawScreen(
-		ws.title.Get(),
-		ws.currentProcess.Get(),
-		ws.counters,
-		ws.mb,
-	)
-
-	// Print the screen
-	screen.Show()
-
-	if ws.mb.CanShiftUp() {
-		ws.canShiftUp.Signal()
-	}
-
-	ws.hasPrinted.Signal()
-
-	if ws.isAdding.Get() {
-
-	} else {
-		// Wait a bit before printing the next screen
-		time.Sleep(100 * time.Millisecond)
-	}
-}
-
-const (
-	BufferSize int = 100
-)
-
-// Styles
-var (
-	// Normal
-	NormalStyle tcell.Style = tcell.StyleDefault.Foreground(tcell.ColorBlack).Background(tcell.ColorGhostWhite)
-
-	// Debug
-	DebugStyle tcell.Style = tcell.StyleDefault.Bold(true).Foreground(tcell.ColorSlateGray).Background(tcell.ColorGhostWhite)
-
-	// Warning
-	WarningStyle tcell.Style = tcell.StyleDefault.Foreground(tcell.ColorDarkOrange).Background(tcell.ColorGhostWhite)
-
-	// Error
-	ErrorStyle tcell.Style = tcell.StyleDefault.Foreground(tcell.ColorFireBrick).Background(tcell.ColorGhostWhite)
-
-	// Fatal
-	FatalStyle tcell.Style = tcell.StyleDefault.Bold(true).Foreground(tcell.ColorDarkRed).Background(tcell.ColorGhostWhite)
-
-	// Success
-	SuccessStyle tcell.Style = tcell.StyleDefault.Foreground(tcell.ColorDarkGreen).Background(tcell.ColorGhostWhite)
-)
-
-type PrintCondition int
-
-const (
-	JustPrinted PrintCondition = iota
-	YetToPrint
-	NotPrinted
-	MustPrint
-)
-
-var (
-	fscreen        *wScreen
-	screen         tcell.Screen
-	receiveChannel chan Messager
-	isInitialized  bool           = false
-	isRunning      bool           = false
-	shouldPrint    PrintCondition = NotPrinted
-	wgFScreen      sync.WaitGroup
-)
-
-func Initialize(titleScreen string) error {
-	if isRunning {
-		SendMessages(
-			MessageWarning(
-				"FScreen is running; ignoring call to Initialize()",
-			),
-		)
-
-		return nil
-	} else if isInitialized {
-		return fmt.Errorf("FScreen is already initialized")
-	} else if strings.TrimSpace(titleScreen) == "" {
-		return fmt.Errorf("titleScreen cannot be empty")
-	}
-
-	var err error
-
-	screen, err = tcell.NewScreen()
-	if err != nil {
-		return err
-	}
-
-	err = screen.Init()
-	if err != nil {
-		return err
-	}
-	screen.Clear()
-
-	receiveChannel = make(chan Messager, BufferSize)
-
-	width, height := screen.Size()
-
-	fscreen = new(wScreen)
-	fscreen.title = rws.NewRWSafe(titleScreen)
-	fscreen.currentProcess = rws.NewRWSafe("")
-	fscreen.counters = make([]*ScreenCounter, 0)
-	fscreen.table = make([][]*rws.RWSafe[rune], 0)
-	fscreen.styles = make([]*rws.RWSafe[tcell.Style], 0)
-	fscreen.maxLines = height - 2
-	fscreen.firstEmptyLine = rws.NewRWSafe(0)
-	fscreen.screenWidth = rws.NewRWSafe(width)
-	fscreen.screenHeight = rws.NewRWSafe(height)
-	fscreen.innerScreenWidth = rws.NewRWSafe(width - 4)
-	fscreen.closeSignal = rws.NewRWSafe(false)
-	fscreen.hasPrinted = *sync.NewCond(new(sync.Mutex))
-	fscreen.isAdding = rws.NewRWSafe(false)
-	fscreen.canAdd = *sync.NewCond(new(sync.Mutex))
-	fscreen.isShifting = rws.NewRWSafe(false)
-	fscreen.canShiftUp = *sync.NewCond(new(sync.Mutex))
-	fscreen.canPrint = *sync.NewCond(new(sync.Mutex))
-
-	isInitialized = true
-
-	return nil
-}
-
-func Run() {
-	if isRunning {
-		SendMessages(
-			MessageWarning(
-				"FScreen is already running; ignoring call to Run()",
-			),
-		)
-
-		return
-	} else if !isInitialized {
-		panic("FScreen is not initialized")
-	}
-
-	var wg sync.WaitGroup
-
-	for msg := range receiveChannel {
-		msg.Apply()
-		currentStyle := msg.GetStyle()
-
-		if shouldPrint == MustPrint {
-			wg.Wait() // Wait for the previous screen to be printed
-
-			wg.Add(1)
-
-			go func() {
-				fscreen.PrintScreen()
-				wg.Done()
-			}()
-		}
-	}
-
-	wg.Wait() // Wait for the last screen to be printed
-}
-
-func SendMessages(msg Messager, optionals ...Messager) {
-	if !isRunning {
-		panic("FScreen is not running")
-	}
-
-	receiveChannel <- msg
-
-	for _, m := range optionals {
-		receiveChannel <- m
-	}
-}
-
-//// OLD CODE ////
 
 const (
 	Padding      = 2
 	PaddingWidth = 4 // 2 * Padding
-
-	Hellip    = "..."
-	HellipLen = 3
-
-	WaitTime = 100 * time.Millisecond
 )
 
 var (
-	innerScreenWidth int = screenWidth - PaddingWidth
+	messageBox *mb.MessageBox = nil
 )
 
-var (
-	separator string = ""
-	lineBreak string = ""
-)
+type FScreen struct {
+	h *h.Header
 
-var (
-	emptyLine int = 1
-)
+	screen tcell.Screen
 
-func Initialize(name string) error {
-	if isRunning {
-		SendMessages(
-			MessageFatal(
-				"FScreen is running.",
-				"Stop before initializing",
-			),
-		)
+	messageChannel bf.Buffer[interface{}]
 
-		return nil
+	wg   sync.WaitGroup
+	once sync.Once
+}
+
+func NewFScreen(title string) (*FScreen, error) {
+	fscreen := &FScreen{
+		messageChannel: bf.NewBuffer[interface{}](),
 	}
 
-	var err error
+	if header, err := h.NewHeader(title); err != nil {
+		return nil, fmt.Errorf("could not create header: %w", err)
+	} else {
+		fscreen.h = header
+	}
 
-	screen, err = tcell.NewScreen()
+	screen, err := tcell.NewScreen()
 	if err != nil {
-		return err
+		return nil, err
 	}
-	if err = screen.Init(); err != nil {
-		return err
+
+	err = screen.Init()
+	if err != nil {
+		return nil, err
 	}
 	screen.Clear()
 
-	title = name
+	width, height := screen.Size()
+	messageBox = mb.NewMessageBox(width-2*Padding, height-Padding)
 
-	isInitialized = true
+	fscreen.screen = screen
 
-	title = name
+	return fscreen, nil
+}
 
-	isInitialized = true
+func (fs *FScreen) Run() error {
+	fs.once.Do(func() {
+		fs.wg.Add(1)
 
-	separator = strings.Repeat(Separator, screenWidth-Padding)
-	lineBreak = strings.Repeat(Space, screenWidth-Padding)
+		// Start the header, message box, and display
+
+		display := NewDisplay(messageBox, fs.h)
+
+		go fs.h.Run()
+		go messageBox.Run()
+		go display.Run()
+
+		// Start the error channel listeners
+		var errorWg sync.WaitGroup
+
+		errorWg.Add(2)
+
+		go func() {
+			for msg := range fs.h.ErrorChannel {
+				messageBox.SendMessages(msg)
+			}
+
+			errorWg.Done()
+		}()
+
+		go func() {
+			for msg := range display.ErrorChannel {
+				messageBox.SendMessages(msg)
+			}
+
+			errorWg.Done()
+		}()
+
+		for {
+			msg, ok := fs.messageChannel.Get()
+			if !ok {
+				break
+			}
+
+			switch x := msg.(type) {
+			case mb.TextMessage:
+				messageBox.SendMessages(x)
+			case h.HeaderMessage:
+				fs.h.SendMessages(x)
+			default:
+				messageBox.SendMessages(
+					mb.NewTextMessage(mb.FatalText,
+						fmt.Sprintf("Unknown message type: %T", x),
+					),
+				)
+			}
+		}
+
+		// Release some resources
+
+		var finiWg sync.WaitGroup
+
+		finiWg.Add(2)
+
+		go func() {
+			display.Fini()
+			finiWg.Done()
+			display = nil
+		}()
+
+		go func() {
+			fs.screen.Fini()
+			finiWg.Done()
+			fs.screen = nil
+		}()
+
+		finiWg.Wait()
+
+		errorWg.Wait()
+
+		fs.wg.Done()
+	})
 
 	return nil
 }
 
-func lineInsert(line string, trimIndex int, baseIndex int) int {
-	shiftScreenUp()
+func (fs *FScreen) Fini() {
+	fs.messageChannel.Fini()
+	close(fs.h.ErrorChannel)
 
-	index := baseIndex
+	fs.wg.Wait()
 
-	if trimIndex == -1 {
-		copy(screen[emptyLine][index:], []rune(line))
+	// Close and free resources
+	var finiWg sync.WaitGroup
 
-		index += len(line)
-	} else {
-		copy(screen[emptyLine][index:], []rune(line[:trimIndex]))
-		copy(screen[emptyLine][screenWidth-5:], []rune(Hellip))
-	}
-
-	return index
-}
-
-func Start() {
-	if !isInitialized {
-		panic("FScreen is not initialized")
-	} else if isRunning {
-		SendMessages(
-			MessageWarning(
-				"FScreen is already running",
-				"Ignoring call to Run()",
-			),
-		)
-
-		return
-	}
-
-	isRunning = true
-
-	wg.Add(1)
+	finiWg.Add(2)
 
 	go func() {
-		run()
-		wg.Done()
+		messageBox.Fini()
+		finiWg.Done()
+		messageBox = nil
 	}()
+
+	go func() {
+		fs.h.Fini()
+		finiWg.Done()
+		fs.h = nil
+	}()
+
+	finiWg.Wait()
 }
 
-func Wait() {
-	if !isRunning {
-		return
-	}
-
-	wg.Wait()
+func (fs *FScreen) SendMessages(message interface{}, optionalMessages ...interface{}) {
+	fs.messageChannel.SendMessages(
+		message,
+		optionalMessages...,
+	)
 }
 
-func run() {
-	printScreen()
+type DisplayOpcode int
 
-	shouldPrint = JustPrinted
+const (
+	DOMustPrint DisplayOpcode = iota
+	DOShouldPrint
+)
 
-	for message := range messageChannel {
-		if _, ok := message.(EmptyMSG); ok {
-			continue
-		}
+func (enum DisplayOpcode) String() string {
+	return [...]string{
+		"MustPrint",
+		"ShouldPrint",
+	}[enum]
+}
 
-		message.Apply()
+type Display struct {
+	box *mb.MessageBox
+	h   *h.Header
 
-		if shouldPrint == MustPrint {
-			printScreen()
+	screen tcell.Screen
+	style  tcell.Style
 
-			shouldPrint = JustPrinted
-		}
+	messageChannel bf.Buffer[DisplayOpcode]
+	ErrorChannel   chan mb.TextMessage
+	wg             sync.WaitGroup
+	once           sync.Once
+}
 
-		switch message.(type) {
-		case ImportantMSG:
-			// Wait a bit before displaying the next message
-			time.Sleep(WaitTime)
-		case CloseMSG, FatalMSG:
-			isRunning = false
-			return
-		}
+func NewDisplay(box *mb.MessageBox, h *h.Header) *Display {
+	return &Display{
+		box: box,
+		h:   h,
+
+		screen: nil,
+		style:  box.GetDefaultStyle(),
+
+		messageChannel: bf.NewBuffer[DisplayOpcode](),
+		ErrorChannel:   make(chan mb.TextMessage),
 	}
+}
 
-	if shouldPrint == YetToPrint {
-		printScreen()
-	}
+func (d *Display) Run() {
+	d.once.Do(func() {
+		go d.messageChannel.Run()
+
+		printScreen := func() {
+			y := 0 // y is the current line
+
+			d.screen.Clear()
+
+			width, height := d.screen.Size()
+			d.box.ResizeWidth(width - 2*Padding)
+			d.box.ResizeHeight(height - Padding)
+
+			y, d.screen = d.h.SetScreen(y, width, d.style, d.screen)
+			y += 2
+
+			_, d.screen = d.box.SetScreen(y, d.screen)
+
+			d.screen.Show()
+		}
+
+		d.wg.Add(1)
+
+		shouldHavePrinted := false
+
+		for {
+			opcode, ok := d.messageChannel.Get()
+			if !ok {
+				if shouldHavePrinted {
+					printScreen()
+				}
+
+				d.wg.Done()
+
+				break
+			}
+
+			switch opcode {
+			case DOMustPrint:
+				printScreen()
+
+				shouldHavePrinted = false
+			case DOShouldPrint:
+				shouldHavePrinted = true
+			default:
+				d.ErrorChannel <- mb.NewTextMessage(mb.FatalText,
+					fmt.Sprintf("Unknown opcode: %T", opcode),
+				)
+			}
+		}
+	})
+}
+
+func (d *Display) Fini() {
+	d.messageChannel.Fini()
+	close(d.ErrorChannel)
+
+	d.wg.Wait()
+
+	// Close and free resources
+	var finiWg sync.WaitGroup
+
+	finiWg.Add(3)
+
+	go func() {
+		d.box.Fini()
+		finiWg.Done()
+		d.box = nil
+	}()
+
+	go func() {
+		d.h.Fini()
+		finiWg.Done()
+		d.h = nil
+	}()
+
+	go func() {
+		d.screen.Fini()
+		finiWg.Done()
+		d.screen = nil
+	}()
+
+	d.ErrorChannel = nil
+
+	finiWg.Wait()
 }
