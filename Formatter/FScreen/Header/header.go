@@ -6,8 +6,8 @@ import (
 	"strings"
 	"sync"
 
-	bf "github.com/PlayerR9/MyGoLib/CustomData/Buffer"
 	"github.com/PlayerR9/MyGoLib/CustomData/Counters"
+	bf "github.com/PlayerR9/MyGoLib/CustomData/Rerouting"
 	mb "github.com/PlayerR9/MyGoLib/Formatter/FScreen/MessageBox"
 	"github.com/gdamore/tcell"
 )
@@ -17,16 +17,16 @@ type Header struct {
 	currentProcess string
 	counters       []*Counters.UpCounter
 
-	msgBuffer   *bf.Buffer[HeaderMessage]
-	receiveFrom <-chan HeaderMessage
+	msgBuffer   *bf.Buffer[bf.Messager]
+	receiveFrom <-chan bf.Messager
 
 	receiveErrors chan mb.TextMessage
 	wg            sync.WaitGroup
 	once          sync.Once
 }
 
-func (h *Header) Init(title string) (chan<- HeaderMessage, <-chan mb.TextMessage) {
-	var sendTo chan<- HeaderMessage
+func (h *Header) Init(title string) (bf.SendChannel, <-chan mb.TextMessage) {
+	var sendTo chan<- bf.Messager
 
 	h.once.Do(func() {
 		title = strings.TrimSpace(title)
@@ -52,7 +52,91 @@ func (h *Header) Init(title string) (chan<- HeaderMessage, <-chan mb.TextMessage
 		}()
 	})
 
-	return sendTo, h.receiveErrors
+	return bf.NewSendChannel(sendTo, 1), h.receiveErrors
+}
+
+func (h *Header) executeCommand(msg bf.Messager) {
+	command, ok := msg.(HeaderMessage)
+	if !ok {
+		h.receiveErrors <- mb.NewTextMessage(mb.FatalText,
+			fmt.Sprintf("Unknown message type: %T", msg),
+		)
+		return
+	}
+
+	switch command.GetType() {
+	case UpdateCurrentProcess:
+		h.currentProcess = command.GetTitle()
+	case SetCounter:
+		counterToSet := command.GetCounter()
+
+		if slices.ContainsFunc(h.counters, func(c *Counters.UpCounter) bool {
+			return c.Equal(*counterToSet)
+		}) {
+			h.receiveErrors <- command.GetIfError()
+		} else {
+			h.counters = append(h.counters, counterToSet)
+		}
+	case DesetCounter:
+		labelToDeset := command.GetLabel()
+
+		index := slices.IndexFunc(h.counters, func(c *Counters.UpCounter) bool {
+			return c.ContainsLabel(labelToDeset)
+		})
+		if index != -1 {
+			h.counters = append(h.counters[:index], h.counters[index+1:]...)
+		} else {
+			h.receiveErrors <- command.GetIfError()
+		}
+	case IncrementCounter:
+		labelToIncrement := command.GetLabel()
+
+		index := slices.IndexFunc(h.counters, func(c *Counters.UpCounter) bool {
+			return c.ContainsLabel(labelToIncrement)
+		})
+		if index != -1 {
+			h.counters[index].Increment()
+		} else {
+			h.receiveErrors <- command.GetIfError()
+		}
+	case ReduceCounter:
+		labelToReduce := command.GetLabel()
+
+		index := slices.IndexFunc(h.counters, func(c *Counters.UpCounter) bool {
+			return c.ContainsLabel(labelToReduce)
+		})
+		if index != -1 {
+			h.counters[index].Reduce()
+		} else {
+			h.receiveErrors <- command.GetIfError()
+		}
+	default:
+		h.receiveErrors <- mb.NewTextMessage(mb.FatalText,
+			fmt.Sprintf("Unknown message type: %v", command.GetType()),
+		)
+	}
+}
+
+func (h *Header) Wait() {
+	h.wg.Wait()
+}
+
+func (h *Header) Cleanup() {
+	h.wg.Wait()
+
+	var finiWg sync.WaitGroup
+	defer finiWg.Wait()
+
+	finiWg.Add(1)
+
+	go func() {
+		h.msgBuffer.Cleanup()
+		finiWg.Done()
+		h.msgBuffer = nil
+	}()
+
+	h.counters = nil
+	h.receiveErrors = nil
 }
 
 func (h *Header) SetScreen(y, width int, style tcell.Style, screen tcell.Screen) (int, tcell.Screen) {
@@ -85,80 +169,4 @@ func (h *Header) SetScreen(y, width int, style tcell.Style, screen tcell.Screen)
 	}
 
 	return y, screen
-}
-
-func (h *Header) executeCommand(msg HeaderMessage) {
-	switch msg.GetType() {
-	case UpdateCurrentProcess:
-		h.currentProcess = msg.GetTitle()
-	case SetCounter:
-		counterToSet := msg.GetCounter()
-
-		if slices.ContainsFunc(h.counters, func(c *Counters.UpCounter) bool {
-			return c.Equal(*counterToSet)
-		}) {
-			h.receiveErrors <- msg.GetIfError()
-		} else {
-			h.counters = append(h.counters, counterToSet)
-		}
-	case DesetCounter:
-		labelToDeset := msg.GetLabel()
-
-		index := slices.IndexFunc(h.counters, func(c *Counters.UpCounter) bool {
-			return c.ContainsLabel(labelToDeset)
-		})
-		if index != -1 {
-			h.counters = append(h.counters[:index], h.counters[index+1:]...)
-		} else {
-			h.receiveErrors <- msg.GetIfError()
-		}
-	case IncrementCounter:
-		labelToIncrement := msg.GetLabel()
-
-		index := slices.IndexFunc(h.counters, func(c *Counters.UpCounter) bool {
-			return c.ContainsLabel(labelToIncrement)
-		})
-		if index != -1 {
-			h.counters[index].Increment()
-		} else {
-			h.receiveErrors <- msg.GetIfError()
-		}
-	case ReduceCounter:
-		labelToReduce := msg.GetLabel()
-
-		index := slices.IndexFunc(h.counters, func(c *Counters.UpCounter) bool {
-			return c.ContainsLabel(labelToReduce)
-		})
-		if index != -1 {
-			h.counters[index].Reduce()
-		} else {
-			h.receiveErrors <- msg.GetIfError()
-		}
-	default:
-		h.receiveErrors <- mb.NewTextMessage(mb.FatalText,
-			fmt.Sprintf("Unknown message type: %v", msg.GetType()),
-		)
-	}
-}
-
-func (h *Header) Wait() {
-	h.wg.Wait()
-}
-
-func (h *Header) Cleanup() {
-	h.wg.Wait()
-
-	var finiWg sync.WaitGroup
-	defer finiWg.Wait()
-
-	finiWg.Add(1)
-
-	go func() {
-		h.msgBuffer.Cleanup()
-		finiWg.Done()
-		h.msgBuffer = nil
-	}()
-
-	h.counters = nil
-	h.receiveErrors = nil
 }

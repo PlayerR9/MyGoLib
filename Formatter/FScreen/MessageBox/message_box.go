@@ -4,10 +4,17 @@ import (
 	"strings"
 	"sync"
 
-	buffer "github.com/PlayerR9/MyGoLib/CustomData/Buffer"
 	rws "github.com/PlayerR9/MyGoLib/CustomData/RWSafe"
+	buffer "github.com/PlayerR9/MyGoLib/CustomData/Rerouting"
 	"github.com/gdamore/tcell"
 )
+
+const (
+	Padding      = 2
+	PaddingWidth = 4 // 2 * Padding
+)
+
+// REMEMBER TO INITIALIZE THE MESSAGEBOX WITH THE PADDING
 
 type MessageBox struct {
 	table  [][]rune
@@ -258,9 +265,6 @@ func (mb *MessageBox) outOfBoundsEnqueueContents(contents []string, style tcell.
 ///////////////////////////////
 
 const (
-	Padding      = 2
-	PaddingWidth = 4 // 2 * Padding
-
 	Hellip    = "..."
 	HellipLen = 3
 )

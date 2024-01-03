@@ -6,6 +6,7 @@ import (
 
 	"github.com/PlayerR9/MyGoLib/CustomData/Counters"
 
+	bf "github.com/PlayerR9/MyGoLib/CustomData/Rerouting"
 	mb "github.com/PlayerR9/MyGoLib/Formatter/FScreen/MessageBox"
 )
 
@@ -32,6 +33,14 @@ func (enum HeaderMessageType) String() string {
 type HeaderMessage struct {
 	messageType HeaderMessageType
 	data        interface{}
+}
+
+func (hm HeaderMessage) Channel() bf.SendChannel {
+	return bf.NewSendChannel(make(chan<- bf.Messager), 1)
+}
+
+func (hm HeaderMessage) ParseInexistentEntryPoint() bf.Messager {
+	panic("implement me")
 }
 
 func (cm HeaderMessage) GetType() HeaderMessageType {
