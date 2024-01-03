@@ -5,17 +5,13 @@ import (
 )
 
 func TestWriteLines_ShortLines(t *testing.T) {
-	testBox := NewMessageBox(80, 20)
-	go testBox.Run()
+	testBox := new(MessageBox)
+	sendTo := testBox.Init(80, 20)
 
-	testBox.SendMessages(
-		NewTextMessage(NormalText,
-			"Hello",
-			"World",
-		),
+	sendTo <- NewTextMessage(NormalText,
+		"Hello",
+		"World",
 	)
-
-	testBox.Pause()
 
 	if string(testBox.table[1][2:7]) != "Hello" || string(testBox.table[1][8:13]) != "World" {
 		t.Errorf("WriteLines did not correctly write short lines")
@@ -23,13 +19,11 @@ func TestWriteLines_ShortLines(t *testing.T) {
 }
 
 func TestWriteLines_LongLine(t *testing.T) {
-	testBox := NewMessageBox(10, 10)
-	go testBox.Run()
+	testBox := new(MessageBox)
+	sendTo := testBox.Init(80, 20)
 
-	testBox.SendMessages(
-		NewTextMessage(NormalText,
-			"This is really a very long line that should be truncated and end with an ellipsis",
-		),
+	sendTo <- NewTextMessage(NormalText,
+		"This is really a very long line that should be truncated and end with an ellipsis",
 	)
 
 	testBox.Fini()
@@ -40,16 +34,14 @@ func TestWriteLines_LongLine(t *testing.T) {
 }
 
 func TestWriteLines_ShiftUp(t *testing.T) {
-	testBox := NewMessageBox(10, 10)
-	go testBox.Run()
+	testBox := new(MessageBox)
+	sendTo := testBox.Init(80, 20)
 
 	contents := make([]string, testBox.height+1)
 
 	for i := range contents {
 		contents[i] = "Line"
-		testBox.SendMessages(
-			NewTextMessage(NormalText, "Line"),
-		)
+		sendTo <- NewTextMessage(NormalText, "Line")
 	}
 
 	testBox.Fini()
@@ -58,13 +50,10 @@ func TestWriteLines_ShiftUp(t *testing.T) {
 		t.Errorf("WriteLines did not correctly shift the screen up")
 	}
 
-	testBox = NewMessageBox(10, 10)
-	go testBox.Run()
+	sendTo = testBox.Init(80, 20)
 
-	testBox.SendMessages(
-		NewTextMessage(NormalText,
-			contents...,
-		),
+	sendTo <- NewTextMessage(NormalText,
+		contents...,
 	)
 
 	testBox.Fini()

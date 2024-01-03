@@ -54,7 +54,7 @@ type TextMessage struct {
 
 func (tm *TextMessage) IsEmpty() bool {
 	if len(tm.contents) >= 2 {
-		return true
+		return false
 	}
 
 	return len(tm.contents) == 1 && tm.messageType.IsInfo()

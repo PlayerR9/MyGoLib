@@ -4,7 +4,7 @@ import (
 	"strings"
 	"sync"
 
-	bf "github.com/PlayerR9/MyGoLib/CustomData/Buffer"
+	buffer "github.com/PlayerR9/MyGoLib/CustomData/Buffer"
 	rws "github.com/PlayerR9/MyGoLib/CustomData/RWSafe"
 	"github.com/gdamore/tcell"
 )
@@ -19,40 +19,48 @@ type MessageBox struct {
 
 	isShifting bool
 
-	messageChannel bf.Buffer[TextMessage]
-	notEmpty       sync.Cond
+	msgBuffer   *buffer.Buffer[TextMessage]
+	receiveFrom <-chan TextMessage
+
+	notEmpty sync.Cond
 
 	wg   sync.WaitGroup
 	once sync.Once
 }
 
-func NewMessageBox(width, height int) *MessageBox {
+func (mb *MessageBox) Init(width, height int) chan<- TextMessage {
 	if width < 5 {
 		panic("width must be at least 5")
-	}
-
-	if height < 2 {
+	} else if height < 2 {
 		panic("height must be at least 2")
 	}
 
-	var mb MessageBox
+	var sendTo chan<- TextMessage
 
-	mb.table = make([][]rune, height)
-	for i := 0; i < height; i++ {
-		mb.table[i] = make([]rune, width)
-	}
+	mb.once.Do(func() {
+		mb.table = make([][]rune, height)
+		for i := 0; i < height; i++ {
+			mb.table[i] = make([]rune, width)
+		}
 
-	mb.styles = make([]tcell.Style, height)
+		mb.styles = make([]tcell.Style, height)
 
-	mb.width = width
-	mb.height = height
+		mb.width = width
+		mb.height = height
 
-	mb.firstEmptyLine = rws.NewRWSafe(0)
-	mb.isShifting = false
-	mb.messageChannel = bf.NewBuffer[TextMessage]()
-	mb.notEmpty = *sync.NewCond(&sync.Mutex{})
+		mb.firstEmptyLine = rws.NewRWSafe(0)
+		mb.isShifting = false
 
-	return &mb
+		sendTo, mb.receiveFrom = mb.msgBuffer.Init(1)
+
+		mb.notEmpty = *sync.NewCond(&sync.Mutex{})
+
+		mb.wg.Add(1)
+
+		go mb.executeCommands()
+	})
+
+	return sendTo
 }
 
 func (mb *MessageBox) GetDefaultStyle() tcell.Style {
@@ -63,142 +71,146 @@ func (mb *MessageBox) HasEmptyLine() bool {
 	return mb.firstEmptyLine.Get() < mb.height
 }
 
-func (mb *MessageBox) Run() {
-	mb.once.Do(func() {
-		go mb.messageChannel.Run() // ASSUMPTION: This works correctly
+func (mb *MessageBox) Close() {
 
-		mb.wg.Add(1)
-		defer mb.wg.Done()
-
-		for {
-			msg, ok := mb.messageChannel.Get() // ASSUMPTION: This works correctly
-			if !ok {
-				break
-			}
-
-			var style tcell.Style
-
-			if val, ok := StyleMap[msg.GetType()]; ok {
-				style = val
-			} else {
-				style = StyleMap[NormalText]
-			}
-
-			mb.notEmpty.L.Lock()
-			for !mb.HasEmptyLine() {
-				mb.notEmpty.Wait()
-			}
-
-			// Prevent infinite wait time when the message box is closed
-			if mb.firstEmptyLine.Get() == -1 {
-				break
-			}
-
-			mb.notEmpty.L.Unlock()
-
-			var remaining []string
-
-			switch msg.GetType() {
-			case BreakLine, SeparatorLine:
-				var char rune
-
-				if msg.GetType() == BreakLine {
-					char = Space
-				} else {
-					char = Separator
-				}
-
-				for i := 0; i < mb.width; i++ {
-					mb.table[mb.firstEmptyLine.Get()][i] = char
-				}
-
-				mb.firstEmptyLine.Set(mb.firstEmptyLine.Get() + 1)
-
-				remaining = nil
-			default:
-				remaining = mb.enqueueContents(msg.GetContents(), style, false)
-			}
-
-			for len(remaining) > 0 {
-				mb.notEmpty.L.Lock()
-				for !mb.HasEmptyLine() {
-					mb.notEmpty.Wait()
-				}
-
-				if mb.firstEmptyLine.Get() == -1 {
-					break // Prevent infinite wait time when the message box is closed
-				}
-
-				mb.notEmpty.L.Unlock()
-
-				remaining = mb.enqueueContents(remaining, style, true)
-			}
-		}
-
-		// TO DO: Cleanups
-
-		mb.wg.Done()
-	})
-}
-
-// DEBUG TOOL: Allows to pause the message box to examine its contents
-// Do not use this function outside of debugging
-func (mb *MessageBox) Pause() {
-	mb.messageChannel.Fini()
-
-	// Wake up the message box if it is waiting for a message
-	// this will prevent a deadlock
-	mb.firstEmptyLine.Set(-1)
-	mb.notEmpty.Broadcast()
-
-	mb.wg.Wait()
-
-	// Release the memory
-	mb.table = nil
-	mb.styles = nil
-	mb.notEmpty.L = nil
-	mb.firstEmptyLine = nil
-}
-
-func (mb *MessageBox) Continue() {
-	mb.messageChannel.Fini()
-
-	// Wake up the message box if it is waiting for a message
-	// this will prevent a deadlock
-	mb.firstEmptyLine.Set(-1)
-	mb.notEmpty.Broadcast()
-
-	mb.wg.Wait()
-
-	// Release the memory
-	mb.table = nil
-	mb.styles = nil
-	mb.notEmpty.L = nil
-	mb.firstEmptyLine = nil
 }
 
 // Clear interface{} information to prevent a deadlock and release the memory
 // FIXME: Check if this works
 func (mb *MessageBox) Fini() {
-	mb.messageChannel.Fini()
-
 	// Wake up the message box if it is waiting for a message
 	// this will prevent a deadlock
 	mb.firstEmptyLine.Set(-1)
 	mb.notEmpty.Broadcast()
 
+	// BAD: This shouldn't be done in the first place
+}
+
+func (mb *MessageBox) Wait() {
+	mb.wg.Wait()
+}
+
+func (mb *MessageBox) Cleanup() {
 	mb.wg.Wait()
 
-	// Release the memory
 	mb.table = nil
 	mb.styles = nil
 	mb.notEmpty.L = nil
 	mb.firstEmptyLine = nil
 }
 
+////////////////////////////////
+
+func (mb *MessageBox) executeCommands() {
+	defer mb.wg.Done()
+
+	for msg := range mb.receiveFrom {
+		if msg.IsEmpty() {
+			continue // Skip empty messages
+		}
+
+		// Get the style
+		var style tcell.Style
+
+		if val, ok := StyleMap[msg.GetType()]; ok {
+			style = val
+		} else {
+			style = StyleMap[NormalText]
+		}
+
+		// Wait for an empty line
+		mb.notEmpty.L.Lock()
+		for !mb.HasEmptyLine() {
+			mb.notEmpty.Wait()
+		}
+
+		// Prevent infinite wait time when the message box is closed
+		if mb.firstEmptyLine.Get() == -1 {
+			break
+		}
+
+		mb.notEmpty.L.Unlock()
+
+		// Enqueue the message into the message box
+		switch msg.GetType() {
+		case BreakLine, SeparatorLine:
+			var char rune
+
+			if msg.GetType() == BreakLine {
+				char = Space
+			} else {
+				char = Separator
+			}
+
+			for i := 0; i < mb.width; i++ {
+				mb.table[mb.firstEmptyLine.Get()][i] = char
+			}
+
+			mb.firstEmptyLine.Set(mb.firstEmptyLine.Get() + 1)
+		default:
+			remaining := mb.enqueueContents(msg.GetContents(), style, false)
+
+			for len(remaining) > 0 {
+				if mb.HasEmptyLine() {
+					remaining = mb.enqueueContents(remaining, style, true)
+				} else {
+					remaining = mb.outOfBoundsEnqueueContents(remaining, style, true)
+				}
+			}
+		}
+	}
+}
+
 // WARNING: This function doesn't do interface{} checks
 // FIXME: This function doesn't work correctly
 func (mb *MessageBox) enqueueContents(contents []string, style tcell.Style, isIndented bool) []string {
+	fields := strings.Fields(contents[0])
+	if len(fields) == 0 {
+		return nil
+	}
+
+	x := 0
+	if isIndented {
+		x = IndentLevel
+	}
+
+	var y int
+	x, y = mb.WriteFieldsAt(x, mb.firstEmptyLine.Get(), fields) // ASSUMPTION: This works correctly
+	mb.styles[y] = style
+	if y != mb.firstEmptyLine.Get() {
+		mb.firstEmptyLine.Set(y)
+		return contents[1:]
+	}
+
+	// Try to see if the next content fits on the same line
+	for index, content := range contents[1:] {
+		fields = strings.Fields(content)
+		if len(fields) == 0 {
+			continue // Skip empty lines
+		}
+
+		lastValidField := mb.CanWriteFieldsAt(x, fields)
+		if lastValidField == -1 {
+			mb.firstEmptyLine.Set(mb.firstEmptyLine.Get() + 1)
+			return contents[index:]
+		}
+
+		for _, field := range fields[:lastValidField+1] {
+			x = mb.WriteAt(x+2, y, field)
+		}
+
+		if lastValidField != len(fields)-1 {
+			mb.firstEmptyLine.Set(mb.firstEmptyLine.Get() + 1)
+			return append([]string{strings.Join(fields[lastValidField+1:], " ")}, contents[index+1:]...)
+		}
+	}
+
+	return nil
+}
+
+// WARNING: This function doesn't do interface{} checks
+// FIXME: This function doesn't work correctly
+func (mb *MessageBox) outOfBoundsEnqueueContents(contents []string, style tcell.Style, isIndented bool) []string {
 	fields := strings.Fields(contents[0])
 	if len(fields) == 0 {
 		return nil
@@ -512,16 +524,4 @@ func (mb *MessageBox) SetScreen(y int, screen tcell.Screen) (int, tcell.Screen) 
 	}
 
 	return y, mb.DrawHorizontalBorderAt(y, style, screen) // Bottom border
-}
-
-func (mb *MessageBox) SendMessages(message TextMessage, optionals ...TextMessage) {
-	if !message.IsEmpty() {
-		mb.messageChannel.SendMessages(message)
-	}
-
-	for _, message := range optionals {
-		if !message.IsEmpty() {
-			mb.messageChannel.SendMessages(message)
-		}
-	}
 }
