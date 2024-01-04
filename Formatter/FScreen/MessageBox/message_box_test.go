@@ -6,7 +6,7 @@ import (
 
 func TestWriteLines_ShortLines(t *testing.T) {
 	testBox := new(MessageBox)
-	sendTo := testBox.Init(80, 20)
+	sendTo, _ := testBox.Init(80, 20)
 
 	sendTo <- NewTextMessage(NormalText,
 		"Hello",
@@ -20,7 +20,7 @@ func TestWriteLines_ShortLines(t *testing.T) {
 
 func TestWriteLines_LongLine(t *testing.T) {
 	testBox := new(MessageBox)
-	sendTo := testBox.Init(80, 20)
+	sendTo, _ := testBox.Init(80, 20)
 
 	sendTo <- NewTextMessage(NormalText,
 		"This is really a very long line that should be truncated and end with an ellipsis",
@@ -35,7 +35,7 @@ func TestWriteLines_LongLine(t *testing.T) {
 
 func TestWriteLines_ShiftUp(t *testing.T) {
 	testBox := new(MessageBox)
-	sendTo := testBox.Init(80, 20)
+	sendTo, _ := testBox.Init(80, 20)
 
 	contents := make([]string, testBox.height+1)
 
@@ -50,7 +50,7 @@ func TestWriteLines_ShiftUp(t *testing.T) {
 		t.Errorf("WriteLines did not correctly shift the screen up")
 	}
 
-	sendTo = testBox.Init(80, 20)
+	sendTo, _ = testBox.Init(80, 20)
 
 	sendTo <- NewTextMessage(NormalText,
 		contents...,

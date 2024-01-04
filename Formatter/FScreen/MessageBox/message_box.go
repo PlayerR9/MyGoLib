@@ -4,10 +4,30 @@ import (
 	"strings"
 	"sync"
 
+	buffer "github.com/PlayerR9/MyGoLib/CustomData/Buffer"
 	rws "github.com/PlayerR9/MyGoLib/CustomData/RWSafe"
-	buffer "github.com/PlayerR9/MyGoLib/CustomData/Rerouting"
 	"github.com/gdamore/tcell"
 )
+
+func (mb *MessageBox) SetSize(width, height int) error {
+	return nil
+}
+
+func (mb *MessageBox) Draw(y int, screen tcell.Screen) (int, tcell.Screen) {
+	return y, nil
+}
+
+type ErrWidthTooSmall struct{}
+
+func (e ErrWidthTooSmall) Error() string {
+	return "width must be at least 5"
+}
+
+type ErrHeightTooSmall struct{}
+
+func (e ErrHeightTooSmall) Error() string {
+	return "height must be at least 2"
+}
 
 const (
 	Padding      = 2
@@ -35,11 +55,11 @@ type MessageBox struct {
 	once sync.Once
 }
 
-func (mb *MessageBox) Init(width, height int) chan<- TextMessage {
+func (mb *MessageBox) Init(width, height int) (chan<- TextMessage, error) {
 	if width < 5 {
-		panic("width must be at least 5")
+		return nil, &ErrWidthTooSmall{}
 	} else if height < 2 {
-		panic("height must be at least 2")
+		return nil, &ErrHeightTooSmall{}
 	}
 
 	var sendTo chan<- TextMessage
@@ -67,7 +87,7 @@ func (mb *MessageBox) Init(width, height int) chan<- TextMessage {
 		go mb.executeCommands()
 	})
 
-	return sendTo
+	return sendTo, nil
 }
 
 func (mb *MessageBox) GetDefaultStyle() tcell.Style {

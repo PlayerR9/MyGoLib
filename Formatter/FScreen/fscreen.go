@@ -1,46 +1,78 @@
 package FScreen
 
 import (
-	"errors"
 	"fmt"
-	"strings"
 	"sync"
 
-	bf "github.com/PlayerR9/MyGoLib/CustomData/Rerouting"
+	buffer "github.com/PlayerR9/MyGoLib/CustomData/Buffer"
 	h "github.com/PlayerR9/MyGoLib/Formatter/FScreen/Header"
 	mb "github.com/PlayerR9/MyGoLib/Formatter/FScreen/MessageBox"
+	"github.com/gdamore/tcell"
 )
 
-var FScreen *bf.Hub
+var (
+	header     *h.Header      = nil
+	messageBox *mb.MessageBox = nil
+)
 
-func Init(title string, width, height int) error {
-	if strings.TrimSpace(title) == "" {
-		return errors.New("title cannot be empty")
-	} else if width <= 5 || height <= 2 {
-		return errors.New("width and height must be greater than 5 and 2 respectively")
+type FScreen struct {
+	msgBuffer   *buffer.Buffer[interface{}]
+	receiveFrom <-chan interface{}
+	once        sync.Once
+	wg          sync.WaitGroup
+
+	sendToMessageBox chan<- mb.TextMessage
+
+	sendToHeader        chan<- h.HeaderMessage
+	receiveHeaderErrors <-chan mb.TextMessage
+}
+
+func (fs *FScreen) Init(title string, width, height int) (chan<- interface{}, error) {
+	var err error
+
+	messageBox = new(mb.MessageBox)
+	fs.sendToMessageBox, err = messageBox.Init(width, height)
+	if err != nil {
+		return nil, err
 	}
 
-	FScreen = bf.NewHub()
+	header = new(h.Header)
+	fs.sendToHeader, err = header.Init(title)
+	if err != nil {
+		return nil, err
+	}
 
-	header := new(h.Header)
-	toSendHeader, receiveHeaderErrors := header.Init(title)
+	var sendTo chan<- interface{}
 
-	box := new(mb.MessageBox)
-	toSendBox := box.Init(width, height)
+	fs.once.Do(func() {
+		fs.receiveHeaderErrors = header.GetReceiveErrorsFromChannel()
+		sendTo, fs.receiveFrom = fs.msgBuffer.Init(1)
 
-	FScreen.AddConnection(receiveHeaderErrors, toSendBox)
-	FScreen.AddEntryPoint(toSendHeader)
-	FScreen.SetInexistentEntryPoint(mb.GetSendToChannel())
+		fs.wg.Add(1)
 
-	return nil
+		go fs.routingMessages()
+	})
+
+	return sendTo, nil
 }
 
 func (fs *FScreen) routingMessages() {
 	defer fs.wg.Done()
 
-	for msg := range fs.receiveFrom {
-		correctChannel := msg.Channel()
+	// Start the rerouting channel listeners
+	var reroutingWg sync.WaitGroup
 
+	reroutingWg.Add(1)
+
+	go func() {
+		defer reroutingWg.Done()
+
+		for msg := range fs.receiveHeaderErrors {
+			fs.sendToMessageBox <- msg
+		}
+	}()
+
+	for msg := range fs.receiveFrom {
 		switch x := msg.(type) {
 		case mb.TextMessage:
 			fs.sendToMessageBox <- x
@@ -53,34 +85,63 @@ func (fs *FScreen) routingMessages() {
 		}
 	}
 
-	errorWg.Wait()
+	reroutingWg.Wait()
 }
 
 func (fs *FScreen) Cleanup() {
 	fs.wg.Wait()
 
-	var finiWg sync.WaitGroup
-	defer finiWg.Wait()
+	var cleanWg sync.WaitGroup
+	defer cleanWg.Wait()
 
-	finiWg.Add(3)
-
-	go func() {
-		screen.Fini()
-		finiWg.Done()
-		screen = nil
-	}()
+	cleanWg.Add(3)
 
 	go func() {
 		fs.msgBuffer.Cleanup()
-		finiWg.Done()
+		cleanWg.Done()
 		fs.msgBuffer = nil
+		fs.receiveFrom = nil
 	}()
 
 	go func() {
 		close(fs.sendToMessageBox)
 		messageBox.Fini()
 		messageBox.Cleanup()
-		finiWg.Done()
+		cleanWg.Done()
 		messageBox = nil
 	}()
+
+	go func() {
+		close(fs.sendToHeader)
+		header.Cleanup()
+		cleanWg.Done()
+		header = nil
+		fs.sendToHeader = nil
+		fs.receiveHeaderErrors = nil
+	}()
+}
+
+func (fs *FScreen) Wait() {
+	fs.wg.Wait()
+}
+
+func (fs *FScreen) SetSize(width, height int) error {
+	var err error
+
+	err = header.SetSize(width, height)
+	if err != nil {
+		return err
+	}
+
+	err = messageBox.SetSize(width, height)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (fs *FScreen) Draw(y int, screen tcell.Screen) (int, tcell.Screen) {
+	y, screen = header.Draw(y, screen)
+	return messageBox.Draw(y+2, screen)
 }

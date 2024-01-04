@@ -1,4 +1,4 @@
-package Rerouting
+package Buffer
 
 import (
 	"testing"

@@ -11,7 +11,7 @@ import (
 
 type Displayer interface {
 	SetSize(width, height int) error
-	Draw(tcell.Screen) (int, tcell.Screen)
+	Draw(int, tcell.Screen) (int, tcell.Screen)
 }
 
 type Display struct {
@@ -69,7 +69,7 @@ func (d *Display) Start() {
 			var offset int
 
 			for _, element := range d.elementsToShow {
-				offset, d.screen = element.Draw(d.screen)
+				offset, d.screen = element.Draw(y, d.screen)
 				y += offset + 2
 			}
 
