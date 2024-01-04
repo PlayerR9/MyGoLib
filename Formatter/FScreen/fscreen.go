@@ -77,7 +77,16 @@ func (fs *FScreen) routingMessages() {
 		case mb.TextMessage:
 			fs.sendToMessageBox <- x
 		case h.HeaderMessage:
-			fs.sendToHeader <- x
+			switch t := x.Data.(type) {
+			case mb.TextMessage:
+				fs.sendToMessageBox <- t
+			case string, h.CounterData:
+				fs.sendToHeader <- x
+			default:
+				fs.sendToMessageBox <- mb.NewTextMessage(mb.ErrorText,
+					fmt.Sprintf("Unknown header message type: %T", x),
+				)
+			}
 		default:
 			fs.sendToMessageBox <- mb.NewTextMessage(mb.FatalText,
 				fmt.Sprintf("Unknown message type: %T", x),

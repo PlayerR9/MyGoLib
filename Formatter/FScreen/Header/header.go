@@ -18,14 +18,6 @@ import (
 // MessageBox.NormalText.
 var style tcell.Style = mb.StyleMap[mb.NormalText]
 
-// ErrEmptyTitle represents an error that is thrown when a title is expected but not provided.
-// It is a struct type that implements the error interface by providing an Error method.
-type ErrEmptyTitle struct{}
-
-func (e ErrEmptyTitle) Error() string {
-	return "title cannot be empty"
-}
-
 // Header represents the header of a process or application.
 // It contains information about the title, current process, counters, message buffer,
 // channels for receiving messages and errors, synchronization primitives, and the width
@@ -123,21 +115,53 @@ func (h *Header) Init(title string) (chan<- HeaderMessage, error) {
 // For unknown message types, it sends an error message to the receiveErrors channel.
 // The method uses the slices package to find counters in the counters slice.
 func (h *Header) executeCommand(msg HeaderMessage) {
-	switch msg.GetType() {
+	switch msg.MessageType {
 	case UpdateCurrentProcess:
-		h.currentProcess = msg.GetTitle()
+		title, err := msg.GetTitle()
+		if err != nil {
+			h.receiveErrors <- mb.NewTextMessage(mb.FatalText,
+				fmt.Sprintf("Error getting title: %v", err),
+			)
+
+			return
+		}
+
+		h.currentProcess = title
 	case SetCounter:
-		counterToSet := msg.GetCounter()
+		counterToSet, err := msg.GetCounter()
+		if err != nil {
+			h.receiveErrors <- mb.NewTextMessage(mb.FatalText,
+				fmt.Sprintf("Error getting counter: %v", err),
+			)
+
+			return
+		}
 
 		if slices.ContainsFunc(h.counters, func(c *Counters.UpCounter) bool {
 			return c.Equal(*counterToSet)
 		}) {
-			h.receiveErrors <- msg.GetIfError()
+			ifErr, err := msg.GetIfError()
+			if err != nil {
+				h.receiveErrors <- mb.NewTextMessage(mb.FatalText,
+					fmt.Sprintf("Error getting ifError: %v", err),
+				)
+
+				return
+			}
+
+			h.receiveErrors <- ifErr
 		} else {
 			h.counters = append(h.counters, counterToSet)
 		}
-	case DesetCounter:
-		labelToDeset := msg.GetLabel()
+	case UnsetCounter:
+		labelToDeset, err := msg.GetLabel()
+		if err != nil {
+			h.receiveErrors <- mb.NewTextMessage(mb.FatalText,
+				fmt.Sprintf("Error getting label: %v", err),
+			)
+
+			return
+		}
 
 		index := slices.IndexFunc(h.counters, func(c *Counters.UpCounter) bool {
 			return c.ContainsLabel(labelToDeset)
@@ -145,10 +169,26 @@ func (h *Header) executeCommand(msg HeaderMessage) {
 		if index != -1 {
 			h.counters = append(h.counters[:index], h.counters[index+1:]...)
 		} else {
-			h.receiveErrors <- msg.GetIfError()
+			ifErr, err := msg.GetIfError()
+			if err != nil {
+				h.receiveErrors <- mb.NewTextMessage(mb.FatalText,
+					fmt.Sprintf("Error getting ifError: %v", err),
+				)
+
+				return
+			}
+
+			h.receiveErrors <- ifErr
 		}
 	case IncrementCounter:
-		labelToIncrement := msg.GetLabel()
+		labelToIncrement, err := msg.GetLabel()
+		if err != nil {
+			h.receiveErrors <- mb.NewTextMessage(mb.FatalText,
+				fmt.Sprintf("Error getting label: %v", err),
+			)
+
+			return
+		}
 
 		index := slices.IndexFunc(h.counters, func(c *Counters.UpCounter) bool {
 			return c.ContainsLabel(labelToIncrement)
@@ -156,10 +196,26 @@ func (h *Header) executeCommand(msg HeaderMessage) {
 		if index != -1 {
 			h.counters[index].Increment()
 		} else {
-			h.receiveErrors <- msg.GetIfError()
+			ifErr, err := msg.GetIfError()
+			if err != nil {
+				h.receiveErrors <- mb.NewTextMessage(mb.FatalText,
+					fmt.Sprintf("Error getting ifError: %v", err),
+				)
+
+				return
+			}
+
+			h.receiveErrors <- ifErr
 		}
 	case ReduceCounter:
-		labelToReduce := msg.GetLabel()
+		labelToReduce, err := msg.GetLabel()
+		if err != nil {
+			h.receiveErrors <- mb.NewTextMessage(mb.FatalText,
+				fmt.Sprintf("Error getting label: %v", err),
+			)
+
+			return
+		}
 
 		index := slices.IndexFunc(h.counters, func(c *Counters.UpCounter) bool {
 			return c.ContainsLabel(labelToReduce)
@@ -167,11 +223,20 @@ func (h *Header) executeCommand(msg HeaderMessage) {
 		if index != -1 {
 			h.counters[index].Reduce()
 		} else {
-			h.receiveErrors <- msg.GetIfError()
+			ifErr, err := msg.GetIfError()
+			if err != nil {
+				h.receiveErrors <- mb.NewTextMessage(mb.FatalText,
+					fmt.Sprintf("Error getting ifError: %v", err),
+				)
+
+				return
+			}
+
+			h.receiveErrors <- ifErr
 		}
 	default:
 		h.receiveErrors <- mb.NewTextMessage(mb.FatalText,
-			fmt.Sprintf("Unknown message type: %v", msg.GetType()),
+			fmt.Sprintf("Unknown message type: %v", msg.MessageType),
 		)
 	}
 }

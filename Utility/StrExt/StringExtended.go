@@ -5,6 +5,33 @@ import (
 	"slices"
 )
 
+// ReplaceSuffix replaces the end of the given string with the provided suffix.
+// The function checks the lengths of the string and the suffix to determine the appropriate action:
+//   - If the length of the suffix is greater than the length of the string, the function returns an empty string and an ErrSuffixTooLong error.
+//   - If the length of the suffix is equal to the length of the string, the function returns the suffix.
+//   - If the length of the suffix is zero, the function returns the original string.
+//   - Otherwise, the function replaces the end of the string with the suffix and returns the result.
+//
+// Parameters:
+//
+//   - str: The original string.
+//   - suffix: The suffix to replace the end of the string.
+//
+// Returns:
+//
+//   - The modified string, or an error if the suffix is too long.
+func ReplaceSuffix(str, suffix string) (string, error) {
+	if len(str) < len(suffix) {
+		return "", &ErrSuffixTooLong{}
+	} else if len(str) == len(suffix) {
+		return suffix, nil
+	} else if len(suffix) == 0 {
+		return str, nil
+	}
+
+	return str[:len(str)-len(suffix)] + suffix, nil
+}
+
 func FindContentIndexes(openingToken, closingToken string, contentTokens []string) (int, int, bool) {
 	if openingToken == "" {
 		panic("Invalid input: Opening token cannot be empty")

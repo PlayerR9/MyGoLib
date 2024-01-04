@@ -13,7 +13,7 @@ func TestWriteLines_ShortLines(t *testing.T) {
 		"World",
 	)
 
-	if string(testBox.table[1][2:7]) != "Hello" || string(testBox.table[1][8:13]) != "World" {
+	if string(testBox.content.table[1][2:7]) != "Hello" || string(testBox.content.table[1][8:13]) != "World" {
 		t.Errorf("WriteLines did not correctly write short lines")
 	}
 }
@@ -28,7 +28,7 @@ func TestWriteLines_LongLine(t *testing.T) {
 
 	testBox.Fini()
 
-	if string(testBox.table[1][testBox.height-5:testBox.width-2]) != "..." {
+	if string(testBox.content.table[1][testBox.content.height-5:testBox.content.width-2]) != "..." {
 		t.Errorf("WriteLines did not correctly truncate a long line")
 	}
 }
@@ -37,7 +37,7 @@ func TestWriteLines_ShiftUp(t *testing.T) {
 	testBox := new(MessageBox)
 	sendTo, _ := testBox.Init(80, 20)
 
-	contents := make([]string, testBox.height+1)
+	contents := make([]string, testBox.content.height+1)
 
 	for i := range contents {
 		contents[i] = "Line"
@@ -46,7 +46,7 @@ func TestWriteLines_ShiftUp(t *testing.T) {
 
 	testBox.Fini()
 
-	if string(testBox.table[6][2:6]) != "Line" {
+	if string(testBox.content.table[6][2:6]) != "Line" {
 		t.Errorf("WriteLines did not correctly shift the screen up")
 	}
 
@@ -58,7 +58,7 @@ func TestWriteLines_ShiftUp(t *testing.T) {
 
 	testBox.Fini()
 
-	if string(testBox.table[1][52:56]) != "Line" {
+	if string(testBox.content.table[1][52:56]) != "Line" {
 		t.Errorf("WriteLines did not correctly shift the screen up")
 	}
 }
