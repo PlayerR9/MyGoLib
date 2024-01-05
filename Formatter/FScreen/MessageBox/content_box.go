@@ -425,7 +425,7 @@ func (cb *ContentBox) tryHandlingConsecutiveLines(x, y, index int, fieldMatrix [
 			fmt.Printf("Last index (consecutive lines): %d\n", lastIndex)
 		}
 
-		_, err = cb.writeFieldsWithSpacing(x, y, fieldMatrix[index][:lastIndex])
+		x, err = cb.writeFieldsWithSpacing(x, y, fieldMatrix[index][:lastIndex])
 		if err != nil {
 			return x, y, index, 0, err
 		}
