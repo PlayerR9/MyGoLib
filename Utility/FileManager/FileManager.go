@@ -3,6 +3,7 @@
 package FileManager
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"net/http"
@@ -78,6 +79,35 @@ func MediaDownloader(dest, url string) (string, error) {
 	}
 
 	return file_path, nil
+}
+
+// ReadWholeFileLineByLine reads a file from the provided path line by line and returns a slice of strings,
+// where each string represents a line from the file. If an error occurs while opening the file, the function
+// returns the error and a nil slice.
+//
+// Parameters:
+//
+//   - path: The path to the file to be read.
+//
+// Returns:
+//
+//   - A slice of strings where each string is a line from the file.
+//   - An error if one occurred while opening or scanning the file.
+func ReadWholeFileLineByLine(path string) ([]string, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	var lines []string
+	scanner := bufio.NewScanner(f)
+
+	for scanner.Scan() {
+		lines = append(lines, scanner.Text())
+	}
+
+	return lines, scanner.Err()
 }
 
 func AppendToFile(filePath string, content ...string) error {
