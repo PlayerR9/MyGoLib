@@ -146,7 +146,17 @@ func (mb *MessageBox) Wait() {
 func (mb *MessageBox) Cleanup() {
 	mb.wg.Wait()
 
-	mb.notEmpty.L = nil
+	var finiWg sync.WaitGroup
+
+	finiWg.Add(1)
+
+	go func() {
+		mb.msgBuffer.Cleanup()
+		finiWg.Done()
+	}()
+
+	finiWg.Wait()
+
 	close(mb.receiveErrors)
 }
 
