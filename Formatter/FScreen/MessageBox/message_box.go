@@ -12,11 +12,21 @@ const (
 	PaddingWidth = 4 // 2 * Padding
 )
 
-type MessageBox struct {
-	content *ContentBox
+var StyleMap map[TextMessageType]tcell.Style = map[TextMessageType]tcell.Style{
+	NormalText:  tcell.StyleDefault.Foreground(tcell.ColorBlack).Background(tcell.ColorGhostWhite),
+	DebugText:   tcell.StyleDefault.Bold(true).Foreground(tcell.ColorSlateGray).Background(tcell.ColorGhostWhite),
+	WarningText: tcell.StyleDefault.Foreground(tcell.ColorDarkOrange).Background(tcell.ColorGhostWhite),
+	ErrorText:   tcell.StyleDefault.Foreground(tcell.ColorFireBrick).Background(tcell.ColorGhostWhite),
+	FatalText:   tcell.StyleDefault.Bold(true).Foreground(tcell.ColorDarkRed).Background(tcell.ColorGhostWhite),
+	SuccessText: tcell.StyleDefault.Foreground(tcell.ColorDarkGreen).Background(tcell.ColorGhostWhite),
+}
 
-	msgBuffer   *buffer.Buffer[TextMessage]
-	receiveFrom <-chan TextMessage
+type MessageBox struct {
+	content ContentBox
+
+	msgBuffer     *buffer.Buffer[TextMessage]
+	receiveFrom   <-chan TextMessage
+	receiveErrors chan TextMessage
 
 	notEmpty sync.Cond
 
@@ -37,6 +47,7 @@ func (mb *MessageBox) Init(width, height int) (chan<- TextMessage, error) {
 		mb.content, _ = NewContentBox(width, height)
 
 		sendTo, mb.receiveFrom = mb.msgBuffer.Init(1)
+		mb.receiveErrors = make(chan TextMessage, 1)
 
 		mb.notEmpty = *sync.NewCond(&sync.Mutex{})
 
@@ -48,16 +59,19 @@ func (mb *MessageBox) Init(width, height int) (chan<- TextMessage, error) {
 	return sendTo, nil
 }
 
-func (mb *MessageBox) SetSize(width, height int) error {
-	err := mb.content.ResizeWidth(width)
-	if err != nil {
-		return &ErrWidthTooSmall{}
-	}
+func (mb *MessageBox) GetReceiveErrorsFromChannel() <-chan TextMessage {
+	return mb.receiveErrors
+}
 
-	err = mb.content.ResizeHeight(height)
-	if err != nil {
+func (mb *MessageBox) SetSize(width, height int) error {
+	if width-PaddingWidth < 5 {
+		return &ErrWidthTooSmall{}
+	} else if height-Padding < 2 {
 		return &ErrHeightTooSmall{}
 	}
+
+	mb.content.ResizeWidth(width)
+	mb.content.ResizeHeight(height)
 
 	return nil
 }
@@ -79,7 +93,7 @@ func (mb *MessageBox) Draw(y int, screen tcell.Screen) (int, tcell.Screen) {
 
 	screen = mb.drawHorizontalBorderAt(y, style, screen) // Top border
 
-	for i := 0; i < mb.content.firstEmptyLine.Get(); i++ {
+	for i := 0; i < mb.content.firstEmptyLine; i++ {
 		y++
 		screen.SetContent(0, y, '|', nil, style) // Left border
 
@@ -90,7 +104,7 @@ func (mb *MessageBox) Draw(y int, screen tcell.Screen) (int, tcell.Screen) {
 		screen.SetContent(mb.content.width+PaddingWidth, y, '|', nil, style) // Right border
 	}
 
-	for i := mb.content.firstEmptyLine.Get(); i < mb.content.height; i++ {
+	for i := mb.content.firstEmptyLine; i < mb.content.height; i++ {
 		y++
 		screen.SetContent(0, y, '|', nil, style) // Left border
 
@@ -132,8 +146,8 @@ func (mb *MessageBox) Wait() {
 func (mb *MessageBox) Cleanup() {
 	mb.wg.Wait()
 
-	mb.content.Cleanup()
 	mb.notEmpty.L = nil
+	close(mb.receiveErrors)
 }
 
 ////////////////////////////////
@@ -162,7 +176,7 @@ func (mb *MessageBox) executeCommands() {
 		}
 
 		// Prevent infinite wait time when the message box is closed
-		if mb.content.firstEmptyLine.Get() == -1 {
+		if mb.content.firstEmptyLine == -1 {
 			break
 		}
 
@@ -175,7 +189,13 @@ func (mb *MessageBox) executeCommands() {
 		case SeparatorLine:
 			mb.content.EnqueueLineSeparator(Separator)
 		default:
-			mb.content.EnqueueContents(msg.GetContents(), style)
+			err := mb.content.EnqueueContents(msg.GetContents(), style)
+			if err != nil {
+				mb.receiveErrors <- NewTextMessage(ErrorText,
+					"Could not enqueue the message into the message box:",
+					err.Error(),
+				)
+			}
 		}
 
 		if mb.content.CanShiftUp() {

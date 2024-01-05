@@ -21,7 +21,8 @@ type FScreen struct {
 	once        sync.Once
 	wg          sync.WaitGroup
 
-	sendToMessageBox chan<- mb.TextMessage
+	sendToMessageBox        chan<- mb.TextMessage
+	receiveMessageBoxErrors <-chan mb.TextMessage
 
 	sendToHeader        chan<- h.HeaderMessage
 	receiveHeaderErrors <-chan mb.TextMessage
@@ -45,6 +46,7 @@ func (fs *FScreen) Init(title string, width, height int) (chan<- interface{}, er
 	var sendTo chan<- interface{}
 
 	fs.once.Do(func() {
+		fs.receiveMessageBoxErrors = messageBox.GetReceiveErrorsFromChannel()
 		fs.receiveHeaderErrors = header.GetReceiveErrorsFromChannel()
 		sendTo, fs.receiveFrom = fs.msgBuffer.Init(1)
 
@@ -62,12 +64,20 @@ func (fs *FScreen) routingMessages() {
 	// Start the rerouting channel listeners
 	var reroutingWg sync.WaitGroup
 
-	reroutingWg.Add(1)
+	reroutingWg.Add(2)
 
 	go func() {
 		defer reroutingWg.Done()
 
 		for msg := range fs.receiveHeaderErrors {
+			fs.sendToMessageBox <- msg
+		}
+	}()
+
+	go func() {
+		defer reroutingWg.Done()
+
+		for msg := range fs.receiveMessageBoxErrors {
 			fs.sendToMessageBox <- msg
 		}
 	}()

@@ -5,29 +5,221 @@ import (
 	"math"
 	"slices"
 	"strings"
-	"sync"
 
-	rws "github.com/PlayerR9/MyGoLib/CustomData/RWSafe"
 	sext "github.com/PlayerR9/MyGoLib/Utility/StrExt"
 	"github.com/gdamore/tcell"
 )
 
-// WriteStringAt writes a string at the specified coordinates in the ContentBox.
-// It starts writing the string at the given x and y coordinates and continues
-// horizontally until the string is fully written, until it reaches the width of the ContentBox,
-// or until an error occurs.
+const (
+	// FieldSpacing defines the number of spaces between each field (word)
+	// when they are written into the ContentBox.
+	// It is set to 2, meaning there will be two spaces between each field.
+	FieldSpacing int = 2
+
+	// Hellip defines the string to be used as an ellipsis when the content
+	// of the ContentBox is truncated.
+	// It is set to "...", which is the standard representation of an ellipsis
+	// in text.
+	Hellip string = "..."
+
+	// HellipLen defines the length of the Hellip string.
+	// It is set to 3, which is the number of characters in the Hellip string.
+	HellipLen int = len(Hellip)
+
+	// IndentLevel defines the number of spaces used for indentation when
+	// writing content into the ContentBox.
+	// It is set to 2, meaning there will be two spaces at the start of each
+	// new line of content.
+	IndentLevel int = 2
+)
+
+// ContentBox represents a box in the terminal where content can be written.
+// It maintains a table of runes representing the content, and a corresponding
+// array of styles for each rune.
+// It also keeps track of the first empty line in the box, the width and
+// height of the box, and a flag indicating whether the box has started shifting
+// content.
+type ContentBox struct {
+	// A 2D slice of runes representing the content of the box.
+	table [][]rune
+
+	// A slice of tcell.Style objects corresponding to the styles of the runes in the table.
+	styles []tcell.Style
+
+	// A pointer to an integer representing the first empty line in the box.
+	// A value of -1 indicates the box is closed.
+	firstEmptyLine int
+
+	// The dimensions of the box.
+	width, height int
+
+	// A boolean flag indicating whether the box has started shifting content.
+	startedShifting bool
+}
+
+// NewContentBox creates a new ContentBox with the specified width and height.
+// It returns an error if the width is less than 5 or the height is less than 2.
 //
-// If the x coordinate plus the length of the ellipsis is greater than or equal to the width of the ContentBox,
-// the function will return an ErrXOutOfBounds error.
+// Parameters:
 //
-// If the y coordinate is greater than or equal to the height of the ContentBox
-// (i.e., the length of the table), the function will return an ErrYOutOfBounds error.
+//   - width: The width of the ContentBox.
+//   - height: The height of the ContentBox.
 //
-// If the length of the text plus the x coordinate is greater than the width of the ContentBox,
-// the function will attempt to replace the suffix of the text with an ellipsis (Hellip).
-// If this replacement is successful and the text can now fit within the width of the ContentBox,
-// the function will write the text and return. If the text still cannot fit within the width of the ContentBox,
-// the function will return an ErrTextTooLong error.
+// Returns:
+//
+//   - The newly created ContentBox.
+//   - An error if the width is less than 5 or the height is less than 2, otherwise nil.
+func NewContentBox(width, height int) (ContentBox, error) {
+	var cb ContentBox
+
+	if width < 5 {
+		return cb, &ErrWidthTooSmall{}
+	} else if height < 2 {
+		return cb, &ErrHeightTooSmall{}
+	}
+
+	table := make([][]rune, height)
+	for i := 0; i < height; i++ {
+		table[i] = make([]rune, width)
+	}
+
+	cb.table = table
+	cb.styles = make([]tcell.Style, height)
+	cb.firstEmptyLine = 0
+	cb.width = width
+	cb.height = height
+	cb.startedShifting = false
+
+	return cb, nil
+}
+
+// Clear resets the ContentBox to its initial state.
+// It sets the first empty line to 0, trims the table and styles to the height of the box,
+// and sets the startedShifting flag to false.
+//
+// This function is used to clear the content of the box and prepare it for new content.
+func (cb *ContentBox) Clear() {
+	cb.firstEmptyLine = 0
+
+	cb.table = cb.table[:cb.height]
+	cb.styles = cb.styles[:cb.height]
+
+	cb.startedShifting = false
+}
+
+// ResizeWidth changes the width of the ContentBox to the specified width.
+// If the new width is greater than the current width, the function grows the
+// box by filling the new space with spaces.
+// If the new width is less than the current width, the function shrinks the
+// box by discarding the extra characters and replacing them with hellipses.
+//
+// Parameters:
+//
+//   - width: The new width of the ContentBox.
+func (cb *ContentBox) ResizeWidth(width int) {
+	defer func() { cb.width = width }()
+	if width == cb.width {
+		return // Nothing to do
+	}
+
+	newTable := make([][]rune, cb.height)
+	for i := 0; i < cb.height; i++ {
+		newTable[i] = make([]rune, width)
+	}
+
+	newStyles := make([]tcell.Style, cb.height)
+
+	if width > cb.width {
+		// Grow: Copy the old table and the old styles
+		// but fill the new space with spaces
+
+		for i, row := range cb.table {
+			copy(newTable[i], row)
+
+			for j := cb.width; j < width; j++ {
+				newTable[i][j] = Space
+			}
+		}
+
+		copy(newStyles, cb.styles)
+	} else {
+		// Shrink: Copy the old table and the old styles
+		// but discard the extra characters (replacing them with hellipses)
+		for i, row := range cb.table {
+			line := string(row[:width])
+
+			if line[len(line)-1] != Space {
+				line, _ = sext.ReplaceSuffix(line, Hellip)
+			}
+
+			newStyles[i] = cb.styles[i]
+			copy(newTable[i], []rune(line))
+		}
+	}
+
+	cb.table = newTable
+	cb.styles = newStyles
+}
+
+// ResizeHeight changes the height of the ContentBox to the specified height.
+// If the new height is greater than the current height, the function grows
+// the box by increasing the table size.
+// If the new height is less than or equal to the current height, the function
+// shrinks the box by making the extra lines out of bounds.
+//
+// Parameters:
+//
+//   - height: The new height of the ContentBox.
+func (cb *ContentBox) ResizeHeight(height int) {
+	defer func() { cb.height = height }()
+	if height <= cb.height {
+		// Shrinking: Nothing to do;
+		// just make the extra lines out of bounds
+		return
+	}
+
+	// Growing: Nothing to do;
+	// just increase the table size
+	for i := cb.height; i < height; i++ {
+		cb.table[i] = make([]rune, cb.width)
+		cb.styles = append(cb.styles, StyleMap[NormalText])
+	}
+}
+
+// HasEmptyLine checks if the ContentBox has an empty line where new content
+// can be written.
+// The function returns true if the first empty line is less than or equal
+// to the height of the box, meaning there is an empty line.
+// Otherwise, it returns false, meaning the box is full.
+//
+// Returns:
+//
+//   - A boolean indicating whether the ContentBox has an empty line.
+func (cb *ContentBox) HasEmptyLine() bool {
+	return cb.firstEmptyLine <= cb.height
+}
+
+// WriteStringAt writes a string at the specified coordinates in the
+// ContentBox.
+// It starts writing the string at the given x and y coordinates and
+// continues horizontally until the string is fully written, until it
+// reaches the width of the ContentBox, or until an error occurs.
+//
+// If the x coordinate plus the length of the ellipsis is greater than or
+// equal to the width of the ContentBox, the function will return an
+// ErrXOutOfBounds error.
+//
+// If the y coordinate is greater than or equal to the height of the
+// ContentBox (i.e., the length of the table), the function will return
+// an ErrYOutOfBounds error.
+//
+// If the length of the text plus the x coordinate is greater than the
+// width of the ContentBox, the function will attempt to replace the suffix
+// of the text with an ellipsis (Hellip). If this replacement is successful
+// and the text can now fit within the width of the ContentBox, the
+// function will write the text and return. If the text still cannot fit
+// within the width of the ContentBox, the function will return an
+// ErrTextTooLong error.
 //
 // Parameters:
 //
@@ -37,8 +229,10 @@ import (
 //
 // Returns:
 //
-//   - The x coordinate of the first empty cell after the last character written.
-//   - An error if the x coordinate is out of bounds, the y coordinate is out of bounds, or the text is too long.
+//   - The x coordinate of the first empty cell after the last character
+//     written.
+//   - An error if the x coordinate is out of bounds, the y coordinate is
+//     out of bounds, or the text is too long.
 func (cb *ContentBox) WriteStringAt(x, y int, text string) (int, error) {
 	if x+HellipLen >= cb.width {
 		return x, &ErrXOutOfBounds{}
@@ -49,36 +243,25 @@ func (cb *ContentBox) WriteStringAt(x, y int, text string) (int, error) {
 	if x+len(text) >= cb.width {
 		var err error
 
-		text, err = sext.ReplaceSuffix(text[:cb.width-x-HellipLen-1], Hellip)
+		text, err := sext.ReplaceSuffix(text[:cb.width-x-HellipLen-1], Hellip)
 		if err != nil {
 			return x, fmt.Errorf("unable to replace suffix of text '%s' with ellipsis: %w", text, err)
-		} else if x+len(text) >= cb.width {
-			return x, &ErrTextTooLong{}
 		}
 	}
 
-	row := cb.table[y]
+	copy(cb.table[y][x:x+len(text)], []rune(text))
 
-	for _, char := range text {
-		row[x] = char
-		x++
-	}
-
-	return x, nil
+	return x + len(text), nil
 }
 
-// GetLastWriteableFieldIndex determines the last field from the provided slice of strings
-// that can be written in full on the current line of the ContentBox, starting at the
-// specified x coordinate. The function also checks if the next field in the slice can
-// be written with an ellipsis at the end, if it cannot be written in full.
+// GetLastWriteableFieldIndex determines the last field from the provided
+// slice of strings that can be written in full on the current line of the
+// ContentBox, starting at the specified x coordinate. The function also
+// checks if the next field in the slice can be written with an ellipsis
+// at the end, if it cannot be written in full.
 //
-// The function operates in two steps:
-//  1. It iterates over the fields and updates the x coordinate after each field by the length of
-//     the field plus the value of FieldSpacing.
-//  2. If the x coordinate plus the length of the ellipsis is greater than or equal to the width of the ContentBox,
-//     it returns the index of the current field.
-//
-// If no fields can be written, the function returns the length of the fields slice minus 1.
+// If no fields can be written, the function returns the length of the
+// fields slice minus 1.
 //
 // Parameters:
 //
@@ -87,14 +270,17 @@ func (cb *ContentBox) WriteStringAt(x, y int, text string) (int, error) {
 //
 // Returns:
 //
-//   - The index of the last field that can be written in full or with an ellipsis at the end.
+//   - The index of the last field that can be written in full or with an
+//     ellipsis at the end.
 func (cb *ContentBox) GetLastWriteableFieldIndex(x int, fields []string) int {
 	if index := slices.IndexFunc(fields, func(s string) bool {
-		if x+len(s) >= cb.width || x+len(s)+HellipLen >= cb.width {
+		length := len(s) + x
+
+		if length >= cb.width || length+HellipLen >= cb.width {
 			return true
 		}
 
-		x += len(s) + FieldSpacing
+		x = length + FieldSpacing
 		return false
 	}); index < 0 {
 		return len(fields) - 1
@@ -103,50 +289,247 @@ func (cb *ContentBox) GetLastWriteableFieldIndex(x int, fields []string) int {
 	}
 }
 
-////////// NON-COMMENTED /////
+// writeFieldsWithSpacing writes a slice of strings (fields) into the
+// ContentBox starting at the specified x and y coordinates. Each string
+// is written with a spacing defined by FieldSpacing.
+//
+// If an error occurs while writing a string, the function stops and
+// returns the current x coordinate and the error.
+//
+// Parameters:
+//
+//   - x: The x coordinate where the writing should start.
+//   - y: The y coordinate where the writing should start.
+//   - fields: The slice of strings to be written.
+//
+// Returns:
+//
+//   - The x coordinate after the last string has been written.
+//   - An error if writing any of the strings fails, otherwise nil.
+func (cb *ContentBox) writeFieldsWithSpacing(x, y int, fields []string) (int, error) {
+	var err error
 
-const (
-	FieldSpacing = 2
-)
-
-type ContentBox struct {
-	table  [][]rune
-	styles []tcell.Style
-
-	firstEmptyLine *rws.RWSafe[int] // -1 indicates the message box is closed
-
-	width, height int
-
-	startedShifting bool
-
-	notEmpty sync.Cond
-}
-
-func NewContentBox(width, height int) (*ContentBox, error) {
-	if width < 5 {
-		return nil, &ErrWidthTooSmall{}
-	} else if height < 2 {
-		return nil, &ErrHeightTooSmall{}
+	x, err = cb.WriteStringAt(x, y, fields[0])
+	if err != nil {
+		return x, fmt.Errorf("unable to write string '%s' at x = %d, y = %d: %w", fields[0], x, y, err)
 	}
 
-	table := make([][]rune, height)
-	for i := 0; i < height; i++ {
-		table[i] = make([]rune, width)
+	for _, field := range fields[1:] {
+		x, err = cb.WriteStringAt(x+FieldSpacing, y, field)
+		if err != nil {
+			return x, fmt.Errorf("unable to write string '%s' at x = %d, y = %d: %w", field, x, y, err)
+		}
 	}
 
-	return &ContentBox{
-		table:           table,
-		styles:          make([]tcell.Style, height),
-		firstEmptyLine:  rws.NewRWSafe(0),
-		width:           width,
-		height:          height,
-		startedShifting: false,
-		notEmpty:        *sync.NewCond(&sync.Mutex{}),
-	}, nil
+	return x, nil
 }
 
+// handleFirstLine writes the first line of fields into the ContentBox
+// starting at the specified x and y coordinates. The fields are written
+// with spacing defined by FieldSpacing.
+//
+// Parameters:
+//
+//   - x: The x coordinate where the writing should start.
+//   - y: The y coordinate where the writing should start.
+//   - fields: The slice of strings to be written.
+//
+// Returns:
+//
+//   - The x coordinate after the last string has been written.
+//   - The y coordinate after the last string has been written.
+//   - An error if writing any of the strings fails, otherwise nil.
+func (cb *ContentBox) handleFirstLine(x, y int, fields []string) (int, int, error) {
+	const DebugMode bool = true
+
+	var err error
+
+	lastIndex := cb.GetLastWriteableFieldIndex(x, fields)
+	if lastIndex == -1 {
+		return x, y, fmt.Errorf("no fields can be written. This should never happen")
+	}
+	lastIndex++
+
+	// DEBUG: Print the last index
+	if DebugMode {
+		fmt.Printf("Last index (first line): %d\n", lastIndex)
+	}
+
+	x, err = cb.writeFieldsWithSpacing(x, y, fields[:lastIndex])
+	if err != nil {
+		return x, y, err
+	} else if lastIndex >= len(fields) {
+		return x, y, nil
+	}
+
+	_, err = cb.WriteStringAt(x, y, Hellip)
+	if err != nil {
+		return x, y, fmt.Errorf("unable to write string '%s' at x = %d, y = %d: %w", Hellip, x, y, err)
+	} else {
+		return IndentLevel, y + 1, nil
+	}
+}
+
+// tryHandlingConsecutiveLines attempts to write as many fields as possible
+// from the fieldMatrix into the ContentBox starting at the specified x and
+// y coordinates. The fields are written with spacing defined by FieldSpacing.
+//
+// Parameters:
+//
+//   - x: The x coordinate where the writing should start.
+//   - y: The y coordinate where the writing should start.
+//   - index: The index of the fieldMatrix where the writing should start.
+//   - fieldMatrix: The 2D slice of strings to be written.
+//
+// Returns:
+//
+//   - The x coordinate after the last string has been written.
+//   - The y coordinate after the last string has been written.
+//   - The index of the fieldMatrix after the last string has been written.
+//   - The index of the field in the fieldMatrix after the last string has
+//     been written.
+//   - An error if writing any of the strings fails, otherwise nil.
+func (cb *ContentBox) tryHandlingConsecutiveLines(x, y, index int, fieldMatrix [][]string) (int, int, int, int, error) {
+	const DebugMode bool = true
+
+	emptyLine := cb.firstEmptyLine // Reduce the risk of concurrent writes
+	defer func() { cb.firstEmptyLine = emptyLine }()
+
+	var err error
+
+	if y > emptyLine {
+		emptyLine = y
+
+		// Increase the table size (if necessary)
+		if emptyLine >= len(cb.table) {
+			cb.table = append(cb.table, make([]rune, cb.width))
+			cb.styles = append(cb.styles, StyleMap[NormalText])
+		}
+
+		return x, y, index, 0, nil
+	}
+
+	// Try to append to the current line as many fields as possible
+	// until the line is full (ignore ellipsing)
+	for ; index < len(fieldMatrix); index++ {
+		x += FieldSpacing
+
+		lastIndex := cb.GetLastWriteableFieldIndex(x, fieldMatrix[index])
+		if lastIndex == -1 {
+			return x, y, index, 0, fmt.Errorf("no fields can be written. This should never happen")
+		}
+		lastIndex++
+
+		// DEBUG: Print the last index
+		if DebugMode {
+			fmt.Printf("Last index (consecutive lines): %d\n", lastIndex)
+		}
+
+		_, err = cb.writeFieldsWithSpacing(x, y, fieldMatrix[index][:lastIndex])
+		if err != nil {
+			return x, y, index, 0, err
+		}
+
+		if lastIndex >= len(fieldMatrix[index]) {
+			return IndentLevel, y + 1, index, lastIndex + 1, nil
+		}
+	}
+
+	return x, y, index, 0, nil
+}
+
+// EnqueueContents writes a slice of strings (contents) into the ContentBox
+// with a specified style. Each string in the contents is split into fields
+// (words) and written into the ContentBox.
+// The fields are written with spacing defined by FieldSpacing.
+//
+// Parameters:
+//
+//   - contents: The slice of strings to be written.
+//   - style: The style to be applied to the strings.
+//
+// Returns:
+//
+//   - An error if writing any of the strings fails, otherwise nil.
+func (cb *ContentBox) EnqueueContents(contents []string, style tcell.Style) error {
+	const DebugMode bool = true
+
+	// Create the 2D field matrix
+	fieldMatrix := func(contents []string) [][]string {
+		fieldMatrix := make([][]string, 0)
+
+		for _, content := range contents {
+			fields := strings.Fields(content)
+
+			if len(fields) != 0 {
+				fieldMatrix = append(fieldMatrix, fields)
+			}
+		}
+
+		return fieldMatrix
+	}(contents)
+	if len(fieldMatrix) == 0 {
+		return nil // Skip empty lines
+	}
+
+	// DEBUG: Print the field matrix
+	if DebugMode {
+		fmt.Println("Field matrix:")
+
+		for _, fields := range fieldMatrix {
+			fmt.Println(fields)
+		}
+	}
+
+	originalY := cb.firstEmptyLine
+
+	// Handle first line
+	x, y, err := cb.handleFirstLine(0, originalY, fieldMatrix[0])
+	if err != nil {
+		return err
+	}
+
+	// Handle the rest of the lines
+	startNextLine, index := 0, 1
+
+	for index < len(fieldMatrix) {
+		_, y, index, startNextLine, err = cb.tryHandlingConsecutiveLines(x, y, index, fieldMatrix)
+		if err != nil {
+			return err
+		} else if index >= len(fieldMatrix) {
+			break
+		} else if startNextLine >= len(fieldMatrix[index]) {
+			index++
+			continue
+		}
+
+		// Write to the next line
+		x, y, err = cb.handleFirstLine(IndentLevel, y+1, fieldMatrix[index][startNextLine:])
+		if err != nil {
+			return err
+		}
+	}
+
+	// Set the style of the lines that were just written
+	for i := originalY; i < cb.firstEmptyLine; i++ {
+		cb.styles[i] = style
+	}
+
+	return nil
+}
+
+// EnqueueLineSeparator writes a line of the specified rune (char) into the
+// ContentBox as a separator.
+// If the first empty line is at the height of the box, the separator is
+// written outside the box.
+// Otherwise, the separator is written inside the box at the first empty line.
+//
+// Parameters:
+//
+//   - char: The rune to be used as the line separator.
 func (cb *ContentBox) EnqueueLineSeparator(char rune) {
-	emptyLine := cb.firstEmptyLine.Get()
+	emptyLine := cb.firstEmptyLine // Reduce the risk of concurrent writes
+	defer func() { cb.firstEmptyLine = emptyLine }()
 
 	if emptyLine == cb.height {
 		// Write the separator outside the message box
@@ -163,29 +546,39 @@ func (cb *ContentBox) EnqueueLineSeparator(char rune) {
 			cb.table[emptyLine][i] = char
 		}
 
-		cb.firstEmptyLine.Set(emptyLine + 1)
+		emptyLine++
 	}
 }
 
-func (cb *ContentBox) EnqueueContents(contents []string, style tcell.Style) {
-	remaining := cb.enqueueContents(contents, style, false)
-
-	for len(remaining) > 0 {
-		remaining = cb.enqueueContents(remaining, style, true)
-	}
-}
-
+// CanShiftUp checks if the ContentBox can shift its content up.
+// The function returns true if the ContentBox has started shifting and the first
+// empty line is not at the top, or if the first empty line is at or beyond the
+// halfway point of the box's height.
+// If the ContentBox has started shifting and the first empty line is at the top,
+// it stops shifting and returns false.
+//
+// Returns:
+//
+//   - A boolean indicating whether the ContentBox can shift its content up.
 func (cb *ContentBox) CanShiftUp() bool {
-	if cb.startedShifting && cb.firstEmptyLine.Get() == 0 {
+	if cb.startedShifting && cb.firstEmptyLine == 0 {
 		cb.startedShifting = false
 		return false
 	}
 
-	return (cb.startedShifting && cb.firstEmptyLine.Get() != 0) || cb.firstEmptyLine.Get() >= cb.height/2
+	return (cb.startedShifting && cb.firstEmptyLine != 0) || cb.firstEmptyLine >= cb.height/2
 }
 
+// ShiftUp shifts the content of the ContentBox up by a certain number of lines.
+// The number of lines to shift up is determined by the number of lines occupied by the
+// first message in the box.
+// If the first empty line is at the top of the box, the function does nothing.
+//
+// This function is used to make room for new messages when the box is full.
 func (cb *ContentBox) ShiftUp() {
-	emptyLine := cb.firstEmptyLine.Get()
+	emptyLine := cb.firstEmptyLine
+	defer func() { cb.firstEmptyLine = emptyLine }()
+
 	cb.startedShifting = emptyLine != 0
 
 	if emptyLine == 0 {
@@ -195,7 +588,7 @@ func (cb *ContentBox) ShiftUp() {
 	// 1. Find the amount of lines occupied by the first message
 	size := 1
 
-	for size < emptyLine && cb.table[size][0] == Space {
+	for size < emptyLine && cb.table[size][IndentLevel] != Space {
 		size++
 	}
 
@@ -223,197 +616,20 @@ func (cb *ContentBox) ShiftUp() {
 	}
 }
 
-func (cb *ContentBox) ResizeWidth(width int) error {
-	if width == cb.width {
-		return nil // Nothing to do
-	}
-
-	newTable := make([][]rune, cb.height)
-	for i := 0; i < cb.height; i++ {
-		newTable[i] = make([]rune, width)
-	}
-
-	newStyles := make([]tcell.Style, cb.height)
-
-	if width > cb.width {
-		// Grow: Copy the old table and the old styles
-		// but fill the new space with spaces
-
-		for i, row := range cb.table {
-			copy(newTable[i], row)
-
-			for j := cb.width; j < width; j++ {
-				newTable[i][j] = Space
-			}
-		}
-
-		copy(newStyles, cb.styles)
-	} else {
-		// Shrink: Copy the old table and the old styles
-		// but discard the extra characters (replacing them with hellipses)
-
-		// NOTE: This way of doing it is really inefficient but
-		// it is the simplest way to do it as of now
-		// improve it later
-
-		for i, row := range cb.table {
-			line := string(row[:width])
-
-			// enqueueContents will take care of the hellipses
-			cb.enqueueContents([]string{line}, cb.styles[i], row[0] == Space)
-
-			newStyles[i] = cb.styles[i]
-		}
-	}
-
-	cb.table = newTable
-	cb.styles = newStyles
-
-	return nil
-}
-
-func (cb *ContentBox) ResizeHeight(height int) error {
-	if height <= cb.height {
-		// Nothing to do
-
-		// Shrink: Just make the extra lines
-		// out of bounds
-		return nil
-	}
-
-	// Grow: Fill the new lines with spaces
-
-	for i := cb.height; i < height; i++ {
-		cb.table[i] = make([]rune, cb.width)
-		cb.styles = append(cb.styles, StyleMap[NormalText])
-	}
-
-	cb.height = height
-
-	return nil
-}
-
-func (cb *ContentBox) Clear() {
-	cb.firstEmptyLine.Set(0)
-
-	cb.table = cb.table[:cb.height]
-	cb.styles = cb.styles[:cb.height]
-}
-
-func (cb *ContentBox) HasEmptyLine() bool {
-	return cb.firstEmptyLine.Get() <= cb.height
-}
-
-func (cb *ContentBox) enqueueContentsCanTryLine(x, y int, fields []string) (int, int, []string) {
-	lastIndex := cb.GetLastWriteableFieldIndex(IndentLevel, fields)
-	if lastIndex == -1 {
-		panic("No fields can be written. This should never happen")
-	}
-
-	if lastIndex == len(fields)-1 {
-		x, _ := cb.WriteStringAt(x, y, fields[0])
-
-		for _, field := range fields[1:] {
-			x, _ = cb.WriteStringAt(x+FieldSpacing, y, field)
-		}
-
-		return x, y, nil
-	} else {
-		x, _ := cb.WriteStringAt(x, y, fields[0])
-
-		for _, field := range fields[1:lastIndex] {
-			x, _ = cb.WriteStringAt(x+FieldSpacing, y, field)
-		}
-
-		return IndentLevel, y + 1, fields[lastIndex+1:]
-	}
-}
-
-func (cb *ContentBox) enqueueContentsTryLine(x, y int, fields []string) (int, int) {
-	lastIndex := cb.GetLastWriteableFieldIndex(IndentLevel, fields)
-	if lastIndex == -1 {
-		panic("No fields can be written. This should never happen")
-	}
-
-	if lastIndex == len(fields)-1 {
-		x, _ := cb.WriteStringAt(x, y, fields[0])
-
-		for _, field := range fields[1:] {
-			x, _ = cb.WriteStringAt(x+FieldSpacing, y, field)
-		}
-
-		return x, y
-	} else {
-		x, _ := cb.WriteStringAt(x, y, fields[0])
-
-		for _, field := range fields[1:lastIndex] {
-			x, _ = cb.WriteStringAt(x+FieldSpacing, y, field)
-		}
-
-		cb.WriteStringAt(x, y, Hellip)
-
-		return IndentLevel, y + 1
-	}
-}
-
-// WARNING: This function doesn't do any parameter checks
-func (cb *ContentBox) enqueueContents(contents []string, style tcell.Style, isIndented bool) []string {
-	fieldMatrix := make([][]string, 0)
-
-	for _, content := range contents {
-		fields := strings.Fields(content)
-
-		if len(fields) != 0 {
-			fieldMatrix = append(fieldMatrix, fields)
-		}
-	}
-
-	if len(fieldMatrix) == 0 {
-		return nil // Skip empty lines
-	}
-
-	x, y := cb.enqueueContentsTryLine(0, cb.firstEmptyLine.Get(), fieldMatrix[0])
-	index := 1
-
-	for index < len(fieldMatrix) {
-		var fields []string
-
-		if y == cb.firstEmptyLine.Get() {
-			var remainder []string
-
-			for index++; index < len(fieldMatrix); index++ {
-				x, y, remainder = cb.enqueueContentsCanTryLine(x+FieldSpacing, y, fieldMatrix[index])
-				if len(remainder) != 0 {
-					break
-				}
-			}
-
-			fields = remainder
-		} else {
-			cb.firstEmptyLine.Set(y)
-
-			// Increase the table size if necessary
-			if cb.firstEmptyLine.Get() >= len(cb.table) {
-				cb.table = append(cb.table, make([]rune, cb.width))
-				cb.styles = append(cb.styles, StyleMap[NormalText])
-			}
-
-			// Go to the next non-empty line
-			index++
-
-			if index >= len(fieldMatrix) {
-				break
-			}
-
-			fields = fieldMatrix[index]
-		}
-
-		x, y = cb.enqueueContentsTryLine(IndentLevel, y+1, fields)
-	}
-
-	return nil
-}
-
+// drawHorizontalBorderAt draws a horizontal border at the specified
+// y-coordinate on the screen with the specified style.
+// The border is drawn from the left corner to the right corner of the
+// ContentBox, with '+' characters at the corners and '-' characters in between.
+//
+// Parameters:
+//
+//   - y: The y-coordinate where the border is to be drawn.
+//   - style: The style to be used for the border.
+//   - screen: The screen where the border is to be drawn.
+//
+// Returns:
+//
+//   - The screen after the border has been drawn.
 func (cb *ContentBox) drawHorizontalBorderAt(y int, style tcell.Style, screen tcell.Screen) tcell.Screen {
 	screen.SetContent(0, y, '+', nil, style) // Left corner
 
@@ -426,12 +642,29 @@ func (cb *ContentBox) drawHorizontalBorderAt(y int, style tcell.Style, screen tc
 	return screen
 }
 
+// Draw renders the ContentBox on the screen at the specified y-coordinate.
+// The function draws the top and bottom borders, and the content of the box
+// between the borders.
+// The content is drawn line by line, with '|' characters at the left and
+// right borders, and the content of the box in between.
+// The function returns the y-coordinate of the last line drawn and the
+// screen after the box has been drawn.
+//
+// Parameters:
+//
+//   - y: The y-coordinate where the box is to be drawn.
+//   - screen: The screen where the box is to be drawn.
+//
+// Returns:
+//
+//   - The y-coordinate of the last line drawn.
+//   - The screen after the box has been drawn.
 func (cb *ContentBox) Draw(y int, screen tcell.Screen) (int, tcell.Screen) {
 	style := StyleMap[NormalText]
 
 	screen = cb.drawHorizontalBorderAt(y, style, screen) // Top border
 
-	for i := 0; i < cb.firstEmptyLine.Get(); i++ {
+	for i := 0; i < cb.firstEmptyLine; i++ {
 		y++
 		screen.SetContent(0, y, '|', nil, style) // Left border
 
@@ -442,7 +675,7 @@ func (cb *ContentBox) Draw(y int, screen tcell.Screen) (int, tcell.Screen) {
 		screen.SetContent(cb.width+PaddingWidth, y, '|', nil, style) // Right border
 	}
 
-	for i := cb.firstEmptyLine.Get(); i < cb.height; i++ {
+	for i := cb.firstEmptyLine; i < cb.height; i++ {
 		y++
 		screen.SetContent(0, y, '|', nil, style) // Left border
 
@@ -457,96 +690,4 @@ func (cb *ContentBox) Draw(y int, screen tcell.Screen) (int, tcell.Screen) {
 	screen = cb.drawHorizontalBorderAt(y, style, screen) // Bottom border
 
 	return y, screen
-}
-
-////////////////// OLD CODE //////////////////////
-
-// REMEMBER TO INITIALIZE THE MESSAGEBOX WITH THE PADDING
-
-func (cb *ContentBox) Close() {
-
-}
-
-// Clear interface{} information to prevent a deadlock and release the memory
-// FIXME: Check if this works
-func (cb *ContentBox) Fini() {
-	// Wake up the message box if it is waiting for a message
-	// this will prevent a deadlock
-	cb.firstEmptyLine.Set(-1)
-	cb.notEmpty.Broadcast()
-
-	// BAD: This shouldn't be done in the first place
-}
-
-func (cb *ContentBox) Cleanup() {
-	cb.table = nil
-	cb.styles = nil
-	cb.notEmpty.L = nil
-	cb.firstEmptyLine = nil
-}
-
-////////////////////////////////
-
-///////////////////////////////
-
-const (
-	Hellip    = "..."
-	HellipLen = 3
-)
-
-var StyleMap map[TextMessageType]tcell.Style = map[TextMessageType]tcell.Style{
-	NormalText:  tcell.StyleDefault.Foreground(tcell.ColorBlack).Background(tcell.ColorGhostWhite),
-	DebugText:   tcell.StyleDefault.Bold(true).Foreground(tcell.ColorSlateGray).Background(tcell.ColorGhostWhite),
-	WarningText: tcell.StyleDefault.Foreground(tcell.ColorDarkOrange).Background(tcell.ColorGhostWhite),
-	ErrorText:   tcell.StyleDefault.Foreground(tcell.ColorFireBrick).Background(tcell.ColorGhostWhite),
-	FatalText:   tcell.StyleDefault.Bold(true).Foreground(tcell.ColorDarkRed).Background(tcell.ColorGhostWhite),
-	SuccessText: tcell.StyleDefault.Foreground(tcell.ColorDarkGreen).Background(tcell.ColorGhostWhite),
-}
-
-const (
-	IndentLevel int = 2
-)
-
-func (cb *ContentBox) GetHeight() int {
-	return cb.height
-}
-
-// Returns the first empty index after the last character
-// WARNING: This function doesn't do interface{} checks
-func (cb *ContentBox) WriteFieldsAt(x, y int, fields []string) (int, int) {
-	if len(fields) == 1 {
-		if x+len(fields[0]) < cb.width {
-			x, _ := cb.WriteStringAt(x, y, fields[0])
-			return x, y
-		}
-
-		x, _ = cb.WriteStringAt(x, y, fields[0][:cb.width-x-HellipLen])
-		x, _ = cb.WriteStringAt(x, y, Hellip)
-		return x, y
-	} else if x+len(fields[0]) >= cb.width {
-		x, _ = cb.WriteStringAt(x, y, fields[0][:cb.width-x-HellipLen])
-		cb.WriteStringAt(x, y, Hellip)
-
-		return IndentLevel, y + 1
-	}
-
-	x, _ = cb.WriteStringAt(x, y, fields[0])
-
-	index := -1
-	for i, field := range fields[1:] {
-		if len(field)+x+2 >= cb.width {
-			index = i
-			break
-		}
-
-		x, _ = cb.WriteStringAt(x+2, y, field)
-	}
-
-	if index != -1 {
-		cb.WriteStringAt(x, y, Hellip)
-
-		return IndentLevel, y + 1
-	}
-
-	return x, y
 }

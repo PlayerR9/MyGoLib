@@ -1,19 +1,20 @@
 package MessageBox
 
 import (
+	"fmt"
 	"testing"
 )
 
 func TestWriteLines_ShortLines(t *testing.T) {
-	testBox := new(MessageBox)
-	sendTo, _ := testBox.Init(80, 20)
+	testBox, _ := NewContentBox(76, 18)
+	testBox.EnqueueContents([]string{"Hello", "World"}, StyleMap[NormalText])
 
-	sendTo <- NewTextMessage(NormalText,
-		"Hello",
-		"World",
-	)
+	// DEBUG: Print the table
+	for _, line := range testBox.table {
+		fmt.Println(string(line))
+	}
 
-	if string(testBox.content.table[1][2:7]) != "Hello" || string(testBox.content.table[1][8:13]) != "World" {
+	if string(testBox.table[0][0:5]) != "Hello" || string(testBox.table[0][6:11]) != "World" {
 		t.Errorf("WriteLines did not correctly write short lines")
 	}
 }
