@@ -13,8 +13,8 @@ import (
 const (
 	// FieldSpacing defines the number of spaces between each field (word)
 	// when they are written into the ContentBox.
-	// It is set to 2, meaning there will be two spaces between each field.
-	FieldSpacing int = 2
+	// It is set to 1, meaning there will be one spaces between each field.
+	FieldSpacing int = 1
 
 	// Hellip defines the string to be used as an ellipsis when the content
 	// of the ContentBox is truncated.
@@ -53,8 +53,9 @@ type ContentBox struct {
 	// The dimensions of the box.
 	width, height int
 
-	// A boolean flag indicating whether the box has started shifting content.
-	startedShifting bool
+	// A slice of runes representing an empty line.
+	// This is used to simplify the process of clearing the table.
+	emptyLine []rune
 }
 
 // NewContentBox creates a new ContentBox with the specified width and height.
@@ -78,17 +79,22 @@ func NewContentBox(width, height int) (ContentBox, error) {
 		return cb, &ErrHeightTooSmall{}
 	}
 
-	table := make([][]rune, height)
+	// Generate an empty line
+	cb.emptyLine = []rune(strings.Repeat(string(Space), width))
+
+	// Fill the table with spaces
+	cb.table = make([][]rune, height)
+	cb.styles = make([]tcell.Style, height)
+
 	for i := 0; i < height; i++ {
-		table[i] = make([]rune, width)
+		cb.table[i] = make([]rune, width)
+		copy(cb.table[i], cb.emptyLine)
+		cb.styles[i] = StyleMap[NormalText]
 	}
 
-	cb.table = table
-	cb.styles = make([]tcell.Style, height)
 	cb.firstEmptyLine = 0
 	cb.width = width
 	cb.height = height
-	cb.startedShifting = false
 
 	return cb, nil
 }
@@ -101,10 +107,15 @@ func NewContentBox(width, height int) (ContentBox, error) {
 func (cb *ContentBox) Clear() {
 	cb.firstEmptyLine = 0
 
-	cb.table = cb.table[:cb.height]
-	cb.styles = cb.styles[:cb.height]
+	cb.table = make([][]rune, cb.height)
+	cb.styles = make([]tcell.Style, cb.height)
 
-	cb.startedShifting = false
+	for i := 0; i < cb.height; i++ {
+		cb.table[i] = make([]rune, cb.width)
+		copy(cb.table[i], cb.emptyLine)
+
+		cb.styles[i] = StyleMap[NormalText]
+	}
 }
 
 // ResizeWidth changes the width of the ContentBox to the specified width.
@@ -125,40 +136,36 @@ func (cb *ContentBox) ResizeWidth(width int) {
 	newTable := make([][]rune, cb.height)
 	for i := 0; i < cb.height; i++ {
 		newTable[i] = make([]rune, width)
+		copy(newTable[i], cb.table[i])
 	}
 
 	newStyles := make([]tcell.Style, cb.height)
+	copy(newStyles, cb.styles)
 
 	if width > cb.width {
 		// Grow: Copy the old table and the old styles
 		// but fill the new space with spaces
-
-		for i, row := range cb.table {
-			copy(newTable[i], row)
-
-			for j := cb.width; j < width; j++ {
+		// NOTE: These loops are inverted
+		for j := cb.width; j < width; j++ {
+			for i := 0; i < cb.height; i++ {
 				newTable[i][j] = Space
 			}
-		}
 
-		copy(newStyles, cb.styles)
+			newStyles[j] = StyleMap[NormalText]
+		}
 	} else {
 		// Shrink: Copy the old table and the old styles
 		// but discard the extra characters (replacing them with hellipses)
-		for i, row := range cb.table {
-			line := string(row[:width])
-
-			if line[len(line)-1] != Space {
-				line, _ = sext.ReplaceSuffix(line, Hellip)
+		for i := 0; i < cb.height; i++ {
+			if cb.table[i][width-1] != Space {
+				copy(newTable[i][width-HellipLen:], []rune(Hellip))
 			}
-
-			newStyles[i] = cb.styles[i]
-			copy(newTable[i], []rune(line))
 		}
 	}
 
 	cb.table = newTable
 	cb.styles = newStyles
+	cb.emptyLine = []rune(strings.Repeat(string(Space), width))
 }
 
 // ResizeHeight changes the height of the ContentBox to the specified height.
@@ -172,16 +179,15 @@ func (cb *ContentBox) ResizeWidth(width int) {
 //   - height: The new height of the ContentBox.
 func (cb *ContentBox) ResizeHeight(height int) {
 	defer func() { cb.height = height }()
-	if height <= cb.height {
-		// Shrinking: Nothing to do;
-		// just make the extra lines out of bounds
+
+	upperLimit := int(math.Max(float64(len(cb.table)), float64(cb.height)))
+
+	if height <= upperLimit {
 		return
 	}
 
-	// Growing: Nothing to do;
-	// just increase the table size
-	for i := cb.height; i < height; i++ {
-		cb.table[i] = make([]rune, cb.width)
+	for i := upperLimit; i < height; i++ {
+		cb.table = append(cb.table, cb.emptyLine)
 		cb.styles = append(cb.styles, StyleMap[NormalText])
 	}
 }
@@ -275,7 +281,6 @@ func (cb *ContentBox) WriteStringAt(x, y int, text string) (int, error) {
 func (cb *ContentBox) GetLastWriteableFieldIndex(x int, fields []string) int {
 	if index := slices.IndexFunc(fields, func(s string) bool {
 		length := len(s) + x
-
 		if length >= cb.width || length+HellipLen >= cb.width {
 			return true
 		}
@@ -340,7 +345,7 @@ func (cb *ContentBox) writeFieldsWithSpacing(x, y int, fields []string) (int, er
 //   - The y coordinate after the last string has been written.
 //   - An error if writing any of the strings fails, otherwise nil.
 func (cb *ContentBox) handleFirstLine(x, y int, fields []string) (int, int, error) {
-	const DebugMode bool = true
+	const DebugMode bool = false
 
 	var err error
 
@@ -390,20 +395,20 @@ func (cb *ContentBox) handleFirstLine(x, y int, fields []string) (int, int, erro
 //     been written.
 //   - An error if writing any of the strings fails, otherwise nil.
 func (cb *ContentBox) tryHandlingConsecutiveLines(x, y, index int, fieldMatrix [][]string) (int, int, int, int, error) {
-	const DebugMode bool = true
-
-	emptyLine := cb.firstEmptyLine // Reduce the risk of concurrent writes
-	defer func() { cb.firstEmptyLine = emptyLine }()
+	const DebugMode bool = false
 
 	var err error
 
-	if y > emptyLine {
-		emptyLine = y
+	if y > cb.firstEmptyLine {
+		// WARNING: This might be wrong
+		// if errors occur here, check this
 
 		// Increase the table size (if necessary)
-		if emptyLine >= len(cb.table) {
-			cb.table = append(cb.table, make([]rune, cb.width))
-			cb.styles = append(cb.styles, StyleMap[NormalText])
+		if y >= len(cb.table) {
+			for i := len(cb.table); i < y; i++ {
+				cb.table = append(cb.table, cb.emptyLine)
+				cb.styles = append(cb.styles, StyleMap[NormalText])
+			}
 		}
 
 		return x, y, index, 0, nil
@@ -452,22 +457,18 @@ func (cb *ContentBox) tryHandlingConsecutiveLines(x, y, index int, fieldMatrix [
 //
 //   - An error if writing any of the strings fails, otherwise nil.
 func (cb *ContentBox) EnqueueContents(contents []string, style tcell.Style) error {
-	const DebugMode bool = true
+	const DebugMode bool = false
 
 	// Create the 2D field matrix
-	fieldMatrix := func(contents []string) [][]string {
-		fieldMatrix := make([][]string, 0)
+	fieldMatrix := make([][]string, 0)
 
-		for _, content := range contents {
-			fields := strings.Fields(content)
+	for _, content := range contents {
+		fields := strings.Fields(content)
 
-			if len(fields) != 0 {
-				fieldMatrix = append(fieldMatrix, fields)
-			}
+		if len(fields) != 0 {
+			fieldMatrix = append(fieldMatrix, fields)
 		}
-
-		return fieldMatrix
-	}(contents)
+	}
 	if len(fieldMatrix) == 0 {
 		return nil // Skip empty lines
 	}
@@ -515,6 +516,12 @@ func (cb *ContentBox) EnqueueContents(contents []string, style tcell.Style) erro
 		cb.styles[i] = style
 	}
 
+	if y == cb.firstEmptyLine {
+		cb.firstEmptyLine++
+	} else {
+		cb.firstEmptyLine = y
+	}
+
 	return nil
 }
 
@@ -542,9 +549,7 @@ func (cb *ContentBox) EnqueueLineSeparator(char rune) {
 		cb.styles = append(cb.styles, StyleMap[NormalText])
 	} else {
 		// Write the separator inside the message box
-		for i := 0; i < cb.width; i++ {
-			cb.table[emptyLine][i] = char
-		}
+		cb.table[emptyLine] = []rune(strings.Repeat(string(char), cb.width))
 
 		emptyLine++
 	}
@@ -561,12 +566,7 @@ func (cb *ContentBox) EnqueueLineSeparator(char rune) {
 //
 //   - A boolean indicating whether the ContentBox can shift its content up.
 func (cb *ContentBox) CanShiftUp() bool {
-	if cb.startedShifting && cb.firstEmptyLine == 0 {
-		cb.startedShifting = false
-		return false
-	}
-
-	return (cb.startedShifting && cb.firstEmptyLine != 0) || cb.firstEmptyLine >= cb.height/2
+	return cb.firstEmptyLine >= cb.height
 }
 
 // ShiftUp shifts the content of the ContentBox up by a certain number of lines.
@@ -579,8 +579,6 @@ func (cb *ContentBox) ShiftUp() {
 	emptyLine := cb.firstEmptyLine
 	defer func() { cb.firstEmptyLine = emptyLine }()
 
-	cb.startedShifting = emptyLine != 0
-
 	if emptyLine == 0 {
 		return // Nothing to do
 	}
@@ -588,7 +586,7 @@ func (cb *ContentBox) ShiftUp() {
 	// 1. Find the amount of lines occupied by the first message
 	size := 1
 
-	for size < emptyLine && cb.table[size][IndentLevel] != Space {
+	for size < emptyLine && cb.table[size][IndentLevel] == Space {
 		size++
 	}
 
@@ -596,8 +594,13 @@ func (cb *ContentBox) ShiftUp() {
 	upperLimit := int(math.Min(float64(cb.height), float64(emptyLine)) - float64(size))
 
 	for i := 0; i < upperLimit; i++ {
-		cb.table[i] = cb.table[i+size]
+		copy(cb.table[i], cb.table[i+size])
 		cb.styles[i] = cb.styles[i+size]
+	}
+
+	for i := upperLimit; i < emptyLine; i++ {
+		copy(cb.table[i], cb.emptyLine)
+		cb.styles[i] = StyleMap[NormalText]
 	}
 
 	emptyLine -= size
@@ -605,7 +608,7 @@ func (cb *ContentBox) ShiftUp() {
 	if len(cb.table) > cb.height {
 		// 3. Shift out of bounds values up by size lines and reduce the table size (if necessary)
 		for i := upperLimit; i < emptyLine; i++ {
-			cb.table[i] = cb.table[i+size]
+			copy(cb.table[i], cb.table[i+size])
 			cb.styles[i] = cb.styles[i+size]
 		}
 
