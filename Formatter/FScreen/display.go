@@ -1,4 +1,4 @@
-// git tag v0.1.39
+// git tag v0.1.41
 
 package FScreen
 
@@ -11,14 +11,8 @@ import (
 	"github.com/gdamore/tcell"
 )
 
-type Displayer interface {
-	SetSize(width, height int) error
-	Draw(int, tcell.Screen) (int, tcell.Screen)
-}
-
 type Display struct {
-	elementsToShow []Displayer
-	frameRate      time.Duration
+	frameRate time.Duration
 
 	screen        tcell.Screen
 	style         tcell.Style
@@ -28,7 +22,7 @@ type Display struct {
 	once sync.Once
 }
 
-func NewDisplay(frameRate float64, elementToDisplay []Displayer) (Display, error) {
+func NewDisplay(frameRate float64) (Display, error) {
 	// Initialize the screen
 	screen, err := tcell.NewScreen()
 	if err != nil {
@@ -42,11 +36,10 @@ func NewDisplay(frameRate float64, elementToDisplay []Displayer) (Display, error
 	screen.Clear()
 
 	return Display{
-		elementsToShow: elementToDisplay,
-		frameRate:      time.Duration(math.Round(1000/frameRate)) * time.Millisecond,
-		screen:         screen,
-		style:          tcell.StyleDefault,
-		closeReceived:  false,
+		frameRate:     time.Duration(math.Round(1000/frameRate)) * time.Millisecond,
+		screen:        screen,
+		style:         tcell.StyleDefault,
+		closeReceived: false,
 	}, nil
 }
 
@@ -59,21 +52,31 @@ func (d *Display) Start() {
 			d.screen.Clear()
 
 			width, height := d.screen.Size()
-			for _, element := range d.elementsToShow {
-				err := element.SetSize(width, height)
-				if err != nil {
-					// TO DO: Handle error
-					panic(fmt.Errorf("error setting size for element: %v", err))
-				}
+
+			// Set the size of the header
+			err := header.SetSize(width, height)
+			if err != nil {
+				// TO DO: Handle error
+				panic(fmt.Errorf("error setting size for header: %v", err))
+			}
+
+			// Set the size of the message box
+			err = messageBox.SetSize(width, height)
+			if err != nil {
+				// TO DO: Handle error
+				panic(fmt.Errorf("error setting size for message box: %v", err))
 			}
 
 			y := 0 // y is the current line
 			var offset int
 
-			for _, element := range d.elementsToShow {
-				offset, d.screen = element.Draw(y, d.screen)
-				y += offset + 2
-			}
+			// Draw the header
+			offset, d.screen = header.Draw(y, d.screen)
+			y += offset + 2
+
+			// Draw the message box
+			offset, d.screen = messageBox.Draw(y, d.screen)
+			y += offset + 2
 
 			d.screen.Show()
 
@@ -105,6 +108,5 @@ func (d *Display) Cleanup() {
 		d.screen = nil
 	}()
 
-	d.elementsToShow = nil
 	d.screen = nil
 }

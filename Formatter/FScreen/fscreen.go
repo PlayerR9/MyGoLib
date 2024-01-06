@@ -9,7 +9,6 @@ import (
 	buffer "github.com/PlayerR9/MyGoLib/CustomData/Buffer"
 	h "github.com/PlayerR9/MyGoLib/Formatter/FScreen/Header"
 	mb "github.com/PlayerR9/MyGoLib/Formatter/FScreen/MessageBox"
-	"github.com/gdamore/tcell"
 )
 
 var (
@@ -145,25 +144,4 @@ func (fs *FScreen) Cleanup() {
 
 func (fs *FScreen) Wait() {
 	fs.wg.Wait()
-}
-
-func (fs *FScreen) SetSize(width, height int) error {
-	var err error
-
-	err = header.SetSize(width, height)
-	if err != nil {
-		return err
-	}
-
-	err = messageBox.SetSize(width, height)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (fs *FScreen) Draw(y int, screen tcell.Screen) (int, tcell.Screen) {
-	y, screen = header.Draw(y, screen)
-	return messageBox.Draw(y+2, screen)
 }
