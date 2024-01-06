@@ -28,8 +28,6 @@ type MessageBox struct {
 	receiveFrom   <-chan TextMessage
 	receiveErrors chan TextMessage
 
-	notEmpty sync.Cond
-
 	wg   sync.WaitGroup
 	once sync.Once
 }
@@ -48,8 +46,6 @@ func (mb *MessageBox) Init(width, height int) (chan<- TextMessage, error) {
 
 		sendTo, mb.receiveFrom = mb.msgBuffer.Init(1)
 		mb.receiveErrors = make(chan TextMessage, 1)
-
-		mb.notEmpty = *sync.NewCond(&sync.Mutex{})
 
 		mb.wg.Add(1)
 
@@ -121,24 +117,6 @@ func (mb *MessageBox) Draw(y int, screen tcell.Screen) (int, tcell.Screen) {
 	return y, screen
 }
 
-////////////////// OLD CODE //////////////////////
-
-// REMEMBER TO INITIALIZE THE MESSAGEBOX WITH THE PADDING
-
-func (mb *MessageBox) Close() {
-
-}
-
-// Clear interface{} information to prevent a deadlock and release the memory
-// FIXME: Check if this works
-func (mb *MessageBox) Fini() {
-	// Wake up the message box if it is waiting for a message
-	// this will prevent a deadlock
-	mb.notEmpty.Broadcast()
-
-	// BAD: This shouldn't be done in the first place
-}
-
 func (mb *MessageBox) Wait() {
 	mb.wg.Wait()
 }
@@ -160,8 +138,6 @@ func (mb *MessageBox) Cleanup() {
 	close(mb.receiveErrors)
 }
 
-////////////////////////////////
-
 func (mb *MessageBox) executeCommands() {
 	defer mb.wg.Done()
 
@@ -179,18 +155,9 @@ func (mb *MessageBox) executeCommands() {
 			style = StyleMap[NormalText]
 		}
 
-		// Wait for an empty line
-		mb.notEmpty.L.Lock()
-		for !mb.content.HasEmptyLine() {
-			mb.notEmpty.Wait()
+		if mb.content.CanShiftUp() {
+			mb.content.ShiftUp()
 		}
-
-		// Prevent infinite wait time when the message box is closed
-		if mb.content.firstEmptyLine == -1 {
-			break
-		}
-
-		mb.notEmpty.L.Unlock()
 
 		// Enqueue the message into the message box
 		switch msg.GetType() {
@@ -207,9 +174,16 @@ func (mb *MessageBox) executeCommands() {
 				)
 			}
 		}
-
-		if mb.content.CanShiftUp() {
-			mb.content.ShiftUp()
-		}
 	}
 }
+
+////////////////// OLD CODE //////////////////////
+
+// Clear interface{} information to prevent a deadlock and release the memory
+// FIXME: Check if this works
+func (mb *MessageBox) Fini() {
+
+	// BAD: This shouldn't be done in the first place
+}
+
+////////////////////////////////
