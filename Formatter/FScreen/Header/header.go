@@ -79,6 +79,7 @@ func (h *Header) Init(title string) (chan<- HeaderMessage, error) {
 	h.once.Do(func() {
 		h.title = title
 		h.counters = make([]*Counters.UpCounter, 0)
+		h.msgBuffer = new(bf.Buffer[HeaderMessage])
 		sendTo, h.receiveFrom = h.msgBuffer.Init(1)
 		h.receiveErrors = make(chan mb.TextMessage, 1)
 

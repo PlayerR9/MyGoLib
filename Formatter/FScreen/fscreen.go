@@ -1,3 +1,5 @@
+// git tag v0.1.40
+
 package FScreen
 
 import (
@@ -48,6 +50,7 @@ func (fs *FScreen) Init(title string, width, height int) (chan<- interface{}, er
 	fs.once.Do(func() {
 		fs.receiveMessageBoxErrors = messageBox.GetReceiveErrorsFromChannel()
 		fs.receiveHeaderErrors = header.GetReceiveErrorsFromChannel()
+		fs.msgBuffer = new(buffer.Buffer[interface{}])
 		sendTo, fs.receiveFrom = fs.msgBuffer.Init(1)
 
 		fs.wg.Add(1)
