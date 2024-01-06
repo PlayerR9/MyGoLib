@@ -121,3 +121,7 @@ func NewTextMessage(messageType TextMessageType, contents ...string) TextMessage
 		messageType: messageType,
 	}
 }
+
+func NewTextMessageFromError(content string, err error) TextMessage {
+	return NewTextMessage(ErrorText, content, err.Error())
+}

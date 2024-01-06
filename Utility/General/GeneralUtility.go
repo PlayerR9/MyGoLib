@@ -26,14 +26,18 @@ func WaitForUserConfirmation() {
 // Note: This function does not return. The program is terminated by calling
 // os.Exit(1).
 func ExitFromProgram(err error) {
-	if err != nil {
-		fmt.Println(err)
-	}
+	defer func() {
+		fmt.Println("Press enter to exit...")
+		fmt.Scanln()
 
-	fmt.Println("Press enter to exit...")
-	fmt.Scanln()
+		if r := recover(); r != nil {
+			fmt.Println(err)
+		}
 
-	os.Exit(1)
+		os.Exit(1)
+	}()
+
+	panic(err)
 }
 
 func FindMaximumValue[T any](comparisonFunc func(T, T) int, inputValues ...T) T {

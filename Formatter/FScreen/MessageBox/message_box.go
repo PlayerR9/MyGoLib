@@ -44,6 +44,7 @@ func (mb *MessageBox) Init(width, height int) (chan<- TextMessage, error) {
 	mb.once.Do(func() {
 		mb.content, _ = NewContentBox(width, height)
 
+		mb.msgBuffer = new(buffer.Buffer[TextMessage])
 		sendTo, mb.receiveFrom = mb.msgBuffer.Init(1)
 		mb.receiveErrors = make(chan TextMessage, 1)
 
