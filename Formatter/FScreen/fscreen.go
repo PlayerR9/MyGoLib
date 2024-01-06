@@ -1,4 +1,4 @@
-// git tag v0.1.40
+// git tag v0.1.44
 
 package FScreen
 
@@ -126,7 +126,6 @@ func (fs *FScreen) Cleanup() {
 
 	go func() {
 		close(fs.sendToMessageBox)
-		messageBox.Fini()
 		messageBox.Cleanup()
 		cleanWg.Done()
 		messageBox = nil
