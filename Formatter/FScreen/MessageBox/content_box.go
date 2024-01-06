@@ -1,4 +1,4 @@
-// git tag v0.1.43
+// git tag v0.1.46
 
 package MessageBox
 
@@ -141,9 +141,6 @@ func (cb *ContentBox) ResizeWidth(width int) {
 		copy(newTable[i], cb.table[i])
 	}
 
-	newStyles := make([]tcell.Style, cb.height)
-	copy(newStyles, cb.styles)
-
 	if width > cb.width {
 		// Grow: Copy the old table and the old styles
 		// but fill the new space with spaces
@@ -152,8 +149,6 @@ func (cb *ContentBox) ResizeWidth(width int) {
 			for i := 0; i < cb.height; i++ {
 				newTable[i][j] = Space
 			}
-
-			newStyles[j] = StyleMap[NormalText]
 		}
 	} else {
 		// Shrink: Copy the old table and the old styles
@@ -166,7 +161,6 @@ func (cb *ContentBox) ResizeWidth(width int) {
 	}
 
 	cb.table = newTable
-	cb.styles = newStyles
 	cb.emptyLine = []rune(strings.Repeat(string(Space), width))
 }
 
