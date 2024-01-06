@@ -1,4 +1,4 @@
-// git tag v0.1.45
+// git tag v0.1.47
 
 package FScreen
 
@@ -10,6 +10,8 @@ import (
 	h "github.com/PlayerR9/MyGoLib/Formatter/FScreen/Header"
 	mb "github.com/PlayerR9/MyGoLib/Formatter/FScreen/MessageBox"
 )
+
+var DefaultStyle = mb.StyleMap[mb.NormalText]
 
 var (
 	header     *h.Header      = nil

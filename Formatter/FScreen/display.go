@@ -29,6 +29,8 @@ func NewDisplay(frameRate float64) (Display, error) {
 		return Display{}, err
 	}
 
+	screen.SetStyle(DefaultStyle)
+
 	err = screen.Init()
 	if err != nil {
 		return Display{}, err
