@@ -4,55 +4,82 @@ package FScreen
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 
 	buffer "github.com/PlayerR9/MyGoLib/CustomData/Buffer"
+	d "github.com/PlayerR9/MyGoLib/CustomData/Display"
 	h "github.com/PlayerR9/MyGoLib/Formatter/FScreen/Header"
 	mb "github.com/PlayerR9/MyGoLib/Formatter/FScreen/MessageBox"
+	"github.com/gdamore/tcell"
 )
 
-var DefaultStyle = mb.StyleMap[mb.NormalText]
+// Default values for the FScreen
+const (
+	DefaultScreenWidth  int = 80
+	DefaultScreenHeight int = 24
+)
 
+var (
+	DefaultStyle tcell.Style = mb.StyleMap[mb.NormalText]
+)
+
+// Global variables for the FScreen
 var (
 	header     *h.Header      = nil
 	messageBox *mb.MessageBox = nil
+	display    *d.Display     = nil
 )
 
 type FScreen struct {
 	msgBuffer   *buffer.Buffer[interface{}]
 	receiveFrom <-chan interface{}
-	once        sync.Once
-	wg          sync.WaitGroup
+
+	width int
+
+	sendToHeader        chan<- h.HeaderMessage
+	receiveHeaderErrors <-chan mb.TextMessage
 
 	sendToMessageBox        chan<- mb.TextMessage
 	receiveMessageBoxErrors <-chan mb.TextMessage
 
-	sendToHeader        chan<- h.HeaderMessage
-	receiveHeaderErrors <-chan mb.TextMessage
+	once sync.Once
+	wg   sync.WaitGroup
 }
 
-func (fs *FScreen) Init(title string, width, height int) (chan<- interface{}, error) {
+func (fs *FScreen) Init(title string, frameRate float64) (chan<- interface{}, error) {
 	var err error
+	var sendTo chan<- interface{}
 
-	messageBox = new(mb.MessageBox)
-	fs.sendToMessageBox, err = messageBox.Init(width, height)
-	if err != nil {
-		return nil, err
-	}
-
+	// Initialize the header
 	header = new(h.Header)
 	fs.sendToHeader, err = header.Init(title)
 	if err != nil {
 		return nil, err
 	}
 
-	var sendTo chan<- interface{}
+	// Initialize the message box
+	messageBox = new(mb.MessageBox)
+	fs.sendToMessageBox, err = messageBox.Init(DefaultScreenWidth, DefaultScreenHeight)
+	if err != nil {
+		return nil, err
+	}
+
+	// Initialize the display
+	display = new(d.Display)
+	err = display.Init(frameRate, DefaultStyle)
+	if err != nil {
+		return nil, err
+	}
 
 	fs.once.Do(func() {
-		fs.receiveMessageBoxErrors = messageBox.GetReceiveErrorsFromChannel()
-		fs.receiveHeaderErrors = header.GetReceiveErrorsFromChannel()
+		// Initialize the FScreen
 		fs.msgBuffer = new(buffer.Buffer[interface{}])
 		sendTo, fs.receiveFrom = fs.msgBuffer.Init(1)
+
+		// Initialize the channels
+		fs.receiveHeaderErrors = header.GetReceiveErrorsFromChannel()
+		fs.receiveMessageBoxErrors = messageBox.GetReceiveErrorsFromChannel()
 
 		fs.wg.Add(1)
 
@@ -145,4 +172,48 @@ func (fs *FScreen) Cleanup() {
 
 func (fs *FScreen) Wait() {
 	fs.wg.Wait()
+}
+
+func (fs *FScreen) CanSetWidth(width int) bool {
+	ok := header.CanSetWidth(width)
+	if !ok {
+		return false
+	}
+
+	return messageBox.CanSetWidth(width)
+}
+
+func (fs *FScreen) SetWidth(width int) {
+	fs.width = width
+
+	header.SetWidth(width)
+	messageBox.SetWidth(width)
+}
+
+func (fs *FScreen) CanSetHeight(height int) bool {
+	return header.GetCurrentHeight()+2+messageBox.GetCurrentHeight() >= height
+}
+
+func (fs *FScreen) SetHeight(height int) {
+	n := header.GetCurrentHeight()
+
+	header.SetHeight(n)
+	messageBox.SetHeight(height - n - 1)
+}
+
+func (fs *FScreen) GenerateDrawTables() ([][]rune, []tcell.Style) {
+	emptyLine := []rune(strings.Repeat(" ", fs.width))
+
+	headerTable, headerStyle := header.GenerateDrawTables()
+	messageBoxTable, messageBoxStyle := messageBox.GenerateDrawTables()
+
+	headerTable = append(headerTable, emptyLine)
+	headerStyle = append(headerStyle, mb.StyleMap[mb.NormalText])
+
+	for i, row := range messageBoxTable {
+		headerTable = append(headerTable, row)
+		headerStyle = append(headerStyle, messageBoxStyle[i])
+	}
+
+	return headerTable, headerStyle
 }

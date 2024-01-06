@@ -1,3 +1,5 @@
+// git tag v0.1.48
+
 package Header
 
 import (
@@ -9,7 +11,12 @@ import (
 	bf "github.com/PlayerR9/MyGoLib/CustomData/Buffer"
 	"github.com/PlayerR9/MyGoLib/CustomData/Counters"
 	mb "github.com/PlayerR9/MyGoLib/Formatter/FScreen/MessageBox"
+	sext "github.com/PlayerR9/MyGoLib/Utility/StrExt"
 	"github.com/gdamore/tcell"
+)
+
+const (
+	Hellip string = "..."
 )
 
 // style is a variable of type tcell.Style. It represents the style used
@@ -280,19 +287,14 @@ func (h *Header) Cleanup() {
 	h.receiveErrors = nil
 }
 
-// SetSize is a method on the Header struct. It sets the width and height of the Header.
-// The method currently only sets the width of the Header and ignores the height parameter.
-// The method always returns nil, indicating that it never fails.
-//
-// Parameters:
-//   - width: the new width of the Header
-//   - height: the new height of the Header (currently ignored)
-//
-// Returns:
-//   - error: always nil
-func (h *Header) SetSize(width, height int) error {
-	h.width = width
-	return nil
+func (h *Header) trimStringIfTooLarge(str string) string {
+	if len(str) > h.width {
+		newStr, _ := sext.ReplaceSuffix(str[:h.width], Hellip)
+
+		return newStr
+	}
+
+	return str
 }
 
 // Draw is a method on the Header struct. It prints the header on the screen
@@ -314,34 +316,124 @@ func (h *Header) SetSize(width, height int) error {
 // Returns:
 //   - int: the updated y position
 //   - tcell.Screen: the modified screen
-func (h *Header) Draw(y int, screen tcell.Screen) (int, tcell.Screen) {
+func (h *Header) GenerateDrawTables() ([][]rune, []tcell.Style) {
+	emptyLine := []rune(strings.Repeat(" ", h.width))
+	y := 0 // The current y position
+
+	table := make([][]rune, 0)
+	styles := make([]tcell.Style, 0)
+
+	// 1. Print the title
+	var title string
+
+	if len(h.title)+8 > h.width {
+		title, _ = sext.ReplaceSuffix(h.title, Hellip)
+	} else {
+		title = h.title
+	}
+
+	title = "*** " + title + " ***"
+
 	// Print the title
-	startPos := (h.width - len(h.title)) / 2
-	for x, char := range h.title {
-		screen.SetContent(startPos+x, y, char, nil, style)
-	}
+	table = append(table, emptyLine)
+	styles = append(styles, style)
 
-	// Print the current process (if any)
+	startPos := (h.width - len(title)) / 2
+	copy(table[y][startPos:], []rune(title))
+
+	// 2. Empty line
+	table = append(table, emptyLine)
+	styles = append(styles, style)
+	y++
+
+	// 3. Print the current process (if any)
 	if h.currentProcess != "" {
-		y += 2
-
-		for x, char := range h.currentProcess {
-			screen.SetContent(x, y, char, nil, style)
-		}
-	}
-
-	// Print all the counters (if any)
-	if len(h.counters) != 0 {
+		table = append(table, emptyLine)
+		styles = append(styles, style)
 		y++
 
+		copy(table[y][0:], []rune(h.trimStringIfTooLarge(h.currentProcess)))
+	}
+
+	// 4. Empty line
+	table = append(table, emptyLine)
+	styles = append(styles, style)
+	y++
+
+	// 5. Print all the counters (if any)
+	if len(h.counters) != 0 {
 		for _, counter := range h.counters {
+			table = append(table, emptyLine)
+			styles = append(styles, style)
 			y++
 
-			for x, char := range counter.String() {
-				screen.SetContent(x, y, char, nil, style)
-			}
+			copy(table[y][0:], []rune(h.trimStringIfTooLarge(counter.String())))
 		}
 	}
 
-	return y, screen
+	return table, styles
+}
+
+// SetWidth is a method on the Header struct. It sets the width of the Header.
+// The method always returns nil, indicating that it never fails.
+//
+// Parameters:
+//   - width: the new width of the Header
+//   - height: the new height of the Header (currently ignored)
+//
+// Returns:
+//   - error: always nil
+func (h *Header) CanSetWidth(width int) bool {
+	return width >= 9
+}
+
+// SetWidth is a method on the Header struct. It sets the width of the Header.
+// The method always returns nil, indicating that it never fails.
+//
+// Parameters:
+//   - width: the new width of the Header
+//   - height: the new height of the Header (currently ignored)
+//
+// Returns:
+//   - error: always nil
+func (h *Header) SetWidth(width int) {
+	h.width = width
+}
+
+// CanSetSize is a method on the Header struct. It sets the width and height of the Header.
+// The method currently only sets the width of the Header and ignores the height parameter.
+// The method always returns nil, indicating that it never fails.
+//
+// Parameters:
+//   - width: the new width of the Header
+//   - height: the new height of the Header (currently ignored)
+//
+// Returns:
+//   - error: always nil
+func (h *Header) CanSetHeight(height int) bool {
+	return height >= 1
+}
+
+// SetSize is a method on the Header struct. It sets the width and height of the Header.
+// The method currently only sets the width of the Header and ignores the height parameter.
+// The method always returns nil, indicating that it never fails.
+//
+// Parameters:
+//   - width: the new width of the Header
+//   - height: the new height of the Header (currently ignored)
+//
+// Returns:
+//   - error: always nil
+func (h *Header) SetHeight(height int) {
+	// Do nothing
+}
+
+func (h *Header) GetCurrentHeight() int {
+	y := 3 + len(h.counters) // The current y position
+
+	if h.currentProcess != "" {
+		return y + 1
+	} else {
+		return y
+	}
 }

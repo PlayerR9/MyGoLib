@@ -1,6 +1,7 @@
 package MessageBox
 
 import (
+	"strings"
 	"sync"
 
 	buffer "github.com/PlayerR9/MyGoLib/CustomData/Buffer"
@@ -8,8 +9,8 @@ import (
 )
 
 const (
-	Padding      = 2
-	PaddingWidth = 4 // 2 * Padding
+	Padding      int = 2
+	PaddingWidth int = 4 // 2 * Padding
 )
 
 var StyleMap map[TextMessageType]tcell.Style = map[TextMessageType]tcell.Style{
@@ -60,62 +61,26 @@ func (mb *MessageBox) GetReceiveErrorsFromChannel() <-chan TextMessage {
 	return mb.receiveErrors
 }
 
-func (mb *MessageBox) SetSize(width, height int) error {
-	if width-PaddingWidth < 5 {
-		return &ErrWidthTooSmall{}
-	} else if height-Padding < 2 {
-		return &ErrHeightTooSmall{}
+func (mb *MessageBox) GenerateDrawTables() ([][]rune, []tcell.Style) {
+	border := []rune(strings.Repeat("-", mb.content.width+PaddingWidth))
+	border = append([]rune("+"), border...) // Left corner
+	border = append(border, '+')            // Right corner
+
+	tables, styles := mb.content.GenerateDrawTables()
+
+	// 1. Add the padding to the left and right of each line
+	for i := 0; i < mb.content.height; i++ {
+		tables[i] = append([]rune{'|', Space}, tables[i]...)
+		tables[i] = append(tables[i], Space, '|')
 	}
 
-	mb.content.ResizeWidth(width)
-	mb.content.ResizeHeight(height)
+	// 2. Add a border to the top and bottom of the table
+	tables = append([][]rune{border}, tables...)
+	styles = append([]tcell.Style{StyleMap[NormalText]}, styles...)
+	tables = append(tables, border)
+	styles = append(styles, StyleMap[NormalText])
 
-	return nil
-}
-
-func (mb *MessageBox) drawHorizontalBorderAt(y int, style tcell.Style, screen tcell.Screen) tcell.Screen {
-	screen.SetContent(0, y, '+', nil, style) // Left corner
-
-	for x := 1; x < mb.content.width+1+PaddingWidth; x++ {
-		screen.SetContent(x, y, '-', nil, style)
-	}
-
-	screen.SetContent(mb.content.width+1+PaddingWidth, y, '+', nil, style) // Right corner
-
-	return screen
-}
-
-func (mb *MessageBox) Draw(y int, screen tcell.Screen) (int, tcell.Screen) {
-	style := StyleMap[NormalText]
-
-	screen = mb.drawHorizontalBorderAt(y, style, screen) // Top border
-
-	for i := 0; i < mb.content.firstEmptyLine; i++ {
-		y++
-		screen.SetContent(0, y, '|', nil, style) // Left border
-
-		for j, cell := range mb.content.table[i] {
-			screen.SetContent(Padding+j, y, cell, nil, mb.content.styles[i])
-		}
-
-		screen.SetContent(mb.content.width+PaddingWidth, y, '|', nil, style) // Right border
-	}
-
-	for i := mb.content.firstEmptyLine; i < mb.content.height; i++ {
-		y++
-		screen.SetContent(0, y, '|', nil, style) // Left border
-
-		for j, cell := range mb.content.table[i] {
-			screen.SetContent(Padding+j, y, cell, nil, mb.content.styles[i])
-		}
-
-		screen.SetContent(mb.content.width+PaddingWidth, y, '|', nil, style) // Right border
-	}
-
-	y++
-	screen = mb.drawHorizontalBorderAt(y, style, screen) // Bottom border
-
-	return y, screen
+	return tables, styles
 }
 
 func (mb *MessageBox) Wait() {
@@ -176,4 +141,24 @@ func (mb *MessageBox) executeCommands() {
 			}
 		}
 	}
+}
+
+func (mb *MessageBox) CanSetWidth(width int) bool {
+	return mb.content.CanSetWidth(width - PaddingWidth)
+}
+
+func (mb *MessageBox) SetWidth(width int) {
+	mb.content.SetWidth(width)
+}
+
+func (mb *MessageBox) CanSetHeight(height int) bool {
+	return mb.content.CanSetHeight(height - Padding)
+}
+
+func (mb *MessageBox) SetHeight(height int) {
+	mb.content.SetHeight(height - Padding)
+}
+
+func (mb *MessageBox) GetCurrentHeight() int {
+	return mb.content.GetCurrentHeight() + Padding
 }

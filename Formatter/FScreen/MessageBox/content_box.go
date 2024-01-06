@@ -120,74 +120,6 @@ func (cb *ContentBox) Clear() {
 	}
 }
 
-// ResizeWidth changes the width of the ContentBox to the specified width.
-// If the new width is greater than the current width, the function grows the
-// box by filling the new space with spaces.
-// If the new width is less than the current width, the function shrinks the
-// box by discarding the extra characters and replacing them with hellipses.
-//
-// Parameters:
-//
-//   - width: The new width of the ContentBox.
-func (cb *ContentBox) ResizeWidth(width int) {
-	defer func() { cb.width = width }()
-	if width == cb.width {
-		return // Nothing to do
-	}
-
-	newTable := make([][]rune, cb.height)
-	for i := 0; i < cb.height; i++ {
-		newTable[i] = make([]rune, width)
-		copy(newTable[i], cb.table[i])
-	}
-
-	if width > cb.width {
-		// Grow: Copy the old table and the old styles
-		// but fill the new space with spaces
-		// NOTE: These loops are inverted
-		for j := cb.width; j < width; j++ {
-			for i := 0; i < cb.height; i++ {
-				newTable[i][j] = Space
-			}
-		}
-	} else {
-		// Shrink: Copy the old table and the old styles
-		// but discard the extra characters (replacing them with hellipses)
-		for i := 0; i < cb.height; i++ {
-			if newTable[i][width-1] != Space {
-				copy(newTable[i][width-HellipLen:], []rune(Hellip))
-			}
-		}
-	}
-
-	cb.table = newTable
-	cb.emptyLine = []rune(strings.Repeat(string(Space), width))
-}
-
-// ResizeHeight changes the height of the ContentBox to the specified height.
-// If the new height is greater than the current height, the function grows
-// the box by increasing the table size.
-// If the new height is less than or equal to the current height, the function
-// shrinks the box by making the extra lines out of bounds.
-//
-// Parameters:
-//
-//   - height: The new height of the ContentBox.
-func (cb *ContentBox) ResizeHeight(height int) {
-	defer func() { cb.height = height }()
-
-	upperLimit := int(math.Max(float64(len(cb.table)), float64(cb.height)))
-
-	if height <= upperLimit {
-		return
-	}
-
-	for i := upperLimit; i < height; i++ {
-		cb.table = append(cb.table, cb.emptyLine)
-		cb.styles = append(cb.styles, StyleMap[NormalText])
-	}
-}
-
 // HasEmptyLine checks if the ContentBox has an empty line where new content
 // can be written.
 // The function returns true if the first empty line is less than or equal
@@ -615,32 +547,6 @@ func (cb *ContentBox) ShiftUp() {
 	}
 }
 
-// drawHorizontalBorderAt draws a horizontal border at the specified
-// y-coordinate on the screen with the specified style.
-// The border is drawn from the left corner to the right corner of the
-// ContentBox, with '+' characters at the corners and '-' characters in between.
-//
-// Parameters:
-//
-//   - y: The y-coordinate where the border is to be drawn.
-//   - style: The style to be used for the border.
-//   - screen: The screen where the border is to be drawn.
-//
-// Returns:
-//
-//   - The screen after the border has been drawn.
-func (cb *ContentBox) drawHorizontalBorderAt(y int, style tcell.Style, screen tcell.Screen) tcell.Screen {
-	screen.SetContent(0, y, '+', nil, style) // Left corner
-
-	for x := 1; x < cb.width+1+PaddingWidth; x++ {
-		screen.SetContent(x, y, '-', nil, style)
-	}
-
-	screen.SetContent(cb.width+1+PaddingWidth, y, '+', nil, style) // Right corner
-
-	return screen
-}
-
 // Draw renders the ContentBox on the screen at the specified y-coordinate.
 // The function draws the top and bottom borders, and the content of the box
 // between the borders.
@@ -658,35 +564,86 @@ func (cb *ContentBox) drawHorizontalBorderAt(y int, style tcell.Style, screen tc
 //
 //   - The y-coordinate of the last line drawn.
 //   - The screen after the box has been drawn.
-func (cb *ContentBox) Draw(y int, screen tcell.Screen) (int, tcell.Screen) {
-	style := StyleMap[NormalText]
+func (cb *ContentBox) GenerateDrawTables() ([][]rune, []tcell.Style) {
+	return cb.table, cb.styles
+}
 
-	screen = cb.drawHorizontalBorderAt(y, style, screen) // Top border
+func (cb *ContentBox) CanSetWidth(width int) bool {
+	return width > HellipLen
+}
 
-	for i := 0; i < cb.firstEmptyLine; i++ {
-		y++
-		screen.SetContent(0, y, '|', nil, style) // Left border
-
-		for j, cell := range cb.table[i] {
-			screen.SetContent(Padding+j, y, cell, nil, cb.styles[i])
-		}
-
-		screen.SetContent(cb.width+PaddingWidth, y, '|', nil, style) // Right border
+// ResizeWidth changes the width of the ContentBox to the specified width.
+// If the new width is greater than the current width, the function grows the
+// box by filling the new space with spaces.
+// If the new width is less than the current width, the function shrinks the
+// box by discarding the extra characters and replacing them with hellipses.
+//
+// Parameters:
+//
+//   - width: The new width of the ContentBox.
+func (cb *ContentBox) SetWidth(width int) {
+	defer func() { cb.width = width }()
+	if width == cb.width {
+		return // Nothing to do
 	}
 
-	for i := cb.firstEmptyLine; i < cb.height; i++ {
-		y++
-		screen.SetContent(0, y, '|', nil, style) // Left border
-
-		for j, cell := range cb.table[i] {
-			screen.SetContent(Padding+j, y, cell, nil, cb.styles[i])
-		}
-
-		screen.SetContent(cb.width+PaddingWidth, y, '|', nil, style) // Right border
+	newTable := make([][]rune, cb.height)
+	for i := 0; i < cb.height; i++ {
+		newTable[i] = make([]rune, width)
+		copy(newTable[i], cb.table[i])
 	}
 
-	y++
-	screen = cb.drawHorizontalBorderAt(y, style, screen) // Bottom border
+	if width > cb.width {
+		// Grow: Copy the old table and the old styles
+		// but fill the new space with spaces
+		// NOTE: These loops are inverted
+		for j := cb.width; j < width; j++ {
+			for i := 0; i < cb.height; i++ {
+				newTable[i][j] = Space
+			}
+		}
+	} else {
+		// Shrink: Copy the old table and the old styles
+		// but discard the extra characters (replacing them with hellipses)
+		for i := 0; i < cb.height; i++ {
+			if newTable[i][width-1] != Space {
+				copy(newTable[i][width-HellipLen:], []rune(Hellip))
+			}
+		}
+	}
 
-	return y, screen
+	cb.table = newTable
+	cb.emptyLine = []rune(strings.Repeat(string(Space), width))
+}
+
+func (cb *ContentBox) CanSetHeight(height int) bool {
+	return height >= 1
+}
+
+// ResizeHeight changes the height of the ContentBox to the specified height.
+// If the new height is greater than the current height, the function grows
+// the box by increasing the table size.
+// If the new height is less than or equal to the current height, the function
+// shrinks the box by making the extra lines out of bounds.
+//
+// Parameters:
+//
+//   - height: The new height of the ContentBox.
+func (cb *ContentBox) SetHeight(height int) {
+	defer func() { cb.height = height }()
+
+	upperLimit := int(math.Max(float64(len(cb.table)), float64(cb.height)))
+
+	if height <= upperLimit {
+		return
+	}
+
+	for i := upperLimit; i < height; i++ {
+		cb.table = append(cb.table, cb.emptyLine)
+		cb.styles = append(cb.styles, StyleMap[NormalText])
+	}
+}
+
+func (cb *ContentBox) GetCurrentHeight() int {
+	return cb.height
 }
