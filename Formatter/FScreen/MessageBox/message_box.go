@@ -177,14 +177,3 @@ func (mb *MessageBox) executeCommands() {
 		}
 	}
 }
-
-////////////////// OLD CODE //////////////////////
-
-// Clear interface{} information to prevent a deadlock and release the memory
-// FIXME: Check if this works
-func (mb *MessageBox) Fini() {
-
-	// BAD: This shouldn't be done in the first place
-}
-
-////////////////////////////////

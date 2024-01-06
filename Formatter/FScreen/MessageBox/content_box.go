@@ -1,3 +1,5 @@
+// git tag v0.1.43
+
 package MessageBox
 
 import (
@@ -157,7 +159,7 @@ func (cb *ContentBox) ResizeWidth(width int) {
 		// Shrink: Copy the old table and the old styles
 		// but discard the extra characters (replacing them with hellipses)
 		for i := 0; i < cb.height; i++ {
-			if cb.table[i][width-1] != Space {
+			if newTable[i][width-1] != Space {
 				copy(newTable[i][width-HellipLen:], []rune(Hellip))
 			}
 		}
