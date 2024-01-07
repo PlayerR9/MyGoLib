@@ -114,7 +114,7 @@ func NewQueueIterator[T any](queue Queuer[T]) *QueueIterator[T] {
 // This method is typically used in a loop to iterate over all the elements in a queue.
 func (iterator *QueueIterator[T]) GetNext() T {
 	if len(iterator.values) <= iterator.currentIndex {
-		panic(&ErrOutOfBoundsIterator)
+		panic(&ErrOutOfBoundsIterator{})
 	}
 
 	value := iterator.values[iterator.currentIndex]
