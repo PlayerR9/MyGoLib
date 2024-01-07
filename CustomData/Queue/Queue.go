@@ -102,43 +102,32 @@ type QueueIterator[T any] struct {
 func NewQueueIterator[T any](queue Queuer[T]) *QueueIterator[T] {
 	return &QueueIterator[T]{
 		values:       queue.ToSlice(),
-		currentIndex: -1,
+		currentIndex: 0,
 	}
 }
 
-// Next is a method of the QueueIterator type. It is used to move the iterator to the next
-// element in the queue.
-//
-// The method first checks if the current index of the iterator is greater than or equal to
-// the length of the values slice.
-// If it is, the method returns false, indicating that there are no more elements to iterate
-// over in the queue.
-//
-// If the current index is less than the length of the values slice, the method increments
-// the current index by one,
-// moving the iterator to the next element in the queue, and returns true.
+// GetNext is a method of the QueueIterator type. It is used to move the iterator to the next
+// element in the queue and return the value of that element.
+// If the iterator is at the end of the queue, the method panics by throwing an
+// ErrOutOfBoundsIterator error.
 //
 // This method is typically used in a loop to iterate over all the elements in a queue.
-func (iterator *QueueIterator[T]) Next() bool {
-	if iterator.currentIndex >= len(iterator.values) {
-		return false
+func (iterator *QueueIterator[T]) GetNext() T {
+	if len(iterator.values) <= iterator.currentIndex {
+		panic(&ErrOutOfBoundsIterator)
 	}
 
+	value := iterator.values[iterator.currentIndex]
 	iterator.currentIndex++
 
-	return true
+	return value
 }
 
-// Value is a method of the QueueIterator type. It returns the current element in the queue
-// that the iterator is pointing to.
+// HasNext is a method of the QueueIterator type. It returns true if there are more elements
+// that the iterator is pointing to, and false otherwise.
 //
-// The method accesses the values slice of the iterator and retrieves the element at the
-// current index position (currentIndex).
-// The returned value is of a generic type T, which is the same as the type of the elements
-// stored in the queue.
-//
-// This method is typically used in conjunction with the Next method to iterate over and
+// This method is typically used in conjunction with the GetNext method to iterate over and
 // access all the elements in a queue.
-func (iterator *QueueIterator[T]) Value() T {
-	return iterator.values[iterator.currentIndex]
+func (iterator *QueueIterator[T]) HasNext() bool {
+	return iterator.currentIndex < len(iterator.values)
 }

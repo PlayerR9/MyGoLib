@@ -90,3 +90,17 @@ type ErrTooManyValues struct{}
 func (e ErrTooManyValues) Error() string {
 	return "could not initialize queue: too many values"
 }
+
+// ErrOutOfBoundsIterator is a struct that represents an error when an iterator goes
+// out of bounds.
+// It does not have any fields as the error condition is solely based on the iterator
+// exceeding the bounds of the data structure it is iterating over.
+type ErrOutOfBoundsIterator struct{}
+
+// Error is a method of the ErrOutOfBoundsIterator type that implements the error
+// interface. It returns a string representation of the error.
+// The method returns the string "iterator out of bounds", providing a clear and
+// descriptive error message when an iterator goes out of bounds.
+func (e ErrOutOfBoundsIterator) Error() string {
+	return "iterator out of bounds"
+}
