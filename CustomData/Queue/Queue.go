@@ -1,277 +1,144 @@
 package Queue
 
-import (
-	"fmt"
-	"strings"
-
-	gen "github.com/PlayerR9/MyGoLib/Utility/General"
-	"github.com/markphelps/optional"
-)
-
+// QueueHead and QueueSep are constants used in the String() method of the Queuer interface
+// to format the string representation of a queue.
 const (
-	// Queue Implementation Types
-
-	// linked_queue with no maximum size Implementation
-	LINKED int = iota
-
-	// ArrayQueue with no maximum size Implementation
-	ARRAY
-)
-
-type Queue[T any] struct {
-	data           any
-	implementation int
-
-	size     int
-	capacity optional.Int
-}
-
-func NewQueue[T any](implementation int, values ...T) Queue[T] {
-	var queue Queue[T]
-
-	switch implementation {
-	case LINKED:
-		queue.data = linked_queue[T]{
-			front: nil,
-			back:  nil,
-		}
-	case ARRAY:
-		queue.data = make([]T, 0)
-	default:
-		panic("Invalid queue implementation type")
-	}
-
-	queue.implementation = implementation
-
-	queue.size = 0
-	queue.capacity = optional.Int{}
-
-	for _, element := range values {
-		queue.Enqueue(element)
-	}
-
-	return queue
-}
-
-func NewLimitedQueue[T any](implementation, capacity int, values ...T) Queue[T] {
-	if capacity < 0 {
-		panic("Cannot specify a negative capacity for a queue")
-	}
-
-	if len(values) > capacity {
-		panic("Cannot specify more values than the capacity of the queue")
-	}
-
-	var queue Queue[T]
-
-	switch implementation {
-	case LINKED:
-		queue.data = linked_queue[T]{
-			front: nil,
-			back:  nil,
-		}
-	case ARRAY:
-		queue.data = make([]T, 0, capacity)
-	default:
-		panic("Invalid queue implementation type")
-	}
-
-	queue.implementation = implementation
-
-	queue.size = 0
-	queue.capacity = optional.NewInt(capacity)
-
-	for _, element := range values {
-		queue.Enqueue(element)
-	}
-
-	return queue
-}
-
-func (queue *Queue[T]) Enqueue(value T) {
-	if queue.capacity.Present() && queue.size >= queue.capacity.MustGet() {
-		panic(ErrFullQueue{})
-	}
-
-	switch queue.implementation {
-	case LINKED:
-		new_node := queue_node[T]{
-			value: gen.DeepCopy(value).(T),
-		}
-
-		tmp := queue.data.(linked_queue[T])
-
-		if tmp.back == nil {
-			tmp.front = &new_node
-		} else {
-			tmp.back.next = &new_node
-		}
-
-		tmp.back = &new_node
-
-		queue.data = tmp
-	case ARRAY:
-		tmp := queue.data.([]T)
-		tmp = append(tmp, gen.DeepCopy(value).(T))
-		queue.data = tmp
-	}
-
-	queue.size++
-}
-
-func (queue *Queue[T]) Dequeue() T {
-	if queue.size <= 0 {
-		panic(ErrEmptyQueue{})
-	}
-
-	var value T
-
-	switch queue.implementation {
-	case LINKED:
-		tmp := queue.data.(linked_queue[T])
-
-		value = tmp.front.value
-
-		tmp.front = tmp.front.next
-
-		if tmp.front == nil {
-			tmp.back = nil
-		}
-
-		queue.data = tmp
-	case ARRAY:
-		tmp := queue.data.([]T)
-		value = tmp[0]
-		queue.data = tmp[1:]
-	}
-
-	queue.size--
-
-	return value
-}
-
-func (queue Queue[T]) Peek() T {
-	if queue.size == 0 {
-		panic(ErrEmptyQueue{})
-	}
-
-	var value T
-
-	switch queue.implementation {
-	case LINKED:
-		value = gen.DeepCopy(queue.data.(linked_queue[T]).front.value).(T)
-	case ARRAY:
-		value = gen.DeepCopy(queue.data.([]T)[0]).(T)
-	}
-
-	return value
-}
-
-func (queue Queue[T]) IsEmpty() bool {
-	return queue.size == 0
-}
-
-func (queue Queue[T]) Size() int {
-	return queue.size
-}
-
-func (queue *Queue[T]) ToSlice() []T {
-	slice := make([]T, queue.size)
-
-	switch queue.implementation {
-	case LINKED:
-		i := 0
-
-		for queue_node := queue.data.(linked_queue[T]).front; queue_node != nil; queue_node = queue_node.next {
-			slice[i] = gen.DeepCopy(queue_node.value).(T)
-			i++
-		}
-	case ARRAY:
-		for i, element := range queue.data.([]T) {
-			slice[i] = gen.DeepCopy(element).(T)
-		}
-	}
-
-	return slice
-}
-
-func (queue *Queue[T]) Clear() {
-	switch queue.implementation {
-	case LINKED:
-		queue.data = linked_queue[T]{
-			front: nil,
-			back:  nil,
-		}
-	case ARRAY:
-		if queue.capacity.Present() {
-			queue.data = make([]T, 0, queue.capacity.MustGet())
-		} else {
-			queue.data = make([]T, 0)
-		}
-	}
-
-	queue.size = 0
-}
-
-func (queue Queue[T]) IsFull() bool {
-	return queue.capacity.Present() && queue.size == queue.capacity.MustGet()
-}
-
-func (queue *Queue[T]) String() string {
-	if queue.size == 0 {
-		return QueueHead
-	}
-
-	var builder strings.Builder
-
-	builder.WriteString(QueueHead)
-
-	switch queue.implementation {
-	case LINKED:
-		tmp := queue.data.(linked_queue[T])
-
-		builder.WriteString(fmt.Sprintf("%v", tmp.front.value))
-
-		for queue_node := tmp.front.next; queue_node != nil; queue_node = queue_node.next {
-			builder.WriteString(QueueSep)
-			builder.WriteString(fmt.Sprintf("%v", queue_node.value))
-		}
-	case ARRAY:
-		tmp := queue.data.([]T)
-
-		builder.WriteString(fmt.Sprintf("%v", tmp[0]))
-
-		for _, element := range tmp[1:] {
-			builder.WriteString(QueueSep)
-			builder.WriteString(fmt.Sprintf("%v", element))
-		}
-	}
-
-	return builder.String()
-}
-
-type ErrEmptyQueue struct{}
-
-func (e ErrEmptyQueue) Error() string {
-	return "Empty queue"
-}
-
-type ErrFullQueue struct{}
-
-func (e ErrFullQueue) Error() string {
-	return "Full queue"
-}
-
-var (
+	// QueueHead is a string constant that represents the start of the queue. It is used to
+	// indicate where elements are removed from the queue.
+	// The value of QueueHead is "← | ", which visually indicates the direction of element
+	// removal.
 	QueueHead string = "← | "
-	QueueSep  string = " | "
+
+	// QueueSep is a string constant that is used as a separator between elements in the string
+	// representation of the queue.
+	// The value of QueueSep is " | ", which provides a clear visual separation between individual
+	// elements in the queue.
+	QueueSep string = " | "
 )
 
-type queue_node[T any] struct {
-	value T
-	next  *queue_node[T]
+// Package queue provides a Queuer interface that defines methods for a queue data structure.
+//
+// Queuer is an interface that defines methods for a queue data structure.
+// It includes methods to add and remove elements, check if the queue is empty or full,
+// get the size of the queue, convert the queue to a slice, clear the queue, and get a string
+// representation of the queue.
+type Queuer[T any] interface {
+	// The Enqueue method adds a value of type T to the end of the queue.
+	Enqueue(value T)
+
+	// The Dequeue method removes and returns the element at the front of the queue.
+	// If the queue is empty, it returns an error.
+	Dequeue() (T, error)
+
+	// The MustDequeue method is a convenience method that dequeues an element from the queue
+	// and returns it.
+	// If the queue is empty, it will panic.
+	MustDequeue() T
+
+	// The Peek method returns the element at the front of the queue without removing it.
+	Peek() (T, error)
+
+	// MustPeek is a method that returns the value at the front of the queue without removing
+	// it.
+	// If the queue is empty, it will panic.
+	MustPeek() T
+
+	// The IsEmpty method checks if the queue is empty and returns a boolean value indicating
+	// whether it is empty or not.
+	IsEmpty() bool
+
+	// The Size method returns the number of elements currently in the queue.
+	Size() int
+
+	// The ToSlice method returns a slice containing all the elements in the queue.
+	ToSlice() []T
+
+	// The Clear method is used to remove all elements from the queue, making it empty.
+	Clear()
+
+	// The IsFull method checks if the queue is full, meaning it has reached its maximum
+	// capacity and cannot accept any more elements.
+	IsFull() bool
+
+	// The String method returns a string representation of the Queuer.
+	String() string
 }
 
-type linked_queue[T any] struct {
-	front, back *queue_node[T]
+// linkedNode represents a node in a linked list. It holds a value of a generic type and a
+// reference to the next node in the list.
+//
+// The value field is of a generic type T, which can be any type such as int, string, or a
+// custom type.
+// It represents the value stored in the node.
+//
+// The next field is a pointer to the next linkedNode in the list. This allows for traversal
+// through the linked list by pointing to the subsequent node in the sequence.
+type linkedNode[T any] struct {
+	value T
+	next  *linkedNode[T]
+}
+
+// QueueIterator is a generic type in Go that represents an iterator for a queue.
+//
+// The values field is a slice of type T, which represents the elements stored in the queue.
+//
+// The currentIndex field is an integer that keeps track of the current index position of the
+// iterator in the queue.
+// It is used to iterate over the elements in the queue.
+type QueueIterator[T any] struct {
+	values       []T
+	currentIndex int
+}
+
+// NewQueueIterator is a function that creates and returns a new QueueIterator object for a
+// given queue.
+// It takes a queue of type Queuer[T] as an argument, where T can be any type.
+//
+// The function uses the ToSlice method of the queue to get a slice of its values, and
+// initializes the currentIndex to -1, indicating that the iterator is at the start of the
+// queue.
+//
+// The returned QueueIterator can be used to iterate over the elements in the queue.
+func NewQueueIterator[T any](queue Queuer[T]) *QueueIterator[T] {
+	return &QueueIterator[T]{
+		values:       queue.ToSlice(),
+		currentIndex: -1,
+	}
+}
+
+// Next is a method of the QueueIterator type. It is used to move the iterator to the next
+// element in the queue.
+//
+// The method first checks if the current index of the iterator is greater than or equal to
+// the length of the values slice.
+// If it is, the method returns false, indicating that there are no more elements to iterate
+// over in the queue.
+//
+// If the current index is less than the length of the values slice, the method increments
+// the current index by one,
+// moving the iterator to the next element in the queue, and returns true.
+//
+// This method is typically used in a loop to iterate over all the elements in a queue.
+func (iterator *QueueIterator[T]) Next() bool {
+	if iterator.currentIndex >= len(iterator.values) {
+		return false
+	}
+
+	iterator.currentIndex++
+
+	return true
+}
+
+// Value is a method of the QueueIterator type. It returns the current element in the queue
+// that the iterator is pointing to.
+//
+// The method accesses the values slice of the iterator and retrieves the element at the
+// current index position (currentIndex).
+// The returned value is of a generic type T, which is the same as the type of the elements
+// stored in the queue.
+//
+// This method is typically used in conjunction with the Next method to iterate over and
+// access all the elements in a queue.
+func (iterator *QueueIterator[T]) Value() T {
+	return iterator.values[iterator.currentIndex]
 }

@@ -9,32 +9,36 @@ import (
 	"github.com/markphelps/optional"
 )
 
+type StackImplementationType int
+
 const (
-	// Stack Implementation Types
-
-	// linked_stack with no maximum size Implementation
-	LINKED int = iota
-
-	// ArrayStack with no maximum size Implementation
-	ARRAY
+	LinkedStack StackImplementationType = iota
+	ArrayStack
 )
+
+func (implementation StackImplementationType) String() string {
+	return [...]string{
+		"Stack implemented with a linked list",
+		"Stack implemented with an array",
+	}[implementation]
+}
 
 type Stack[T any] struct {
 	data           any
-	implementation int
+	implementation StackImplementationType
 	size           int
 	capacity       optional.Int
 }
 
-func NewStack[T any](implementation int, values ...T) Stack[T] {
+func NewStack[T any](implementation StackImplementationType, values ...T) Stack[T] {
 	var stack Stack[T]
 
 	switch implementation {
-	case LINKED:
+	case LinkedStack:
 		stack.data = linked_stack[T]{
 			top: nil,
 		}
-	case ARRAY:
+	case ArrayStack:
 		stack.data = make([]T, 0)
 	default:
 		panic("Invalid stack implementation type")
@@ -52,7 +56,7 @@ func NewStack[T any](implementation int, values ...T) Stack[T] {
 	return stack
 }
 
-func NewLimitedStack[T any](implementation, capacity int, values ...T) Stack[T] {
+func NewLimitedStack[T any](implementation StackImplementationType, capacity int, values ...T) Stack[T] {
 	if capacity < 0 {
 		panic("Cannot specify a negative capacity for a stack")
 	}
@@ -64,11 +68,11 @@ func NewLimitedStack[T any](implementation, capacity int, values ...T) Stack[T] 
 	var stack Stack[T]
 
 	switch implementation {
-	case LINKED:
+	case LinkedStack:
 		stack.data = linked_stack[T]{
 			top: nil,
 		}
-	case ARRAY:
+	case ArrayStack:
 		stack.data = make([]T, 0, capacity)
 	default:
 		panic("Invalid stack implementation type")
@@ -92,7 +96,7 @@ func (stack *Stack[T]) Push(value T) {
 	}
 
 	switch stack.implementation {
-	case LINKED:
+	case LinkedStack:
 		new_node := stack_node[T]{
 			value: gen.DeepCopy(value).(T),
 			next:  stack.data.(linked_stack[T]).top,
@@ -101,7 +105,7 @@ func (stack *Stack[T]) Push(value T) {
 		tmp := stack.data.(linked_stack[T])
 		tmp.top = &new_node
 		stack.data = tmp
-	case ARRAY:
+	case ArrayStack:
 		tmp := stack.data.([]T)
 		tmp = append(tmp, gen.DeepCopy(value).(T))
 		stack.data = tmp
@@ -118,13 +122,13 @@ func (stack *Stack[T]) Pop() T {
 	var value T
 
 	switch stack.implementation {
-	case LINKED:
+	case LinkedStack:
 		value = stack.data.(linked_stack[T]).top.value
 
 		tmp := stack.data.(linked_stack[T])
 		tmp.top = tmp.top.next
 		stack.data = tmp
-	case ARRAY:
+	case ArrayStack:
 		tmp := stack.data.([]T)
 		value = tmp[len(tmp)-1]
 
@@ -145,9 +149,9 @@ func (stack Stack[T]) Peek() T {
 	var value T
 
 	switch stack.implementation {
-	case LINKED:
+	case LinkedStack:
 		value = gen.DeepCopy(stack.data.(linked_stack[T]).top.value).(T)
-	case ARRAY:
+	case ArrayStack:
 		tmp := stack.data.([]T)
 
 		value = gen.DeepCopy(tmp[len(tmp)-1]).(T)
@@ -168,14 +172,14 @@ func (stack *Stack[T]) ToSlice() []T {
 	slice := make([]T, stack.size)
 
 	switch stack.implementation {
-	case LINKED:
+	case LinkedStack:
 		i := 0
 
 		for node := stack.data.(linked_stack[T]).top; node != nil; node = node.next {
 			slice[i] = gen.DeepCopy(node.value).(T)
 			i++
 		}
-	case ARRAY:
+	case ArrayStack:
 		for i, element := range stack.data.([]T) {
 			slice[i] = gen.DeepCopy(element).(T)
 		}
@@ -190,11 +194,11 @@ func (stack *Stack[T]) Clear() {
 	stack.size = 0
 
 	switch stack.implementation {
-	case LINKED:
+	case LinkedStack:
 		stack.data = linked_stack[T]{
 			top: nil,
 		}
-	case ARRAY:
+	case ArrayStack:
 		if stack.capacity.Present() {
 			stack.data = make([]T, 0, stack.capacity.MustGet())
 		} else {
@@ -215,7 +219,7 @@ func (stack *Stack[T]) String() string {
 	var str strings.Builder
 
 	switch stack.implementation {
-	case LINKED:
+	case LinkedStack:
 		node := stack.data.(linked_stack[T]).top
 
 		str.WriteString(fmt.Sprintf("%v", node.value))
@@ -225,7 +229,7 @@ func (stack *Stack[T]) String() string {
 			str.WriteString(fmt.Sprintf("%v", node.value))
 			str.WriteString(StackSep)
 		}
-	case ARRAY:
+	case ArrayStack:
 		tmp := stack.data.([]T)
 
 		str.WriteString(fmt.Sprintf("%v", tmp[0]))
@@ -250,20 +254,6 @@ type stack_node[T any] struct {
 
 type linked_stack[T any] struct {
 	top *stack_node[T]
-}
-
-// Stack Errors
-
-type ErrEmptyStack struct{}
-
-func (e ErrEmptyStack) Error() string {
-	return "Empty stack"
-}
-
-type ErrFullStack struct{}
-
-func (e ErrFullStack) Error() string {
-	return "Full stack"
 }
 
 var (
