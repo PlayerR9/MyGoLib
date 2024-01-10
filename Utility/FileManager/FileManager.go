@@ -1,5 +1,3 @@
-// git tag v0.1.35
-
 package FileManager
 
 import (
@@ -234,4 +232,29 @@ func GetFilesEndingIn(directoryPath string, extensions ...string) ([]string, err
 	}
 
 	return matchingFiles, nil
+}
+
+// SplitPath splits a file path into its components.
+// It takes a file path as a string and returns a slice of strings.
+// The function iterates over the file path, splitting it into parts.
+// Each part is added to the parts slice.
+// If a part is not empty, it is appended to the parts slice.
+// After all parts have been added, the parts slice is reversed to ensure
+// the parts are in the correct order.
+// The function then returns the parts slice.
+func SplitPath(filePath string) []string {
+	var parts []string
+
+	for filePath != "" {
+		var part string
+
+		filePath, part = path.Split(filePath)
+		if part != "" {
+			parts = append(parts, part)
+		}
+	}
+
+	slices.Reverse(parts)
+
+	return parts
 }
