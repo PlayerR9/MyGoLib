@@ -118,7 +118,18 @@ func (ctx *Context) Make(filters []FilterFunc, sep string, values ...any) *Build
 	stringValues := make([]string, 0, len(values))
 
 	for _, value := range values {
-		stringValues = append(stringValues, fmt.Sprintf("%v", value))
+		switch x := value.(type) {
+		case Builder:
+			// Partial application to get the
+			// uncensored string representation
+			var str string
+
+			x.Apply(func(s string) { str = s })
+
+			stringValues = append(stringValues, str)
+		default:
+			stringValues = append(stringValues, fmt.Sprintf("%v", value))
+		}
 	}
 
 	if sep != "" {
@@ -212,10 +223,8 @@ func (b *Builder) IsCensored() CensorValue {
 // the non-censored string representation of the Builder.
 // It joins the Builder's values with the separator to create the non-censored
 // string, and then passes this string to the given function.
-// The function is expected to return an error, which is then returned by the
-// Apply method.
 // This method allows you to perform operations on the non-censored string,
 // regardless of the current censor level.
-func (b *Builder) Apply(f func(s string) error) error {
-	return f(strings.Join(b.values, b.sep))
+func (b *Builder) Apply(f func(s string)) {
+	f(strings.Join(b.values, b.sep))
 }
