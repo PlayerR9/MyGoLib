@@ -110,21 +110,70 @@ func ReadWholeFileLineByLine(path string) ([]string, error) {
 	return lines, scanner.Err()
 }
 
+// AppendToFile is a function that appends content to a file.
+// It takes two parameters: filePath, which is a string representing the path
+// to the file, and content, which is a variadic parameter of strings
+// representing the content to be appended.
+// The function returns an error if it fails to open the file or write to it.
+//
+// The function first attempts to open the file at the given filePath in append
+// and write-only mode. If it fails to open the file, it returns an error wrapped
+// with a message indicating that it could not open the file.
+//
+// If the file is opened successfully, the function defers the closing of the
+// file to ensure that it is closed when the function returns, either normally or
+// due to a panic.
+//
+// The function then attempts to write the content to the file. The content
+// strings are joined with a newline character ("\n") in between each string.
+// If it fails to write to the file, it returns an error wrapped with a message
+// indicating that it could not write to the file.
+//
+// If the function succeeds in writing to the file, it returns nil, indicating
+// that no errors occurred.
 func AppendToFile(filePath string, content ...string) error {
-	file, openError := os.OpenFile(filePath, os.O_APPEND|os.O_WRONLY, 0644)
-	if openError != nil {
-		return fmt.Errorf("could not open file: %v", openError)
+	file, err := os.OpenFile(filePath, os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		return fmt.Errorf("could not open file: %w", err)
 	}
 	defer file.Close()
 
-	_, writeError := file.WriteString(strings.Join(content, "\n"))
-	if writeError != nil {
-		return fmt.Errorf("could not write to file: %v", writeError)
+	_, err = file.WriteString(strings.Join(content, "\n"))
+	if err != nil {
+		return fmt.Errorf("could not write to file: %w", err)
 	}
 
 	return nil
 }
 
+// GetAllFileNamesInDirectory is a function that retrieves all file names
+// in a given directory and their extensions.
+// It takes a parameter, directoryPath, which is a string representing the
+// path to the directory.
+// The function returns a map where the keys are the file paths and the
+// values are the file extensions, and an error if it fails to read the
+// directory or any of its files.
+//
+// The function first initializes an empty map, fileExtensionMap, to store
+// the file paths and their extensions.
+//
+// The function then calls the filepath.Walk function to traverse the
+// directory tree. filepath.Walk takes a root path and a function to be
+// called for each file or directory in the tree.
+// The function passed to filepath.Walk takes the current path, the file
+// or directory info, and an error as parameters.
+// If an error occurs while retrieving the info for a file or directory,
+// the function returns the error to filepath.Walk, which stops the walk
+// and returns the error.
+// If the info indicates that the current path is a file (not a directory),
+// the function adds the file path and its extension to fileExtensionMap.
+//
+// If filepath.Walk returns an error, the function wraps the error with a
+// message indicating that it could not read the directory and returns the
+// wrapped error.
+//
+// If filepath.Walk does not return an error, the function returns
+// fileExtensionMap and nil, indicating that no errors occurred.
 func GetAllFileNamesInDirectory(directoryPath string) (map[string]string, error) {
 	fileExtensionMap := make(map[string]string)
 
@@ -145,6 +194,31 @@ func GetAllFileNamesInDirectory(directoryPath string) (map[string]string, error)
 	return fileExtensionMap, nil
 }
 
+// GetFilesEndingIn is a function that retrieves all files in a given directory
+// that have a specified extension.
+// It takes two parameters: directoryPath, which is a string representing the path
+// to the directory, and extensions, which is a variadic parameter of strings
+// representing the file extensions to match.
+// The function returns a slice of strings representing the paths to the matching
+// files, and an error if it fails to read the directory.
+//
+// The function first initializes an empty slice, matchingFiles, to store the
+// paths to the matching files.
+//
+// The function then attempts to read the directory at the given directoryPath.
+// If it fails to read the directory, it returns nil and an error wrapped with
+// a message indicating that it could not read the directory.
+//
+// If the directory is read successfully, the function iterates over the entries
+// in the directory.
+// For each entry, the function checks if the entry is not a directory and if
+// its extension is in the list of extensions to match.
+// If both conditions are true, the function appends the path to the file to
+// matchingFiles. The path is constructed by joining the directoryPath and the
+// name of the entry.
+//
+// After all entries have been processed, the function returns matchingFiles and
+// nil, indicating that no errors occurred.
 func GetFilesEndingIn(directoryPath string, extensions ...string) ([]string, error) {
 	matchingFiles := make([]string, 0)
 

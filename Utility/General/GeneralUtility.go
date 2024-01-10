@@ -1,5 +1,3 @@
-// git tag v0.1.33
-
 package General
 
 import (
@@ -7,11 +5,6 @@ import (
 	"os"
 	"reflect"
 )
-
-func WaitForUserConfirmation() {
-	fmt.Println("Press enter to proceed...")
-	fmt.Scanln()
-}
 
 // ExitFromProgram is a utility function that handles program termination in
 // case of an error.
@@ -40,36 +33,24 @@ func ExitFromProgram(err error) {
 	panic(err)
 }
 
-func FindMaximumValue[T any](comparisonFunc func(T, T) int, inputValues ...T) T {
-	if len(inputValues) == 0 {
-		panic("Cannot find maximum value in an empty set")
-	}
-
-	maxValue := inputValues[0]
-	for _, currentValue := range inputValues[1:] {
-		if comparisonFunc(currentValue, maxValue) > 0 {
-			maxValue = currentValue
-		}
-	}
-
-	return maxValue
-}
-
-func FindMinimumValue[T any](comparisonFunc func(T, T) int, inputValues ...T) T {
-	if len(inputValues) == 0 {
-		panic("Cannot find minimum value in an empty set")
-	}
-
-	minValue := inputValues[0]
-	for _, currentValue := range inputValues[1:] {
-		if comparisonFunc(currentValue, minValue) < 0 {
-			minValue = currentValue
-		}
-	}
-
-	return minValue
-}
-
+// DeepCopy is a function that performs a deep copy of a given value.
+// It takes a parameter, value, of any type and returns a new value that is a
+// deep copy of the input value.
+//
+// The function first gets the type of the input value using the reflect.TypeOf
+// function.
+//
+// If the kind of the type is not a pointer, the function performs a shallow
+// copy of the value by simply returning the input value.
+// This is because non-pointer values in Go are passed by value, so a new
+// copy is created when the value is passed to the function.
+//
+// If the kind of the type is a pointer, the function creates a new instance
+// of the underlying type of the pointer using the reflect.New function.
+// The new instance is then set to the value pointed to by the input pointer
+// using the reflect.ValueOf function and the Set method of the reflect.Value type.
+//
+// The function then returns the new value, which is a deep copy of the input value.
 func DeepCopy(value any) any {
 	typ := reflect.TypeOf(value)
 
@@ -85,40 +66,6 @@ func DeepCopy(value any) any {
 	reflect.ValueOf(newValue).Elem().Set(reflect.ValueOf(value).Elem())
 
 	return newValue
-}
-
-// MaxInt takes two integers as input and returns the larger value.
-// If the values are equal, it returns the same value.
-//
-// Example:
-//
-//	a := 5
-//	b := 7
-//	max := MaxInt(a, b)
-//	fmt.Println(max) // Output: 7
-func MaxInt(a, b int) int {
-	if a > b {
-		return a
-	}
-
-	return b
-}
-
-// MinInt takes two integers as input and returns the smaller value.
-// If the values are equal, it returns the same value.
-//
-// Example:
-//
-//	a := 5
-//	b := 7
-//	min := MinInt(a, b)
-//	fmt.Println(min) // Output: 5
-func MinInt(a, b int) int {
-	if a < b {
-		return a
-	}
-
-	return b
 }
 
 // SplitIntoGroups takes a slice of any type and an integer n as input.

@@ -13,7 +13,7 @@ import (
 // The Buffer should be initialized with the Init method before use.
 type Buffer[T any] struct {
 	// A pointer to the RWSafeQueue that stores the elements of the Buffer.
-	queue *q.LinkedQueue[*RWSafe[T]]
+	queue *q.SafeQueue[T]
 
 	// A send-only channel of type T. Messages from the Buffer are sent to this channel.
 	sendTo chan T
@@ -68,7 +68,7 @@ func (b *Buffer[T]) Init(bufferSize int) (chan<- T, <-chan T) {
 	}
 
 	b.once.Do(func() {
-		b.queue = q.NewLinkedQueue[*RWSafe[T]]()
+		b.queue = q.NewSafeQueue[T]()
 		b.sendTo = make(chan T, bufferSize)
 		b.receiveFrom = make(chan T, bufferSize)
 		b.isClosed = false
@@ -101,7 +101,7 @@ func (b *Buffer[T]) listenForIncomingMessages() {
 	defer b.wg.Done()
 
 	for msg := range b.receiveFrom {
-		b.queue.Enqueue(NewRWSafe(msg))
+		b.queue.Enqueue(msg)
 
 		b.isNotEmptyOrClosed.Signal()
 	}
@@ -140,14 +140,14 @@ func (b *Buffer[T]) sendMessagesFromBuffer() {
 		if b.isClosed {
 			isClosed = true
 		} else {
-			b.sendTo <- b.queue.MustDequeue().Get()
+			b.sendTo <- b.queue.MustDequeue()
 		}
 
 		b.isNotEmptyOrClosed.L.Unlock()
 	}
 
 	for !b.queue.IsEmpty() {
-		b.sendTo <- b.queue.MustDequeue().Get()
+		b.sendTo <- b.queue.MustDequeue()
 	}
 
 	close(b.sendTo)

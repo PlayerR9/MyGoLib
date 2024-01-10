@@ -1,5 +1,3 @@
-// git tag v0.1.26
-
 package CMLine
 
 import (

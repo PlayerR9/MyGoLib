@@ -1,14 +1,11 @@
-// git tag v0.1.34
-
 package PageInterval
 
 import (
 	"fmt"
+	"math"
 	"slices"
 	"sort"
 	"strings"
-
-	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
 // PageInterval represents a collection of page intervals, where each
@@ -287,14 +284,14 @@ func (pi *PageInterval) AddPage(page int) {
 	})
 
 	if insertPos > 0 && pi.intervals[insertPos-1][1] >= page-1 {
-		pi.intervals[insertPos-1][1] = gen.MaxInt(pi.intervals[insertPos-1][1], page)
+		pi.intervals[insertPos-1][1] = int(math.Max(float64(pi.intervals[insertPos-1][1]), float64(page)))
 		pi.pageCount++
 		reduce(pi)
 		return
 	}
 
 	if insertPos < len(pi.intervals) && pi.intervals[insertPos][0] <= page+1 {
-		pi.intervals[insertPos][0] = gen.MinInt(pi.intervals[insertPos][0], page)
+		pi.intervals[insertPos][0] = int(math.Min(float64(pi.intervals[insertPos][0]), float64(page)))
 		pi.pageCount++
 		reduce(pi)
 		return
