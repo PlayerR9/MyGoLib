@@ -19,7 +19,7 @@ type ConsoleCommandInfo struct {
 
 	// Flags is a slice of ConsoleFlagInfo that represents the flags accepted by
 	// the command.
-	Flags []ConsoleFlagInfo
+	Flags []*ConsoleFlagInfo
 
 	// Callback is a function that is invoked when the command is executed.
 	// It takes a map of string keys to any type values as arguments, and returns
@@ -136,8 +136,8 @@ func (cfi ConsoleFlagInfo) FString(indentLevel int) string {
 // If the flags cannot be parsed, an error is returned.
 // Finally, the function executes the command's callback function and returns
 // the command's name, the result of the callback, and any error that occurred.
-func ParseCommandLine(args []string, commands []ConsoleCommandInfo) (string, any, error) {
-	commandMap := make(map[string]ConsoleCommandInfo)
+func ParseCommandLine(args []string, commands []*ConsoleCommandInfo) (string, any, error) {
+	commandMap := make(map[string]*ConsoleCommandInfo)
 	for _, command := range commands {
 		if _, exists := commandMap[command.Name]; exists {
 			return "", nil, fmt.Errorf("duplicate command name: %s", command.Name)
@@ -174,8 +174,8 @@ func ParseCommandLine(args []string, commands []ConsoleCommandInfo) (string, any
 // The function then calls the flag's callback function with the arguments and stores the result.
 // If the callback function returns an error, it is returned by the function.
 // Finally, the function returns a map of flag names to results and any error that occurred.
-func parseConsoleFlags(args []string, flags []ConsoleFlagInfo) (map[string]any, error) {
-	flagMap := make(map[string]ConsoleFlagInfo)
+func parseConsoleFlags(args []string, flags []*ConsoleFlagInfo) (map[string]any, error) {
+	flagMap := make(map[string]*ConsoleFlagInfo)
 	for _, flag := range flags {
 		flagMap[flag.Name] = flag
 	}
