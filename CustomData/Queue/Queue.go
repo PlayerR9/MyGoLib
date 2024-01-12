@@ -1,5 +1,9 @@
 package Queue
 
+import (
+	itf "github.com/PlayerR9/MyGoLib/Interfaces"
+)
+
 // QueueHead and QueueSep are constants used in the String() method of the Queuer interface
 // to format the string representation of a queue.
 const (
@@ -15,6 +19,11 @@ const (
 	// elements in the queue.
 	QueueSep string = " | "
 )
+
+type Cleanable interface {
+	// The Cleanup method is used to perform any cleanup operations on the Cleanable.
+	Cleanup()
+}
 
 // Package queue provides a Queuer interface that defines methods for a queue data structure.
 //
@@ -62,6 +71,10 @@ type Queuer[T any] interface {
 
 	// The String method returns a string representation of the Queuer.
 	String() string
+
+	// The Cleanup method is used to perform any cleanup operations on the Queuer.
+	// It should be called before the Queuer is freed from memory.
+	Cleanup()
 }
 
 // linkedNode represents a node in a linked list. It holds a value of a generic type and a
@@ -78,6 +91,17 @@ type linkedNode[T any] struct {
 	next  *linkedNode[T]
 }
 
+func (node *linkedNode[T]) Cleanup() {
+	if node.next == nil {
+		return
+	}
+
+	node.value = itf.Cleanup[T](node.value)
+
+	node.next.Cleanup()
+	node.next = nil
+}
+
 // QueueIterator is a generic type in Go that represents an iterator for a queue.
 //
 // The values field is a slice of type T, which represents the elements stored in the queue.
@@ -88,6 +112,14 @@ type linkedNode[T any] struct {
 type QueueIterator[T any] struct {
 	values       []T
 	currentIndex int
+}
+
+func (iterator *QueueIterator[T]) Cleanup() {
+	for i := 0; i < len(iterator.values); i++ {
+		iterator.values[i] = itf.Cleanup[T](iterator.values[i])
+	}
+
+	iterator.values = nil
 }
 
 // NewQueueIterator is a function that creates and returns a new QueueIterator object for a

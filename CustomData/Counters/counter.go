@@ -10,6 +10,8 @@ type UpCounter struct {
 	totalElements int
 }
 
+func (uc *UpCounter) Cleanup() {}
+
 func NewUpCounter(label string, totalElements int) UpCounter {
 	if label == "" {
 		panic("label must not be empty")

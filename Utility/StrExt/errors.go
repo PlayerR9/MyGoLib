@@ -1,5 +1,29 @@
 package StrExt
 
+import "fmt"
+
+// ErrWordTooLong is an error that occurs when a word is too long to fit
+// within a certain width.
+type ErrWordTooLong struct {
+	word string
+}
+
+// Error method for ErrWordTooLong. It returns a formatted string indicating
+// the word that was too long.
+func (e ErrWordTooLong) Error() string {
+	return fmt.Sprintf("word '%s' is too long", e.word)
+}
+
+// ErrWidthTooSmall is an error that occurs when the width is too small to fit
+// the text.
+type ErrWidthTooSmall struct{}
+
+// Error method for ErrWidthTooSmall. It returns a string indicating that the
+// width was too small to fit the text.
+func (e ErrWidthTooSmall) Error() string {
+	return "width is too small to fit the text"
+}
+
 // ErrSuffixTooLong is a struct that represents an error when a suffix
 // is too long.
 // It does not have any fields as the error condition is solely based
@@ -50,4 +74,16 @@ type ErrOpeningTokenNotFound struct{}
 // that is, the string "opening token not found in content".
 func (e ErrOpeningTokenNotFound) Error() string {
 	return "opening token not found in content"
+}
+
+type ErrEmptyText struct{}
+
+func (e ErrEmptyText) Error() string {
+	return "text cannot be empty"
+}
+
+type ErrHeightTooSmall struct{}
+
+func (e ErrHeightTooSmall) Error() string {
+	return "height must be at least 1"
 }

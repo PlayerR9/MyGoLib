@@ -43,6 +43,8 @@ type Context struct {
 	notCensored CensorValue
 }
 
+func (ctx *Context) Cleanup() {}
+
 // NewContext creates a new Context with default values.
 // The default censorLabel is DefaultCensorLabel and the default notCensored value
 // is false.
@@ -103,6 +105,23 @@ type Builder struct {
 	isNotCensored CensorValue
 }
 
+func (b *Builder) Cleanup() {
+	if b.filters != nil {
+		for i := 0; i < len(b.filters); i++ {
+			b.filters[i] = nil
+		}
+
+		b.filters = nil
+	}
+
+	b.values = nil
+
+	if b.ctx != nil {
+		b.ctx.Cleanup()
+		b.ctx = nil
+	}
+}
+
 // Make creates a new Builder with the given filters, separator, and values.
 // It initializes the Builder's Context to the given Context, sets its
 // isNotCensored value to false,
@@ -119,6 +138,19 @@ func (ctx *Context) Make(filters []FilterFunc, sep string, values ...any) *Build
 
 	for _, value := range values {
 		switch x := value.(type) {
+		case *Builder:
+			if x == nil {
+				stringValues = append(stringValues, "")
+				continue
+			}
+
+			// Partial application to get the
+			// uncensored string representation
+			var str string
+
+			x.Apply(func(s string) { str = s })
+
+			stringValues = append(stringValues, str)
 		case Builder:
 			// Partial application to get the
 			// uncensored string representation
@@ -135,7 +167,7 @@ func (ctx *Context) Make(filters []FilterFunc, sep string, values ...any) *Build
 	if sep != "" {
 		var fields []string
 
-		for i := 0; i < len(stringValues); i += len(fields) - 1 {
+		for i := 0; i < len(stringValues); i += len(fields) {
 			fields = strings.Split(stringValues[i], sep)
 			stringValues = append(stringValues[:i], append(fields, stringValues[i+1:]...)...)
 		}

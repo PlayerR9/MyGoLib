@@ -3,6 +3,8 @@ package Queue
 import (
 	"fmt"
 	"strings"
+
+	itf "github.com/PlayerR9/MyGoLib/Interfaces"
 )
 
 // ArrayQueue is a generic type in Go that represents a queue data structure implemented
@@ -11,6 +13,14 @@ import (
 // elements in the queue.
 type ArrayQueue[T any] struct {
 	values []T
+}
+
+func (queue *ArrayQueue[T]) Cleanup() {
+	for i := 0; i < len(queue.values); i++ {
+		queue.values[i] = itf.Cleanup[T](queue.values[i])
+	}
+
+	queue.values = nil
 }
 
 // NewArrayQueue is a function that creates and returns a new instance of an ArrayQueue.

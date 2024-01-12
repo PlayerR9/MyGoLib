@@ -27,6 +27,16 @@ type ConsoleCommandInfo struct {
 	Callback func(args map[string]any) (any, error)
 }
 
+func (cci *ConsoleCommandInfo) Cleanup() {
+	for _, flag := range cci.Flags {
+		flag.Cleanup()
+		flag = nil
+	}
+
+	cci.Flags = nil
+	cci.Callback = nil
+}
+
 // FString formats the ConsoleCommandInfo into a string that can be displayed
 // to the user.
 // It includes the command name, description, usage, and flags.
@@ -91,6 +101,11 @@ type ConsoleFlagInfo struct {
 	// It takes a variadic number of string arguments,
 	// and returns a result of any type and an error, if any.
 	Callback func(...string) (any, error)
+}
+
+func (cfi *ConsoleFlagInfo) Cleanup() {
+	cfi.Args = nil
+	cfi.Callback = nil
 }
 
 // FString formats the ConsoleFlagInfo into a string that can be displayed to the user.

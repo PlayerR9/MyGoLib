@@ -34,6 +34,19 @@ type Buffer[T any] struct {
 	isClosed bool
 }
 
+func (b *Buffer[T]) Cleanup() {
+	b.wg.Wait()
+
+	if b.queue != nil {
+		b.queue.Cleanup()
+		b.queue = nil
+	}
+
+	b.sendTo = nil
+	b.receiveFrom = nil
+	b.isNotEmptyOrClosed = nil
+}
+
 // Init initializes a Buffer instance.
 // It ensures the initialization is done only once, even if called
 // multiple times.
@@ -166,22 +179,6 @@ func (b *Buffer[T]) sendMessagesFromBuffer() {
 // If the Buffer is already empty, this method does nothing.
 func (b *Buffer[T]) CleanBuffer() {
 	b.queue.Clear()
-}
-
-// Cleanup is a method of the Buffer type.
-// It resets the Buffer by clearing its internal state,
-// setting the first and last pointers,
-// and the receiveChannel and sendChannel to nil.
-// This effectively frees all resources used by the Buffer.
-//
-// This method is not thread-safe and should only be called when
-// no other goroutines are accessing the Buffer. It waits until
-// all goroutines launched by the Buffer have finished executing
-// before proceeding.
-func (b *Buffer[T]) Cleanup() {
-	b.wg.Wait()
-
-	b.queue = nil
 }
 
 // Wait is a method of the Buffer type.

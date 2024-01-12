@@ -31,9 +31,20 @@ type Header struct {
 	Style TableAllignmentType
 }
 
+func (h *Header) Cleanup() {}
+
 type Table struct {
 	headers []Header
 	rows    [][]string
+}
+
+func (t *Table) Cleanup() {
+	for i := range t.headers {
+		t.headers[i].Cleanup()
+	}
+
+	t.headers = nil
+	t.rows = nil
 }
 
 func NewTable() Table {
