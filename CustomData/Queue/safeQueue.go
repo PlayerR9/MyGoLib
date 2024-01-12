@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"strings"
 	"sync"
-
-	itf "github.com/PlayerR9/MyGoLib/Interfaces"
 )
 
 // safeNode is a generic type in Go that represents a node in a thread-safe linked
@@ -20,18 +18,6 @@ type safeNode[T any] struct {
 	// mutex is a sync.RWMutex, which is used to ensure that concurrent reads and
 	// writes to the node are thread-safe.
 	mutex sync.RWMutex
-}
-
-func (node *safeNode[T]) Cleanup() {
-	node.mutex.Lock()
-	defer node.mutex.Unlock()
-
-	node.value = itf.Cleanup[T](node.value)
-
-	if node.next != nil {
-		node.next.Cleanup()
-		node.next = nil
-	}
 }
 
 // newSafeNode is a function that creates and returns a new instance of a safeNode.
@@ -110,27 +96,6 @@ type SafeQueue[T any] struct {
 	// sizeMutex is a sync.RWMutex, which is used to ensure that concurrent reads
 	// and writes to the size field are thread-safe.
 	sizeMutex sync.RWMutex
-}
-
-func (queue *SafeQueue[T]) Cleanup() {
-	queue.frontMutex.Lock()
-	defer queue.frontMutex.Unlock()
-
-	queue.backMutex.Lock()
-	defer queue.backMutex.Unlock()
-
-	queue.sizeMutex.Lock()
-	defer queue.sizeMutex.Unlock()
-
-	if queue.front != nil {
-		queue.front.Cleanup()
-		queue.front = nil
-	}
-
-	if queue.back != nil {
-		queue.back.Cleanup()
-		queue.back = nil
-	}
 }
 
 // NewSafeQueue is a function that creates and returns a new instance of a SafeQueue.

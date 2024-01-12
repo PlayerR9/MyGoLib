@@ -12,11 +12,6 @@ type OptionalPair[A any, B any] struct {
 	value *Pair[A, B]
 }
 
-func (op *OptionalPair[A, B]) Cleanup() {
-	op.value.Cleanup()
-	op.value = nil
-}
-
 // NewOptionalPair creates an optional.OptionalPair from a pair.
 func NewOptionalPair[A any, B any](v Pair[A, B]) OptionalPair[A, B] {
 	return OptionalPair[A, B]{&v}

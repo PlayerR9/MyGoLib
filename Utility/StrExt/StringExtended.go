@@ -149,10 +149,6 @@ type SpltLine struct {
 	Len int
 }
 
-func (sl *SpltLine) Cleanup() {
-	sl.Line = nil
-}
-
 func NewSpltLine(word string) *SpltLine {
 	splt := new(SpltLine)
 
@@ -220,19 +216,6 @@ type TextSplitter struct {
 	// The Lines field is a slice of pointers to SpltLine structs, each representing
 	// a line of text.
 	Lines []*SpltLine
-}
-
-func (ts *TextSplitter) Cleanup() {
-	for _, line := range ts.Lines {
-		if line == nil {
-			continue
-		}
-
-		line.Cleanup()
-		line = nil
-	}
-
-	ts.Lines = nil
 }
 
 // GetFurthestRightEdge is a method on the TextSplitter struct.

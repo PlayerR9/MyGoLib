@@ -7,7 +7,7 @@ import (
 func TestInit(t *testing.T) {
 	buffer := new(Buffer[int])
 	sendTo, receiveFrom := buffer.Init(1)
-	defer buffer.Cleanup()
+	defer buffer.Wait()
 
 	sendTo <- 1
 	sendTo <- 2
@@ -27,7 +27,7 @@ func TestInit(t *testing.T) {
 func TestTrimFrom(t *testing.T) {
 	buffer := new(Buffer[int])
 	sendTo, receiveFrom := buffer.Init(0)
-	defer buffer.Cleanup()
+	defer buffer.Wait()
 
 	sendTo <- 1
 	sendTo <- 2

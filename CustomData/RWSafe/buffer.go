@@ -34,19 +34,6 @@ type Buffer[T any] struct {
 	isClosed bool
 }
 
-func (b *Buffer[T]) Cleanup() {
-	b.wg.Wait()
-
-	if b.queue != nil {
-		b.queue.Cleanup()
-		b.queue = nil
-	}
-
-	b.sendTo = nil
-	b.receiveFrom = nil
-	b.isNotEmptyOrClosed = nil
-}
-
 // Init initializes a Buffer instance.
 // It ensures the initialization is done only once, even if called
 // multiple times.

@@ -10,10 +10,6 @@ type PageIntervalIterator struct {
 	page      int
 }
 
-func (pii *PageIntervalIterator) Cleanup() {
-	pii.intervals = nil
-}
-
 // Next advances the iterator to the next page in the PageInterval.
 // It returns true if there is a next page, otherwise false.
 // On the first call, it sets the page to the first page of the first
@@ -65,10 +61,6 @@ type PageIntervalReverseIterator struct {
 	intervals [][2]int
 	index     int
 	page      int
-}
-
-func (piri *PageIntervalReverseIterator) Cleanup() {
-	piri.intervals = nil
 }
 
 // Previous moves the iterator to the previous page in the PageInterval.

@@ -32,10 +32,6 @@ type PageInterval struct {
 	pageCount int
 }
 
-func (pi *PageInterval) Cleanup() {
-	pi.intervals = nil
-}
-
 // String returns a string representation of the PageInterval.
 // It concatenates all intervals in the PageInterval and returns them as a
 // formatted string.

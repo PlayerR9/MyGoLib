@@ -5,7 +5,6 @@ import (
 	"slices"
 	"strings"
 
-	itf "github.com/PlayerR9/MyGoLib/Interfaces"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 	"github.com/markphelps/optional"
 )
@@ -29,10 +28,6 @@ type Stack[T any] struct {
 	implementation StackImplementationType
 	size           int
 	capacity       optional.Int
-}
-
-func (stack *Stack[T]) Cleanup() {
-	data = itf.Cleanup[any](stack.data)
 }
 
 func NewStack[T any](implementation StackImplementationType, values ...T) Stack[T] {
@@ -257,25 +252,8 @@ type stack_node[T any] struct {
 	next  *stack_node[T]
 }
 
-func (node *stack_node[T]) Cleanup() {
-	node.value = itf.Cleanup[T](node.value)
-	if node.next != nil {
-		node.next.Cleanup()
-		node.next = nil
-	}
-}
-
 type linked_stack[T any] struct {
 	top *stack_node[T]
-}
-
-func (stack *linked_stack[T]) Cleanup() {
-	if stack.top == nil {
-		return
-	}
-
-	stack.top.Cleanup()
-	stack.top = nil
 }
 
 var (

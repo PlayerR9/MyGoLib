@@ -17,18 +17,6 @@ type LimitedLinkedQueue[T any] struct {
 	size, capacity int
 }
 
-func (queue *LimitedLinkedQueue[T]) Cleanup() {
-	if queue.front != nil {
-		queue.front.Cleanup()
-		queue.front = nil
-	}
-
-	if queue.back != nil {
-		queue.back.Cleanup()
-		queue.back = nil
-	}
-}
-
 // NewLimitedLinkedQueue is a function that creates and returns a new instance of a
 // LimitedLinkedQueue.
 // It takes an integer capacity, which represents the maximum number of elements the

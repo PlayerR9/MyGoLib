@@ -43,8 +43,6 @@ type Context struct {
 	notCensored CensorValue
 }
 
-func (ctx *Context) Cleanup() {}
-
 // NewContext creates a new Context with default values.
 // The default censorLabel is DefaultCensorLabel and the default notCensored value
 // is false.
@@ -103,23 +101,6 @@ type Builder struct {
 
 	// true if the string is not censored
 	isNotCensored CensorValue
-}
-
-func (b *Builder) Cleanup() {
-	if b.filters != nil {
-		for i := 0; i < len(b.filters); i++ {
-			b.filters[i] = nil
-		}
-
-		b.filters = nil
-	}
-
-	b.values = nil
-
-	if b.ctx != nil {
-		b.ctx.Cleanup()
-		b.ctx = nil
-	}
 }
 
 // Make creates a new Builder with the given filters, separator, and values.

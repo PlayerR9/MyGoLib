@@ -2,19 +2,11 @@ package RWSafe
 
 import (
 	"sync"
-
-	itf "github.com/PlayerR9/MyGoLib/Interfaces"
 )
 
 type RWSafe[T any] struct {
 	value T
 	mutex sync.RWMutex
-}
-
-func (rw *RWSafe[T]) Cleanup() {
-	rw.mutex.Lock()
-	rw.value = itf.Cleanup[T](rw.value)
-	rw.mutex.Unlock()
 }
 
 func NewRWSafe[T any](value T) *RWSafe[T] {

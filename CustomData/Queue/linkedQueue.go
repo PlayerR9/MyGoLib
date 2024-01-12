@@ -16,18 +16,6 @@ type LinkedQueue[T any] struct {
 	size int
 }
 
-func (queue *LinkedQueue[T]) Cleanup() {
-	if queue.front != nil {
-		queue.front.Cleanup()
-		queue.front = nil
-	}
-
-	if queue.back != nil {
-		queue.back.Cleanup()
-		queue.back = nil
-	}
-}
-
 // NewLinkedQueue is a function that creates and returns a new instance of a LinkedQueue.
 // It takes a variadic parameter of type T, which represents the initial values to be
 // stored in the queue.
@@ -39,7 +27,7 @@ func (queue *LinkedQueue[T]) Cleanup() {
 // its size. It then creates a linked list of nodes
 // from the initial values, with each node holding one value, and sets the front and back
 // pointers of the queue. The new LinkedQueue is then returned.
-func NewLinkedQueue[T Cleanable](values ...T) *LinkedQueue[T] {
+func NewLinkedQueue[T any](values ...T) *LinkedQueue[T] {
 	if len(values) == 0 {
 		return new(LinkedQueue[T])
 	}
