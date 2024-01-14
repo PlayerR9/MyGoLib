@@ -1,51 +1,141 @@
 package Counters
 
 import (
+	"errors"
 	"fmt"
 )
 
+type Counter interface {
+	IsDone() bool
+	Advance() error
+	Retreat() error
+
+	GetRetreatCount() int
+	GetDistance() int
+	GetCurrentCount() int
+	GetInitialCount() int
+}
+
 type UpCounter struct {
-	label         string
-	elementsDone  int
-	totalElements int
+	upperLimit, currentCount int
+	retreatCount             int
 }
 
-func NewUpCounter(label string, totalElements int) UpCounter {
-	if label == "" {
-		panic("label must not be empty")
+func NewUpCounter(upperLimit int) (*UpCounter, error) {
+	if upperLimit < 0 {
+		return nil, new(ErrInvalidParameter).
+			Parameter("upperLimit").
+			Reason(fmt.Errorf("value (%d) must be positive", upperLimit))
 	}
 
-	if totalElements < 0 {
-		panic(fmt.Sprintf("totalElements must be non-negative; got %d", totalElements))
+	return &UpCounter{upperLimit, 0, 0}, nil
+}
+
+func (c *UpCounter) IsDone() bool {
+	return c.currentCount >= c.upperLimit
+}
+
+func (c *UpCounter) Advance() error {
+	if c.currentCount >= c.upperLimit {
+		return new(ErrCannotAdvanceCounter).
+			Counter(c).
+			Reason(errors.New("limit has already been reached"))
 	}
 
-	return UpCounter{
-		label:         label,
-		elementsDone:  0,
-		totalElements: totalElements,
+	c.currentCount++
+	return nil
+}
+
+func (c *UpCounter) Retreat() error {
+	if c.currentCount <= 0 {
+		return new(ErrCannotRetreatCounter).
+			Counter(c).
+			Reason(errors.New("limit cannot be lower than the current count"))
 	}
+
+	c.currentCount--
+	c.retreatCount++
+	return nil
 }
 
-func (sc *UpCounter) Equal(other UpCounter) bool {
-	return sc.label == other.label
+func (c *UpCounter) GetRetreatCount() int {
+	return c.retreatCount
 }
 
-func (sc *UpCounter) IsDone() bool {
-	return sc.elementsDone >= sc.totalElements
+func (c *UpCounter) GetDistance() int {
+	return c.upperLimit - c.currentCount
 }
 
-func (sc *UpCounter) ContainsLabel(label string) bool {
-	return sc.label == label
+func (c *UpCounter) GetCurrentCount() int {
+	return c.currentCount
 }
 
-func (sc *UpCounter) String() string {
-	return fmt.Sprintf("%s: %d of %d", sc.label, sc.elementsDone, sc.totalElements)
+func (c *UpCounter) GetInitialCount() int {
+	return c.upperLimit
 }
 
-func (sc *UpCounter) Increment() {
-	sc.elementsDone++
+type DownCounter struct {
+	startingCount, currentCount int
+	retreatCount                int
 }
 
-func (sc *UpCounter) Reduce() {
-	sc.totalElements--
+func NewDownCounter(startingCount int) (*DownCounter, error) {
+	if startingCount < 0 {
+		return nil, new(ErrInvalidParameter).
+			Parameter("startingCount").
+			Reason(fmt.Errorf("value (%d) must be positive", startingCount))
+	}
+
+	return &DownCounter{startingCount, startingCount, 0}, nil
+}
+
+func (c *DownCounter) IsDone() bool {
+	return c.currentCount <= 0
+}
+
+func (c *DownCounter) Advance() error {
+	if c.currentCount <= 0 {
+		return new(ErrCannotAdvanceCounter).
+			Counter(c).
+			Reason(errors.New("current count is already at zero"))
+	}
+
+	c.currentCount--
+	return nil
+}
+
+func (c *DownCounter) Retreat() error {
+	if c.startingCount <= 0 {
+		return new(ErrCannotRetreatCounter).
+			Counter(c).
+			Reason(errors.New("starting count cannot be lower than zero"))
+	}
+
+	if c.currentCount <= 0 {
+		return new(ErrCannotRetreatCounter).
+			Counter(c).
+			Reason(errors.New("current count is already at zero"))
+	}
+
+	c.startingCount--
+	c.currentCount--
+	c.retreatCount++
+
+	return nil
+}
+
+func (c *DownCounter) GetRetreatCount() int {
+	return c.retreatCount
+}
+
+func (c *DownCounter) GetDistance() int {
+	return c.currentCount
+}
+
+func (c *DownCounter) GetCurrentCount() int {
+	return c.currentCount
+}
+
+func (c *DownCounter) GetInitialCount() int {
+	return c.startingCount
 }
