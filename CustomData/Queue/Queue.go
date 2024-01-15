@@ -1,5 +1,7 @@
 package Queue
 
+import "fmt"
+
 // QueueHead and QueueSep are constants used in the String() method of the Queuer interface
 // to format the string representation of a queue.
 const (
@@ -61,7 +63,7 @@ type Queuer[T any] interface {
 	IsFull() bool
 
 	// The String method returns a string representation of the Queuer.
-	String() string
+	fmt.Stringer
 }
 
 // linkedNode represents a node in a linked list. It holds a value of a generic type and a
