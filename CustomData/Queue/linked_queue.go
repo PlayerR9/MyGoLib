@@ -71,26 +71,9 @@ func (queue *LinkedQueue[T]) Enqueue(value T) {
 	queue.size++
 }
 
-func (queue *LinkedQueue[T]) Dequeue() (T, error) {
+func (queue *LinkedQueue[T]) Dequeue() T {
 	if queue.front == nil {
-		return *new(T), &ErrEmptyQueue{Dequeue}
-	}
-
-	var value T
-
-	value, queue.front = queue.front.value, queue.front.next
-	if queue.front == nil {
-		queue.back = nil
-	}
-
-	queue.size--
-
-	return value, nil
-}
-
-func (queue *LinkedQueue[T]) MustDequeue() T {
-	if queue.front == nil {
-		panic(&ErrEmptyQueue{Dequeue})
+		panic(NewErrEmptyQueue(Dequeue))
 	}
 
 	var value T
@@ -105,17 +88,9 @@ func (queue *LinkedQueue[T]) MustDequeue() T {
 	return value
 }
 
-func (queue *LinkedQueue[T]) Peek() (T, error) {
+func (queue *LinkedQueue[T]) Peek() T {
 	if queue.front == nil {
-		return *new(T), &ErrEmptyQueue{Peek}
-	}
-
-	return queue.front.value, nil
-}
-
-func (queue *LinkedQueue[T]) MustPeek() T {
-	if queue.front == nil {
-		panic(&ErrEmptyQueue{Peek})
+		panic(NewErrEmptyQueue(Peek))
 	}
 
 	return queue.front.value
@@ -156,12 +131,10 @@ func (queue *LinkedQueue[T]) String() string {
 
 	var builder strings.Builder
 
-	builder.WriteString(QueueHead)
-	builder.WriteString(fmt.Sprintf("%v", queue.front.value))
+	fmt.Fprintf(&builder, "%s%v", QueueHead, queue.front.value)
 
 	for node := queue.front.next; node != nil; node = node.next {
-		builder.WriteString(QueueSep)
-		builder.WriteString(fmt.Sprintf("%v", node.value))
+		fmt.Fprintf(&builder, "%s%v", QueueSep, node.value)
 	}
 
 	return builder.String()

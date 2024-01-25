@@ -28,22 +28,15 @@ type Queuer[T any] interface {
 	// The Enqueue method adds a value of type T to the end of the queue.
 	Enqueue(value T)
 
-	// The Dequeue method removes and returns the element at the front of the queue.
-	// If the queue is empty, it returns an error.
-	Dequeue() (T, error)
-
-	// The MustDequeue method is a convenience method that dequeues an element from the queue
+	// The Dequeue method is a convenience method that dequeues an element from the queue
 	// and returns it.
 	// If the queue is empty, it will panic.
-	MustDequeue() T
+	Dequeue() T
 
-	// The Peek method returns the element at the front of the queue without removing it.
-	Peek() (T, error)
-
-	// MustPeek is a method that returns the value at the front of the queue without removing
+	// Peek is a method that returns the value at the front of the queue without removing
 	// it.
 	// If the queue is empty, it will panic.
-	MustPeek() T
+	Peek() T
 
 	// The IsEmpty method checks if the queue is empty and returns a boolean value indicating
 	// whether it is empty or not.
@@ -62,7 +55,6 @@ type Queuer[T any] interface {
 	// capacity and cannot accept any more elements.
 	IsFull() bool
 
-	// The String method returns a string representation of the Queuer.
 	fmt.Stringer
 }
 
@@ -116,7 +108,7 @@ func NewQueueIterator[T any](queue Queuer[T]) *QueueIterator[T] {
 // This method is typically used in a loop to iterate over all the elements in a queue.
 func (iterator *QueueIterator[T]) GetNext() T {
 	if len(iterator.values) <= iterator.currentIndex {
-		panic(&ErrOutOfBoundsIterator{})
+		panic(new(ErrOutOfBoundsIterator))
 	}
 
 	value := iterator.values[iterator.currentIndex]

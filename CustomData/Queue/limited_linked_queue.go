@@ -3,6 +3,8 @@ package Queue
 import (
 	"fmt"
 	"strings"
+
+	ers "github.com/PlayerR9/MyGoLib/Utility/Errors"
 )
 
 // LimitedLinkedQueue is a generic type in Go that represents a queue data structure with
@@ -35,9 +37,11 @@ type LimitedLinkedQueue[T any] struct {
 // The new LimitedLinkedQueue is then returned.
 func NewLimitedLinkedQueue[T any](capacity int, values ...T) (*LimitedLinkedQueue[T], error) {
 	if capacity < 0 {
-		return nil, &ErrNegativeCapacity{}
+		return nil, ers.NewErrInvalidParameter("capacity").
+			WithReason(new(ErrNegativeCapacity))
 	} else if len(values) > capacity {
-		return nil, &ErrTooManyValues{}
+		return nil, ers.NewErrInvalidParameter("values").
+			WithReason(new(ErrTooManyValues))
 	}
 
 	queue := new(LimitedLinkedQueue[T])
@@ -87,7 +91,7 @@ func NewLimitedLinkedQueue[T any](capacity int, values ...T) (*LimitedLinkedQueu
 // new element.
 func (queue *LimitedLinkedQueue[T]) Enqueue(value T) {
 	if queue.size >= queue.capacity {
-		panic(&ErrFullQueue{})
+		panic(new(ErrFullQueue))
 	}
 
 	queue_node := linkedNode[T]{
@@ -105,26 +109,9 @@ func (queue *LimitedLinkedQueue[T]) Enqueue(value T) {
 	queue.size++
 }
 
-func (queue *LimitedLinkedQueue[T]) Dequeue() (T, error) {
+func (queue *LimitedLinkedQueue[T]) Dequeue() T {
 	if queue.front == nil {
-		return *new(T), &ErrEmptyQueue{}
-	}
-
-	var value T
-
-	value, queue.front = queue.front.value, queue.front.next
-	if queue.front == nil {
-		queue.back = nil
-	}
-
-	queue.size--
-
-	return value, nil
-}
-
-func (queue *LimitedLinkedQueue[T]) MustDequeue() T {
-	if queue.front == nil {
-		panic(ErrEmptyQueue{})
+		panic(NewErrEmptyQueue(Dequeue))
 	}
 
 	var value T
@@ -139,17 +126,9 @@ func (queue *LimitedLinkedQueue[T]) MustDequeue() T {
 	return value
 }
 
-func (queue *LimitedLinkedQueue[T]) Peek() (T, error) {
+func (queue *LimitedLinkedQueue[T]) Peek() T {
 	if queue.front == nil {
-		return *new(T), &ErrEmptyQueue{Peek}
-	}
-
-	return queue.front.value, nil
-}
-
-func (queue *LimitedLinkedQueue[T]) MustPeek() T {
-	if queue.front == nil {
-		panic(&ErrEmptyQueue{Peek})
+		panic(NewErrEmptyQueue(Peek))
 	}
 
 	return queue.front.value
@@ -190,12 +169,10 @@ func (queue *LimitedLinkedQueue[T]) String() string {
 
 	var builder strings.Builder
 
-	builder.WriteString(QueueHead)
-	builder.WriteString(fmt.Sprintf("%v", queue.front.value))
+	fmt.Fprintf(&builder, "%s%v", QueueHead, queue.front.value)
 
 	for queue_node := queue.front.next; queue_node != nil; queue_node = queue_node.next {
-		builder.WriteString(QueueSep)
-		builder.WriteString(fmt.Sprintf("%v", queue_node.value))
+		fmt.Fprintf(&builder, "%s%v", QueueSep, queue_node.value)
 	}
 
 	return builder.String()

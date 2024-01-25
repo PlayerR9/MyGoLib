@@ -148,27 +148,9 @@ func (queue *SafeQueue[T]) Enqueue(value T) {
 	queue.setSize(queue.Size() + 1)
 }
 
-func (queue *SafeQueue[T]) Dequeue() (T, error) {
+func (queue *SafeQueue[T]) Dequeue() T {
 	if queue.IsEmpty() {
-		return *new(T), &ErrEmptyQueue{Dequeue}
-	}
-
-	value := queue.front.getValue()
-
-	queue.front = queue.front.getNext()
-
-	if queue.IsEmpty() {
-		queue.setBack(nil)
-	}
-
-	queue.setSize(queue.Size() - 1)
-
-	return value, nil
-}
-
-func (queue *SafeQueue[T]) MustDequeue() T {
-	if queue.IsEmpty() {
-		panic(&ErrEmptyQueue{Dequeue})
+		panic(NewErrEmptyQueue(Dequeue))
 	}
 
 	value := queue.front.getValue()
@@ -183,17 +165,9 @@ func (queue *SafeQueue[T]) MustDequeue() T {
 	return value
 }
 
-func (queue *SafeQueue[T]) Peek() (T, error) {
+func (queue *SafeQueue[T]) Peek() T {
 	if queue.IsEmpty() {
-		return *new(T), &ErrEmptyQueue{Peek}
-	}
-
-	return queue.front.getValue(), nil
-}
-
-func (queue *SafeQueue[T]) MustPeek() T {
-	if queue.IsEmpty() {
-		panic(&ErrEmptyQueue{Peek})
+		panic(NewErrEmptyQueue(Peek))
 	}
 
 	return queue.front.getValue()
@@ -246,16 +220,10 @@ func (queue *SafeQueue[T]) String() string {
 
 	var builder strings.Builder
 
-	builder.WriteString(QueueHead)
-	builder.WriteString(fmt.Sprintf("%v", queue.front.getValue()))
+	fmt.Fprintf(&builder, "%s%v", QueueHead, queue.front.getValue())
 
-	node := queue.front.getNext()
-
-	for node != nil {
-		builder.WriteString(QueueSep)
-		builder.WriteString(fmt.Sprintf("%v", node.getValue()))
-
-		node = node.getNext()
+	for node := queue.front.getNext(); node != nil; node = node.getNext() {
+		fmt.Fprintf(&builder, "%s%v", QueueSep, node.getValue())
 	}
 
 	return builder.String()

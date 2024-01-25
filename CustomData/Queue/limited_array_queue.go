@@ -3,6 +3,8 @@ package Queue
 import (
 	"fmt"
 	"strings"
+
+	ers "github.com/PlayerR9/MyGoLib/Utility/Errors"
 )
 
 // LimitedArrayQueue is a generic type in Go that represents a queue data structure with
@@ -30,9 +32,11 @@ type LimitedArrayQueue[T any] struct {
 // input values into the new slice. The new LimitedArrayQueue is then returned.
 func NewLimitedArrayQueue[T any](capacity int, values ...T) (*LimitedArrayQueue[T], error) {
 	if capacity < 0 {
-		return nil, &ErrNegativeCapacity{}
+		return nil, ers.NewErrInvalidParameter("capacity").
+			WithReason(new(ErrNegativeCapacity))
 	} else if len(values) > capacity {
-		return nil, &ErrTooManyValues{}
+		return nil, ers.NewErrInvalidParameter("values").
+			WithReason(new(ErrTooManyValues))
 	}
 
 	queue := &LimitedArrayQueue[T]{
@@ -58,27 +62,15 @@ func NewLimitedArrayQueue[T any](capacity int, values ...T) (*LimitedArrayQueue[
 // effectively adding the element to the end of the queue.
 func (queue *LimitedArrayQueue[T]) Enqueue(value T) {
 	if cap(queue.values) == len(queue.values) {
-		panic(&ErrFullQueue{})
+		panic(new(ErrFullQueue))
 	}
 
 	queue.values = append(queue.values, value)
 }
 
-func (queue *LimitedArrayQueue[T]) Dequeue() (T, error) {
+func (queue *LimitedArrayQueue[T]) Dequeue() T {
 	if len(queue.values) == 0 {
-		return *new(T), &ErrEmptyQueue{Dequeue}
-	}
-
-	var value T
-
-	value, queue.values = queue.values[0], queue.values[1:]
-
-	return value, nil
-}
-
-func (queue *LimitedArrayQueue[T]) MustDequeue() T {
-	if len(queue.values) == 0 {
-		panic(&ErrEmptyQueue{Dequeue})
+		panic(NewErrEmptyQueue(Dequeue))
 	}
 
 	var value T
@@ -88,17 +80,9 @@ func (queue *LimitedArrayQueue[T]) MustDequeue() T {
 	return value
 }
 
-func (queue *LimitedArrayQueue[T]) Peek() (T, error) {
+func (queue *LimitedArrayQueue[T]) Peek() T {
 	if len(queue.values) == 0 {
-		return *new(T), &ErrEmptyQueue{Peek}
-	}
-
-	return queue.values[0], nil
-}
-
-func (queue *LimitedArrayQueue[T]) MustPeek() T {
-	if len(queue.values) == 0 {
-		panic(&ErrEmptyQueue{Peek})
+		panic(NewErrEmptyQueue(Peek))
 	}
 
 	return queue.values[0]
@@ -134,12 +118,10 @@ func (queue *LimitedArrayQueue[T]) String() string {
 
 	var builder strings.Builder
 
-	builder.WriteString(QueueHead)
-	builder.WriteString(fmt.Sprintf("%v", queue.values[0]))
+	fmt.Fprintf(&builder, "%s%v", QueueHead, queue.values[0])
 
 	for _, element := range queue.values[1:] {
-		builder.WriteString(QueueSep)
-		builder.WriteString(fmt.Sprintf("%v", element))
+		fmt.Fprintf(&builder, "%s%v", QueueSep, element)
 	}
 
 	return builder.String()

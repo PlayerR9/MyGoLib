@@ -1,9 +1,12 @@
 package RWSafe
 
 import (
+	"errors"
 	"sync"
 
 	q "github.com/PlayerR9/MyGoLib/CustomData/Queue"
+
+	ers "github.com/PlayerR9/MyGoLib/Utility/Errors"
 )
 
 // Buffer is a thread-safe, generic data structure that allows multiple
@@ -64,7 +67,8 @@ type Buffer[T any] struct {
 //   - The Buffer will be cleaned up.
 func (b *Buffer[T]) Init(bufferSize int) (chan<- T, <-chan T) {
 	if bufferSize < 0 {
-		panic("bufferSize cannot be negative")
+		panic(ers.NewErrInvalidParameter("bufferSize").
+			WithReason(errors.New("value cannot be negative")))
 	}
 
 	b.once.Do(func() {
@@ -140,14 +144,14 @@ func (b *Buffer[T]) sendMessagesFromBuffer() {
 		if b.isClosed {
 			isClosed = true
 		} else {
-			b.sendTo <- b.queue.MustDequeue()
+			b.sendTo <- b.queue.Dequeue()
 		}
 
 		b.isNotEmptyOrClosed.L.Unlock()
 	}
 
 	for !b.queue.IsEmpty() {
-		b.sendTo <- b.queue.MustDequeue()
+		b.sendTo <- b.queue.Dequeue()
 	}
 
 	close(b.sendTo)

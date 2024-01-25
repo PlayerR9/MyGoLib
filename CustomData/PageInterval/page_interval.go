@@ -51,7 +51,7 @@ func (pi *PageInterval) String() string {
 	var builder strings.Builder
 
 	for _, interval := range pi.intervals {
-		builder.WriteString(fmt.Sprintf("[%d : %d]", interval[0], interval[1]))
+		fmt.Fprintf(&builder, "[%d : %d]", interval[0], interval[1])
 	}
 
 	return builder.String()
@@ -174,7 +174,7 @@ func (pi *PageInterval) HasPages() bool {
 //	}
 func (pi *PageInterval) GetFirstPage() (int, error) {
 	if len(pi.intervals) == 0 {
-		return 0, &ErrNoPagesHaveBeenSet{}
+		return 0, new(ErrNoPagesHaveBeenSet)
 	}
 
 	return pi.intervals[0][0], nil
@@ -200,7 +200,7 @@ func (pi *PageInterval) GetFirstPage() (int, error) {
 //	}
 func (pi *PageInterval) GetLastPage() (int, error) {
 	if len(pi.intervals) == 0 {
-		return 0, &ErrNoPagesHaveBeenSet{}
+		return 0, new(ErrNoPagesHaveBeenSet)
 	}
 
 	return pi.intervals[len(pi.intervals)-1][1], nil
@@ -220,7 +220,7 @@ func (pi *PageInterval) GetLastPage() (int, error) {
 //	fmt.Println(firstPage) // Output: 1
 func (pi *PageInterval) MustGetFirstPage() int {
 	if len(pi.intervals) == 0 {
-		panic(&ErrNoPagesHaveBeenSet{})
+		panic(new(ErrNoPagesHaveBeenSet))
 	}
 
 	return pi.intervals[0][0]
@@ -240,7 +240,7 @@ func (pi *PageInterval) MustGetFirstPage() int {
 //	fmt.Println(lastPage) // Output: 15
 func (pi *PageInterval) MustGetLastPage() int {
 	if len(pi.intervals) == 0 {
-		panic(&ErrNoPagesHaveBeenSet{})
+		panic(new(ErrNoPagesHaveBeenSet))
 	}
 
 	return pi.intervals[len(pi.intervals)-1][1]

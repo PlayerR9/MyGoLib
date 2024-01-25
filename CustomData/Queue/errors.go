@@ -1,5 +1,7 @@
 package Queue
 
+import "fmt"
+
 // QueueOperationType is an integer type that represents the type of operation performed
 // on a queue.
 // It is used in error handling to specify the operation that caused an error.
@@ -38,14 +40,26 @@ type ErrEmptyQueue struct {
 	operation QueueOperationType
 }
 
+// NewErrEmptyQueue creates a new ErrEmptyQueue.
+// It takes the following parameter:
+//
+//   - operation is the type of operation that caused the error.
+//
+// The function returns the following:
+//
+//   - A pointer to the new ErrEmptyQueue.
+func NewErrEmptyQueue(operation QueueOperationType) *ErrEmptyQueue {
+	return &ErrEmptyQueue{operation: operation}
+}
+
 // Error is a method of the ErrEmptyQueue type that implements the error interface. It
 // returns a string representation of the error.
 // The method constructs the error message by concatenating the string "could not ", the
 // string representation of the operation that caused the error,
 // and the string ": queue is empty". This provides a clear and descriptive error message
 // when attempting to perform a queue operation on an empty queue.
-func (e ErrEmptyQueue) Error() string {
-	return "could not " + e.operation.String() + ": queue is empty"
+func (e *ErrEmptyQueue) Error() string {
+	return fmt.Sprintf("could not %v: queue is empty", e.operation)
 }
 
 // ErrFullQueue is a struct that represents an error when attempting to enqueue an element
@@ -58,7 +72,7 @@ type ErrFullQueue struct{}
 // returns a string representation of the error.
 // The method returns the string "could not enqueue: queue is full", providing a clear and
 // descriptive error message when attempting to enqueue an element into a full queue.
-func (e ErrFullQueue) Error() string {
+func (e *ErrFullQueue) Error() string {
 	return "could not enqueue: queue is full"
 }
 
@@ -72,7 +86,7 @@ type ErrNegativeCapacity struct{}
 // It returns a string representation of the error.
 // The method returns the string "capacity of a queue cannot be negative", providing a
 // clear and descriptive error message when a negative capacity is provided for a queue.
-func (e ErrNegativeCapacity) Error() string {
+func (e *ErrNegativeCapacity) Error() string {
 	return "capacity of a queue cannot be negative"
 }
 
@@ -87,7 +101,7 @@ type ErrTooManyValues struct{}
 // The method returns the string "could not initialize queue: too many values", providing
 // a clear and descriptive error message when too many values are provided for initializing
 // a queue.
-func (e ErrTooManyValues) Error() string {
+func (e *ErrTooManyValues) Error() string {
 	return "could not initialize queue: too many values"
 }
 
@@ -101,6 +115,6 @@ type ErrOutOfBoundsIterator struct{}
 // interface. It returns a string representation of the error.
 // The method returns the string "iterator out of bounds", providing a clear and
 // descriptive error message when an iterator goes out of bounds.
-func (e ErrOutOfBoundsIterator) Error() string {
+func (e *ErrOutOfBoundsIterator) Error() string {
 	return "iterator out of bounds"
 }

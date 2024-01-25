@@ -1,10 +1,14 @@
 package StrExt
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"slices"
 	"strings"
+	"unicode/utf8"
+
+	ers "github.com/PlayerR9/MyGoLib/Utility/Errors"
 )
 
 // ReplaceSuffix replaces the end of the given string with the provided suffix.
@@ -23,15 +27,15 @@ import (
 //
 //   - The modified string, or an error if the suffix is too long.
 func ReplaceSuffix(str, suffix string) (string, error) {
-	if len(str) < len(suffix) {
+	if utf8.RuneCountInString(str) < utf8.RuneCountInString(suffix) {
 		return "", &ErrSuffixTooLong{}
-	} else if len(str) == len(suffix) {
+	} else if utf8.RuneCountInString(str) == utf8.RuneCountInString(suffix) {
 		return suffix, nil
-	} else if len(suffix) == 0 {
+	} else if utf8.RuneCountInString(suffix) == 0 {
 		return str, nil
 	}
 
-	return str[:len(str)-len(suffix)] + suffix, nil
+	return str[:utf8.RuneCountInString(str)-utf8.RuneCountInString(suffix)] + suffix, nil
 }
 
 // FindContentIndexes searches for the positions of opening and closing tokens
@@ -153,7 +157,7 @@ func NewSpltLine(word string) *SpltLine {
 	splt := new(SpltLine)
 
 	splt.Line = []string{word}
-	splt.Len = len(word)
+	splt.Len = utf8.RuneCountInString(word)
 
 	return splt
 }
@@ -166,7 +170,7 @@ func (sl *SpltLine) shiftLeft() string {
 	firstWord := sl.Line[0]
 
 	sl.Line = sl.Line[1:]
-	sl.Len -= (len(firstWord) + 1)
+	sl.Len -= (utf8.RuneCountInString(firstWord) + 1)
 
 	return firstWord
 }
@@ -181,7 +185,7 @@ func (sl *SpltLine) InsertWord(word string) {
 	}
 
 	sl.Line = append(sl.Line, word)
-	sl.Len += (len(word) + 1)
+	sl.Len += (utf8.RuneCountInString(word) + 1)
 }
 
 // deepCopy is a method on the SpltLine struct.
@@ -250,7 +254,7 @@ func (ts *TextSplitter) CanInsertWord(word string, lineIndex int) bool {
 		return false
 	}
 
-	return ts.Lines[lineIndex].Len+len(word)+1 <= ts.Width
+	return ts.Lines[lineIndex].Len+utf8.RuneCountInString(word)+1 <= ts.Width
 }
 
 func (ts *TextSplitter) InsertWordAt(word string, lineIndex int) error {
@@ -285,13 +289,13 @@ func (ts *TextSplitter) InsertWordAt(word string, lineIndex int) error {
 // there are no more lines.
 func (ts *TextSplitter) InsertWord(word string) error {
 	if len(ts.Lines) < cap(ts.Lines) {
-		if len(word) > ts.Width {
+		if utf8.RuneCountInString(word) > ts.Width {
 			return &ErrWordTooLong{word}
 		}
 
 		ts.Lines = append(ts.Lines, &SpltLine{
 			Line: []string{word},
-			Len:  len(word),
+			Len:  utf8.RuneCountInString(word),
 		})
 
 		return nil
@@ -443,9 +447,9 @@ func CalculateNumberOfLines(text []string, width int) (int, error) {
 	var Tl int
 
 	for _, word := range text {
-		Tl += len(word) + 1 // +1 for the space
+		Tl += utf8.RuneCountInString(word) + 1 // +1 for the space or any other separator
 	}
-	Tl-- // Remove the last space
+	Tl-- // Remove the last space or separator
 
 	numberOfLines := int(math.Ceil(float64(Tl-width)/float64(width+1))) + 1
 
@@ -637,4 +641,98 @@ func SplitTextInEqualSizedLines(text []string, width, height int) (*TextSplitter
 
 	// 6. Return the first line of the candidate.
 	return candidateList[0], nil
+}
+
+// createFieldList takes a slice of strings and creates a
+// two-dimensional slice where each inner slice represents
+// the fields of a string from the input slice.
+// Fields are defined as substrings of the string that are
+// separated by one or more whitespace characters. Strings
+// from the input slice that do not contain any fields
+// (i.e., they are empty or consist only of whitespace) are
+// not included in the output.
+//
+// The function returns a two-dimensional slice of strings.
+// The length of the outer slice is equal to the number of
+// strings in the input slice that contain at least one
+// field. The length of each inner slice is equal to the
+// number of fields in the corresponding string from the
+// input slice.
+func SplitSentenceIntoFields(sentence string, indentLevel int) ([][]string, error) {
+	if sentence == "" {
+		return [][]string{}, nil
+	}
+
+	if indentLevel < 0 {
+		return nil, ers.NewErrInvalidParameter("indentLevel").
+			WithReason(errors.New("indent level cannot be negative"))
+	}
+
+	lines := make([][]string, 0)
+	words := make([]string, 0)
+
+	var builder strings.Builder
+
+	for j := 0; len(sentence) > 0; j++ {
+		char, size := utf8.DecodeRuneInString(sentence)
+		sentence = sentence[size:]
+
+		if char == utf8.RuneError {
+			return nil, fmt.Errorf("rune at index %d is invalid", j)
+		}
+
+		switch char {
+		case '\t':
+			builder.WriteString(strings.Repeat(" ", indentLevel)) // 3 spaces
+		case '\v':
+			// Do nothing
+		case '\r':
+			if utf8.RuneCountInString(sentence) > 0 {
+				nextRune, size := utf8.DecodeRuneInString(sentence)
+
+				if nextRune == '\n' {
+					sentence = sentence[size:]
+				}
+			}
+
+			fallthrough
+		case '\n', '\u0085':
+			if builder.Len() != 0 {
+				words = append(words, builder.String())
+				builder.Reset()
+			}
+
+			lines = append(lines, words)
+			words = make([]string, 0)
+		case ' ':
+			if builder.Len() != 0 {
+				words = append(words, builder.String())
+				builder.Reset()
+			}
+		case '\u00A0':
+			builder.WriteRune(' ')
+		case '\f':
+			if builder.Len() != 0 {
+				words = append(words, builder.String())
+				builder.Reset()
+			}
+
+			lines = append(lines, words)
+			words = make([]string, 0)
+
+			lines = append(lines, []string{string(char)})
+		default:
+			builder.WriteRune(char)
+		}
+	}
+
+	if builder.Len() != 0 {
+		words = append(words, builder.String())
+	}
+
+	if len(words) > 0 {
+		lines = append(lines, words)
+	}
+
+	return lines, nil
 }

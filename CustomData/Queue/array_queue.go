@@ -33,21 +33,9 @@ func (queue *ArrayQueue[T]) Enqueue(value T) {
 	queue.values = append(queue.values, value)
 }
 
-func (queue *ArrayQueue[T]) Dequeue() (T, error) {
+func (queue *ArrayQueue[T]) Dequeue() T {
 	if len(queue.values) == 0 {
-		return *new(T), &ErrEmptyQueue{Dequeue}
-	}
-
-	var value T
-
-	value, queue.values = queue.values[0], queue.values[1:]
-
-	return value, nil
-}
-
-func (queue *ArrayQueue[T]) MustDequeue() T {
-	if len(queue.values) == 0 {
-		panic(&ErrEmptyQueue{Dequeue})
+		panic(NewErrEmptyQueue(Dequeue))
 	}
 
 	var value T
@@ -57,17 +45,9 @@ func (queue *ArrayQueue[T]) MustDequeue() T {
 	return value
 }
 
-func (queue *ArrayQueue[T]) Peek() (T, error) {
+func (queue *ArrayQueue[T]) Peek() T {
 	if len(queue.values) == 0 {
-		return *new(T), &ErrEmptyQueue{Peek}
-	}
-
-	return queue.values[0], nil
-}
-
-func (queue *ArrayQueue[T]) MustPeek() T {
-	if len(queue.values) == 0 {
-		panic(&ErrEmptyQueue{Peek})
+		panic(NewErrEmptyQueue(Peek))
 	}
 
 	return queue.values[0]
@@ -110,12 +90,10 @@ func (queue *ArrayQueue[T]) String() string {
 
 	var builder strings.Builder
 
-	builder.WriteString(QueueHead)
-	builder.WriteString(fmt.Sprintf("%v", queue.values[0]))
+	fmt.Fprintf(&builder, "%s%v", QueueHead, queue.values[0])
 
 	for _, element := range queue.values[1:] {
-		builder.WriteString(QueueSep)
-		builder.WriteString(fmt.Sprintf("%v", element))
+		fmt.Fprintf(&builder, "%s%v", QueueSep, element)
 	}
 
 	return builder.String()

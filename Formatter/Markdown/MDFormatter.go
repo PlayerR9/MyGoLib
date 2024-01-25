@@ -32,25 +32,24 @@ type Header struct {
 }
 
 type Table struct {
-	headers []Header
+	headers []*Header
 	rows    [][]string
 }
 
-func NewTable() Table {
-	return Table{
-		headers: make([]Header, 0),
+func NewTable() *Table {
+	return &Table{
+		headers: make([]*Header, 0),
 		rows:    make([][]string, 0),
 	}
 }
 
-func NewTableWithHeaders(headers ...Header) Table {
-	return Table{
-		headers: headers,
-		rows:    make([][]string, 0),
-	}
+func (t *Table) WithHeader(header *Header) *Table {
+	t.AppendHeader(header)
+
+	return t
 }
 
-func (t *Table) AppendHeader(header Header) {
+func (t *Table) AppendHeader(header *Header) {
 	t.headers = append(t.headers, header)
 
 	if !PedanticMode {

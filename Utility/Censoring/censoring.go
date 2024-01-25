@@ -54,11 +54,12 @@ func NewContext() *Context {
 	}
 }
 
-// SetLabel sets the censorLabel of the Context to the given label.
+// WithLabel sets the censorLabel of the Context to the given label.
 // If the given label is an empty string, the censorLabel is set to DefaultCensorLabel.
 // It returns the Context itself to allow for method chaining, following the builder
 // pattern.
-func (ctx *Context) SetLabel(label string) *Context {
+func (ctx *Context) WithLabel(label string) *Context {
+	label = strings.TrimSpace(label)
 	if label != "" {
 		ctx.censorLabel = label
 	} else {
@@ -68,10 +69,10 @@ func (ctx *Context) SetLabel(label string) *Context {
 	return ctx
 }
 
-// CensorMode sets the notCensored value of the Context to the negation of the given mode.
+// WithMode sets the notCensored value of the Context to the negation of the given mode.
 // It returns the Context itself to allow for method chaining, following the builder
 // pattern.
-func (ctx *Context) CensorMode(mode CensorValue) *Context {
+func (ctx *Context) WithMode(mode CensorValue) *Context {
 	ctx.notCensored = !mode
 
 	return ctx
@@ -88,7 +89,7 @@ type Builder struct {
 	filters []FilterFunc
 
 	// The string used to join the values together
-	sep string
+	sep rune
 
 	// The strings to be censored
 	values []string
@@ -103,88 +104,119 @@ type Builder struct {
 	isNotCensored CensorValue
 }
 
-// Make creates a new Builder with the given filters, separator, and values.
-// It initializes the Builder's Context to the given Context, sets its
-// isNotCensored value to false,
-// and converts the given values to strings.
-// If the given separator is not an empty string, it splits each value by the
-// separator and appends the resulting fields to the values.
-// It returns a pointer to the newly created Builder.
-func (ctx *Context) Make(filters []FilterFunc, sep string, values ...any) *Builder {
-	builder := new(Builder)
-	builder.ctx = ctx
-	builder.isNotCensored = false
+// BuilderOption is a function type that modifies the properties of a Builder.
+type BuilderOption func(*Builder)
 
-	stringValues := make([]string, 0, len(values))
+// WithLabel returns a BuilderOption that sets the label of a Builder.
+// If the provided label is not an empty string, it replaces the current label
+// of the Builder.
+// The label is trimmed of any leading or trailing white space before being set.
+func WithLabel(label string) BuilderOption {
+	return func(b *Builder) {
+		label = strings.TrimSpace(label)
+		if label != "" {
+			b.label = label
+		}
+	}
+}
 
-	for _, value := range values {
-		switch x := value.(type) {
-		case *Builder:
-			if x == nil {
-				stringValues = append(stringValues, "")
-				continue
+// WithMode returns a BuilderOption that sets the censorship mode of a Builder.
+// If the provided mode is true, the Builder will not censor values.
+func WithMode(mode CensorValue) BuilderOption {
+	return func(b *Builder) {
+		b.isNotCensored = !mode
+	}
+}
+
+// WithSeparator returns a BuilderOption that sets the separator of a Builder.
+// The separator is used to separate values in the output string.
+func WithSeparator(sep rune) BuilderOption {
+	return func(b *Builder) {
+		b.sep = sep
+	}
+}
+
+// WithFilters returns a BuilderOption that sets the filters of a Builder.
+// Filters are functions that modify the output string of the Builder.
+func WithFilters(filters ...FilterFunc) BuilderOption {
+	return func(b *Builder) {
+		b.filters = filters
+	}
+}
+
+// WithValues returns a BuilderOption that sets the values of a Builder.
+// Values can be of any type and are converted to strings before being set.
+// If a value is a Builder, its output string is used as the value.
+func WithValues(values ...any) BuilderOption {
+	return func(b *Builder) {
+		stringValues := make([]string, 0, len(values))
+
+		for _, value := range values {
+			switch x := value.(type) {
+			case *Builder:
+				if x == nil {
+					stringValues = append(stringValues, "")
+					continue
+				}
+
+				// Partial application to get the
+				// uncensored string representation
+				var str string
+
+				x.Apply(func(s string) { str = s })
+
+				stringValues = append(stringValues, str)
+			case Builder:
+				// Partial application to get the
+				// uncensored string representation
+				var str string
+
+				x.Apply(func(s string) { str = s })
+
+				stringValues = append(stringValues, str)
+			default:
+				stringValues = append(stringValues, fmt.Sprintf("%v", value))
 			}
-
-			// Partial application to get the
-			// uncensored string representation
-			var str string
-
-			x.Apply(func(s string) { str = s })
-
-			stringValues = append(stringValues, str)
-		case Builder:
-			// Partial application to get the
-			// uncensored string representation
-			var str string
-
-			x.Apply(func(s string) { str = s })
-
-			stringValues = append(stringValues, str)
-		default:
-			stringValues = append(stringValues, fmt.Sprintf("%v", value))
 		}
+
+		b.values = stringValues
+	}
+}
+
+// Make creates a new Builder with the given BuilderOptions.
+// It initializes the Builder's Context to the given Context, sets its
+// label to DefaultCensorLabel, and initializes its filters and values
+// to empty slices.
+// Each provided BuilderOption is then applied to the Builder in the order
+// they were provided.
+// After applying the BuilderOptions, it splits each value in the Builder's
+// values slice by the Builder's separator, and replaces the original values
+// with the resulting fields.
+// It returns a pointer to the newly created Builder.
+func (ctx *Context) Make(options ...BuilderOption) *Builder {
+	builder := &Builder{
+		ctx:     ctx,
+		label:   DefaultCensorLabel,
+		filters: make([]FilterFunc, 0),
+		values:  make([]string, 0),
+		sep:     ' ',
 	}
 
-	if sep != "" {
-		var fields []string
-
-		for i := 0; i < len(stringValues); i += len(fields) {
-			fields = strings.Split(stringValues[i], sep)
-			stringValues = append(stringValues[:i], append(fields, stringValues[i+1:]...)...)
-		}
+	for _, option := range options {
+		option(builder)
 	}
 
-	builder.filters = filters
-	builder.sep = sep
-	builder.label = ""
-	builder.values = stringValues
+	var fields []string
+
+	for i := 0; i < len(builder.values); i += len(fields) {
+		fields = strings.FieldsFunc(builder.values[i], func(r rune) bool {
+			return r == rune(builder.sep)
+		})
+
+		builder.values = append(builder.values[:i], append(fields, builder.values[i+1:]...)...)
+	}
 
 	return builder
-}
-
-// SetLabel sets the label of the Builder to the given label.
-// If the given label is an empty string, it sets the label to the censorLabel
-// of the Builder's Context.
-// It returns the Builder itself to allow for method chaining, following the
-// builder pattern.
-func (b *Builder) SetLabel(label string) *Builder {
-	if label != "" {
-		b.label = label
-	} else {
-		b.label = b.ctx.censorLabel
-	}
-
-	return b
-}
-
-// CensorMode sets the isNotCensored value of the Builder to the negation
-// of the given mode.
-// It returns the Builder itself to allow for method chaining, following
-// the builder pattern.
-func (b *Builder) CensorMode(mode CensorValue) *Builder {
-	b.isNotCensored = !mode
-
-	return b
 }
 
 // String is a method of the Builder type that returns a string
@@ -195,9 +227,9 @@ func (b *Builder) CensorMode(mode CensorValue) *Builder {
 // values, checks each value against the filters, and replaces
 // unacceptable values with the censor label. It then joins the
 // censored values with the separator and returns the resulting string.
-func (b Builder) String() string {
+func (b *Builder) String() string {
 	if !b.IsCensored() {
-		return strings.Join(b.values, b.sep)
+		return strings.Join(b.values, string(b.sep))
 	}
 
 	censoredValues := make([]string, 0, len(b.values))
@@ -216,7 +248,7 @@ func (b Builder) String() string {
 		}
 	}
 
-	return strings.Join(censoredValues, b.sep)
+	return strings.Join(censoredValues, string(b.sep))
 }
 
 // IsCensored is a method of the Builder type that returns a CensorValue
@@ -239,5 +271,5 @@ func (b *Builder) IsCensored() CensorValue {
 // This method allows you to perform operations on the non-censored string,
 // regardless of the current censor level.
 func (b *Builder) Apply(f func(s string)) {
-	f(strings.Join(b.values, b.sep))
+	f(strings.Join(b.values, string(b.sep)))
 }
