@@ -244,6 +244,10 @@ func WithExecutableName(name string) CMLineOption {
 // Returns:
 //
 //   - A CMLineOption that adds a new command to a CMLine.
+
+/*
+/doc rewrite this documentation. I want to publish it on Go pkg and so the documentation should follow GoDoc rules. Furthermore, don't stray too far on the left margin as I like to see it in full without moving left and right. Finally, all of these messages are all regarding a common package
+*/
 func WithCommand(name string, options ...CommandInfoOption) CMLineOption {
 	return func(cm *CMLine) {
 		name = strings.TrimSpace(name)
