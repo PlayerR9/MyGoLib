@@ -46,6 +46,7 @@ type Context struct {
 // NewContext creates a new Context with default values.
 // The default censorLabel is DefaultCensorLabel and the default notCensored value
 // is false.
+//
 // It returns a pointer to the newly created Context.
 func NewContext() *Context {
 	return &Context{
@@ -186,12 +187,14 @@ func WithValues(values ...any) BuilderOption {
 // Make creates a new Builder with the given BuilderOptions.
 // It initializes the Builder's Context to the given Context, sets its
 // label to DefaultCensorLabel, and initializes its filters and values
-// to empty slices.
+// to empty slices. It also sets the separator to a space character.
 // Each provided BuilderOption is then applied to the Builder in the order
 // they were provided.
 // After applying the BuilderOptions, it splits each value in the Builder's
-// values slice by the Builder's separator, and replaces the original values
-// with the resulting fields.
+// values slice by the Builder's separator. It then replaces the original values
+// with the resulting fields. This operation is performed for each value in the
+// Builder's values slice.
+//
 // It returns a pointer to the newly created Builder.
 func (ctx *Context) Make(options ...BuilderOption) *Builder {
 	builder := &Builder{

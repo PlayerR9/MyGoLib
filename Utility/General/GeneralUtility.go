@@ -1,9 +1,12 @@
 package General
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"reflect"
+
+	ers "github.com/PlayerR9/MyGoLib/Utility/Errors"
 )
 
 // ExitFromProgram is a utility function that handles program termination in
@@ -93,7 +96,8 @@ func SplitIntoGroups[T any](slice []T, n int) [][]T {
 	}
 
 	if n <= 0 {
-		panic("The number of groups must be positive and non-zero")
+		panic(ers.NewErrInvalidParameter("n").
+			WithReason(errors.New("the number of groups must be positive and non-zero")))
 	}
 
 	groups := make([][]T, n)

@@ -132,13 +132,13 @@ func ReadWholeFileLineByLine(path string) ([]string, error) {
 func AppendToFile(filePath string, content ...string) error {
 	file, err := os.OpenFile(filePath, os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
-		return fmt.Errorf("could not open file: %w", err)
+		return fmt.Errorf("could not open file: %v", err)
 	}
 	defer file.Close()
 
 	_, err = file.WriteString(strings.Join(content, "\n"))
 	if err != nil {
-		return fmt.Errorf("could not write to file: %w", err)
+		return fmt.Errorf("could not write to file: %v", err)
 	}
 
 	return nil

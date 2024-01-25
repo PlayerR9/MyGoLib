@@ -153,6 +153,10 @@ type SpltLine struct {
 	Len int
 }
 
+// NewSpltLine creates a new SpltLine instance.
+// The initial word is passed as an argument.
+// The length of the line is calculated based on the initial word.
+// It returns a pointer to the created SpltLine instance.
 func NewSpltLine(word string) *SpltLine {
 	splt := new(SpltLine)
 
@@ -643,21 +647,18 @@ func SplitTextInEqualSizedLines(text []string, width, height int) (*TextSplitter
 	return candidateList[0], nil
 }
 
-// createFieldList takes a slice of strings and creates a
-// two-dimensional slice where each inner slice represents
-// the fields of a string from the input slice.
-// Fields are defined as substrings of the string that are
-// separated by one or more whitespace characters. Strings
-// from the input slice that do not contain any fields
-// (i.e., they are empty or consist only of whitespace) are
-// not included in the output.
+// SplitSentenceIntoFields takes a string and an indent level as input.
+// It splits the string into fields, where each field is a substring separated by one or more whitespace characters.
+// The function also handles special characters such as tabs, vertical tabs, carriage returns, line feeds, and form feeds.
+// The indent level determines the number of spaces that a tab character is replaced with.
 //
 // The function returns a two-dimensional slice of strings.
-// The length of the outer slice is equal to the number of
-// strings in the input slice that contain at least one
-// field. The length of each inner slice is equal to the
-// number of fields in the corresponding string from the
-// input slice.
+// Each inner slice represents the fields of a line from the input string.
+// Lines that do not contain any fields (i.e., they are empty or consist only of whitespace) are not included in the output.
+//
+// If the input string is empty, the function returns an empty two-dimensional slice.
+// If the indent level is negative, the function returns an ErrInvalidParameter error.
+// If the input string contains an invalid rune, the function returns an error.
 func SplitSentenceIntoFields(sentence string, indentLevel int) ([][]string, error) {
 	if sentence == "" {
 		return [][]string{}, nil

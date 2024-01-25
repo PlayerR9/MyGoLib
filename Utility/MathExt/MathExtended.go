@@ -1,5 +1,11 @@
 package MathExt
 
+import (
+	"errors"
+
+	ers "github.com/PlayerR9/MyGoLib/Utility/Errors"
+)
+
 // PrimeFactorization is a function that performs prime factorization on an
 // input number.
 // It takes an integer as input and returns a map where the keys are the
@@ -18,7 +24,8 @@ package MathExt
 // When the loop ends, the function returns the map of prime factors.
 func PrimeFactorization(inputNumber int) map[int]int {
 	if inputNumber == 0 {
-		panic("Cannot factorize 0")
+		panic(ers.NewErrInvalidParameter("inputNumber").
+			WithReason(errors.New("the value of 0 cannot be factorized")))
 	}
 
 	if inputNumber == 1 || inputNumber == -1 {

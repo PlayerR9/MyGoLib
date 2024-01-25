@@ -10,7 +10,7 @@ type ErrWordTooLong struct {
 
 // Error method for ErrWordTooLong. It returns a formatted string indicating
 // the word that was too long.
-func (e ErrWordTooLong) Error() string {
+func (e *ErrWordTooLong) Error() string {
 	return fmt.Sprintf("word '%s' is too long", e.word)
 }
 
@@ -20,7 +20,7 @@ type ErrWidthTooSmall struct{}
 
 // Error method for ErrWidthTooSmall. It returns a string indicating that the
 // width was too small to fit the text.
-func (e ErrWidthTooSmall) Error() string {
+func (e *ErrWidthTooSmall) Error() string {
 	return "width is too small to fit the text"
 }
 
@@ -33,7 +33,7 @@ type ErrSuffixTooLong struct{}
 // Error is a method of the ErrSuffixTooLong type that implements the
 // error interface. It returns a string representation of the error,
 // that is, the string "suffix is too long".
-func (e ErrSuffixTooLong) Error() string {
+func (e *ErrSuffixTooLong) Error() string {
 	return "suffix is too long"
 }
 
@@ -46,7 +46,7 @@ type ErrOpeningTokenEmpty struct{}
 // Error is a method of the ErrOpeningTokenEmpty type that implements
 // the error interface. It returns a string representation of the error,
 // that is, the string "opening token is empty".
-func (e ErrOpeningTokenEmpty) Error() string {
+func (e *ErrOpeningTokenEmpty) Error() string {
 	return "opening token is empty"
 }
 
@@ -59,7 +59,7 @@ type ErrClosingTokenEmpty struct{}
 // Error is a method of the ErrClosingTokenEmpty type that implements
 // the error interface. It returns a string representation of the error,
 // that is, the string "closing token is empty".
-func (e ErrClosingTokenEmpty) Error() string {
+func (e *ErrClosingTokenEmpty) Error() string {
 	return "closing token is empty"
 }
 
@@ -72,18 +72,24 @@ type ErrOpeningTokenNotFound struct{}
 // Error is a method of the ErrOpeningTokenNotFound type that implements
 // the error interface. It returns a string representation of the error,
 // that is, the string "opening token not found in content".
-func (e ErrOpeningTokenNotFound) Error() string {
+func (e *ErrOpeningTokenNotFound) Error() string {
 	return "opening token not found in content"
 }
 
+// ErrEmptyText represents an error when a text input is empty.
 type ErrEmptyText struct{}
 
-func (e ErrEmptyText) Error() string {
+// Error generates the error message for the ErrEmptyText error.
+// The message indicates that the text input cannot be empty.
+func (e *ErrEmptyText) Error() string {
 	return "text cannot be empty"
 }
 
+// ErrHeightTooSmall represents an error when a height value is less than 1.
 type ErrHeightTooSmall struct{}
 
-func (e ErrHeightTooSmall) Error() string {
+// Error generates the error message for the ErrHeightTooSmall error.
+// The message indicates that the height value must be at least 1.
+func (e *ErrHeightTooSmall) Error() string {
 	return "height must be at least 1"
 }
