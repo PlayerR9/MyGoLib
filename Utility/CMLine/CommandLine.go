@@ -64,7 +64,7 @@ func WithArgs(args ...string) FlagInfoOption {
 	}
 }
 
-// WithDescription is a FlagInfoOption that sets the description
+// WithFlagDescription is a FlagInfoOption that sets the description
 // for a ConsoleFlagInfo.
 // It splits each line of the description by newline characters.
 //
@@ -76,7 +76,7 @@ func WithArgs(args ...string) FlagInfoOption {
 //
 //   - A FlagInfoOption that sets the description for a
 //     ConsoleFlagInfo.
-func WithDescription(description ...string) FlagInfoOption {
+func WithFlagDescription(description ...string) FlagInfoOption {
 	return func(flag *ConsoleFlagInfo) {
 		for _, line := range description {
 			fields := strings.Split(line, "\n")
@@ -244,6 +244,27 @@ func WithCallback(callback func(map[string]any) (any, error)) CommandInfoOption 
 	}
 }
 
+// WithCommandDescription is a CommandInfoOption that sets the
+// description for a ConsoleCommandInfo.
+// It splits each line of the description by newline characters.
+//
+// Parameters:
+//
+//   - description: The description to set.
+//
+// Returns:
+//
+//   - A CommandInfoOption that sets the description for a
+//     ConsoleCommandInfo.
+func WithCommandDescription(description ...string) CommandInfoOption {
+	return func(command *ConsoleCommandInfo) {
+		for _, line := range description {
+			fields := strings.Split(line, "\n")
+			command.description = append(command.description, fields...)
+		}
+	}
+}
+
 // FString generates a formatted string representation of a ConsoleCommandInfo.
 // It includes the command name, description, usage information for each flag,
 // and the list of flags and their details.
@@ -309,6 +330,9 @@ func (cci *ConsoleCommandInfo) FString(indentLevel int) string {
 type CMLine struct {
 	// Name of the executable.
 	executableName string
+
+	// Description of the executable.
+	description []string
 
 	// Map of commands accepted by the interface.
 	commands map[string]*ConsoleCommandInfo
@@ -387,6 +411,26 @@ func WithCommand(name string, options ...CommandInfoOption) CMLineOption {
 		}
 
 		cm.commands[name] = newCommand
+	}
+}
+
+// WithDescription is a CMLineOption that sets the description for
+// a CMLine.
+// It splits each line of the description by newline characters.
+//
+// Parameters:
+//
+//   - description: The description to set.
+//
+// Returns:
+//
+//   - A CMLineOption that sets the description for a CMLine.
+func WithDescription(description ...string) CMLineOption {
+	return func(cm *CMLine) {
+		for _, line := range description {
+			fields := strings.Split(line, "\n")
+			cm.description = append(cm.description, fields...)
+		}
 	}
 }
 
@@ -551,6 +595,15 @@ func (cml *CMLine) FString() string {
 	var builder strings.Builder
 
 	fmt.Fprintf(&builder, "Usage: %s <command> [flags]\n", cml.executableName)
+
+	if len(cml.description) == 0 {
+		fmt.Fprintf(&builder, "Description: [No description provided]\n")
+	} else {
+		fmt.Fprintf(&builder, "Description:\n")
+		for _, line := range cml.description {
+			fmt.Fprintf(&builder, "\t%s\n", line)
+		}
+	}
 
 	if len(cml.commands) == 0 {
 		fmt.Fprint(&builder, "Commands: None\n")
