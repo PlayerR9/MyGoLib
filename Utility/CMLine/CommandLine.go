@@ -161,14 +161,11 @@ type ConsoleCommandInfo struct {
 
 	// Function invoked when the command is executed.
 	callback func(map[string]any) (any, error)
-
-	// Reason why the command could not be created.
-	errReason error
 }
 
 // CommandInfoOption is a function type that modifies
 // ConsoleCommandInfo.
-type CommandInfoOption func(*ConsoleCommandInfo)
+type CommandInfoOption func(*ConsoleCommandInfo) error
 
 // WithFlag is a CommandInfoOption that adds a new flag to a
 // ConsoleCommandInfo.
@@ -188,7 +185,7 @@ type CommandInfoOption func(*ConsoleCommandInfo)
 //   - A CommandInfoOption that adds a new flag to a
 //     ConsoleCommandInfo.
 func WithFlag(name string, callback func(...string) (any, error), options ...FlagInfoOption) CommandInfoOption {
-	return func(command *ConsoleCommandInfo) {
+	return func(command *ConsoleCommandInfo) error {
 		newFlag := &ConsoleFlagInfo{
 			name:        name,
 			args:        make([]string, 0),
@@ -199,15 +196,13 @@ func WithFlag(name string, callback func(...string) (any, error), options ...Fla
 
 		name = strings.TrimSpace(name)
 		if name == "" {
-			command.errReason = fmt.Errorf("could not create flag: %v",
+			return fmt.Errorf("could not create flag: %v",
 				ers.NewErrInvalidParameter("name").WithReason(errors.New("flag name cannot be empty")))
-			return
 		}
 
 		if callback == nil {
-			command.errReason = fmt.Errorf("could not create flag %s: %v", name,
+			return fmt.Errorf("could not create flag %s: %v", name,
 				ers.NewErrInvalidParameter("callback").WithReason(errors.New("flag callback cannot be nil")))
-			return
 		}
 
 		for _, option := range options {
@@ -215,6 +210,8 @@ func WithFlag(name string, callback func(...string) (any, error), options ...Fla
 		}
 
 		command.flags = append(command.flags, newFlag)
+
+		return nil
 	}
 }
 
@@ -232,15 +229,15 @@ func WithFlag(name string, callback func(...string) (any, error), options ...Fla
 //   - A CommandInfoOption that sets the callback for a
 //     ConsoleCommandInfo.
 func WithCallback(callback func(map[string]any) (any, error)) CommandInfoOption {
-	return func(command *ConsoleCommandInfo) {
+	return func(command *ConsoleCommandInfo) error {
 		if callback == nil {
-			command.errReason = ers.NewErrInvalidParameter("callback").
+			return ers.NewErrInvalidParameter("callback").
 				WithReason(errors.New("callback cannot be nil"))
-
-			return
 		}
 
 		command.callback = callback
+
+		return nil
 	}
 }
 
@@ -257,11 +254,13 @@ func WithCallback(callback func(map[string]any) (any, error)) CommandInfoOption 
 //   - A CommandInfoOption that sets the description for a
 //     ConsoleCommandInfo.
 func WithCommandDescription(description ...string) CommandInfoOption {
-	return func(command *ConsoleCommandInfo) {
+	return func(command *ConsoleCommandInfo) error {
 		for _, line := range description {
 			fields := strings.Split(line, "\n")
 			command.description = append(command.description, fields...)
 		}
+
+		return nil
 	}
 }
 
@@ -336,13 +335,10 @@ type CMLine struct {
 
 	// Map of commands accepted by the interface.
 	commands map[string]*ConsoleCommandInfo
-
-	// Reason why the CMLine could not be created.
-	errReason error
 }
 
 // CMLineOption is a function type that modifies CMLine.
-type CMLineOption func(*CMLine)
+type CMLineOption func(*CMLine) error
 
 // WithExecutableName is a CMLineOption that sets the executable
 // name for a CMLine.
@@ -357,16 +353,16 @@ type CMLineOption func(*CMLine)
 //
 //   - A CMLineOption that sets the executable name for a CMLine.
 func WithExecutableName(name string) CMLineOption {
-	return func(cm *CMLine) {
+	return func(cm *CMLine) error {
 		name = strings.TrimSpace(name)
 		if name == "" {
-			cm.errReason = ers.NewErrInvalidParameter("name").
+			return ers.NewErrInvalidParameter("name").
 				WithReason(errors.New("executable name cannot be empty"))
-
-			return
 		}
 
 		cm.executableName = name
+
+		return nil
 	}
 }
 
@@ -383,13 +379,11 @@ func WithExecutableName(name string) CMLineOption {
 //
 //   - A CMLineOption that adds a new command to a CMLine.
 func WithCommand(name string, options ...CommandInfoOption) CMLineOption {
-	return func(cm *CMLine) {
+	return func(cm *CMLine) error {
 		name = strings.TrimSpace(name)
 		if name == "" {
-			cm.errReason = ers.NewErrInvalidParameter("name").
+			return ers.NewErrInvalidParameter("name").
 				WithReason(errors.New("name cannot be empty"))
-
-			return
 		}
 
 		newCommand := &ConsoleCommandInfo{
@@ -397,20 +391,18 @@ func WithCommand(name string, options ...CommandInfoOption) CMLineOption {
 			description: make([]string, 0),
 			flags:       make([]*ConsoleFlagInfo, 0),
 			callback:    nil,
-			errReason:   nil,
 		}
 
 		for i, option := range options {
-			option(newCommand)
-
-			if newCommand.errReason != nil {
-				cm.errReason = fmt.Errorf("invalid option %d for command %s: %v", i, name, newCommand.errReason)
-
-				return
+			err := option(newCommand)
+			if err != nil {
+				return fmt.Errorf("invalid option %d for command %s: %v", i, name, err)
 			}
 		}
 
 		cm.commands[name] = newCommand
+
+		return nil
 	}
 }
 
@@ -426,11 +418,13 @@ func WithCommand(name string, options ...CommandInfoOption) CMLineOption {
 //
 //   - A CMLineOption that sets the description for a CMLine.
 func WithDescription(description ...string) CMLineOption {
-	return func(cm *CMLine) {
+	return func(cm *CMLine) error {
 		for _, line := range description {
 			fields := strings.Split(line, "\n")
 			cm.description = append(cm.description, fields...)
 		}
+
+		return nil
 	}
 }
 
@@ -445,24 +439,19 @@ func WithDescription(description ...string) CMLineOption {
 // Returns:
 //
 //   - A pointer to the created CMLine.
-func NewCMLine(options ...CMLineOption) *CMLine {
+func NewCMLine(options ...CMLineOption) (*CMLine, error) {
 	cml := &CMLine{
-		commands:  make(map[string]*ConsoleCommandInfo),
-		errReason: nil,
+		commands: make(map[string]*ConsoleCommandInfo),
 	}
 
-	for _, option := range options {
-		option(cml)
+	for i, option := range options {
+		err := option(cml)
+		if err != nil {
+			return nil, fmt.Errorf("invalid option %d: %v", i, err)
+		}
 	}
 
-	// Check if any command errors occurred
-	for key, command := range cml.commands {
-		cml.errReason = fmt.Errorf("could not create command %s: %v", key, command.errReason)
-
-		return cml
-	}
-
-	return cml
+	return cml, nil
 }
 
 // ParseCommandLine parses the provided command line arguments
@@ -480,11 +469,6 @@ func NewCMLine(options ...CMLineOption) *CMLine {
 //   - The result of the command.
 //   - An error, if any.
 func (cml *CMLine) ParseCommandLine(args []string) (string, any, error) {
-	// Check if there was a building error
-	if cml.errReason != nil {
-		return "", nil, cml.errReason
-	}
-
 	// Check if any arguments were provided
 	if len(args) == 0 {
 		return "", nil, ers.NewErrInvalidParameter("args").
