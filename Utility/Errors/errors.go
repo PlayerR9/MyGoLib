@@ -281,3 +281,23 @@ func Check(val any, err error) {
 		panic(err)
 	}
 }
+
+type ErrOperationFailed struct {
+	operation string
+	reason    error
+}
+
+func NewErrOperationFailed(operation string, reason error) *ErrOperationFailed {
+	if reason == nil {
+		reason = errors.New("an error occurred while performing the operation")
+	}
+
+	return &ErrOperationFailed{
+		operation: operation,
+		reason:    reason,
+	}
+}
+
+func (e *ErrOperationFailed) Error() string {
+	return fmt.Sprintf("could not %s: %v", e.operation, e.reason)
+}

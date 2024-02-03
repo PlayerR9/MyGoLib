@@ -24,8 +24,9 @@ import (
 // When the loop ends, the function returns the map of prime factors.
 func PrimeFactorization(inputNumber int) map[int]int {
 	if inputNumber == 0 {
-		panic(ers.NewErrInvalidParameter("inputNumber").
-			WithReason(errors.New("the value of 0 cannot be factorized")))
+		panic(ers.NewErrInvalidParameter(
+			"inputNumber", errors.New("value of 0 cannot be factorized"),
+		))
 	}
 
 	if inputNumber == 1 || inputNumber == -1 {

@@ -96,8 +96,9 @@ func SplitIntoGroups[T any](slice []T, n int) [][]T {
 	}
 
 	if n <= 0 {
-		panic(ers.NewErrInvalidParameter("n").
-			WithReason(errors.New("the number of groups must be positive and non-zero")))
+		panic(ers.NewErrInvalidParameter(
+			"n", errors.New("the number of groups must be positive and non-zero"),
+		))
 	}
 
 	groups := make([][]T, n)

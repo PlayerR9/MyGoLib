@@ -1,9 +1,11 @@
-package Stack
+package ListLike
 
 import (
 	"fmt"
 	"slices"
 	"strings"
+
+	ers "github.com/PlayerR9/MyGoLib/Utility/Errors"
 )
 
 // ArrayStack is a generic type in Go that represents a stack data structure implemented
@@ -11,7 +13,7 @@ import (
 // It has a single field, values, which is a slice of type T. This slice stores the
 // elements in the stack.
 type ArrayStack[T any] struct {
-	values []T
+	values []*T
 }
 
 // NewArrayStack is a function that creates and returns a new instance of an ArrayStack.
@@ -20,9 +22,9 @@ type ArrayStack[T any] struct {
 // The function creates a new ArrayStack, initializes its values field with a slice of
 // the same length as the input values, and then copies the input values into the new
 // slice. The new ArrayStack is then returned.
-func NewArrayStack[T any](values ...T) *ArrayStack[T] {
+func NewArrayStack[T any](values ...*T) *ArrayStack[T] {
 	stack := &ArrayStack[T]{
-		values: make([]T, len(values)),
+		values: make([]*T, len(values)),
 	}
 
 	slices.Reverse(values)
@@ -32,25 +34,29 @@ func NewArrayStack[T any](values ...T) *ArrayStack[T] {
 	return stack
 }
 
-func (stack *ArrayStack[T]) Push(value T) {
+func (stack *ArrayStack[T]) Push(value *T) {
 	stack.values = append(stack.values, value)
 }
 
-func (stack *ArrayStack[T]) Pop() T {
+func (stack *ArrayStack[T]) Pop() *T {
 	if len(stack.values) == 0 {
-		panic(NewErrEmptyStack(Pop))
+		panic(ers.NewErrOperationFailed(
+			"pop", NewErrEmptyStack(stack),
+		))
 	}
 
-	var value T
+	var value *T
 
 	value, stack.values = stack.values[len(stack.values)-1], stack.values[:len(stack.values)-1]
 
 	return value
 }
 
-func (stack *ArrayStack[T]) Peek() T {
+func (stack *ArrayStack[T]) Peek() *T {
 	if len(stack.values) == 0 {
-		panic(NewErrEmptyStack(Peek))
+		panic(ers.NewErrOperationFailed(
+			"peek", NewErrEmptyStack(stack),
+		))
 	}
 
 	return stack.values[len(stack.values)-1]
@@ -64,8 +70,8 @@ func (stack *ArrayStack[T]) Size() int {
 	return len(stack.values)
 }
 
-func (stack *ArrayStack[T]) ToSlice() []T {
-	slice := make([]T, len(stack.values))
+func (stack *ArrayStack[T]) ToSlice() []*T {
+	slice := make([]*T, len(stack.values))
 
 	copy(slice, stack.values)
 	slices.Reverse(slice)
@@ -74,7 +80,7 @@ func (stack *ArrayStack[T]) ToSlice() []T {
 }
 
 func (stack *ArrayStack[T]) Clear() {
-	stack.values = make([]T, 0)
+	stack.values = make([]*T, 0)
 }
 
 // IsFull is a method of the ArrayStack type. It checks if the stack is full.
@@ -88,17 +94,19 @@ func (stack *ArrayStack[T]) IsFull() bool {
 }
 
 func (stack *ArrayStack[T]) String() string {
-	if len(stack.values) == 0 {
-		return StackHead
-	}
-
 	var builder strings.Builder
 
-	fmt.Fprintf(&builder, "%s%v", StackHead, stack.values[0])
+	fmt.Fprintf(&builder, "ArrayStack[size=%d, values=[", len(stack.values))
 
-	for _, element := range stack.values[1:] {
-		fmt.Fprintf(&builder, "%s%v", StackSep, element)
+	if len(stack.values) > 0 {
+		fmt.Fprintf(&builder, "%v", stack.values[0])
+
+		for _, element := range stack.values[1:] {
+			fmt.Fprintf(&builder, ", %v", element)
+		}
 	}
+
+	fmt.Fprintf(&builder, "→]]")
 
 	return builder.String()
 }

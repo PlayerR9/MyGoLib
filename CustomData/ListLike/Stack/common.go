@@ -1,24 +1,13 @@
-package Stack
+package ListLike
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
 
-// StackHead and StackSep are constants used in the String() method of the Stacker interface
-// to format the string representation of a stack.
-const (
-	// StackHead is a string constant that represents the start of the stack. It is used to
-	// indicate where elements are removed from the stack.
-	// The value of StackHead is " | →", which visually indicates the direction of element
-	// removal.
-	StackHead string = " | →"
-
-	// StackSep is a string constant that is used as a separator between elements in the string
-	// representation of the stack.
-	// The value of StackSep is " | ", which provides a clear visual separation between individual
-	// elements in the stack.
-	StackSep string = " | "
+	ers "github.com/PlayerR9/MyGoLib/Utility/Errors"
 )
 
-// Package stack provides a Stacker interface that defines methods for a stack data structure.
+// Package ListLike provides a Stacker interface that defines methods for a stack data structure.
 //
 // Stacker is an interface that defines methods for a stack data structure.
 // It includes methods to add and remove elements, check if the stack is empty or full,
@@ -108,7 +97,9 @@ func NewStackIterator[T any](stack Stacker[T]) *StackIterator[T] {
 // This method is typically used in a loop to iterate over all the elements in a stack.
 func (iterator *StackIterator[T]) GetNext() *T {
 	if len(iterator.values) <= iterator.currentIndex {
-		panic(new(ErrOutOfBoundsIterator))
+		panic(ers.NewErrOperationFailed(
+			"get next element", errors.New("iterator is out of bounds"),
+		))
 	}
 
 	value := iterator.values[iterator.currentIndex]

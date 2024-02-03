@@ -1,4 +1,4 @@
-package Queue
+package ListLike
 
 import (
 	"fmt"
@@ -12,7 +12,7 @@ import (
 // It has a single field, values, which is a slice of type T. This slice stores the
 // elements in the queue.
 type LimitedArrayQueue[T any] struct {
-	values []T
+	values []*T
 }
 
 // NewLimitedArrayQueue is a function that creates and returns a new instance of a
@@ -30,19 +30,22 @@ type LimitedArrayQueue[T any] struct {
 // LimitedArrayQueue, initializes its values field with a slice
 // of the same length as the input values and the provided capacity, and then copies the
 // input values into the new slice. The new LimitedArrayQueue is then returned.
-func NewLimitedArrayQueue[T any](capacity int, values ...T) (*LimitedArrayQueue[T], error) {
+func NewLimitedArrayQueue[T any](capacity int, values ...*T) (*LimitedArrayQueue[T], error) {
 	if capacity < 0 {
 		return nil, ers.NewErrInvalidParameter(
-			"capacity", new(ErrNegativeCapacity),
+			"capacity", fmt.Errorf("negative capacity (%d) is not allowed", capacity),
 		)
 	} else if len(values) > capacity {
 		return nil, ers.NewErrInvalidParameter(
-			"values", new(ErrTooManyValues),
+			"values", fmt.Errorf("number of values (%d) exceeds the provided capacity (%d)",
+				len(values),
+				capacity,
+			),
 		)
 	}
 
 	queue := &LimitedArrayQueue[T]{
-		values: make([]T, len(values), capacity),
+		values: make([]*T, len(values), capacity),
 	}
 	copy(queue.values, values)
 
@@ -62,29 +65,35 @@ func NewLimitedArrayQueue[T any](capacity int, values ...T) (*LimitedArrayQueue[
 //
 // If the queue is not full, the method appends the value to the end of the values slice,
 // effectively adding the element to the end of the queue.
-func (queue *LimitedArrayQueue[T]) Enqueue(value T) {
+func (queue *LimitedArrayQueue[T]) Enqueue(value *T) {
 	if cap(queue.values) == len(queue.values) {
-		panic(new(ErrFullQueue))
+		panic(ers.NewErrOperationFailed(
+			"enqueue", NewErrFullQueue(queue),
+		))
 	}
 
 	queue.values = append(queue.values, value)
 }
 
-func (queue *LimitedArrayQueue[T]) Dequeue() T {
+func (queue *LimitedArrayQueue[T]) Dequeue() *T {
 	if len(queue.values) == 0 {
-		panic(NewErrEmptyQueue(Dequeue))
+		panic(ers.NewErrOperationFailed(
+			"dequeue", NewErrEmptyQueue(queue),
+		))
 	}
 
-	var value T
+	var value *T
 
 	value, queue.values = queue.values[0], queue.values[1:]
 
 	return value
 }
 
-func (queue *LimitedArrayQueue[T]) Peek() T {
+func (queue *LimitedArrayQueue[T]) Peek() *T {
 	if len(queue.values) == 0 {
-		panic(NewErrEmptyQueue(Peek))
+		panic(ers.NewErrOperationFailed(
+			"peek", NewErrEmptyQueue(queue),
+		))
 	}
 
 	return queue.values[0]
@@ -98,15 +107,15 @@ func (queue *LimitedArrayQueue[T]) Size() int {
 	return len(queue.values)
 }
 
-func (queue *LimitedArrayQueue[T]) ToSlice() []T {
-	slice := make([]T, len(queue.values))
+func (queue *LimitedArrayQueue[T]) ToSlice() []*T {
+	slice := make([]*T, len(queue.values))
 	copy(slice, queue.values)
 
 	return slice
 }
 
 func (queue *LimitedArrayQueue[T]) Clear() {
-	queue.values = make([]T, 0, cap(queue.values))
+	queue.values = make([]*T, 0, cap(queue.values))
 }
 
 func (queue *LimitedArrayQueue[T]) IsFull() bool {
@@ -114,17 +123,20 @@ func (queue *LimitedArrayQueue[T]) IsFull() bool {
 }
 
 func (queue *LimitedArrayQueue[T]) String() string {
-	if len(queue.values) == 0 {
-		return QueueHead
-	}
-
 	var builder strings.Builder
 
-	fmt.Fprintf(&builder, "%s%v", QueueHead, queue.values[0])
+	fmt.Fprintf(&builder,
+		"LimitedArrayQueue[size=%d, capacity=%d, values=[← ", len(queue.values), cap(queue.values))
 
-	for _, element := range queue.values[1:] {
-		fmt.Fprintf(&builder, "%s%v", QueueSep, element)
+	if len(queue.values) > 0 {
+		fmt.Fprintf(&builder, "%v", queue.values[0])
+
+		for _, element := range queue.values[1:] {
+			fmt.Fprintf(&builder, ", %v", element)
+		}
 	}
+
+	fmt.Fprintf(&builder, "]]")
 
 	return builder.String()
 }

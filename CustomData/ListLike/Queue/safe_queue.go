@@ -1,9 +1,11 @@
-package Queue
+package ListLike
 
 import (
 	"fmt"
 	"strings"
 	"sync"
+
+	ers "github.com/PlayerR9/MyGoLib/Utility/Errors"
 )
 
 // safeNode is a generic type in Go that represents a node in a thread-safe linked
@@ -150,7 +152,9 @@ func (queue *SafeQueue[T]) Enqueue(value *T) {
 
 func (queue *SafeQueue[T]) Dequeue() *T {
 	if queue.IsEmpty() {
-		panic(NewErrEmptyQueue(Dequeue))
+		panic(ers.NewErrOperationFailed(
+			"dequeue", NewErrEmptyQueue(queue),
+		))
 	}
 
 	value := queue.front.getValue()
@@ -167,7 +171,9 @@ func (queue *SafeQueue[T]) Dequeue() *T {
 
 func (queue *SafeQueue[T]) Peek() *T {
 	if queue.IsEmpty() {
-		panic(NewErrEmptyQueue(Peek))
+		panic(ers.NewErrOperationFailed(
+			"peek", NewErrEmptyQueue(queue),
+		))
 	}
 
 	return queue.front.getValue()
@@ -214,17 +220,19 @@ func (queue *SafeQueue[T]) IsFull() bool {
 }
 
 func (queue *SafeQueue[T]) String() string {
-	if queue.IsEmpty() {
-		return QueueHead
-	}
-
 	var builder strings.Builder
 
-	fmt.Fprintf(&builder, "%s%v", QueueHead, queue.front.getValue())
+	fmt.Fprintf(&builder, "SafeQueue[size=%d, values=[← ", queue.Size())
 
-	for node := queue.front.getNext(); node != nil; node = node.getNext() {
-		fmt.Fprintf(&builder, "%s%v", QueueSep, node.getValue())
+	if !queue.IsEmpty() {
+		fmt.Fprintf(&builder, "%v", queue.front.getValue())
+
+		for node := queue.front.getNext(); node != nil; node = node.getNext() {
+			fmt.Fprintf(&builder, " %v", node.getValue())
+		}
 	}
+
+	fmt.Fprintf(&builder, "]]")
 
 	return builder.String()
 }

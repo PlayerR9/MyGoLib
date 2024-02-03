@@ -1,9 +1,11 @@
-package Stack
+package ListLike
 
 import (
 	"fmt"
 	"slices"
 	"strings"
+
+	ers "github.com/PlayerR9/MyGoLib/Utility/Errors"
 )
 
 // LinkedStack is a generic type in Go that represents a stack data structure implemented
@@ -70,7 +72,9 @@ func (stack *LinkedStack[T]) Push(value *T) {
 
 func (stack *LinkedStack[T]) Pop() *T {
 	if stack.front == nil {
-		panic(NewErrEmptyStack(Pop))
+		panic(ers.NewErrOperationFailed(
+			"pop", NewErrEmptyStack(stack),
+		))
 	}
 
 	var value *T
@@ -83,7 +87,9 @@ func (stack *LinkedStack[T]) Pop() *T {
 
 func (stack *LinkedStack[T]) Peek() *T {
 	if stack.front == nil {
-		panic(NewErrEmptyStack(Peek))
+		panic(ers.NewErrOperationFailed(
+			"peek", NewErrEmptyStack(stack),
+		))
 	}
 
 	return stack.front.value
@@ -119,17 +125,19 @@ func (stack *LinkedStack[T]) IsFull() bool {
 }
 
 func (stack *LinkedStack[T]) String() string {
-	if stack.front == nil {
-		return StackHead
-	}
-
 	var builder strings.Builder
 
-	fmt.Fprintf(&builder, "%s%v", StackHead, stack.front.value)
+	fmt.Fprintf(&builder, "LinkedStack[size=%d, values=[", stack.size)
 
-	for node := stack.front.next; node != nil; node = node.next {
-		fmt.Fprintf(&builder, "%s%v", StackSep, node.value)
+	if stack.front != nil {
+		fmt.Fprintf(&builder, "%v", stack.front.value)
+
+		for stack_node := stack.front.next; stack_node != nil; stack_node = stack_node.next {
+			fmt.Fprintf(&builder, ", %v", stack_node.value)
+		}
 	}
+
+	fmt.Fprintf(&builder, "→]]")
 
 	return builder.String()
 }

@@ -1,4 +1,4 @@
-package Stack
+package ListLike
 
 import (
 	"fmt"
@@ -38,11 +38,12 @@ type LimitedLinkedStack[T any] struct {
 func NewLimitedLinkedStack[T any](capacity int, values ...*T) (*LimitedLinkedStack[T], error) {
 	if capacity < 0 {
 		return nil, ers.NewErrInvalidParameter(
-			"capacity", new(ErrNegativeCapacity),
+			"capacity", fmt.Errorf("negative capacity (%d) is not allowed", capacity),
 		)
 	} else if len(values) > capacity {
 		return nil, ers.NewErrInvalidParameter(
-			"values", new(ErrTooManyValues),
+			"values", fmt.Errorf("number of values (%d) exceeds the provided capacity (%d)",
+				len(values), capacity),
 		)
 	}
 
@@ -92,7 +93,9 @@ func NewLimitedLinkedStack[T any](capacity int, values ...*T) (*LimitedLinkedSta
 // new element.
 func (stack *LimitedLinkedStack[T]) Push(value *T) {
 	if stack.size >= stack.capacity {
-		panic(new(ErrFullStack))
+		panic(ers.NewErrOperationFailed(
+			"push", NewErrFullStack(stack),
+		))
 	}
 
 	stack_node := linkedNode[T]{
@@ -110,7 +113,9 @@ func (stack *LimitedLinkedStack[T]) Push(value *T) {
 
 func (stack *LimitedLinkedStack[T]) Pop() *T {
 	if stack.front == nil {
-		panic(NewErrEmptyStack(Pop))
+		panic(ers.NewErrOperationFailed(
+			"pop", NewErrEmptyStack(stack),
+		))
 	}
 
 	var value *T
@@ -124,7 +129,9 @@ func (stack *LimitedLinkedStack[T]) Pop() *T {
 
 func (stack *LimitedLinkedStack[T]) Peek() *T {
 	if stack.front == nil {
-		panic(NewErrEmptyStack(Peek))
+		panic(ers.NewErrOperationFailed(
+			"pop", NewErrEmptyStack(stack),
+		))
 	}
 
 	return stack.front.value
@@ -160,17 +167,20 @@ func (stack *LimitedLinkedStack[T]) IsFull() bool {
 }
 
 func (stack *LimitedLinkedStack[T]) String() string {
-	if stack.front == nil {
-		return StackHead
-	}
-
 	var builder strings.Builder
 
-	fmt.Fprintf(&builder, "%s%v", StackHead, stack.front.value)
+	fmt.Fprintf(&builder, "LimitedLinkedStack[size=%d, capacity=%d, values=[",
+		stack.size, stack.capacity)
 
-	for stack_node := stack.front.next; stack_node != nil; stack_node = stack_node.next {
-		fmt.Fprintf(&builder, "%s%v", StackSep, stack_node.value)
+	if stack.front != nil {
+		fmt.Fprintf(&builder, "%v", stack.front.value)
+
+		for stack_node := stack.front.next; stack_node != nil; stack_node = stack_node.next {
+			fmt.Fprintf(&builder, ", %v", stack_node.value)
+		}
 	}
+
+	fmt.Fprintf(&builder, "→]]")
 
 	return builder.String()
 }

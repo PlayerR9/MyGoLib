@@ -1,8 +1,10 @@
-package Queue
+package ListLike
 
 import (
 	"fmt"
 	"strings"
+
+	ers "github.com/PlayerR9/MyGoLib/Utility/Errors"
 )
 
 // LinkedQueue is a generic type in Go that represents a queue data structure implemented
@@ -73,7 +75,9 @@ func (queue *LinkedQueue[T]) Enqueue(value *T) {
 
 func (queue *LinkedQueue[T]) Dequeue() *T {
 	if queue.front == nil {
-		panic(NewErrEmptyQueue(Dequeue))
+		panic(ers.NewErrOperationFailed(
+			"dequeue", NewErrEmptyQueue(queue),
+		))
 	}
 
 	var value *T
@@ -90,7 +94,9 @@ func (queue *LinkedQueue[T]) Dequeue() *T {
 
 func (queue *LinkedQueue[T]) Peek() *T {
 	if queue.front == nil {
-		panic(NewErrEmptyQueue(Peek))
+		panic(ers.NewErrOperationFailed(
+			"peek", NewErrEmptyQueue(queue),
+		))
 	}
 
 	return queue.front.value
@@ -125,17 +131,19 @@ func (queue *LinkedQueue[T]) IsFull() bool {
 }
 
 func (queue *LinkedQueue[T]) String() string {
-	if queue.front == nil {
-		return QueueHead
-	}
-
 	var builder strings.Builder
 
-	fmt.Fprintf(&builder, "%s%v", QueueHead, queue.front.value)
+	fmt.Fprintf(&builder, "LinkedQueue[size=%d, values=[← ", queue.size)
 
-	for node := queue.front.next; node != nil; node = node.next {
-		fmt.Fprintf(&builder, "%s%v", QueueSep, node.value)
+	if queue.front != nil {
+		fmt.Fprintf(&builder, "%v", *queue.front.value)
+
+		for node := queue.front.next; node != nil; node = node.next {
+			fmt.Fprintf(&builder, ", %v", *node.value)
+		}
 	}
+
+	fmt.Fprintf(&builder, "]]")
 
 	return builder.String()
 }

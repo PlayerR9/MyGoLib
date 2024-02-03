@@ -1,4 +1,4 @@
-package Queue
+package ListLike
 
 import (
 	"fmt"
@@ -38,11 +38,12 @@ type LimitedLinkedQueue[T any] struct {
 func NewLimitedLinkedQueue[T any](capacity int, values ...*T) (*LimitedLinkedQueue[T], error) {
 	if capacity < 0 {
 		return nil, ers.NewErrInvalidParameter(
-			"capacity", new(ErrNegativeCapacity),
+			"capacity", fmt.Errorf("negative capacity (%d) is not allowed", capacity),
 		)
 	} else if len(values) > capacity {
 		return nil, ers.NewErrInvalidParameter(
-			"values", new(ErrTooManyValues),
+			"values", fmt.Errorf("number of values (%d) exceeds the provided capacity (%d)",
+				len(values), capacity),
 		)
 	}
 
@@ -93,7 +94,9 @@ func NewLimitedLinkedQueue[T any](capacity int, values ...*T) (*LimitedLinkedQue
 // new element.
 func (queue *LimitedLinkedQueue[T]) Enqueue(value *T) {
 	if queue.size >= queue.capacity {
-		panic(new(ErrFullQueue))
+		panic(ers.NewErrOperationFailed(
+			"enqueue", NewErrFullQueue(queue),
+		))
 	}
 
 	queue_node := linkedNode[T]{
@@ -113,7 +116,9 @@ func (queue *LimitedLinkedQueue[T]) Enqueue(value *T) {
 
 func (queue *LimitedLinkedQueue[T]) Dequeue() *T {
 	if queue.front == nil {
-		panic(NewErrEmptyQueue(Dequeue))
+		panic(ers.NewErrOperationFailed(
+			"dequeue", NewErrEmptyQueue(queue),
+		))
 	}
 
 	var value *T
@@ -130,7 +135,9 @@ func (queue *LimitedLinkedQueue[T]) Dequeue() *T {
 
 func (queue *LimitedLinkedQueue[T]) Peek() *T {
 	if queue.front == nil {
-		panic(NewErrEmptyQueue(Peek))
+		panic(ers.NewErrOperationFailed(
+			"peek", NewErrEmptyQueue(queue),
+		))
 	}
 
 	return queue.front.value
@@ -165,17 +172,19 @@ func (queue *LimitedLinkedQueue[T]) IsFull() bool {
 }
 
 func (queue *LimitedLinkedQueue[T]) String() string {
-	if queue.front == nil {
-		return QueueHead
-	}
-
 	var builder strings.Builder
 
-	fmt.Fprintf(&builder, "%s%v", QueueHead, queue.front.value)
+	fmt.Fprintf(&builder, "LimitedLinkedQueue[size=%d, capacity=%d, values=[← ", queue.size, queue.capacity)
 
-	for queue_node := queue.front.next; queue_node != nil; queue_node = queue_node.next {
-		fmt.Fprintf(&builder, "%s%v", QueueSep, queue_node.value)
+	if queue.front != nil {
+		fmt.Fprintf(&builder, "%v", queue.front.value)
+
+		for queue_node := queue.front.next; queue_node != nil; queue_node = queue_node.next {
+			fmt.Fprintf(&builder, ", %v", queue_node.value)
+		}
 	}
+
+	fmt.Fprintf(&builder, "]]")
 
 	return builder.String()
 }

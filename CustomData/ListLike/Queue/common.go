@@ -1,24 +1,13 @@
-package Queue
+package ListLike
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
 
-// QueueHead and QueueSep are constants used in the String() method of the Queuer interface
-// to format the string representation of a queue.
-const (
-	// QueueHead is a string constant that represents the start of the queue. It is used to
-	// indicate where elements are removed from the queue.
-	// The value of QueueHead is "← | ", which visually indicates the direction of element
-	// removal.
-	QueueHead string = "← | "
-
-	// QueueSep is a string constant that is used as a separator between elements in the string
-	// representation of the queue.
-	// The value of QueueSep is " | ", which provides a clear visual separation between individual
-	// elements in the queue.
-	QueueSep string = " | "
+	ers "github.com/PlayerR9/MyGoLib/Utility/Errors"
 )
 
-// Package queue provides a Queuer interface that defines methods for a queue data structure.
+// Package ListLike provides a Queuer interface that defines methods for a queue data structure.
 //
 // Queuer is an interface that defines methods for a queue data structure.
 // It includes methods to add and remove elements, check if the queue is empty or full,
@@ -108,7 +97,9 @@ func NewQueueIterator[T any](queue Queuer[T]) *QueueIterator[T] {
 // This method is typically used in a loop to iterate over all the elements in a queue.
 func (iterator *QueueIterator[T]) GetNext() *T {
 	if len(iterator.values) <= iterator.currentIndex {
-		panic(new(ErrOutOfBoundsIterator))
+		panic(ers.NewErrOperationFailed(
+			"get next element", errors.New("iterator is out of bounds")),
+		)
 	}
 
 	value := iterator.values[iterator.currentIndex]

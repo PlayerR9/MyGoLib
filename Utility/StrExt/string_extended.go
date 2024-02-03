@@ -665,8 +665,9 @@ func SplitSentenceIntoFields(sentence string, indentLevel int) ([][]string, erro
 	}
 
 	if indentLevel < 0 {
-		return nil, ers.NewErrInvalidParameter("indentLevel").
-			WithReason(errors.New("indent level cannot be negative"))
+		return nil, ers.NewErrInvalidParameter(
+			"indentLevel", errors.New("indent level cannot be negative"),
+		)
 	}
 
 	lines := make([][]string, 0)

@@ -4,19 +4,19 @@ import (
 	"fmt"
 	"sync"
 
-	q "github.com/PlayerR9/MyGoLib/CustomData/Queue"
+	Queue "github.com/PlayerR9/MyGoLib/CustomData/ListLike/Queue"
 
 	ers "github.com/PlayerR9/MyGoLib/Utility/Errors"
 )
 
 // Buffer is a thread-safe, generic data structure that allows multiple
 // goroutines to produce and consume elements in a synchronized manner.
-// It is implemented as a queue and uses channels to synchronize the
+// It is implemented as a q and uses channels to synchronize the
 // goroutines.
 // The Buffer should be initialized with the Init method before use.
 type Buffer[T any] struct {
 	// A pointer to the RWSafeQueue that stores the elements of the Buffer.
-	queue *q.SafeQueue[T]
+	q *Queue.SafeQueue[T]
 
 	// A send-only channel of type T. Messages from the Buffer are sent to this channel.
 	sendTo chan *T
@@ -73,7 +73,7 @@ func (b *Buffer[T]) Init(bufferSize int) (chan<- *T, <-chan *T) {
 	}
 
 	b.once.Do(func() {
-		b.queue = q.NewSafeQueue[T]()
+		b.q = Queue.NewSafeQueue[T]()
 		b.sendTo = make(chan *T, bufferSize)
 		b.receiveFrom = make(chan *T, bufferSize)
 		b.isClosed = false
@@ -106,7 +106,7 @@ func (b *Buffer[T]) listenForIncomingMessages() {
 	defer b.wg.Done()
 
 	for msg := range b.receiveFrom {
-		b.queue.Enqueue(msg)
+		b.q.Enqueue(msg)
 
 		b.isNotEmptyOrClosed.Signal()
 	}
@@ -138,21 +138,21 @@ func (b *Buffer[T]) sendMessagesFromBuffer() {
 
 	for isClosed := false; !isClosed; {
 		b.isNotEmptyOrClosed.L.Lock()
-		for b.queue.IsEmpty() && !b.isClosed {
+		for b.q.IsEmpty() && !b.isClosed {
 			b.isNotEmptyOrClosed.Wait()
 		}
 
 		if b.isClosed {
 			isClosed = true
 		} else {
-			b.sendTo <- b.queue.Dequeue()
+			b.sendTo <- b.q.Dequeue()
 		}
 
 		b.isNotEmptyOrClosed.L.Unlock()
 	}
 
-	for !b.queue.IsEmpty() {
-		b.sendTo <- b.queue.Dequeue()
+	for !b.q.IsEmpty() {
+		b.sendTo <- b.q.Dequeue()
 	}
 
 	close(b.sendTo)
@@ -170,7 +170,7 @@ func (b *Buffer[T]) sendMessagesFromBuffer() {
 //
 // If the Buffer is already empty, this method does nothing.
 func (b *Buffer[T]) CleanBuffer() {
-	b.queue.Clear()
+	b.q.Clear()
 }
 
 // Wait is a method of the Buffer type.
