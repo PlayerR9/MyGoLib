@@ -30,18 +30,18 @@ type LimitedArrayList[T any] struct {
 // LimitedArrayList, initializes its values field with a slice
 // of the same length as the input values and the provided capacity, and then copies the
 // input values into the new slice. The new LimitedArrayList is then returned.
-func NewLimitedArrayList[T any](capacity int, values ...*T) (*LimitedArrayList[T], error) {
+func NewLimitedArrayList[T any](capacity int, values ...*T) *LimitedArrayList[T] {
 	if capacity < 0 {
-		return nil, ers.NewErrInvalidParameter(
+		panic(ers.NewErrInvalidParameter(
 			"capacity", fmt.Errorf("negative capacity (%d) is not allowed", capacity),
-		)
+		))
 	} else if len(values) > capacity {
-		return nil, ers.NewErrInvalidParameter(
+		panic(ers.NewErrInvalidParameter(
 			"values", fmt.Errorf("number of values (%d) exceeds the provided capacity (%d)",
 				len(values),
 				capacity,
 			),
-		)
+		))
 	}
 
 	list := &LimitedArrayList[T]{
@@ -49,7 +49,7 @@ func NewLimitedArrayList[T any](capacity int, values ...*T) (*LimitedArrayList[T
 	}
 	copy(list.values, values)
 
-	return list, nil
+	return list
 }
 
 // Append is a method of the LimitedArrayList type. It is used to add an element to the

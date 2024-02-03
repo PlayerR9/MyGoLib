@@ -67,13 +67,38 @@ func (e *ErrClosingTokenEmpty) Error() string {
 // opening token is not found in the content.
 // It does not have any fields as the error condition is solely based
 // on the absence of an opening token in the content.
-type ErrOpeningTokenNotFound struct{}
+type ErrOpeningTokenNotFound struct {
+	token string
+}
 
 // Error is a method of the ErrOpeningTokenNotFound type that implements
 // the error interface. It returns a string representation of the error,
 // that is, the string "opening token not found in content".
 func (e *ErrOpeningTokenNotFound) Error() string {
-	return "opening token not found in content"
+	return fmt.Sprintf("opening token (%s) not found in content", e.token)
+}
+
+// ErrClosingTokenNotFound is a struct that represents an error when a
+// closing token is not found in the content.
+// It does not have any fields as the error condition is solely based
+// on the absence of a closing token in the content.
+type ErrClosingTokenNotFound struct {
+	token string
+}
+
+// Error is a method of the ErrClosingTokenNotFound type that implements
+// the error interface. It returns a string representation of the error,
+// that is, the string "closing token not found in content".
+func (e *ErrClosingTokenNotFound) Error() string {
+	return fmt.Sprintf("closing token (%s) not found in content", e.token)
+}
+
+type ErrNeverOpened struct {
+	openingToken, closingToken string
+}
+
+func (e *ErrNeverOpened) Error() string {
+	return fmt.Sprintf("closing token (%s) found without a corresponding opening token (%s)", e.closingToken, e.openingToken)
 }
 
 // ErrEmptyText represents an error when a text input is empty.

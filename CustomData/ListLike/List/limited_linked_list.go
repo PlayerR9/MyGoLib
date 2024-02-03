@@ -35,16 +35,16 @@ type LimitedLinkedList[T any] struct {
 // It then creates a linked list of nodes from the initial values, with each node
 // holding one value, and sets the front and back pointers of the list.
 // The new LimitedLinkedList is then returned.
-func NewLimitedLinkedList[T any](capacity int, values ...*T) (*LimitedLinkedList[T], error) {
+func NewLimitedLinkedList[T any](capacity int, values ...*T) *LimitedLinkedList[T] {
 	if capacity < 0 {
-		return nil, ers.NewErrInvalidParameter(
+		panic(ers.NewErrInvalidParameter(
 			"capacity", fmt.Errorf("negative capacity (%d) is not allowed", capacity),
-		)
+		))
 	} else if len(values) > capacity {
-		return nil, ers.NewErrInvalidParameter(
+		panic(ers.NewErrInvalidParameter(
 			"values", fmt.Errorf("number of values (%d) exceeds the provided capacity (%d)",
 				len(values), capacity),
-		)
+		))
 	}
 
 	list := new(LimitedLinkedList[T])
@@ -70,7 +70,7 @@ func NewLimitedLinkedList[T any](capacity int, values ...*T) (*LimitedLinkedList
 		list.back = list_node
 	}
 
-	return list, nil
+	return list
 }
 
 // Append is a method of the LimitedLinkedList type. It is used to add an element to

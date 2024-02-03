@@ -8,9 +8,9 @@ import (
 	ers "github.com/PlayerR9/MyGoLib/Utility/Errors"
 )
 
-// SafeQueue is a generic type in Go that represents a thread-safe queue data
+// LimitedSafeQueue is a generic type in Go that represents a thread-safe queue data
 // structure implemented using a linked list.
-type SafeQueue[T any] struct {
+type LimitedSafeQueue[T any] struct {
 	// front and back are pointers to the first and last nodes in the safe queue,
 	// respectively.
 	front, back *linkedNode[T]
@@ -21,25 +21,39 @@ type SafeQueue[T any] struct {
 
 	// size is the current number of elements in the queue.
 	size int
+
+	// capacity is the maximum number of elements that the queue can hold.
+	capacity int
 }
 
-// NewSafeQueue is a function that creates and returns a new instance of a SafeQueue.
+// NewLimitedSafeQueue is a function that creates and returns a new instance of a LimitedSafeQueue.
 // It takes a variadic parameter of type T, which represents the initial values to be
 // stored in the queue.
 //
-// If no initial values are provided, the function simply returns a new SafeQueue with
+// If no initial values are provided, the function simply returns a new LimitedSafeQueue with
 // all its fields set to their zero values.
 //
-// If initial values are provided, the function creates a new SafeQueue and initializes
+// If initial values are provided, the function creates a new LimitedSafeQueue and initializes
 // its size. It then creates a linked list of safeNodes from the initial values, with
 // each node holding one value, and sets the front and back pointers of the queue.
-// The new SafeQueue is then returned.
-func NewSafeQueue[T any](values ...*T) *SafeQueue[T] {
-	if len(values) == 0 {
-		return new(SafeQueue[T])
+// The new LimitedSafeQueue is then returned.
+func NewLimitedSafeQueue[T any](capacity int, values ...*T) *LimitedSafeQueue[T] {
+	if capacity < 0 {
+		panic(ers.NewErrInvalidParameter(
+			"capacity", fmt.Errorf("negative capacity (%d) is not allowed", capacity),
+		))
+	} else if len(values) > capacity {
+		panic(ers.NewErrInvalidParameter(
+			"values", fmt.Errorf("number of values (%d) exceeds the provided capacity (%d)",
+				len(values), capacity),
+		))
 	}
 
-	queue := new(SafeQueue[T])
+	if len(values) == 0 {
+		return new(LimitedSafeQueue[T])
+	}
+
+	queue := new(LimitedSafeQueue[T])
 	queue.size = len(values)
 
 	// First node
@@ -59,9 +73,15 @@ func NewSafeQueue[T any](values ...*T) *SafeQueue[T] {
 	return queue
 }
 
-func (queue *SafeQueue[T]) Enqueue(value *T) {
+func (queue *LimitedSafeQueue[T]) Enqueue(value *T) {
 	queue.backMutex.Lock()
 	defer queue.backMutex.Unlock()
+
+	if queue.size == queue.capacity {
+		panic(ers.NewErrOperationFailed(
+			"enqueue element", NewErrFullQueue(queue),
+		))
+	}
 
 	node := &linkedNode[T]{value: value}
 
@@ -77,7 +97,7 @@ func (queue *SafeQueue[T]) Enqueue(value *T) {
 	queue.size++
 }
 
-func (queue *SafeQueue[T]) Dequeue() *T {
+func (queue *LimitedSafeQueue[T]) Dequeue() *T {
 	queue.frontMutex.Lock()
 	defer queue.frontMutex.Unlock()
 
@@ -104,7 +124,7 @@ func (queue *SafeQueue[T]) Dequeue() *T {
 	return value
 }
 
-func (queue *SafeQueue[T]) Peek() *T {
+func (queue *LimitedSafeQueue[T]) Peek() *T {
 	queue.frontMutex.RLock()
 	defer queue.frontMutex.RUnlock()
 
@@ -117,14 +137,14 @@ func (queue *SafeQueue[T]) Peek() *T {
 	return queue.front.value
 }
 
-func (queue *SafeQueue[T]) IsEmpty() bool {
+func (queue *LimitedSafeQueue[T]) IsEmpty() bool {
 	queue.frontMutex.RLock()
 	defer queue.frontMutex.RUnlock()
 
 	return queue.front == nil
 }
 
-func (queue *SafeQueue[T]) Size() int {
+func (queue *LimitedSafeQueue[T]) Size() int {
 	queue.frontMutex.RLock()
 	defer queue.frontMutex.RUnlock()
 
@@ -134,7 +154,7 @@ func (queue *SafeQueue[T]) Size() int {
 	return queue.size
 }
 
-func (queue *SafeQueue[T]) ToSlice() []*T {
+func (queue *LimitedSafeQueue[T]) ToSlice() []*T {
 	queue.frontMutex.RLock()
 	defer queue.frontMutex.RUnlock()
 
@@ -150,7 +170,7 @@ func (queue *SafeQueue[T]) ToSlice() []*T {
 	return slice
 }
 
-func (queue *SafeQueue[T]) Clear() {
+func (queue *LimitedSafeQueue[T]) Clear() {
 	queue.frontMutex.Lock()
 	defer queue.frontMutex.Unlock()
 
@@ -177,11 +197,14 @@ func (queue *SafeQueue[T]) Clear() {
 	queue.size = 0
 }
 
-func (queue *SafeQueue[T]) IsFull() bool {
-	return false
+func (queue *LimitedSafeQueue[T]) IsFull() bool {
+	queue.backMutex.RLock()
+	defer queue.backMutex.RUnlock()
+
+	return queue.size >= queue.capacity
 }
 
-func (queue *SafeQueue[T]) String() string {
+func (queue *LimitedSafeQueue[T]) String() string {
 	queue.frontMutex.RLock()
 	defer queue.frontMutex.RUnlock()
 
@@ -190,7 +213,7 @@ func (queue *SafeQueue[T]) String() string {
 
 	var builder strings.Builder
 
-	fmt.Fprintf(&builder, "SafeQueue[size=%d, values=[← ", queue.size)
+	fmt.Fprintf(&builder, "LimitedSafeQueue[size=%d, capacity=%d, values=[← ", queue.capacity, queue.size)
 
 	if !queue.IsEmpty() {
 		fmt.Fprintf(&builder, "%v", queue.front.value)

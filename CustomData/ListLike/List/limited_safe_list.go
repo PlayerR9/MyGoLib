@@ -8,9 +8,9 @@ import (
 	ers "github.com/PlayerR9/MyGoLib/Utility/Errors"
 )
 
-// SafeList is a generic type in Go that represents a thread-safe list data
+// LimitedSafeList is a generic type in Go that represents a thread-safe list data
 // structure implemented using a linked list.
-type SafeList[T any] struct {
+type LimitedSafeList[T any] struct {
 	// front and back are pointers to the first and last nodes in the safe list,
 	// respectively.
 	front, back *linkedNode[T]
@@ -21,25 +21,39 @@ type SafeList[T any] struct {
 
 	// size is the current number of elements in the list.
 	size int
+
+	// capacity is the maximum number of elements that the list can hold.
+	capacity int
 }
 
-// NewSafeList is a function that creates and returns a new instance of a SafeList.
+// NewLimitedSafeList is a function that creates and returns a new instance of a LimitedSafeList.
 // It takes a variadic parameter of type T, which represents the initial values to be
 // stored in the list.
 //
-// If no initial values are provided, the function simply returns a new SafeList with
+// If no initial values are provided, the function simply returns a new LimitedSafeList with
 // all its fields set to their zero values.
 //
-// If initial values are provided, the function creates a new SafeList and initializes
+// If initial values are provided, the function creates a new LimitedSafeList and initializes
 // its size. It then creates a linked list of linkedNodes from the initial values, with
 // each node holding one value, and sets the front and back pointers of the list.
-// The new SafeList is then returned.
-func NewSafeList[T any](values ...*T) *SafeList[T] {
-	if len(values) == 0 {
-		return new(SafeList[T])
+// The new LimitedSafeList is then returned.
+func NewLimitedSafeList[T any](capacity int, values ...*T) *LimitedSafeList[T] {
+	if capacity <= 0 {
+		panic(ers.NewErrInvalidParameter(
+			"capacity", fmt.Errorf("negative capacity (%d) is not allowed", capacity),
+		))
+	} else if len(values) > capacity {
+		panic(ers.NewErrInvalidParameter(
+			"values", fmt.Errorf("number of values (%d) exceeds the provided capacity (%d)",
+				len(values), capacity),
+		))
 	}
 
-	list := new(SafeList[T])
+	if len(values) == 0 {
+		return new(LimitedSafeList[T])
+	}
+
+	list := new(LimitedSafeList[T])
 	list.size = len(values)
 
 	// First node
@@ -62,11 +76,22 @@ func NewSafeList[T any](values ...*T) *SafeList[T] {
 	return list
 }
 
-func (list *SafeList[T]) Append(value *T) {
-	node := &linkedNode[T]{value: value}
-
+func (list *LimitedSafeList[T]) Append(value *T) {
 	list.backMutex.Lock()
 	defer list.backMutex.Unlock()
+
+	list.frontMutex.RLock()
+	if list.size >= list.capacity {
+		list.frontMutex.RUnlock()
+
+		panic(ers.NewErrOperationFailed(
+			"append element", NewErrFullList(list),
+		))
+	} else {
+		list.frontMutex.RUnlock()
+	}
+
+	node := &linkedNode[T]{value: value}
 
 	if list.back != nil {
 		list.back.next = node
@@ -83,13 +108,14 @@ func (list *SafeList[T]) Append(value *T) {
 	list.size++
 }
 
-func (list *SafeList[T]) DeleteFirst() *T {
+func (list *LimitedSafeList[T]) DeleteFirst() *T {
 	list.frontMutex.Lock()
 	defer list.frontMutex.Unlock()
 
 	list.backMutex.Lock()
 	if list.front == nil {
 		list.backMutex.Unlock()
+
 		panic(ers.NewErrOperationFailed(
 			"delete first element", NewErrEmptyList(list),
 		))
@@ -114,7 +140,7 @@ func (list *SafeList[T]) DeleteFirst() *T {
 	return value
 }
 
-func (list *SafeList[T]) PeekFirst() *T {
+func (list *LimitedSafeList[T]) PeekFirst() *T {
 	list.frontMutex.RLock()
 	defer list.frontMutex.RUnlock()
 
@@ -127,14 +153,14 @@ func (list *SafeList[T]) PeekFirst() *T {
 	return list.front.value
 }
 
-func (list *SafeList[T]) IsEmpty() bool {
+func (list *LimitedSafeList[T]) IsEmpty() bool {
 	list.frontMutex.RLock()
 	defer list.frontMutex.RUnlock()
 
 	return list.front == nil
 }
 
-func (list *SafeList[T]) Size() int {
+func (list *LimitedSafeList[T]) Size() int {
 	// Lock the front and back nodes to ensure that
 	// edit operations are not performed while the size is being read.
 	list.frontMutex.RLock()
@@ -146,7 +172,7 @@ func (list *SafeList[T]) Size() int {
 	return list.size
 }
 
-func (list *SafeList[T]) ToSlice() []*T {
+func (list *LimitedSafeList[T]) ToSlice() []*T {
 	// Lock everything to ensure that no other goroutine can modify the list while
 	// it is being converted to a slice.
 	list.frontMutex.RLock()
@@ -165,7 +191,7 @@ func (list *SafeList[T]) ToSlice() []*T {
 	return slice
 }
 
-func (list *SafeList[T]) Clear() {
+func (list *LimitedSafeList[T]) Clear() {
 	// Lock everything to ensure that no other goroutine can modify the list while
 	// it is being cleared.
 	list.frontMutex.RLock()
@@ -195,11 +221,17 @@ func (list *SafeList[T]) Clear() {
 	list.size = 0
 }
 
-func (list *SafeList[T]) IsFull() bool {
-	return false
+func (list *LimitedSafeList[T]) IsFull() bool {
+	list.frontMutex.RLock()
+	defer list.frontMutex.RUnlock()
+
+	list.backMutex.RLock()
+	defer list.backMutex.RUnlock()
+
+	return list.size >= list.capacity
 }
 
-func (list *SafeList[T]) String() string {
+func (list *LimitedSafeList[T]) String() string {
 	list.frontMutex.RLock()
 	defer list.frontMutex.RUnlock()
 	list.backMutex.RLock()
@@ -207,7 +239,7 @@ func (list *SafeList[T]) String() string {
 
 	var builder strings.Builder
 
-	fmt.Fprintf(&builder, "SafeList[size=%d, values=[", list.size)
+	fmt.Fprintf(&builder, "LimitedSafeList[size=%d, capacity=%d, values=[", list.size, list.capacity)
 
 	if list.front != nil {
 		fmt.Fprintf(&builder, "%v", *list.front.value)
@@ -223,9 +255,20 @@ func (list *SafeList[T]) String() string {
 }
 
 // The Prepend method adds a value of type T to the end of the list.
-func (list *SafeList[T]) Prepend(value *T) {
+func (list *LimitedSafeList[T]) Prepend(value *T) {
 	list.frontMutex.Lock()
 	defer list.frontMutex.Unlock()
+
+	list.backMutex.RLock()
+	if list.size >= list.capacity {
+		list.backMutex.RUnlock()
+
+		panic(ers.NewErrOperationFailed(
+			"prepend element", NewErrFullList(list),
+		))
+	} else {
+		list.backMutex.RUnlock()
+	}
 
 	node := &linkedNode[T]{value: value}
 
@@ -247,7 +290,7 @@ func (list *SafeList[T]) Prepend(value *T) {
 // The DeleteLast method is a convenience method that deletelasts an element from the list
 // and returns it.
 // If the list is empty, it will panic.
-func (list *SafeList[T]) DeleteLast() *T {
+func (list *LimitedSafeList[T]) DeleteLast() *T {
 	list.backMutex.Lock()
 	defer list.backMutex.Unlock()
 
@@ -278,7 +321,7 @@ func (list *SafeList[T]) DeleteLast() *T {
 // PeekLast is a method that returns the value at the front of the list without removing
 // it.
 // If the list is empty, it will panic.
-func (list *SafeList[T]) PeekLast() *T {
+func (list *LimitedSafeList[T]) PeekLast() *T {
 	list.backMutex.RLock()
 	defer list.backMutex.RUnlock()
 

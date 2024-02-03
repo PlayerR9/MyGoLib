@@ -275,11 +275,62 @@ func RecoverFromPanic(err *error) {
 //
 //	Check(n <= 0, ...)
 //	Check(err, ...)
-func Check(val any, err error) {
-	zero := reflect.Zero(reflect.TypeOf(val)).Interface()
-	if reflect.DeepEqual(val, zero) {
-		panic(err)
+func Check(toCheck any, override error) {
+	rf := reflect.TypeOf(toCheck)
+
+	if !reflect.DeepEqual(toCheck, reflect.Zero(rf).Interface()) {
+		return
 	}
+
+	if override != nil {
+		panic(override)
+	}
+
+	var reason error
+
+	switch rf.Kind() {
+	case reflect.Bool:
+		reason = errors.New("condition evaluates to false")
+	case reflect.String:
+		reason = errors.New("value is an empty string")
+	case reflect.Ptr:
+		reason = fmt.Errorf("value %T found to be nil", toCheck)
+	default:
+		val, ok := toCheck.(error)
+		if ok {
+			reason = val
+		} else {
+			reason = fmt.Errorf("value (%T) is the zero value of its type", toCheck)
+		}
+	}
+
+	panic(NewErrCallFailed("Check", Check, reason))
+}
+
+func CheckFunc[P, R any](val P, f func(P) (R, error), override error) R {
+	result, err := f(val)
+	if err == nil {
+		return result
+	}
+
+	if override != nil {
+		panic(override)
+	}
+
+	panic(err)
+}
+
+func CheckPred[P, R any](val P, f func(P) (R, bool), override error) R {
+	result, ok := f(val)
+	if ok {
+		return result
+	}
+
+	if override != nil {
+		panic(override)
+	}
+
+	panic(NewErrCallFailed("CheckPred", CheckPred[P, R], errors.New("predicate evaluates to false")))
 }
 
 type ErrOperationFailed struct {

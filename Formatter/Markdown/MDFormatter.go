@@ -2,6 +2,9 @@ package Markdown
 
 import (
 	"fmt"
+	"strings"
+
+	ers "github.com/PlayerR9/MyGoLib/Utility/Errors"
 )
 
 type TableAllignmentType int
@@ -32,30 +35,30 @@ type Header struct {
 }
 
 type Table struct {
-	headers []*Header
+	headers []Header
 	rows    [][]string
 }
 
 func NewTable() *Table {
 	return &Table{
-		headers: make([]*Header, 0),
+		headers: make([]Header, 0),
 		rows:    make([][]string, 0),
 	}
 }
 
-func (t *Table) WithHeader(header *Header) *Table {
+func (t *Table) WithHeader(header Header) *Table {
 	t.AppendHeader(header)
 
 	return t
 }
 
-func (t *Table) AppendHeader(header *Header) {
+func (t *Table) AppendHeader(header Header) error {
 	t.headers = append(t.headers, header)
 
 	if !PedanticMode {
 		for i, row := range t.rows {
 			if len(row) < len(t.headers) {
-				panic(fmt.Sprintf("row %d has less elements than the number of headers", i))
+				return fmt.Errorf("row %d has less elements than the number of headers", i)
 			}
 		}
 	} else {
@@ -69,41 +72,54 @@ func (t *Table) AppendHeader(header *Header) {
 			}
 		}
 	}
-}
-
-func (t *Table) AddRow(elements []string) error {
-	if len(elements) != len(t.headers) {
-		return fmt.Errorf("number of elements does not match number of headers")
-	}
-
-	t.rows = append(t.rows, elements)
 
 	return nil
 }
 
-func (t Table) ToText() []string {
-	var text []string
+func (t *Table) CanAddRow(elements []string) bool {
+	return len(elements) == len(t.headers)
+}
 
-	appendRow := func(row []string) {
-		text = append(text, tokPipe)
-		for _, element := range row {
-			text = append(text, element, tokPipe)
-		}
-		text = append(text, tokNewLine)
+func (t *Table) AddRow(elements []string) {
+	if len(elements) == len(t.headers) {
+		t.rows = append(t.rows, elements)
+		return
 	}
 
-	headerTexts := make([]string, len(t.headers))
-	headerStyles := make([]string, len(t.headers))
-	for i, header := range t.headers {
-		headerTexts[i] = header.Text
-		headerStyles[i] = header.Style.String()
+	panic(ers.NewErrInvalidParameter(
+		"elements", fmt.Errorf("number of elements (%d) does not match number of headers (%d)",
+			len(elements), len(t.headers)),
+	))
+}
+
+func rowToString[T any](row []T, f func(T) string) string {
+	var builder strings.Builder
+
+	builder.WriteString(tokPipe)
+
+	for _, element := range row {
+		fmt.Fprintf(&builder, "%s%s", f(element), tokPipe)
 	}
 
-	appendRow(headerTexts)
-	appendRow(headerStyles)
+	builder.WriteString(tokNewLine)
+
+	return builder.String()
+}
+
+func (t *Table) ToText() []string {
+	text := make([]string, 0, 2*len(t.headers)+len(t.rows)+1)
+
+	text = append(text, rowToString[Header](t.headers, func(h Header) string {
+		return h.Text
+	}))
+	text = append(text, rowToString[Header](t.headers, func(h Header) string {
+		return h.Style.String()
+	}))
 
 	for _, row := range t.rows {
-		appendRow(row)
+		text = append(text, rowToString(row, func(s string) string {
+			return s
+		}))
 	}
 
 	return text

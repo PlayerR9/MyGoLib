@@ -11,7 +11,14 @@ import (
 	"strings"
 
 	"golang.org/x/exp/slices"
+
+	ers "github.com/PlayerR9/MyGoLib/Utility/Errors"
 )
+
+func FileExists(filePath string) (bool, error) {
+	_, err := os.Stat(filePath)
+	return !os.IsNotExist(err), err
+}
 
 // MediaDownloader downloads a file from the given URL and saves it
 // to the specified destination.
@@ -35,48 +42,37 @@ import (
 //	    log.Fatal(err)
 //	}
 //	fmt.Println(file_path) // Output: /path/to/destination/file.mp3
-func MediaDownloader(dest, url string) (string, error) {
+func MediaDownloader(dest, url string) (filePath string, err error) {
+	defer ers.RecoverFromPanic(&err)
+
 	// Extract the name of the file from the URL
 	fields := strings.Split(url, "/")
-	file_path := path.Join(dest, fields[len(fields)-1])
+	filePath = path.Join(dest, fields[len(fields)-1])
 
-	// Check if the file already exists
-	_, err := os.Stat(file_path)
-	if err == nil {
-		return file_path, nil
-	} else if !os.IsNotExist(err) {
-		return "", err
+	if ers.CheckFunc(filePath, FileExists, nil) {
+		return // Do nothing
 	}
 
-	// Check if the file exists on the server
-	resp, err := http.Head(url)
-	if err != nil {
-		return "", err
-	} else if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("failed to download the file: %s", resp.Status)
+	invalidResponseFunc := func(url string) (bool, error) {
+		resp, err := http.Head(url)
+		return resp.StatusCode != http.StatusOK, err
 	}
 
-	// Download the file
-	resp, err = http.Get(url)
-	if err != nil {
-		return "", err
+	if ers.CheckFunc(url, invalidResponseFunc, nil) {
+		panic(fmt.Errorf("file does not exist on the server: %s", url))
 	}
+
+	resp := ers.CheckFunc(url, http.Get, nil)
 	defer resp.Body.Close()
 
-	// Create the file
-	file, err := os.Create(file_path)
-	if err != nil {
-		return "", err
-	}
+	file := ers.CheckFunc(filePath, os.Create, nil)
 	defer file.Close()
 
-	// Copy the data to the file
-	_, err = io.Copy(file, resp.Body)
-	if err != nil {
-		return "", err
-	}
+	ers.CheckFunc(file, func(file *os.File) (int64, error) {
+		return io.Copy(file, resp.Body)
+	}, nil)
 
-	return file_path, nil
+	return
 }
 
 // ReadWholeFileLineByLine reads a file from the provided path line by line and returns a slice of strings,

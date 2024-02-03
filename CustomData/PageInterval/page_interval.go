@@ -1,11 +1,14 @@
 package PageInterval
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"slices"
 	"sort"
 	"strings"
+
+	ers "github.com/PlayerR9/MyGoLib/Utility/Errors"
 )
 
 // PageInterval represents a collection of page intervals, where each
@@ -154,59 +157,7 @@ func (pi *PageInterval) HasPages() bool {
 	return pi.pageCount > 0
 }
 
-// GetFirstPage returns the first page of the PageInterval.
-// It returns the page number and an error if no pages have been set.
-// If pages have been set, it returns the start page number of the first
-// interval and nil error.
-//
-// Example:
-//
-//	pi := PageInterval{
-//	    intervals: [][2]int{{1, 5}, {10, 15}},
-//	    pageCount: 11,
-//	}
-//
-//	firstPage, err := pi.GetFirstPage()
-//	if err != nil {
-//	    fmt.Println(err) // Output: no pages have been set
-//	} else {
-//	    fmt.Println(firstPage) // Output: 1
-//	}
-func (pi *PageInterval) GetFirstPage() (int, error) {
-	if len(pi.intervals) == 0 {
-		return 0, new(ErrNoPagesHaveBeenSet)
-	}
-
-	return pi.intervals[0][0], nil
-}
-
-// GetLastPage returns the last page of the PageInterval.
-// It returns the page number and an error if no pages have been set.
-// If pages have been set, it returns the end page number of the last
-// interval and nil error.
-//
-// Example:
-//
-//	pi := PageInterval{
-//	    intervals: [][2]int{{1, 5}, {10, 15}},
-//	    pageCount: 11,
-//	}
-//
-//	lastPage, err := pi.GetLastPage()
-//	if err != nil {
-//	    fmt.Println(err) // Output: no pages have been set
-//	} else {
-//	    fmt.Println(lastPage) // Output: 15
-//	}
-func (pi *PageInterval) GetLastPage() (int, error) {
-	if len(pi.intervals) == 0 {
-		return 0, new(ErrNoPagesHaveBeenSet)
-	}
-
-	return pi.intervals[len(pi.intervals)-1][1], nil
-}
-
-// MustGetFirstPage returns the first page number in the PageInterval.
+// GetFirstPage returns the first page number in the PageInterval.
 // It panics with ErrNoPagesHaveBeenSet if no pages have been set.
 //
 // Example:
@@ -216,17 +167,19 @@ func (pi *PageInterval) GetLastPage() (int, error) {
 //	    pageCount: 11,
 //	}
 //
-//	firstPage := pi.MustGetFirstPage()
+//	firstPage := pi.GetFirstPage()
 //	fmt.Println(firstPage) // Output: 1
-func (pi *PageInterval) MustGetFirstPage() int {
-	if len(pi.intervals) == 0 {
-		panic(new(ErrNoPagesHaveBeenSet))
+func (pi *PageInterval) GetFirstPage() int {
+	if pi.pageCount > 0 {
+		return pi.intervals[0][0]
 	}
 
-	return pi.intervals[0][0]
+	panic(ers.NewErrOperationFailed(
+		"get first page", errors.New("no pages have been set"),
+	))
 }
 
-// MustGetLastPage returns the last page number in the PageInterval.
+// GetLastPage returns the last page number in the PageInterval.
 // It panics with ErrNoPagesHaveBeenSet if no pages have been set.
 //
 // Example:
@@ -236,14 +189,16 @@ func (pi *PageInterval) MustGetFirstPage() int {
 //	    pageCount: 11,
 //	}
 //
-//	lastPage := pi.MustGetLastPage()
+//	lastPage := pi.GetLastPage()
 //	fmt.Println(lastPage) // Output: 15
-func (pi *PageInterval) MustGetLastPage() int {
-	if len(pi.intervals) == 0 {
-		panic(new(ErrNoPagesHaveBeenSet))
+func (pi *PageInterval) GetLastPage() int {
+	if pi.pageCount > 0 {
+		return pi.intervals[len(pi.intervals)-1][1]
 	}
 
-	return pi.intervals[len(pi.intervals)-1][1]
+	panic(ers.NewErrOperationFailed(
+		"get last page", errors.New("no pages have been set"),
+	))
 }
 
 // AddPage adds a page to the PageInterval.

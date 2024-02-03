@@ -3,38 +3,10 @@ package General
 import (
 	"errors"
 	"fmt"
-	"os"
 	"reflect"
 
 	ers "github.com/PlayerR9/MyGoLib/Utility/Errors"
 )
-
-// ExitFromProgram is a utility function that handles program termination in
-// case of an error.
-// It prints the error message if the error is not nil, prompts the user to
-// press enter to exit, and then terminates the program with a status code of 1.
-//
-// Parameters:
-//
-//   - err: The error that caused the program termination. If err is nil, no error
-//     message is printed.
-//
-// Note: This function does not return. The program is terminated by calling
-// os.Exit(1).
-func ExitFromProgram(err error) {
-	defer func() {
-		fmt.Println("Press enter to exit...")
-		fmt.Scanln()
-
-		if r := recover(); r != nil {
-			fmt.Println(err)
-		}
-
-		os.Exit(1)
-	}()
-
-	panic(err)
-}
 
 // DeepCopy is a function that performs a deep copy of a given value.
 // It takes a parameter, value, of any type and returns a new value that is a
@@ -95,9 +67,13 @@ func SplitIntoGroups[T any](slice []T, n int) [][]T {
 		return [][]T{slice}
 	}
 
-	if n <= 0 {
+	if n < 0 {
 		panic(ers.NewErrInvalidParameter(
-			"n", errors.New("the number of groups must be positive and non-zero"),
+			"n", fmt.Errorf("negative group number (%d) are not allowed", n),
+		))
+	} else if n == 0 {
+		panic(ers.NewErrInvalidParameter(
+			"n", errors.New("cannot split into 0 groups"),
 		))
 	}
 

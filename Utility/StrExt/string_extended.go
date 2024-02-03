@@ -9,6 +9,7 @@ import (
 	"unicode/utf8"
 
 	ers "github.com/PlayerR9/MyGoLib/Utility/Errors"
+	"github.com/markphelps/optional"
 )
 
 // ReplaceSuffix replaces the end of the given string with the provided suffix.
@@ -26,16 +27,25 @@ import (
 // Returns:
 //
 //   - The modified string, or an error if the suffix is too long.
-func ReplaceSuffix(str, suffix string) (string, error) {
-	if utf8.RuneCountInString(str) < utf8.RuneCountInString(suffix) {
-		return "", &ErrSuffixTooLong{}
-	} else if utf8.RuneCountInString(str) == utf8.RuneCountInString(suffix) {
-		return suffix, nil
-	} else if utf8.RuneCountInString(suffix) == 0 {
-		return str, nil
+func ReplaceSuffix(str, suffix string) string {
+	countStr := utf8.RuneCountInString(str)
+	countSuffix := utf8.RuneCountInString(suffix)
+
+	if countStr < countSuffix {
+		panic(ers.NewErrOperationFailed(
+			"replace suffix", fmt.Errorf("suffix (%s) is longer than the string (%s)", suffix, str),
+		))
 	}
 
-	return str[:utf8.RuneCountInString(str)-utf8.RuneCountInString(suffix)] + suffix, nil
+	if countStr == countSuffix {
+		return suffix
+	}
+
+	if countSuffix == 0 {
+		return str
+	}
+
+	return str[:countStr-countSuffix] + suffix
 }
 
 // FindContentIndexes searches for the positions of opening and closing tokens
@@ -66,15 +76,22 @@ func ReplaceSuffix(str, suffix string) (string, error) {
 // ErrOpeningTokenNotFound, or a generic error with a message about the closing token.
 func FindContentIndexes(openingToken, closingToken string, contentTokens []string) (int, int, error) {
 	if openingToken == "" {
-		return 0, 0, &ErrOpeningTokenEmpty{}
+		return 0, 0, ers.NewErrInvalidParameter(
+			"openingToken", errors.New("opening token cannot be empty"),
+		)
 	}
+
 	if closingToken == "" {
-		return 0, 0, &ErrClosingTokenEmpty{}
+		return 0, 0, ers.NewErrInvalidParameter(
+			"closingToken", errors.New("closing token cannot be empty"),
+		)
 	}
 
 	openingTokenIndex := slices.Index(contentTokens, openingToken)
 	if openingTokenIndex < 0 {
-		return 0, 0, &ErrOpeningTokenNotFound{}
+		return 0, 0, ers.NewErrOperationFailed(
+			"find content indexes", &ErrOpeningTokenNotFound{openingToken},
+		)
 	}
 
 	tokenStartIndex := openingTokenIndex + 1
@@ -92,13 +109,15 @@ func FindContentIndexes(openingToken, closingToken string, contentTokens []strin
 
 	if closingTokenIndex != -1 {
 		return tokenStartIndex, tokenStartIndex + closingTokenIndex + 1, nil
-	} else if tokenBalance < 0 {
-		return 0, 0, fmt.Errorf("closing token '%s' not opened", closingToken)
+	}
+
+	if tokenBalance < 0 {
+		return 0, 0, &ErrNeverOpened{openingToken, closingToken}
 	} else if tokenBalance == 1 && closingToken == "\n" {
 		return tokenStartIndex, len(contentTokens), nil
-	} else {
-		return 0, 0, fmt.Errorf("closing token '%s' not found", closingToken)
 	}
+
+	return 0, 0, &ErrClosingTokenNotFound{closingToken}
 }
 
 // GetOrdinalSuffix returns the ordinal suffix for a given integer.
@@ -261,9 +280,12 @@ func (ts *TextSplitter) CanInsertWord(word string, lineIndex int) bool {
 	return ts.Lines[lineIndex].Len+utf8.RuneCountInString(word)+1 <= ts.Width
 }
 
-func (ts *TextSplitter) InsertWordAt(word string, lineIndex int) error {
+func (ts *TextSplitter) InsertWordAt(word string, lineIndex int) {
 	if lineIndex < 0 || lineIndex >= len(ts.Lines) {
-		return fmt.Errorf("line index %d out of bounds", lineIndex)
+		panic(ers.NewErrInvalidParameter(
+			"lineIndex", ers.NewErrOutOfBound(0, len(ts.Lines)-1, lineIndex).
+				WithLowerBound(true).WithUpperBound(false),
+		))
 	}
 
 	// Check if adding the next word to the last line exceeds the width.
@@ -276,10 +298,9 @@ func (ts *TextSplitter) InsertWordAt(word string, lineIndex int) error {
 		lineIndex--
 	}
 
+	// FIXME: Check why this is needed
 	ts.CanInsertWord(word, lineIndex)
 	ts.Lines[lineIndex].InsertWord(word)
-
-	return nil
 }
 
 // InsertWord is a method on the TextSplitter struct.
@@ -291,10 +312,10 @@ func (ts *TextSplitter) InsertWordAt(word string, lineIndex int) error {
 // If adding the word to the last line would exceed the width, the words of
 // the last line are shifted to the left until the word can be inserted or
 // there are no more lines.
-func (ts *TextSplitter) InsertWord(word string) error {
+func (ts *TextSplitter) InsertWord(word string) bool {
 	if len(ts.Lines) < cap(ts.Lines) {
 		if utf8.RuneCountInString(word) > ts.Width {
-			return &ErrWordTooLong{word}
+			return false
 		}
 
 		ts.Lines = append(ts.Lines, &SpltLine{
@@ -302,7 +323,7 @@ func (ts *TextSplitter) InsertWord(word string) error {
 			Len:  utf8.RuneCountInString(word),
 		})
 
-		return nil
+		return true
 	}
 
 	lastLineIndex := cap(ts.Lines) - 1
@@ -317,10 +338,11 @@ func (ts *TextSplitter) InsertWord(word string) error {
 		lastLineIndex--
 	}
 
+	// FIXME: Check why this is needed
 	ts.CanInsertWord(word, lastLineIndex)
 	ts.Lines[lastLineIndex].InsertWord(word)
 
-	return nil
+	return true
 }
 
 // deepCopy is a method on the TextSplitter struct.
@@ -382,11 +404,16 @@ func (ts *TextSplitter) shiftUp(lineIndex int) {
 // that the width is too small.
 //
 // Otherwise, the function returns the calculated number of lines and no error.
-func CalculateNumberOfLines(text []string, width int) (int, error) {
+func CalculateNumberOfLines(text []string, width int) (int, bool) {
 	if len(text) == 0 {
-		return 0, &ErrEmptyText{}
-	} else if width <= 0 {
-		return 0, &ErrWidthTooSmall{}
+		panic(ers.NewErrInvalidParameter(
+			"text", errors.New("text cannot be empty"),
+		))
+	}
+	if width <= 0 {
+		panic(ers.NewErrInvalidParameter(
+			"width", fmt.Errorf("negative or zero width (%d) is not allowed", width),
+		))
 	}
 
 	// Euristic to calculate the least amount of splits needed
@@ -457,11 +484,7 @@ func CalculateNumberOfLines(text []string, width int) (int, error) {
 
 	numberOfLines := int(math.Ceil(float64(Tl-width)/float64(width+1))) + 1
 
-	if numberOfLines > len(text) {
-		return 0, &ErrWidthTooSmall{}
-	}
-
-	return numberOfLines, nil
+	return numberOfLines, numberOfLines > len(text)
 }
 
 // SplitTextInEqualSizedLines is a function that splits a given text into
@@ -496,23 +519,22 @@ func CalculateNumberOfLines(text []string, width int) (int, error) {
 // simply returns the first one.
 //
 // The function finally returns the first line of the optimal solution and no error.
-func SplitTextInEqualSizedLines(text []string, width, height int) (*TextSplitter, error) {
-	if len(text) == 0 {
-		return nil, &ErrEmptyText{}
-	}
+func SplitTextInEqualSizedLines(text []string, width int, maxHeight optional.Int) (ts *TextSplitter, err error) {
+	defer ers.RecoverFromPanic(&err)
 
-	if width <= 0 {
-		return nil, &ErrWidthTooSmall{}
-	}
+	ers.Check(len(text), ers.NewErrInvalidParameter(
+		"text", errors.New("text cannot be empty"),
+	))
+	ers.Check(width <= 0, ers.NewErrInvalidParameter(
+		"width", fmt.Errorf("negative or zero width (%d) is not allowed", width),
+	))
 
-	if height <= 0 {
-		var err error
-
-		height, err = CalculateNumberOfLines(text, width)
-		if err != nil {
-			return nil, err
-		}
-	}
+	height := maxHeight.OrElse(ers.CheckPred[int, int](width, func(width int) (int, bool) {
+		return CalculateNumberOfLines(text, width)
+	}, nil))
+	ers.Check(height < 1, ers.NewErrInvalidParameter(
+		"height", fmt.Errorf("negative or zero height (%d) is not allowed", height),
+	))
 
 	// We have to find the best way to split the text
 	// such that all the lines are as close as possible to
@@ -544,12 +566,10 @@ func SplitTextInEqualSizedLines(text []string, width, height int) (*TextSplitter
 		Lines: make([]*SpltLine, 0, height),
 	}
 
-	for i, word := range text {
-		err := group.InsertWord(word)
-		if err != nil {
-			return nil, fmt.Errorf("cannot insert word '%s' at index %d: %v", word, i, err)
-		}
-	}
+	index := slices.IndexFunc(text, group.InsertWord)
+	ers.Check(index != -1, ers.NewErrOperationFailed(
+		"insert word", fmt.Errorf("word at index %d (%s) is too long", index, text[index]),
+	))
 
 	// 3. Now we have A solution to the problem, but not THE solution as
 	// there may be other ways to split the text that are better than this one.
@@ -659,16 +679,14 @@ func SplitTextInEqualSizedLines(text []string, width, height int) (*TextSplitter
 // If the input string is empty, the function returns an empty two-dimensional slice.
 // If the indent level is negative, the function returns an ErrInvalidParameter error.
 // If the input string contains an invalid rune, the function returns an error.
-func SplitSentenceIntoFields(sentence string, indentLevel int) ([][]string, error) {
+func SplitSentenceIntoFields(sentence string, indentLevel int) [][]string {
 	if sentence == "" {
-		return [][]string{}, nil
+		return [][]string{}
 	}
 
-	if indentLevel < 0 {
-		return nil, ers.NewErrInvalidParameter(
-			"indentLevel", errors.New("indent level cannot be negative"),
-		)
-	}
+	ers.Check(indentLevel < 0, ers.NewErrInvalidParameter(
+		"indentLevel", errors.New("indent level cannot be negative"),
+	))
 
 	lines := make([][]string, 0)
 	words := make([]string, 0)
@@ -679,9 +697,9 @@ func SplitSentenceIntoFields(sentence string, indentLevel int) ([][]string, erro
 		char, size := utf8.DecodeRuneInString(sentence)
 		sentence = sentence[size:]
 
-		if char == utf8.RuneError {
-			return nil, fmt.Errorf("rune at index %d is invalid", j)
-		}
+		ers.Check(char == utf8.RuneError, ers.NewErrOperationFailed(
+			"rune at index", fmt.Errorf("rune at index %d is invalid", j),
+		))
 
 		switch char {
 		case '\t':
@@ -736,5 +754,5 @@ func SplitSentenceIntoFields(sentence string, indentLevel int) ([][]string, erro
 		lines = append(lines, words)
 	}
 
-	return lines, nil
+	return lines
 }
