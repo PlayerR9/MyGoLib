@@ -2,7 +2,6 @@ package Counters
 
 import (
 	"fmt"
-	"strings"
 )
 
 // ErrCannotAdvanceCounter represents an error that occurs when a
@@ -25,27 +24,11 @@ type ErrCannotAdvanceCounter struct {
 // The function returns the following:
 //
 //   - A pointer to the new ErrCannotAdvanceCounter.
-func NewErrCannotAdvanceCounter(reason error) *ErrCannotAdvanceCounter {
+func NewErrCannotAdvanceCounter(counter Counter, reason error) *ErrCannotAdvanceCounter {
 	return &ErrCannotAdvanceCounter{
-		counter: nil,
+		counter: counter,
 		reason:  reason,
 	}
-}
-
-// WithCounter sets the counter that caused the error.
-// It follows the builder pattern, returning the ErrCannotAdvanceCounter
-// itself for chaining.
-//
-// The function takes the following parameter:
-//
-//   - c is the counter that caused the error.
-//
-// The function returns the following:
-//
-//   - A pointer to the ErrCannotAdvanceCounter itself.
-func (e *ErrCannotAdvanceCounter) WithCounter(c Counter) *ErrCannotAdvanceCounter {
-	e.counter = c
-	return e
 }
 
 // Error returns a string representation of the ErrCannotAdvanceCounter.
@@ -55,19 +38,7 @@ func (e *ErrCannotAdvanceCounter) WithCounter(c Counter) *ErrCannotAdvanceCounte
 //
 //   - A string representing the ErrCannotAdvanceCounter.
 func (e *ErrCannotAdvanceCounter) Error() string {
-	var builder strings.Builder
-
-	builder.WriteString("cannot advance ")
-
-	if e.counter == nil {
-		builder.WriteString("counter")
-	} else {
-		fmt.Fprintf(&builder, "%T", e.counter)
-	}
-
-	fmt.Fprintf(&builder, ": reason=%v", e.reason)
-
-	return builder.String()
+	return fmt.Sprintf("cannot advance %T: reason=%v", e.counter, e.reason)
 }
 
 // Unwrap returns the specific error that occurred, which is wrapped in
@@ -102,27 +73,11 @@ type ErrCannotRetreatCounter struct {
 // The function returns the following:
 //
 //   - A pointer to the new ErrCannotRetreatCounter.
-func NewErrCannotRetreatCounter(reason error) *ErrCannotRetreatCounter {
+func NewErrCannotRetreatCounter(counter Counter, reason error) *ErrCannotRetreatCounter {
 	return &ErrCannotRetreatCounter{
-		counter: nil,
+		counter: counter,
 		reason:  reason,
 	}
-}
-
-// WithCounter sets the counter that caused the error.
-// It follows the builder pattern, returning the ErrCannotRetreatCounter
-// itself for chaining.
-//
-// The function takes the following parameter:
-//
-//   - c is the counter that caused the error.
-//
-// The function returns the following:
-//
-//   - A pointer to the ErrCannotRetreatCounter itself.
-func (e *ErrCannotRetreatCounter) WithCounter(c Counter) *ErrCannotRetreatCounter {
-	e.counter = c
-	return e
 }
 
 // Error returns a string representation of the ErrCannotRetreatCounter.
@@ -132,19 +87,7 @@ func (e *ErrCannotRetreatCounter) WithCounter(c Counter) *ErrCannotRetreatCounte
 //
 //   - A string representing the ErrCannotRetreatCounter.
 func (e *ErrCannotRetreatCounter) Error() string {
-	var builder strings.Builder
-
-	builder.WriteString("cannot retreat ")
-
-	if e.counter == nil {
-		builder.WriteString("counter")
-	} else {
-		fmt.Fprintf(&builder, "%T", e.counter)
-	}
-
-	fmt.Fprintf(&builder, ": reason=%v", e.reason)
-
-	return builder.String()
+	return fmt.Sprintf("cannot retreat %T: reason=%v", e.counter, e.reason)
 }
 
 // Unwrap returns the specific error that occurred, which is wrapped

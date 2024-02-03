@@ -35,13 +35,15 @@ type LimitedLinkedStack[T any] struct {
 // It then creates a linked list of nodes from the initial values, with each node
 // holding one value, and sets the front and back pointers of the stack.
 // The new LimitedLinkedStack is then returned.
-func NewLimitedLinkedStack[T any](capacity int, values ...T) (*LimitedLinkedStack[T], error) {
+func NewLimitedLinkedStack[T any](capacity int, values ...*T) (*LimitedLinkedStack[T], error) {
 	if capacity < 0 {
-		return nil, ers.NewErrInvalidParameter("capacity").
-			WithReason(new(ErrNegativeCapacity))
+		return nil, ers.NewErrInvalidParameter(
+			"capacity", new(ErrNegativeCapacity),
+		)
 	} else if len(values) > capacity {
-		return nil, ers.NewErrInvalidParameter("values").
-			WithReason(new(ErrTooManyValues))
+		return nil, ers.NewErrInvalidParameter(
+			"values", new(ErrTooManyValues),
+		)
 	}
 
 	stack := new(LimitedLinkedStack[T])
@@ -88,7 +90,7 @@ func NewLimitedLinkedStack[T any](capacity int, values ...T) (*LimitedLinkedStac
 //
 // Finally, the size of the stack is incremented by 1 to reflect the addition of the
 // new element.
-func (stack *LimitedLinkedStack[T]) Push(value T) {
+func (stack *LimitedLinkedStack[T]) Push(value *T) {
 	if stack.size >= stack.capacity {
 		panic(new(ErrFullStack))
 	}
@@ -106,12 +108,12 @@ func (stack *LimitedLinkedStack[T]) Push(value T) {
 	stack.size++
 }
 
-func (stack *LimitedLinkedStack[T]) Pop() T {
+func (stack *LimitedLinkedStack[T]) Pop() *T {
 	if stack.front == nil {
 		panic(NewErrEmptyStack(Pop))
 	}
 
-	var value T
+	var value *T
 
 	value, stack.front = stack.front.value, stack.front.next
 
@@ -120,7 +122,7 @@ func (stack *LimitedLinkedStack[T]) Pop() T {
 	return value
 }
 
-func (stack *LimitedLinkedStack[T]) Peek() T {
+func (stack *LimitedLinkedStack[T]) Peek() *T {
 	if stack.front == nil {
 		panic(NewErrEmptyStack(Peek))
 	}
@@ -136,8 +138,8 @@ func (stack *LimitedLinkedStack[T]) Size() int {
 	return stack.size
 }
 
-func (stack *LimitedLinkedStack[T]) ToSlice() []T {
-	slice := make([]T, 0, stack.size)
+func (stack *LimitedLinkedStack[T]) ToSlice() []*T {
+	slice := make([]*T, 0, stack.size)
 
 	for stack_node := stack.front; stack_node != nil; stack_node = stack_node.next {
 		slice = append(slice, stack_node.value)

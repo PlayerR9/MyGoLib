@@ -26,17 +26,17 @@ const (
 // representation of the queue.
 type Queuer[T any] interface {
 	// The Enqueue method adds a value of type T to the end of the queue.
-	Enqueue(value T)
+	Enqueue(value *T)
 
 	// The Dequeue method is a convenience method that dequeues an element from the queue
 	// and returns it.
 	// If the queue is empty, it will panic.
-	Dequeue() T
+	Dequeue() *T
 
 	// Peek is a method that returns the value at the front of the queue without removing
 	// it.
 	// If the queue is empty, it will panic.
-	Peek() T
+	Peek() *T
 
 	// The IsEmpty method checks if the queue is empty and returns a boolean value indicating
 	// whether it is empty or not.
@@ -46,7 +46,7 @@ type Queuer[T any] interface {
 	Size() int
 
 	// The ToSlice method returns a slice containing all the elements in the queue.
-	ToSlice() []T
+	ToSlice() []*T
 
 	// The Clear method is used to remove all elements from the queue, making it empty.
 	Clear()
@@ -68,7 +68,7 @@ type Queuer[T any] interface {
 // The next field is a pointer to the next linkedNode in the list. This allows for traversal
 // through the linked list by pointing to the subsequent node in the sequence.
 type linkedNode[T any] struct {
-	value T
+	value *T
 	next  *linkedNode[T]
 }
 
@@ -80,7 +80,7 @@ type linkedNode[T any] struct {
 // iterator in the queue.
 // It is used to iterate over the elements in the queue.
 type QueueIterator[T any] struct {
-	values       []T
+	values       []*T
 	currentIndex int
 }
 
@@ -106,7 +106,7 @@ func NewQueueIterator[T any](queue Queuer[T]) *QueueIterator[T] {
 // ErrOutOfBoundsIterator error.
 //
 // This method is typically used in a loop to iterate over all the elements in a queue.
-func (iterator *QueueIterator[T]) GetNext() T {
+func (iterator *QueueIterator[T]) GetNext() *T {
 	if len(iterator.values) <= iterator.currentIndex {
 		panic(new(ErrOutOfBoundsIterator))
 	}

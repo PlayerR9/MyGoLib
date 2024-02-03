@@ -33,11 +33,14 @@ type LimitedArrayStack[T any] struct {
 // input values into the new slice. The new LimitedArrayStack is then returned.
 func NewLimitedArrayStack[T any](capacity int, values ...T) (*LimitedArrayStack[T], error) {
 	if capacity < 0 {
-		return nil, ers.NewErrInvalidParameter("capacity").
-			WithReason(new(ErrNegativeCapacity))
+		return nil, ers.NewErrInvalidParameter(
+			"capacity",
+			new(ErrNegativeCapacity),
+		)
 	} else if len(values) > capacity {
-		return nil, ers.NewErrInvalidParameter("values").
-			WithReason(new(ErrTooManyValues))
+		return nil, ers.NewErrInvalidParameter(
+			"values", new(ErrTooManyValues),
+		)
 	}
 
 	slices.Reverse(values)

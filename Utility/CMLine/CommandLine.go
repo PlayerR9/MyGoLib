@@ -197,12 +197,16 @@ func WithFlag(name string, callback func(...string) (any, error), options ...Fla
 		name = strings.TrimSpace(name)
 		if name == "" {
 			return fmt.Errorf("could not create flag: %v",
-				ers.NewErrInvalidParameter("name").WithReason(errors.New("flag name cannot be empty")))
+				ers.NewErrInvalidParameter(
+					"name", errors.New("flag name cannot be empty")),
+			)
 		}
 
 		if callback == nil {
 			return fmt.Errorf("could not create flag %s: %v", name,
-				ers.NewErrInvalidParameter("callback").WithReason(errors.New("flag callback cannot be nil")))
+				ers.NewErrInvalidParameter(
+					"callback", errors.New("flag callback cannot be nil")),
+			)
 		}
 
 		for _, option := range options {

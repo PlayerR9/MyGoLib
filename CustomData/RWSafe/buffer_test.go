@@ -5,33 +5,41 @@ import (
 )
 
 func TestInit(t *testing.T) {
+	toPtr := func(x int) *int {
+		return &x
+	}
+
 	buffer := new(Buffer[int])
 	sendTo, receiveFrom := buffer.Init(1)
 	defer buffer.Wait()
 
-	sendTo <- 1
-	sendTo <- 2
-	sendTo <- 3
+	sendTo <- toPtr(1)
+	sendTo <- toPtr(2)
+	sendTo <- toPtr(3)
 
 	close(sendTo)
 
 	for i := 1; i <= 3; i++ {
 		x := <-receiveFrom
 
-		if x != i {
+		if *x != i {
 			t.Errorf("Expected %v, got %v", i, x)
 		}
 	}
 }
 
 func TestTrimFrom(t *testing.T) {
+	toPtr := func(x int) *int {
+		return &x
+	}
+
 	buffer := new(Buffer[int])
 	sendTo, receiveFrom := buffer.Init(0)
 	defer buffer.Wait()
 
-	sendTo <- 1
-	sendTo <- 2
-	sendTo <- 3
+	sendTo <- toPtr(1)
+	sendTo <- toPtr(2)
+	sendTo <- toPtr(3)
 
 	close(sendTo)
 
@@ -43,7 +51,7 @@ func TestTrimFrom(t *testing.T) {
 		t.Errorf("Expected %v, got %v", true, ok)
 	}
 
-	if x != 1 {
+	if *x != 1 {
 		t.Errorf("Expected %v, got %v", 1, x)
 	}
 

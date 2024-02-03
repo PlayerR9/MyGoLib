@@ -32,11 +32,13 @@ type LimitedArrayQueue[T any] struct {
 // input values into the new slice. The new LimitedArrayQueue is then returned.
 func NewLimitedArrayQueue[T any](capacity int, values ...T) (*LimitedArrayQueue[T], error) {
 	if capacity < 0 {
-		return nil, ers.NewErrInvalidParameter("capacity").
-			WithReason(new(ErrNegativeCapacity))
+		return nil, ers.NewErrInvalidParameter(
+			"capacity", new(ErrNegativeCapacity),
+		)
 	} else if len(values) > capacity {
-		return nil, ers.NewErrInvalidParameter("values").
-			WithReason(new(ErrTooManyValues))
+		return nil, ers.NewErrInvalidParameter(
+			"values", new(ErrTooManyValues),
+		)
 	}
 
 	queue := &LimitedArrayQueue[T]{

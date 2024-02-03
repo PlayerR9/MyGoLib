@@ -4,7 +4,6 @@ package Counters
 import (
 	"errors"
 	"fmt"
-	"strings"
 
 	ers "github.com/PlayerR9/MyGoLib/Utility/Errors"
 )
@@ -70,8 +69,9 @@ type UpCounter struct {
 //   - An error if the upper limit is less than 0.
 func NewUpCounter(upperLimit int) (*UpCounter, error) {
 	if upperLimit < 0 {
-		return nil, ers.NewErrInvalidParameter("upperLimit").
-			WithReason(fmt.Errorf("value (%d) must be positive", upperLimit))
+		return nil, ers.NewErrInvalidParameter(
+			"upperLimit", fmt.Errorf("value (%d) must be positive", upperLimit),
+		)
 	}
 
 	return &UpCounter{upperLimit, 0, 0}, nil
@@ -95,8 +95,9 @@ func (c *UpCounter) IsDone() bool {
 func (c *UpCounter) Advance() error {
 	if c.currentCount >= c.upperLimit {
 		return NewErrCannotAdvanceCounter(
+			c,
 			errors.New("current count is already at or beyond the upper limit"),
-		).WithCounter(c)
+		)
 	}
 
 	c.currentCount++
@@ -114,8 +115,9 @@ func (c *UpCounter) Advance() error {
 func (c *UpCounter) Retreat() error {
 	if c.currentCount <= 0 {
 		return NewErrCannotRetreatCounter(
+			c,
 			errors.New("current count is already at or below zero"),
-		).WithCounter(c)
+		)
 	}
 
 	c.currentCount--
@@ -158,22 +160,8 @@ func (c *UpCounter) GetInitialCount() int {
 //
 //   - A string representing the UpCounter.
 func (c *UpCounter) String() string {
-	var builder strings.Builder
-
-	builder.WriteString("UpCounter{")
-	fmt.Fprintf(&builder, "upperLimit: %d, ", c.upperLimit)
-	fmt.Fprintf(&builder, "currentCount: %d, ", c.currentCount)
-	fmt.Fprintf(&builder, "retreatCount: %d, ", c.retreatCount)
-
-	if c.IsDone() {
-		builder.WriteString("isDone: true")
-	} else {
-		builder.WriteString("isDone: false")
-	}
-
-	builder.WriteRune('}')
-
-	return builder.String()
+	return fmt.Sprintf("UpCounter[upperLimit=%d, currentCount=%d, retreatCount=%d, isDone=%t]",
+		c.upperLimit, c.currentCount, c.retreatCount, c.IsDone())
 }
 
 // DeepCopy creates a deep copy of the UpCounter.
@@ -210,8 +198,7 @@ type DownCounter struct {
 //   - An error if the starting count is less than 0.
 func NewDownCounter(startingCount int) (*DownCounter, error) {
 	if startingCount < 0 {
-		return nil, ers.NewErrInvalidParameter("startingCount").
-			WithReason(fmt.Errorf("value (%d) must be positive", startingCount))
+		return nil, ers.NewErrInvalidParameter("startingCount", fmt.Errorf("value (%d) must be positive", startingCount))
 	}
 
 	return &DownCounter{startingCount, startingCount, 0}, nil
@@ -234,8 +221,9 @@ func (c *DownCounter) IsDone() bool {
 func (c *DownCounter) Advance() error {
 	if c.currentCount <= 0 {
 		return NewErrCannotAdvanceCounter(
+			c,
 			errors.New("current count is already at or below zero"),
-		).WithCounter(c)
+		)
 	}
 
 	c.currentCount--
@@ -256,14 +244,16 @@ func (c *DownCounter) Advance() error {
 func (c *DownCounter) Retreat() error {
 	if c.startingCount <= 0 {
 		return NewErrCannotRetreatCounter(
+			c,
 			errors.New("starting count is already at or below zero"),
-		).WithCounter(c)
+		)
 	}
 
 	if c.currentCount <= 0 {
 		return NewErrCannotRetreatCounter(
+			c,
 			errors.New("current count is already at or below zero"),
-		).WithCounter(c)
+		)
 	}
 
 	c.startingCount++
@@ -309,22 +299,8 @@ func (c *DownCounter) GetInitialCount() int {
 //
 //   - A string representing the DownCounter.
 func (c *DownCounter) String() string {
-	var builder strings.Builder
-
-	builder.WriteString("DownCounter{")
-	fmt.Fprintf(&builder, "startingCount: %d, ", c.startingCount)
-	fmt.Fprintf(&builder, "currentCount: %d, ", c.currentCount)
-	fmt.Fprintf(&builder, "retreatCount: %d, ", c.retreatCount)
-
-	if c.IsDone() {
-		builder.WriteString("isDone: true")
-	} else {
-		builder.WriteString("isDone: false")
-	}
-
-	builder.WriteRune('}')
-
-	return builder.String()
+	return fmt.Sprintf("DownCounter[startingCount=%d, currentCount=%d, retreatCount=%d, isDone=%t]",
+		c.startingCount, c.currentCount, c.retreatCount, c.IsDone())
 }
 
 // DeepCopy creates a deep copy of the DownCounter.

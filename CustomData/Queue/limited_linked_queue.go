@@ -35,13 +35,15 @@ type LimitedLinkedQueue[T any] struct {
 // It then creates a linked list of nodes from the initial values, with each node
 // holding one value, and sets the front and back pointers of the queue.
 // The new LimitedLinkedQueue is then returned.
-func NewLimitedLinkedQueue[T any](capacity int, values ...T) (*LimitedLinkedQueue[T], error) {
+func NewLimitedLinkedQueue[T any](capacity int, values ...*T) (*LimitedLinkedQueue[T], error) {
 	if capacity < 0 {
-		return nil, ers.NewErrInvalidParameter("capacity").
-			WithReason(new(ErrNegativeCapacity))
+		return nil, ers.NewErrInvalidParameter(
+			"capacity", new(ErrNegativeCapacity),
+		)
 	} else if len(values) > capacity {
-		return nil, ers.NewErrInvalidParameter("values").
-			WithReason(new(ErrTooManyValues))
+		return nil, ers.NewErrInvalidParameter(
+			"values", new(ErrTooManyValues),
+		)
 	}
 
 	queue := new(LimitedLinkedQueue[T])
@@ -89,7 +91,7 @@ func NewLimitedLinkedQueue[T any](capacity int, values ...T) (*LimitedLinkedQueu
 //
 // Finally, the size of the queue is incremented by 1 to reflect the addition of the
 // new element.
-func (queue *LimitedLinkedQueue[T]) Enqueue(value T) {
+func (queue *LimitedLinkedQueue[T]) Enqueue(value *T) {
 	if queue.size >= queue.capacity {
 		panic(new(ErrFullQueue))
 	}
@@ -109,12 +111,12 @@ func (queue *LimitedLinkedQueue[T]) Enqueue(value T) {
 	queue.size++
 }
 
-func (queue *LimitedLinkedQueue[T]) Dequeue() T {
+func (queue *LimitedLinkedQueue[T]) Dequeue() *T {
 	if queue.front == nil {
 		panic(NewErrEmptyQueue(Dequeue))
 	}
 
-	var value T
+	var value *T
 
 	value, queue.front = queue.front.value, queue.front.next
 	if queue.front == nil {
@@ -126,7 +128,7 @@ func (queue *LimitedLinkedQueue[T]) Dequeue() T {
 	return value
 }
 
-func (queue *LimitedLinkedQueue[T]) Peek() T {
+func (queue *LimitedLinkedQueue[T]) Peek() *T {
 	if queue.front == nil {
 		panic(NewErrEmptyQueue(Peek))
 	}
@@ -142,8 +144,8 @@ func (queue *LimitedLinkedQueue[T]) Size() int {
 	return queue.size
 }
 
-func (queue *LimitedLinkedQueue[T]) ToSlice() []T {
-	slice := make([]T, 0, queue.size)
+func (queue *LimitedLinkedQueue[T]) ToSlice() []*T {
+	slice := make([]*T, 0, queue.size)
 
 	for queue_node := queue.front; queue_node != nil; queue_node = queue_node.next {
 		slice = append(slice, queue_node.value)

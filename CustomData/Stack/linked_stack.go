@@ -27,7 +27,7 @@ type LinkedStack[T any] struct {
 // its size. It then creates a linked list of nodes
 // from the initial values, with each node holding one value, and sets the front and back
 // pointers of the stack. The new LinkedStack is then returned.
-func NewLinkedStack[T any](values ...T) *LinkedStack[T] {
+func NewLinkedStack[T any](values ...*T) *LinkedStack[T] {
 	if len(values) == 0 {
 		return new(LinkedStack[T])
 	}
@@ -55,7 +55,7 @@ func NewLinkedStack[T any](values ...T) *LinkedStack[T] {
 	return stack
 }
 
-func (stack *LinkedStack[T]) Push(value T) {
+func (stack *LinkedStack[T]) Push(value *T) {
 	node := linkedNode[T]{
 		value: value,
 	}
@@ -68,12 +68,12 @@ func (stack *LinkedStack[T]) Push(value T) {
 	stack.size++
 }
 
-func (stack *LinkedStack[T]) Pop() T {
+func (stack *LinkedStack[T]) Pop() *T {
 	if stack.front == nil {
 		panic(NewErrEmptyStack(Pop))
 	}
 
-	var value T
+	var value *T
 
 	value, stack.front = stack.front.value, stack.front.next
 	stack.size--
@@ -81,7 +81,7 @@ func (stack *LinkedStack[T]) Pop() T {
 	return value
 }
 
-func (stack *LinkedStack[T]) Peek() T {
+func (stack *LinkedStack[T]) Peek() *T {
 	if stack.front == nil {
 		panic(NewErrEmptyStack(Peek))
 	}
@@ -97,8 +97,8 @@ func (stack *LinkedStack[T]) Size() int {
 	return stack.size
 }
 
-func (stack *LinkedStack[T]) ToSlice() []T {
-	slice := make([]T, 0, stack.size)
+func (stack *LinkedStack[T]) ToSlice() []*T {
+	slice := make([]*T, 0, stack.size)
 
 	for node := stack.front; node != nil; node = node.next {
 		slice = append(slice, node.value)

@@ -110,3 +110,7 @@ func SplitIntoGroups[T any](slice []T, n int) [][]T {
 
 	return groups
 }
+
+func TransformToPointer[T any](value T) *T {
+	return &value
+}

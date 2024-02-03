@@ -10,7 +10,7 @@ import (
 // list.
 type safeNode[T any] struct {
 	// value is the value stored in the node.
-	value T
+	value *T
 
 	// next is a pointer to the next node in the linked list.
 	next *safeNode[T]
@@ -27,7 +27,7 @@ type safeNode[T any] struct {
 // value, and returns it.
 // The next field of the node is left as nil, and the mutex field is left as its zero
 // value.
-func newSafeNode[T any](value T) safeNode[T] {
+func newSafeNode[T any](value *T) safeNode[T] {
 	return safeNode[T]{
 		value: value,
 	}
@@ -58,7 +58,7 @@ func (node *safeNode[T]) setNext(next *safeNode[T]) {
 // goroutine can write to the node while its value is being read.
 // It then returns the value stored in the node. The read lock is released when the
 // method returns, either normally or due to a panic, thanks to the defer statement.
-func (node *safeNode[T]) getValue() T {
+func (node *safeNode[T]) getValue() *T {
 	node.mutex.RLock()
 	defer node.mutex.RUnlock()
 
@@ -109,7 +109,7 @@ type SafeQueue[T any] struct {
 // its size. It then creates a linked list of safeNodes from the initial values, with
 // each node holding one value, and sets the front and back pointers of the queue.
 // The new SafeQueue is then returned.
-func NewSafeQueue[T any](values ...T) *SafeQueue[T] {
+func NewSafeQueue[T any](values ...*T) *SafeQueue[T] {
 	if len(values) == 0 {
 		return new(SafeQueue[T])
 	}
@@ -134,7 +134,7 @@ func NewSafeQueue[T any](values ...T) *SafeQueue[T] {
 	return queue
 }
 
-func (queue *SafeQueue[T]) Enqueue(value T) {
+func (queue *SafeQueue[T]) Enqueue(value *T) {
 	node := newSafeNode(value)
 
 	if queue.IsEmpty() {
@@ -148,7 +148,7 @@ func (queue *SafeQueue[T]) Enqueue(value T) {
 	queue.setSize(queue.Size() + 1)
 }
 
-func (queue *SafeQueue[T]) Dequeue() T {
+func (queue *SafeQueue[T]) Dequeue() *T {
 	if queue.IsEmpty() {
 		panic(NewErrEmptyQueue(Dequeue))
 	}
@@ -165,7 +165,7 @@ func (queue *SafeQueue[T]) Dequeue() T {
 	return value
 }
 
-func (queue *SafeQueue[T]) Peek() T {
+func (queue *SafeQueue[T]) Peek() *T {
 	if queue.IsEmpty() {
 		panic(NewErrEmptyQueue(Peek))
 	}
@@ -187,8 +187,8 @@ func (queue *SafeQueue[T]) Size() int {
 	return queue.size
 }
 
-func (queue *SafeQueue[T]) ToSlice() []T {
-	slice := make([]T, 0, queue.Size())
+func (queue *SafeQueue[T]) ToSlice() []*T {
+	slice := make([]*T, 0, queue.Size())
 
 	queue.frontMutex.RLock()
 	node := queue.front

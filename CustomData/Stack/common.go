@@ -26,17 +26,17 @@ const (
 // representation of the stack.
 type Stacker[T any] interface {
 	// The Push method adds a value of type T to the end of the stack.
-	Push(value T)
+	Push(value *T)
 
 	// The Pop method is a convenience method that pops an element from the stack
 	// and returns it.
 	// If the stack is empty, it will panic.
-	Pop() T
+	Pop() *T
 
 	// Peek is a method that returns the value at the front of the stack without removing
 	// it.
 	// If the stack is empty, it will panic.
-	Peek() T
+	Peek() *T
 
 	// The IsEmpty method checks if the stack is empty and returns a boolean value indicating
 	// whether it is empty or not.
@@ -46,7 +46,7 @@ type Stacker[T any] interface {
 	Size() int
 
 	// The ToSlice method returns a slice containing all the elements in the stack.
-	ToSlice() []T
+	ToSlice() []*T
 
 	// The Clear method is used to remove all elements from the stack, making it empty.
 	Clear()
@@ -68,7 +68,7 @@ type Stacker[T any] interface {
 // The next field is a pointer to the next linkedNode in the list. This allows for traversal
 // through the linked list by pointing to the subsequent node in the sequence.
 type linkedNode[T any] struct {
-	value T
+	value *T
 	next  *linkedNode[T]
 }
 
@@ -80,7 +80,7 @@ type linkedNode[T any] struct {
 // iterator in the stack.
 // It is used to iterate over the elements in the stack.
 type StackIterator[T any] struct {
-	values       []T
+	values       []*T
 	currentIndex int
 }
 
@@ -106,7 +106,7 @@ func NewStackIterator[T any](stack Stacker[T]) *StackIterator[T] {
 // ErrOutOfBoundsIterator error.
 //
 // This method is typically used in a loop to iterate over all the elements in a stack.
-func (iterator *StackIterator[T]) GetNext() T {
+func (iterator *StackIterator[T]) GetNext() *T {
 	if len(iterator.values) <= iterator.currentIndex {
 		panic(new(ErrOutOfBoundsIterator))
 	}

@@ -1,7 +1,7 @@
 package RWSafe
 
 import (
-	"errors"
+	"fmt"
 	"sync"
 
 	q "github.com/PlayerR9/MyGoLib/CustomData/Queue"
@@ -19,10 +19,10 @@ type Buffer[T any] struct {
 	queue *q.SafeQueue[T]
 
 	// A send-only channel of type T. Messages from the Buffer are sent to this channel.
-	sendTo chan T
+	sendTo chan *T
 
 	// A receive-only channel of type T. Messages sent to this channel are added to the Buffer.
-	receiveFrom chan T
+	receiveFrom chan *T
 
 	// A WaitGroup to wait for all goroutines to finish.
 	wg sync.WaitGroup
@@ -65,16 +65,17 @@ type Buffer[T any] struct {
 //   - The goroutine that sends messages from the Buffer to the receive
 //     channel will stop sending messages once the Buffer is empty, and then exit.
 //   - The Buffer will be cleaned up.
-func (b *Buffer[T]) Init(bufferSize int) (chan<- T, <-chan T) {
+func (b *Buffer[T]) Init(bufferSize int) (chan<- *T, <-chan *T) {
 	if bufferSize < 0 {
-		panic(ers.NewErrInvalidParameter("bufferSize").
-			WithReason(errors.New("value cannot be negative")))
+		panic(ers.NewErrInvalidParameter(
+			"bufferSize", fmt.Errorf("value (%d) cannot be negative", bufferSize),
+		))
 	}
 
 	b.once.Do(func() {
 		b.queue = q.NewSafeQueue[T]()
-		b.sendTo = make(chan T, bufferSize)
-		b.receiveFrom = make(chan T, bufferSize)
+		b.sendTo = make(chan *T, bufferSize)
+		b.receiveFrom = make(chan *T, bufferSize)
 		b.isClosed = false
 		b.isNotEmptyOrClosed = sync.NewCond(new(sync.Mutex))
 

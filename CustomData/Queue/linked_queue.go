@@ -27,7 +27,7 @@ type LinkedQueue[T any] struct {
 // its size. It then creates a linked list of nodes
 // from the initial values, with each node holding one value, and sets the front and back
 // pointers of the queue. The new LinkedQueue is then returned.
-func NewLinkedQueue[T any](values ...T) *LinkedQueue[T] {
+func NewLinkedQueue[T any](values ...*T) *LinkedQueue[T] {
 	if len(values) == 0 {
 		return new(LinkedQueue[T])
 	}
@@ -56,7 +56,7 @@ func NewLinkedQueue[T any](values ...T) *LinkedQueue[T] {
 	return queue
 }
 
-func (queue *LinkedQueue[T]) Enqueue(value T) {
+func (queue *LinkedQueue[T]) Enqueue(value *T) {
 	node := linkedNode[T]{
 		value: value,
 	}
@@ -71,12 +71,12 @@ func (queue *LinkedQueue[T]) Enqueue(value T) {
 	queue.size++
 }
 
-func (queue *LinkedQueue[T]) Dequeue() T {
+func (queue *LinkedQueue[T]) Dequeue() *T {
 	if queue.front == nil {
 		panic(NewErrEmptyQueue(Dequeue))
 	}
 
-	var value T
+	var value *T
 
 	value, queue.front = queue.front.value, queue.front.next
 	if queue.front == nil {
@@ -88,7 +88,7 @@ func (queue *LinkedQueue[T]) Dequeue() T {
 	return value
 }
 
-func (queue *LinkedQueue[T]) Peek() T {
+func (queue *LinkedQueue[T]) Peek() *T {
 	if queue.front == nil {
 		panic(NewErrEmptyQueue(Peek))
 	}
@@ -104,8 +104,8 @@ func (queue *LinkedQueue[T]) Size() int {
 	return queue.size
 }
 
-func (queue *LinkedQueue[T]) ToSlice() []T {
-	slice := make([]T, 0, queue.size)
+func (queue *LinkedQueue[T]) ToSlice() []*T {
+	slice := make([]*T, 0, queue.size)
 
 	for node := queue.front; node != nil; node = node.next {
 		slice = append(slice, node.value)
