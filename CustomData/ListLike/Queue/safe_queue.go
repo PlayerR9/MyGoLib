@@ -6,10 +6,11 @@ import (
 	"sync"
 
 	ers "github.com/PlayerR9/MyGoLib/Utility/Errors"
+	"github.com/markphelps/optional"
 )
 
-// SafeQueue is a generic type in Go that represents a thread-safe queue data
-// structure implemented using a linked list.
+// SafeQueue is a generic type that represents a thread-safe queue data
+// structure with or without a limited capacity, implemented using a linked list.
 type SafeQueue[T any] struct {
 	// front and back are pointers to the first and last nodes in the safe queue,
 	// respectively.
@@ -21,19 +22,26 @@ type SafeQueue[T any] struct {
 
 	// size is the current number of elements in the queue.
 	size int
+
+	// capacity is the maximum number of elements that the queue can hold.
+	capacity optional.Int
+
+	// capacityMutex is a sync.RWMutex, which is used to ensure that concurrent
+	// reads and writes to the capacity field are thread-safe.
+	capacityMutex sync.RWMutex
 }
 
-// NewSafeQueue is a function that creates and returns a new instance of a SafeQueue.
-// It takes a variadic parameter of type T, which represents the initial values to be
-// stored in the queue.
+// NewSafeQueue is a function that creates and returns a new instance of a
+// SafeQueue.
 //
-// If no initial values are provided, the function simply returns a new SafeQueue with
-// all its fields set to their zero values.
+// Parameters:
 //
-// If initial values are provided, the function creates a new SafeQueue and initializes
-// its size. It then creates a linked list of safeNodes from the initial values, with
-// each node holding one value, and sets the front and back pointers of the queue.
-// The new SafeQueue is then returned.
+//   - values: A variadic parameter of type T, which represents the initial values to be
+//     stored in the queue.
+//
+// Return:
+//
+//   - *SafeQueue[T]: A pointer to the newly created SafeQueue.
 func NewSafeQueue[T any](values ...*T) *SafeQueue[T] {
 	if len(values) == 0 {
 		return new(SafeQueue[T])
@@ -59,9 +67,74 @@ func NewSafeQueue[T any](values ...*T) *SafeQueue[T] {
 	return queue
 }
 
+// WithCapacity is a method of the SafeQueue type. It is used to set the maximum
+// number of elements the queue can hold.
+//
+// Panics with an error of type *ErrOperationFailed if the capacity is already set,
+// or with an error of type *ErrInvalidParameter if the provided capacity is negative
+// or less than the current number of elements in the queue.
+//
+// Parameters:
+//
+//   - capacity: An integer value that represents the maximum number of elements the
+//     queue can hold.
+//
+// Returns:
+//
+//   - *SafeQueue[T]: A pointer to the queue with the new capacity set.
+func (queue *SafeQueue[T]) WithCapacity(capacity int) *SafeQueue[T] {
+	queue.capacityMutex.Lock()
+	defer queue.capacityMutex.Unlock()
+
+	queue.capacity.If(func(cap int) {
+		panic(ers.NewErrOperationFailed(
+			"set capacity", fmt.Errorf("capacity is already set to %d", cap),
+		))
+	})
+
+	if capacity < 0 {
+		panic(ers.NewErrInvalidParameter(
+			"capacity", fmt.Errorf("negative capacity (%d) is not allowed", capacity),
+		))
+	}
+
+	queue.frontMutex.RLock()
+	defer queue.frontMutex.RUnlock()
+
+	queue.backMutex.RLock()
+	defer queue.backMutex.RUnlock()
+
+	ers.Check(queue.size <= capacity, ers.NewErrInvalidParameter(
+		"values", fmt.Errorf("capacity (%d) is not big enough to hold %d elements",
+			capacity, queue.size),
+	))
+
+	queue.capacity = optional.NewInt(capacity)
+
+	return queue
+}
+
+// Enqueue is a method of the SafeQueue type. It is used to add an element to the
+// back of the queue.
+//
+// Panics with an error of type *ErrOperationFailed if the queue is full.
+//
+// Parameters:
+//
+//   - value: A pointer to a value of type T, which is the element to be added to the
+//     queue.
 func (queue *SafeQueue[T]) Enqueue(value *T) {
 	queue.backMutex.Lock()
 	defer queue.backMutex.Unlock()
+
+	queue.capacityMutex.RLock()
+	defer queue.capacityMutex.RUnlock()
+
+	queue.capacity.If(func(cap int) {
+		ers.Check(queue.size < cap, ers.NewErrOperationFailed(
+			"enqueue element", NewErrFullQueue(queue),
+		))
+	})
 
 	node := &linkedNode[T]{value: value}
 
@@ -77,9 +150,20 @@ func (queue *SafeQueue[T]) Enqueue(value *T) {
 	queue.size++
 }
 
+// Dequeue is a method of the SafeQueue type. It is used to remove and return the
+// element at the front of the queue.
+//
+// Panics with an error of type *ErrOperationFailed if the queue is empty.
+//
+// Returns:
+//
+//   - *T: A pointer to the value of the element at the front of the queue.
 func (queue *SafeQueue[T]) Dequeue() *T {
 	queue.frontMutex.Lock()
 	defer queue.frontMutex.Unlock()
+
+	queue.capacityMutex.RLock()
+	defer queue.capacityMutex.RUnlock()
 
 	if queue.front == nil {
 		panic(ers.NewErrOperationFailed(
@@ -87,7 +171,7 @@ func (queue *SafeQueue[T]) Dequeue() *T {
 		))
 	}
 
-	value := queue.front.value
+	toRemove := queue.front
 
 	if queue.front.next == nil {
 		queue.front = nil
@@ -100,23 +184,38 @@ func (queue *SafeQueue[T]) Dequeue() *T {
 	}
 
 	queue.size--
+	toRemove.next = nil
 
-	return value
+	return toRemove.value
 }
 
+// Peek is a method of the SafeQueue type. It is used to return the element at the
+// front of the queue without removing it.
+//
+// Panics with an error of type *ErrOperationFailed if the queue is empty.
+//
+// Returns:
+//
+//   - *T: A pointer to the value of the element at the front of the queue.
 func (queue *SafeQueue[T]) Peek() *T {
 	queue.frontMutex.RLock()
 	defer queue.frontMutex.RUnlock()
 
 	if queue.front == nil {
-		panic(ers.NewErrOperationFailed(
-			"peek element", NewErrEmptyQueue(queue),
-		))
+		return queue.front.value
 	}
 
-	return queue.front.value
+	panic(ers.NewErrOperationFailed(
+		"peek element", NewErrEmptyQueue(queue),
+	))
 }
 
+// IsEmpty is a method of the SafeQueue type. It is used to check if the queue is
+// empty.
+//
+// Returns:
+//
+//   - bool: A boolean value that is true if the queue is empty, and false otherwise.
 func (queue *SafeQueue[T]) IsEmpty() bool {
 	queue.frontMutex.RLock()
 	defer queue.frontMutex.RUnlock()
@@ -124,6 +223,12 @@ func (queue *SafeQueue[T]) IsEmpty() bool {
 	return queue.front == nil
 }
 
+// Size is a method of the SafeQueue type. It is used to return the number of
+// elements in the queue.
+//
+// Returns:
+//
+//   - int: An integer that represents the number of elements in the queue.
 func (queue *SafeQueue[T]) Size() int {
 	queue.frontMutex.RLock()
 	defer queue.frontMutex.RUnlock()
@@ -134,6 +239,26 @@ func (queue *SafeQueue[T]) Size() int {
 	return queue.size
 }
 
+// Capacity is a method of the SafeQueue type. It is used to return the maximum
+// number of elements the queue can hold.
+//
+// Returns:
+//
+//   - optional.Int: An optional integer that represents the maximum number of
+//     elements the queue can hold.
+func (queue *SafeQueue[T]) Capacity() optional.Int {
+	queue.capacityMutex.RLock()
+	defer queue.capacityMutex.RUnlock()
+
+	return queue.capacity
+}
+
+// ToSlice is a method of the SafeQueue type. It is used to return a slice
+// containing the elements in the queue.
+//
+// Returns:
+//
+//   - []*T: A slice of pointers to the elements in the queue.
 func (queue *SafeQueue[T]) ToSlice() []*T {
 	queue.frontMutex.RLock()
 	defer queue.frontMutex.RUnlock()
@@ -150,37 +275,62 @@ func (queue *SafeQueue[T]) ToSlice() []*T {
 	return slice
 }
 
+// Clear is a method of the SafeQueue type. It is used to remove all elements
+// from the queue, making it empty.
 func (queue *SafeQueue[T]) Clear() {
 	queue.frontMutex.Lock()
 	defer queue.frontMutex.Unlock()
 
-	if queue.front == nil {
-		return // nothing to clear
-	}
-
 	queue.backMutex.Lock()
 	defer queue.backMutex.Unlock()
 
+	queue.capacityMutex.RLock()
+	defer queue.capacityMutex.RUnlock()
+
+	if queue.front == nil {
+		return // Queue is already empty
+	}
+
 	// 1. First node
-	prevNode := queue.front
-	prevNode.value = nil
+	queue.front.value = nil
+	prev := queue.front
 
 	// 2. Subsequent nodes
 	for node := queue.front.next; node != nil; node = node.next {
 		node.value = nil
-		prevNode.next = nil
+
+		prev = node
+		prev.next = nil
 	}
 
-	// 3. Clear the queue fields
+	prev.next = nil
+
+	// 3. Reset queue fields
 	queue.front = nil
 	queue.back = nil
 	queue.size = 0
 }
 
-func (queue *SafeQueue[T]) IsFull() bool {
-	return false
+// IsFull is a method of the SafeQueue type. It is used to check if the queue is
+// full, meaning it has reached its maximum capacity and cannot accept any more
+// elements.
+//
+// Returns:
+//
+//   - isFull: A boolean value that is true if the queue is full, and false otherwise.
+func (queue *SafeQueue[T]) IsFull() (isFull bool) {
+	queue.backMutex.RLock()
+	defer queue.backMutex.RUnlock()
+
+	queue.capacity.If(func(cap int) {
+		isFull = queue.size >= cap
+	})
+
+	return
 }
 
+// String is a method of the SafeQueue type. It returns a string representation of
+// the queue, including its size, capacity, and the elements it contains.
 func (queue *SafeQueue[T]) String() string {
 	queue.frontMutex.RLock()
 	defer queue.frontMutex.RUnlock()
@@ -190,17 +340,92 @@ func (queue *SafeQueue[T]) String() string {
 
 	var builder strings.Builder
 
-	fmt.Fprintf(&builder, "SafeQueue[size=%d, values=[← ", queue.size)
+	builder.WriteString("SafeQueue[")
 
-	if !queue.IsEmpty() {
-		fmt.Fprintf(&builder, "%v", queue.front.value)
+	queue.capacity.If(func(cap int) {
+		fmt.Fprintf(&builder, "capacity=%d, ", cap)
+	})
 
-		for node := queue.front.next; node != nil; node = node.next {
-			fmt.Fprintf(&builder, " %v", node.value)
+	if queue.size == 0 {
+		builder.WriteString("size=0, values=[← ]]")
+
+		return builder.String()
+	}
+
+	fmt.Fprintf(&builder, "size=%d, values=[← %v", queue.size, queue.front.value)
+
+	for node := queue.front.next; node != nil; node = node.next {
+		fmt.Fprintf(&builder, ", %v", node.value)
+	}
+
+	builder.WriteString("]]")
+
+	return builder.String()
+}
+
+// CutNilValues is a method of the SafeQueue type. It is used to remove all nil
+// values from the queue.
+func (queue *SafeQueue[T]) CutNilValues() {
+	queue.frontMutex.Lock()
+	defer queue.frontMutex.Unlock()
+
+	queue.backMutex.Lock()
+	defer queue.backMutex.Unlock()
+
+	queue.capacityMutex.RLock()
+	defer queue.capacityMutex.RUnlock()
+
+	if queue.front == nil {
+		return // Queue is empty
+	}
+
+	if queue.front.value == nil && queue.front == queue.back {
+		// Single node
+		queue.front = nil
+		queue.back = nil
+		queue.size = 0
+
+		return
+	}
+
+	var toDelete *linkedNode[T] = nil
+
+	// 1. First node
+	if queue.front.value == nil {
+		toDelete = queue.front
+
+		queue.front = queue.front.next
+
+		toDelete.next = nil
+		queue.size--
+	}
+
+	prev := queue.front
+
+	// 2. Subsequent nodes (except last)
+	for node := queue.front.next; node.next != nil; node = node.next {
+		if node.value != nil {
+			prev = node
+		} else {
+			prev.next = node.next
+			queue.size--
+
+			if toDelete != nil {
+				toDelete.next = nil
+			}
+
+			toDelete = node
 		}
 	}
 
-	fmt.Fprintf(&builder, "]]")
+	if toDelete != nil {
+		toDelete.next = nil
+	}
 
-	return builder.String()
+	// 3. Last node
+	if queue.back.value == nil {
+		queue.back = prev
+		queue.back.next = nil
+		queue.size--
+	}
 }

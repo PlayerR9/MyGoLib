@@ -5,10 +5,11 @@ import (
 	"strings"
 
 	ers "github.com/PlayerR9/MyGoLib/Utility/Errors"
+	"github.com/markphelps/optional"
 )
 
-// LinkedList is a generic type in Go that represents a list data structure implemented
-// using a linked list.
+// LinkedList is a generic type that represents a list data structure with
+// or without a limited capacity, implemented using a linked list.
 type LinkedList[T any] struct {
 	// front and back are pointers to the first and last nodes in the linked list,
 	// respectively.
@@ -16,65 +17,130 @@ type LinkedList[T any] struct {
 
 	// size is the current number of elements in the list.
 	size int
+
+	// capacity is the maximum number of elements the list can hold.
+	capacity optional.Int
 }
 
-// NewLinkedList is a function that creates and returns a new instance of a LinkedList.
-// It takes a variadic parameter of type T, which represents the initial values to be
-// stored in the list.
+// NewLinkedList is a function that creates and returns a new instance of a
+// LinkedList.
 //
-// If no initial values are provided, the function simply returns a new LinkedList with
-// all its fields set to their zero values.
+// Parameters:
 //
-// If initial values are provided, the function creates a new LinkedList and initializes
-// its size. It then creates a linked list of nodes
-// from the initial values, with each node holding one value, and sets the front and back
-// pointers of the list. The new LinkedList is then returned.
+//   - values: A variadic parameter of type T, which represents the initial values to
+//     be stored in the list.
+//
+// Returns:
+//
+//   - *LinkedList[T]: A pointer to the newly created LinkedList.
 func NewLinkedList[T any](values ...*T) *LinkedList[T] {
+	list := new(LinkedList[T])
+
 	if len(values) == 0 {
-		return new(LinkedList[T])
+		return list
 	}
 
-	list := new(LinkedList[T])
 	list.size = len(values)
 
 	// First node
-	node := &linkedNode[T]{
+	list_node := &linkedNode[T]{
 		value: values[0],
 	}
 
-	list.front = node
-	list.back = node
+	list.front = list_node
+	list.back = list_node
 
 	// Subsequent nodes
-	for _, element := range values[1:] {
-		node = &linkedNode[T]{
+	for _, element := range values {
+		list_node := &linkedNode[T]{
 			value: element,
 			prev:  list.back,
 		}
 
-		list.back.next = node
-		list.back = node
+		list.back.next = list_node
+		list.back = list_node
 	}
 
 	return list
 }
 
+// WithCapacity is a method of the LinkedList type. It is used to set the maximum
+// number of elements the list can hold.
+//
+// Panics with an error of type *ErrOperationFailed if the capacity is already set
+// or with an error of type *ErrInvalidParameter if the provided capacity is negative
+// or less than the current number of elements in the list.
+//
+// Parameters:
+//
+//   - capacity: An integer that represents the maximum number of elements the list
+//     can hold.
+//
+// Returns:
+//
+//   - Lister[T]: A pointer to the list with the new capacity set.
+func (list *LinkedList[T]) WithCapacity(capacity int) *LinkedList[T] {
+	list.capacity.If(func(cap int) {
+		panic(ers.NewErrOperationFailed(
+			"set capacity", fmt.Errorf("capacity is already set to %d", cap),
+		))
+	})
+
+	if capacity < 0 {
+		panic(ers.NewErrInvalidParameter(
+			"capacity", fmt.Errorf("negative capacity (%d) is not allowed", capacity),
+		))
+	} else if list.size > capacity {
+		panic(ers.NewErrInvalidParameter(
+			"values", fmt.Errorf("capacity (%d) is not big enough to hold %d elements",
+				capacity, list.size),
+		))
+	}
+
+	list.capacity = optional.NewInt(capacity)
+
+	return list
+}
+
+// Append is a method of the LinkedList type. It is used to add an element to
+// the end of the list.
+//
+// Panics with an error of type *ErrFullList if the list is full.
+//
+// Parameters:
+//
+//   - value: A pointer to an element of type T to be added to the list.
 func (list *LinkedList[T]) Append(value *T) {
-	node := &linkedNode[T]{
+	list.capacity.If(func(cap int) {
+		ers.Check(list.size < cap, ers.NewErrOperationFailed(
+			"append element", NewErrFullList(list),
+		))
+	})
+
+	list_node := &linkedNode[T]{
 		value: value,
 	}
 
-	if list.front == nil {
-		list.front = node
+	if list.back == nil {
+		list.front = list_node
 	} else {
-		list.back.next = node
-		node.prev = list.back
+		list.back.next = list_node
+		list_node.prev = list.back
 	}
 
-	list.back = node
+	list.back = list_node
+
 	list.size++
 }
 
+// DeleteFirst is a method of the LinkedList type. It is used to remove and return
+// the first element in the list.
+//
+// Panics with an error of type *ErrOperationFailed if the list is empty.
+//
+// Returns:
+//
+//   - *T: A pointer to the value of the first element in the list.
 func (list *LinkedList[T]) DeleteFirst() *T {
 	if list.front == nil {
 		panic(ers.NewErrOperationFailed(
@@ -82,9 +148,9 @@ func (list *LinkedList[T]) DeleteFirst() *T {
 		))
 	}
 
-	var value *T
+	toRemove := list.front
+	list.front = list.front.next
 
-	value, list.front = list.front.value, list.front.next
 	if list.front == nil {
 		list.back = nil
 	} else {
@@ -93,52 +159,98 @@ func (list *LinkedList[T]) DeleteFirst() *T {
 
 	list.size--
 
-	return value
+	toRemove.next = nil
+
+	return toRemove.value
 }
 
+// PeekFirst is a method of the LinkedList type. It is used to return the first
+// element in the list without removing it.
+//
+// Panics with an error of type *ErrOperationFailed if the list is empty.
+//
+// Returns:
+//
+//   - value: A pointer to the value of the first element in the list.
 func (list *LinkedList[T]) PeekFirst() *T {
-	if list.front == nil {
-		panic(ers.NewErrOperationFailed(
-			"peek first element", NewErrEmptyList(list),
-		))
+	if list.front != nil {
+		return list.front.value
 	}
 
-	return list.front.value
+	panic(ers.NewErrOperationFailed(
+		"peek first element", NewErrEmptyList(list),
+	))
 }
 
+// IsEmpty is a method of the LinkedList type. It is used to check if the list is
+// empty.
+//
+// Returns:
+//
+//   - bool: A boolean value that is true if the list is empty, and false otherwise.
 func (list *LinkedList[T]) IsEmpty() bool {
 	return list.front == nil
 }
 
+// Size is a method of the LinkedList type. It is used to return the current number
+// of elements in the list.
+//
+// Returns:
+//
+//   - int: An integer that represents the current number of elements in the list.
 func (list *LinkedList[T]) Size() int {
 	return list.size
 }
 
+// Capacity is a method of the LinkedList type. It is used to return the maximum
+// number of elements the list can hold.
+//
+// Returns:
+//
+//   - optional.Int: An optional integer that represents the maximum number of elements
+//     the list can hold.
+func (list *LinkedList[T]) Capacity() optional.Int {
+	return list.capacity
+}
+
+// ToSlice is a method of the LinkedList type. It is used to convert the list to a
+// slice of pointers to its elements.
+//
+// Returns:
+//
+//   - []*T: A slice of pointers to the elements in the list.
 func (list *LinkedList[T]) ToSlice() []*T {
 	slice := make([]*T, 0, list.size)
 
-	for node := list.front; node != nil; node = node.next {
-		slice = append(slice, node.value)
+	for list_node := list.front; list_node != nil; list_node = list_node.next {
+		slice = append(slice, list_node.value)
 	}
 
 	return slice
 }
 
+// Clear is a method of the LinkedList type. It is used to remove all elements from
+// the list.
 func (list *LinkedList[T]) Clear() {
 	if list.front == nil {
 		return // List is already empty
 	}
 
 	// 1. First node
-	node := list.front
-	node.value = nil
+	list.front.value = nil
+	list.front.prev = nil
+	prev := list.front
 
 	// 2. Subsequent nodes
-	for node = node.next; node != nil; node = node.next {
+	for node := list.front.next; node != nil; node = node.next {
 		node.value = nil
-		node.prev.next = nil
 		node.prev = nil
+
+		prev = node
+		prev.next = nil
 	}
+
+	prev.next = nil
 
 	// 3. Reset list fields
 	list.front = nil
@@ -146,21 +258,44 @@ func (list *LinkedList[T]) Clear() {
 	list.size = 0
 }
 
-func (list *LinkedList[T]) IsFull() bool {
-	return false
+// IsFull is a method of the LinkedList type. It is used to check if the list is full.
+//
+// Returns:
+//
+//   - isFull: A boolean value that is true if the list is full, and false otherwise.
+func (list *LinkedList[T]) IsFull() (isFull bool) {
+	list.capacity.If(func(cap int) {
+		isFull = list.size >= cap
+	})
+
+	return
 }
 
+// String is a method of the LinkedList type. It returns a string representation of
+// the list with information about its size, capacity, and elements.
+//
+// Returns:
+//
+//   - string: A string representation of the list.
 func (list *LinkedList[T]) String() string {
 	var builder strings.Builder
 
-	fmt.Fprintf(&builder, "LinkedList[size=%d, values=[", list.size)
+	builder.WriteString("LinkedList[")
 
-	if list.front != nil {
-		fmt.Fprintf(&builder, "%v", *list.front.value)
+	list.capacity.If(func(cap int) {
+		fmt.Fprintf(&builder, "capacity=%d, ", cap)
+	})
 
-		for node := list.front.next; node != nil; node = node.next {
-			fmt.Fprintf(&builder, ", %v", *node.value)
-		}
+	if list.front == nil {
+		builder.WriteString("size=0, values=[]]")
+
+		return builder.String()
+	}
+
+	fmt.Fprintf(&builder, "size=%d, values=[%v", list.size, list.front.value)
+
+	for list_node := list.front.next; list_node != nil; list_node = list_node.next {
+		fmt.Fprintf(&builder, ", %v", list_node.value)
 	}
 
 	fmt.Fprintf(&builder, "]]")
@@ -168,22 +303,45 @@ func (list *LinkedList[T]) String() string {
 	return builder.String()
 }
 
+// Prepend is a method of the LinkedList type. It is used to add an element to
+// the end of the list.
+//
+// Panics with an error of type *ErrInvalidOperation if the list is full.
+//
+// Parameters:
+//
+//   - value: A pointer to an element of type T to be added to the list.
 func (list *LinkedList[T]) Prepend(value *T) {
-	node := &linkedNode[T]{
+	list.capacity.If(func(cap int) {
+		ers.Check(list.size < cap, ers.NewErrOperationFailed(
+			"prepend element", NewErrFullList(list),
+		))
+	})
+
+	list_node := &linkedNode[T]{
 		value: value,
 	}
 
 	if list.front == nil {
-		list.back = node
+		list.back = list_node
 	} else {
-		list.front.prev = node
-		node.next = list.front
+		list_node.next = list.front
+		list.front.prev = list_node
 	}
 
-	list.front = node
+	list.front = list_node
+
 	list.size++
 }
 
+// DeleteLast is a method of the LinkedList type. It is used to remove and return
+// the last element in the list.
+//
+// Panics with an error of type *ErrOperationFailed if the list is empty.
+//
+// Returns:
+//
+//   - *T: A pointer to the value of the last element in the list.
 func (list *LinkedList[T]) DeleteLast() *T {
 	if list.front == nil {
 		panic(ers.NewErrOperationFailed(
@@ -191,9 +349,8 @@ func (list *LinkedList[T]) DeleteLast() *T {
 		))
 	}
 
-	var value *T
-
-	value, list.back = list.back.value, list.back.prev
+	toRemove := list.back
+	list.back = list.back.prev
 
 	if list.back == nil {
 		list.front = nil
@@ -203,15 +360,86 @@ func (list *LinkedList[T]) DeleteLast() *T {
 
 	list.size--
 
-	return value
+	toRemove.prev = nil
+
+	return toRemove.value
 }
 
+// PeekLast is a method of the LinkedList type. It is used to return the last
+// element in the list without removing it.
+//
+// Panics with an error of type *ErrOperationFailed if the list is empty.
+//
+// Returns:
+//
+//   - value: A pointer to the value of the last element in the list.
 func (list *LinkedList[T]) PeekLast() *T {
-	if list.front == nil {
-		panic(ers.NewErrOperationFailed(
-			"peek last element", NewErrEmptyList(list),
-		))
+	if list.front != nil {
+		return list.back.value
+
 	}
 
-	return list.back.value
+	panic(ers.NewErrOperationFailed(
+		"peek last element", NewErrEmptyList(list),
+	))
+}
+
+// CutNilValues is a method of the LinkedList type. It is used to remove all nil
+// values from the list.
+func (list *LinkedList[T]) CutNilValues() {
+	if list.front == nil {
+		return // List is empty
+	}
+
+	if list.front.value == nil && list.front == list.back {
+		// Single node
+		list.front = nil
+		list.back = nil
+		list.size = 0
+
+		return
+	}
+
+	var toDelete *linkedNode[T] = nil
+
+	// 1. First node
+	if list.front.value == nil {
+		toDelete = list.front
+
+		list.front = list.front.next
+		list.front.prev = nil
+
+		toDelete.next = nil
+		list.size--
+	}
+
+	prev := list.front
+
+	// 2. Subsequent nodes (except last)
+	for node := list.front.next; node.next != nil; node = node.next {
+		if node.value != nil {
+			prev = node
+		} else {
+			prev.next = node.next
+			node.next.prev = prev
+			list.size--
+
+			if toDelete != nil {
+				toDelete.next = nil
+			}
+
+			toDelete = node
+		}
+	}
+
+	if toDelete != nil {
+		toDelete.next = nil
+	}
+
+	// 3. Last node
+	if list.back.value == nil {
+		list.back = prev
+		list.back.next = nil
+		list.size--
+	}
 }

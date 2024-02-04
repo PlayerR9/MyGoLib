@@ -1,3 +1,5 @@
+// Package ListLike provides a Queuer interface that defines methods for a queue data
+// structure.
 package ListLike
 
 import (
@@ -5,83 +7,83 @@ import (
 	"fmt"
 
 	ers "github.com/PlayerR9/MyGoLib/Utility/Errors"
+	"github.com/markphelps/optional"
 )
 
-// Package ListLike provides a Queuer interface that defines methods for a queue data structure.
-//
 // Queuer is an interface that defines methods for a queue data structure.
-// It includes methods to add and remove elements, check if the queue is empty or full,
-// get the size of the queue, convert the queue to a slice, clear the queue, and get a string
-// representation of the queue.
 type Queuer[T any] interface {
 	// The Enqueue method adds a value of type T to the end of the queue.
+	// If the queue is full, it will panic.
 	Enqueue(value *T)
 
-	// The Dequeue method is a convenience method that dequeues an element from the queue
-	// and returns it.
+	// The Dequeue method is a convenience method that dequeues an element from the
+	// queue and returns it.
 	// If the queue is empty, it will panic.
 	Dequeue() *T
 
-	// Peek is a method that returns the value at the front of the queue without removing
-	// it.
+	// Peek is a method that returns the value at the front of the queue without
+	// removing it.
 	// If the queue is empty, it will panic.
 	Peek() *T
 
-	// The IsEmpty method checks if the queue is empty and returns a boolean value indicating
-	// whether it is empty or not.
+	// The IsEmpty method checks if the queue is empty and returns a boolean value
+	// indicating whether it is empty or not.
 	IsEmpty() bool
 
 	// The Size method returns the number of elements currently in the queue.
 	Size() int
 
+	// The Capacity method returns the maximum number of elements that the queue can hold.
+	Capacity() optional.Int
+
 	// The ToSlice method returns a slice containing all the elements in the queue.
 	ToSlice() []*T
 
-	// The Clear method is used to remove all elements from the queue, making it empty.
+	// The Clear method is used to remove all elements from the queue, making it
+	// empty.
 	Clear()
 
-	// The IsFull method checks if the queue is full, meaning it has reached its maximum
-	// capacity and cannot accept any more elements.
+	// The IsFull method checks if the queue is full, meaning it has reached its
+	// maximum capacity and cannot accept any more elements.
 	IsFull() bool
 
+	// The String method returns a string representation of the queue.
 	fmt.Stringer
+
+	// The CutNilValues method is used to remove all nil values from the queue.
+	CutNilValues()
 }
 
-// linkedNode represents a node in a linked list. It holds a value of a generic type and a
-// reference to the next node in the list.
-//
-// The value field is of a generic type T, which can be any type such as int, string, or a
-// custom type.
-// It represents the value stored in the node.
-//
-// The next field is a pointer to the next linkedNode in the list. This allows for traversal
-// through the linked list by pointing to the subsequent node in the sequence.
+// linkedNode represents a node in a linked list.
 type linkedNode[T any] struct {
+	// value is the value stored in the node.
 	value *T
-	next  *linkedNode[T]
+
+	// next is a pointer to the next linkedNode in the list.
+	next *linkedNode[T]
 }
 
-// QueueIterator is a generic type in Go that represents an iterator for a queue.
-//
-// The values field is a slice of type T, which represents the elements stored in the queue.
-//
-// The currentIndex field is an integer that keeps track of the current index position of the
-// iterator in the queue.
-// It is used to iterate over the elements in the queue.
+// QueueIterator is a generic type that represents an iterator for a queue.
+// It is used to iterate over the elements in a queue.
 type QueueIterator[T any] struct {
-	values       []*T
+	// values is a slice of type T that represents the elements stored in the queue.
+	values []*T
+
+	// currentIndex is an integer that keeps track of the current index position of
+	// the iterator in the queue.
 	currentIndex int
 }
 
-// NewQueueIterator is a function that creates and returns a new QueueIterator object for a
-// given queue.
-// It takes a queue of type Queuer[T] as an argument, where T can be any type.
+// NewQueueIterator is a function that creates and returns a new QueueIterator
+// object for a given queue.
 //
-// The function uses the ToSlice method of the queue to get a slice of its values, and
-// initializes the currentIndex to -1, indicating that the iterator is at the start of the
-// queue.
+// Parameters:
 //
-// The returned QueueIterator can be used to iterate over the elements in the queue.
+//   - queue: A queue of type Queuer[T] that the iterator will be created for.
+//
+// Returns:
+//
+//   - *QueueIterator[T]: A pointer to a new QueueIterator object.
 func NewQueueIterator[T any](queue Queuer[T]) *QueueIterator[T] {
 	return &QueueIterator[T]{
 		values:       queue.ToSlice(),
@@ -89,30 +91,33 @@ func NewQueueIterator[T any](queue Queuer[T]) *QueueIterator[T] {
 	}
 }
 
-// GetNext is a method of the QueueIterator type. It is used to move the iterator to the next
-// element in the queue and return the value of that element.
-// If the iterator is at the end of the queue, the method panics by throwing an
-// ErrOutOfBoundsIterator error.
+// GetNext is a method of the QueueIterator type. It is used to move the iterator
+// to the next element in the queue and return the value of that element.
 //
-// This method is typically used in a loop to iterate over all the elements in a queue.
+// Panics with an error of type *ErrOperationFailed if the iterator is out of bounds.
+//
+// Returns:
+//
+//   - *T: A pointer to the next element in the queue.
 func (iterator *QueueIterator[T]) GetNext() *T {
-	if len(iterator.values) <= iterator.currentIndex {
-		panic(ers.NewErrOperationFailed(
-			"get next element", errors.New("iterator is out of bounds")),
-		)
+	if len(iterator.values) > iterator.currentIndex {
+		value := iterator.values[iterator.currentIndex]
+		iterator.currentIndex++
+
+		return value
 	}
 
-	value := iterator.values[iterator.currentIndex]
-	iterator.currentIndex++
-
-	return value
+	panic(ers.NewErrOperationFailed(
+		"get next element", errors.New("iterator is out of bounds")),
+	)
 }
 
-// HasNext is a method of the QueueIterator type. It returns true if there are more elements
-// that the iterator is pointing to, and false otherwise.
+// HasNext is a method of the QueueIterator type. It is used to check if there are
+// more elements in the queue that the iterator is pointing to.
 //
-// This method is typically used in conjunction with the GetNext method to iterate over and
-// access all the elements in a queue.
+// Returns:
+//
+//   - bool: A boolean value indicating whether there are more elements in the queue.
 func (iterator *QueueIterator[T]) HasNext() bool {
 	return iterator.currentIndex < len(iterator.values)
 }

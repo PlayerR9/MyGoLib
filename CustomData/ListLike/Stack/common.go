@@ -1,3 +1,4 @@
+// Package ListLike provides a Stacker interface that defines methods for a stack data structure.
 package ListLike
 
 import (
@@ -5,16 +6,13 @@ import (
 	"fmt"
 
 	ers "github.com/PlayerR9/MyGoLib/Utility/Errors"
+	"github.com/markphelps/optional"
 )
 
-// Package ListLike provides a Stacker interface that defines methods for a stack data structure.
-//
 // Stacker is an interface that defines methods for a stack data structure.
-// It includes methods to add and remove elements, check if the stack is empty or full,
-// get the size of the stack, convert the stack to a slice, clear the stack, and get a string
-// representation of the stack.
 type Stacker[T any] interface {
 	// The Push method adds a value of type T to the end of the stack.
+	// If the stack is full, it will panic.
 	Push(value *T)
 
 	// The Pop method is a convenience method that pops an element from the stack
@@ -34,6 +32,9 @@ type Stacker[T any] interface {
 	// The Size method returns the number of elements currently in the stack.
 	Size() int
 
+	// The Capacity method returns the maximum number of elements that the stack can hold.
+	Capacity() optional.Int
+
 	// The ToSlice method returns a slice containing all the elements in the stack.
 	ToSlice() []*T
 
@@ -44,44 +45,41 @@ type Stacker[T any] interface {
 	// capacity and cannot accept any more elements.
 	IsFull() bool
 
+	// The String method returns a string representation of the stack.
 	fmt.Stringer
+
+	// The CutNilValues method is used to remove all nil values from the stack.
+	CutNilValues()
 }
 
-// linkedNode represents a node in a linked list. It holds a value of a generic type and a
-// reference to the next node in the list.
-//
-// The value field is of a generic type T, which can be any type such as int, string, or a
-// custom type.
-// It represents the value stored in the node.
-//
-// The next field is a pointer to the next linkedNode in the list. This allows for traversal
-// through the linked list by pointing to the subsequent node in the sequence.
+// linkedNode represents a node in a linked list.
 type linkedNode[T any] struct {
+	// value is the value stored in the node.
 	value *T
-	next  *linkedNode[T]
+
+	// next is a pointer to the next linkedNode in the list.
+	next *linkedNode[T]
 }
 
 // StackIterator is a generic type in Go that represents an iterator for a stack.
-//
-// The values field is a slice of type T, which represents the elements stored in the stack.
-//
-// The currentIndex field is an integer that keeps track of the current index position of the
-// iterator in the stack.
-// It is used to iterate over the elements in the stack.
 type StackIterator[T any] struct {
-	values       []*T
+	// The values stored in the stack.
+	values []*T
+
+	// The current index position of the iterator in the stack.
 	currentIndex int
 }
 
 // NewStackIterator is a function that creates and returns a new StackIterator object for a
 // given stack.
-// It takes a stack of type Stacker[T] as an argument, where T can be any type.
 //
-// The function uses the ToSlice method of the stack to get a slice of its values, and
-// initializes the currentIndex to -1, indicating that the iterator is at the start of the
-// stack.
+// Parameters:
 //
-// The returned StackIterator can be used to iterate over the elements in the stack.
+//   - stack: A stack of type Stacker[T] that the iterator will be created for.
+//
+// Returns:
+//
+//   - *StackIterator[T]: A pointer to the newly created StackIterator object.
 func NewStackIterator[T any](stack Stacker[T]) *StackIterator[T] {
 	return &StackIterator[T]{
 		values:       stack.ToSlice(),
@@ -91,10 +89,12 @@ func NewStackIterator[T any](stack Stacker[T]) *StackIterator[T] {
 
 // GetNext is a method of the StackIterator type. It is used to move the iterator to the next
 // element in the stack and return the value of that element.
-// If the iterator is at the end of the stack, the method panics by throwing an
-// ErrOutOfBoundsIterator error.
 //
-// This method is typically used in a loop to iterate over all the elements in a stack.
+// Panics with an error of type *ErrOperationFailed if the iterator is at the end of the stack.
+//
+// Returns:
+//
+//   - *T: A pointer to the next element in the stack.
 func (iterator *StackIterator[T]) GetNext() *T {
 	if len(iterator.values) <= iterator.currentIndex {
 		panic(ers.NewErrOperationFailed(
@@ -108,11 +108,12 @@ func (iterator *StackIterator[T]) GetNext() *T {
 	return value
 }
 
-// HasNext is a method of the StackIterator type. It returns true if there are more elements
-// that the iterator is pointing to, and false otherwise.
+// HasNext is a method of the StackIterator type. It is used to check if there are more elements
+// to iterate over in the stack.
 //
-// This method is typically used in conjunction with the GetNext method to iterate over and
-// access all the elements in a stack.
+// Returns:
+//
+//   - bool: true if there are more elements, and false otherwise.
 func (iterator *StackIterator[T]) HasNext() bool {
 	return iterator.currentIndex < len(iterator.values)
 }

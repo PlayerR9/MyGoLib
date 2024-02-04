@@ -6,52 +6,130 @@ import (
 	"strings"
 
 	ers "github.com/PlayerR9/MyGoLib/Utility/Errors"
+	"github.com/markphelps/optional"
 )
 
-// ArrayStack is a generic type in Go that represents a stack data structure implemented
-// using an array.
-// It has a single field, values, which is a slice of type T. This slice stores the
-// elements in the stack.
+// ArrayStack is a generic type that represents a stack data structure with
+// or without a limited capacity. It is implemented using an array.
 type ArrayStack[T any] struct {
+	// values is a slice of type T that stores the elements in the stack.
 	values []*T
+
+	// capacity is the maximum number of elements the stack can hold.
+	capacity optional.Int
 }
 
-// NewArrayStack is a function that creates and returns a new instance of an ArrayStack.
-// It takes a variadic parameter of type T, which represents the initial values to be
-// stored in the stack.
-// The function creates a new ArrayStack, initializes its values field with a slice of
-// the same length as the input values, and then copies the input values into the new
-// slice. The new ArrayStack is then returned.
+// NewArrayStack is a function that creates and returns a new instance of a
+// ArrayStack.
+//
+// Parameters:
+//
+//   - values: A variadic parameter of type T, which represents the initial values to be
+//     stored in the stack.
+//
+// Returns:
+//
+//   - *ArrayStack[T]: A pointer to the newly created ArrayStack.
 func NewArrayStack[T any](values ...*T) *ArrayStack[T] {
+	slices.Reverse(values)
+
 	stack := &ArrayStack[T]{
 		values: make([]*T, len(values)),
 	}
-
-	slices.Reverse(values)
-
 	copy(stack.values, values)
 
 	return stack
 }
 
-func (stack *ArrayStack[T]) Push(value *T) {
-	stack.values = append(stack.values, value)
-}
-
-func (stack *ArrayStack[T]) Pop() *T {
-	if len(stack.values) == 0 {
+// WithCapacity is a method of the ArrayStack type. It is used to set the maximum
+// number of elements the stack can hold.
+//
+// Panics with an error of type *ErrOperationFailed if the capacity is already set,
+// or with an error of type *ErrInvalidParameter if the provided capacity is negative
+// or less than the current number of elements in the stack.
+//
+// Parameters:
+//
+//   - capacity: An integer that represents the maximum number of elements the stack can hold.
+//
+// Returns:
+//
+//   - *ArrayStack[T]: A pointer to the stack with the new capacity set.
+func (stack *ArrayStack[T]) WithCapacity(capacity int) *ArrayStack[T] {
+	stack.capacity.If(func(cap int) {
 		panic(ers.NewErrOperationFailed(
-			"pop", NewErrEmptyStack(stack),
+			"set capacity", fmt.Errorf("capacity is already set to %d", cap),
+		))
+	})
+
+	if capacity < 0 {
+		panic(ers.NewErrInvalidParameter(
+			"capacity", fmt.Errorf("negative capacity (%d) is not allowed", capacity),
+		))
+	} else if len(stack.values) > capacity {
+		panic(ers.NewErrInvalidParameter(
+			"capacity", fmt.Errorf("provided capacity (%d) is less than the current number of values (%d)",
+				capacity, len(stack.values)),
 		))
 	}
 
-	var value *T
+	stack.capacity = optional.NewInt(capacity)
 
-	value, stack.values = stack.values[len(stack.values)-1], stack.values[:len(stack.values)-1]
+	newValues := make([]*T, len(stack.values), capacity)
+	copy(newValues, stack.values)
 
-	return value
+	stack.values = newValues
+
+	return stack
 }
 
+// Push is a method of the ArrayStack type. It is used to add an element to the
+// end of the stack.
+//
+// Panics with an error of type *ErrOperationFailed if the stack is full.
+//
+// Parameters:
+//
+//   - value: A pointer to the element to be added to the stack.
+func (stack *ArrayStack[T]) Push(value *T) {
+	stack.capacity.If(func(cap int) {
+		ers.Check(len(stack.values) < cap, ers.NewErrOperationFailed(
+			"push element", NewErrFullStack(stack),
+		))
+	})
+
+	stack.values = append(stack.values, value)
+}
+
+// Pop is a method of the ArrayStack type. It is used to remove and return the
+// element at the end of the stack.
+//
+// Panics with an error of type *ErrOperationFailed if the stack is empty.
+//
+// Returns:
+//
+//   - *T: A pointer to the element that was removed from the stack.
+func (stack *ArrayStack[T]) Pop() *T {
+	if len(stack.values) == 0 {
+		panic(ers.NewErrOperationFailed(
+			"pop element", NewErrEmptyStack(stack),
+		))
+	}
+
+	toRemove := stack.values[len(stack.values)-1]
+	stack.values[len(stack.values)-1], stack.values = nil, stack.values[:len(stack.values)-1]
+
+	return toRemove
+}
+
+// Peek is a method of the ArrayStack type. It is used to return the element at the
+// end of the stack without removing it.
+//
+// Panics with an error of type *ErrOperationFailed if the stack is empty.
+//
+// Returns:
+//
+//   - *T: A pointer to the element at the end of the stack.
 func (stack *ArrayStack[T]) Peek() *T {
 	if len(stack.values) == 0 {
 		panic(ers.NewErrOperationFailed(
@@ -62,14 +140,43 @@ func (stack *ArrayStack[T]) Peek() *T {
 	return stack.values[len(stack.values)-1]
 }
 
+// IsEmpty is a method of the ArrayStack type. It is used to check if the stack is
+// empty.
+//
+// Returns:
+//
+//   - bool: A boolean value that is true if the stack is empty, and false otherwise.
 func (stack *ArrayStack[T]) IsEmpty() bool {
 	return len(stack.values) == 0
 }
 
+// Size is a method of the ArrayStack type. It is used to return the number of elements
+// in the stack.
+//
+// Returns:
+//
+//   - int: An integer that represents the number of elements in the stack.
 func (stack *ArrayStack[T]) Size() int {
 	return len(stack.values)
 }
 
+// Capacity is a method of the ArrayStack type. It is used to return the maximum number
+// of elements the stack can hold.
+//
+// Returns:
+//
+//   - optional.Int: An optional integer that represents the maximum number of elements
+//     the stack can hold.
+func (stack *ArrayStack[T]) Capacity() optional.Int {
+	return stack.capacity
+}
+
+// ToSlice is a method of the ArrayStack type. It is used to return the elements in the
+// stack as a slice.
+//
+// Returns:
+//
+//   - []*T: A slice of pointers to the elements in the stack.
 func (stack *ArrayStack[T]) ToSlice() []*T {
 	slice := make([]*T, len(stack.values))
 
@@ -79,34 +186,73 @@ func (stack *ArrayStack[T]) ToSlice() []*T {
 	return slice
 }
 
+// Clear is a method of the ArrayStack type. It is used to remove all elements from the
+// stack, making it empty.
 func (stack *ArrayStack[T]) Clear() {
-	stack.values = make([]*T, 0)
+	for i := range stack.values {
+		stack.values[i] = nil
+	}
+
+	if stack.capacity.Present() {
+		stack.values = make([]*T, 0, stack.capacity.MustGet())
+	} else {
+		stack.values = make([]*T, 0)
+	}
 }
 
-// IsFull is a method of the ArrayStack type. It checks if the stack is full.
+// IsFull is a method of the ArrayStack type. It is used to check if the stack is full,
+// i.e., if it has reached its maximum capacity.
 //
-// In this implementation, the method always returns false. This is because an
-// ArrayStack, implemented with a slice, can dynamically grow and shrink in size
-// as elements are added or removed. Therefore, it is never considered full,
-// and elements can always be added to it.
-func (stack *ArrayStack[T]) IsFull() bool {
-	return false
+// Returns:
+//
+//   - isFull: A boolean value that is true if the stack is full, and false otherwise.
+func (stack *ArrayStack[T]) IsFull() (isFull bool) {
+	stack.capacity.If(func(cap int) {
+		isFull = len(stack.values) == cap
+	})
+
+	return
 }
 
+// String is a method of the ArrayStack type. It is used to return a string representation
+// of the stack, including its capacity and the elements it contains.
+//
+// Returns:
+//
+//   - string: A string representation of the stack.
 func (stack *ArrayStack[T]) String() string {
 	var builder strings.Builder
 
-	fmt.Fprintf(&builder, "ArrayStack[size=%d, values=[", len(stack.values))
+	builder.WriteString("ArrayStack[")
 
-	if len(stack.values) > 0 {
-		fmt.Fprintf(&builder, "%v", stack.values[0])
+	stack.capacity.If(func(cap int) {
+		fmt.Fprintf(&builder, "capacity=%d, ", cap)
+	})
 
-		for _, element := range stack.values[1:] {
-			fmt.Fprintf(&builder, ", %v", element)
-		}
+	if len(stack.values) == 0 {
+		builder.WriteString("size=0, values=[ →]]")
+		return builder.String()
 	}
 
-	fmt.Fprintf(&builder, "→]]")
+	fmt.Fprintf(&builder, "size=%d, values=[%v", len(stack.values), stack.values[0])
+
+	for _, element := range stack.values[1:] {
+		fmt.Fprintf(&builder, ", %v", element)
+	}
+
+	fmt.Fprintf(&builder, " →]]")
 
 	return builder.String()
+}
+
+// CutNilValues is a method of the ArrayStack type. It is used to remove all nil
+// values from the stack.
+func (stack *ArrayStack[T]) CutNilValues() {
+	for i := 0; i < len(stack.values); {
+		if stack.values[i] == nil {
+			stack.values = append(stack.values[:i], stack.values[i+1:]...)
+		} else {
+			i++
+		}
+	}
 }

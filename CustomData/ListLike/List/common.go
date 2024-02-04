@@ -6,32 +6,36 @@ import (
 	"fmt"
 
 	ers "github.com/PlayerR9/MyGoLib/Utility/Errors"
+	"github.com/markphelps/optional"
 )
 
 // Lister is an interface that defines methods for a list data structure.
 // It includes methods to add and remove elements, check if the list is empty or full,
-// get the size of the list, convert the list to a slice, clear the list, and get a string
-// representation of the list.
+// get the size of the list, convert the list to a slice, clear the list, and get a
+// string representation of the list.
 type Lister[T any] interface {
 	// The Append method adds a value of type T to the end of the list.
 	Append(value *T)
 
-	// The DeleteFirst method is a convenience method that deletefirsts an element from the list
-	// and returns it.
+	// The DeleteFirst method is a convenience method that deletefirsts an element from
+	// the list and returns it.
 	// If the list is empty, it will panic.
 	DeleteFirst() *T
 
-	// PeekFirst is a method that returns the value at the front of the list without removing
-	// it.
+	// PeekFirst is a method that returns the value at the front of the list without
+	// removing it.
 	// If the list is empty, it will panic.
 	PeekFirst() *T
 
-	// The IsEmpty method checks if the list is empty and returns a boolean value indicating
-	// whether it is empty or not.
+	// The IsEmpty method checks if the list is empty and returns a boolean value
+	// indicating whether it is empty or not.
 	IsEmpty() bool
 
 	// The Size method returns the number of elements currently in the list.
 	Size() int
+
+	// The Capacity method returns the maximum number of elements that the list can hold.
+	Capacity() optional.Int
 
 	// The ToSlice method returns a slice containing all the elements in the list.
 	ToSlice() []*T
@@ -43,57 +47,57 @@ type Lister[T any] interface {
 	// capacity and cannot accept any more elements.
 	IsFull() bool
 
+	// The String method returns a string representation of the list.
+	// It is useful for debugging and logging purposes.
 	fmt.Stringer
 
 	// The Prepend method adds a value of type T to the end of the list.
 	Prepend(value *T)
 
-	// The DeleteLast method is a convenience method that deletelasts an element from the list
-	// and returns it.
+	// The DeleteLast method is a convenience method that deletelasts an element from the
+	// list and returns it.
 	// If the list is empty, it will panic.
 	DeleteLast() *T
 
-	// PeekLast is a method that returns the value at the front of the list without removing
-	// it.
+	// PeekLast is a method that returns the value at the front of the list without
+	// removing it.
 	// If the list is empty, it will panic.
 	PeekLast() *T
+
+	// CutNilValues is a method that removes all nil values from the list.
+	// It is useful for cleaning up the list and removing any empty or nil elements.
+	CutNilValues()
 }
 
-// linkedNode represents a node in a linked list. It holds a value of a generic type and a
-// reference to the next node in the list.
-//
-// The value field is of a generic type T, which can be any type such as int, string, or a
-// custom type.
-// It represents the value stored in the node.
-//
-// The next field is a pointer to the next linkedNode in the list. This allows for traversal
-// through the linked list by pointing to the subsequent node in the sequence.
+// linkedNode represents a node in a linked list. It holds a value of a generic type
+// and a reference to the next node in the list.
 type linkedNode[T any] struct {
-	value      *T
+	// The value stored in the node.
+	value *T
+
+	// A reference to the previous and next nodes in the list, respectively.
 	prev, next *linkedNode[T]
 }
 
 // ListIterator is a generic type in Go that represents an iterator for a list.
-//
-// The values field is a slice of type T, which represents the elements stored in the list.
-//
-// The currentIndex field is an integer that keeps track of the current index position of the
-// iterator in the list.
-// It is used to iterate over the elements in the list.
 type ListIterator[T any] struct {
-	values       []*T
+	// The values stored in the list.
+	values []*T
+
+	// The current index position of the iterator in the list.
 	currentIndex int
 }
 
-// NewListIterator is a function that creates and returns a new ListIterator object for a
-// given list.
-// It takes a list of type Lister[T] as an argument, where T can be any type.
+// NewListIterator is a function that creates and returns a new ListIterator object
+// for a given list.
 //
-// The function uses the ToSlice method of the list to get a slice of its values, and
-// initializes the currentIndex to -1, indicating that the iterator is at the start of the
-// list.
+// Parameters:
 //
-// The returned ListIterator can be used to iterate over the elements in the list.
+//   - list: A list of type Lister[T] that the iterator will iterate over.
+//
+// Returns:
+//
+//   - *ListIterator[T]: A pointer to a new ListIterator object.
 func NewListIterator[T any](list Lister[T]) *ListIterator[T] {
 	return &ListIterator[T]{
 		values:       list.ToSlice(),
@@ -101,30 +105,33 @@ func NewListIterator[T any](list Lister[T]) *ListIterator[T] {
 	}
 }
 
-// GetNext is a method of the ListIterator type. It is used to move the iterator to the next
-// element in the list and return the value of that element.
-// If the iterator is at the end of the list, the method panics by throwing an
-// ErrOutOfBoundsIterator error.
+// GetNext is a method of the ListIterator type that moves the iterator to
+// the next element in the list and return the value of that element.
 //
-// This method is typically used in a loop to iterate over all the elements in a list.
+// Panics with *ErrOperationFailed if the iterator is at the end of the list.
+//
+// Returns:
+//
+//   - *T: A pointer to the next element in the list.
 func (iterator *ListIterator[T]) GetNext() *T {
-	if len(iterator.values) <= iterator.currentIndex {
-		panic(ers.NewErrOperationFailed(
-			"get next element", errors.New("iterator is out of bounds")),
-		)
+	if len(iterator.values) > iterator.currentIndex {
+		value := iterator.values[iterator.currentIndex]
+		iterator.currentIndex++
+
+		return value
 	}
 
-	value := iterator.values[iterator.currentIndex]
-	iterator.currentIndex++
-
-	return value
+	panic(ers.NewErrOperationFailed(
+		"get next element", errors.New("iterator is out of bounds")),
+	)
 }
 
-// HasNext is a method of the ListIterator type. It returns true if there are more elements
-// that the iterator is pointing to, and false otherwise.
+// HasNext is a method of the ListIterator type that checks if there are more elements
+// in the list that the iterator can access.
 //
-// This method is typically used in conjunction with the GetNext method to iterate over and
-// access all the elements in a list.
+// Returns:
+//
+//   - bool: true if there are more elements, and false otherwise.
 func (iterator *ListIterator[T]) HasNext() bool {
 	return iterator.currentIndex < len(iterator.values)
 }

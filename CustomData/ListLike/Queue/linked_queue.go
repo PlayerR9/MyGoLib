@@ -5,10 +5,11 @@ import (
 	"strings"
 
 	ers "github.com/PlayerR9/MyGoLib/Utility/Errors"
+	"github.com/markphelps/optional"
 )
 
-// LinkedQueue is a generic type in Go that represents a queue data structure implemented
-// using a linked list.
+// LinkedQueue is a generic type that represents a queue data structure with
+// or without a limited capacity, implemented using a linked list.
 type LinkedQueue[T any] struct {
 	// front and back are pointers to the first and last nodes in the linked queue,
 	// respectively.
@@ -16,24 +17,23 @@ type LinkedQueue[T any] struct {
 
 	// size is the current number of elements in the queue.
 	size int
+
+	// capacity is the maximum number of elements the queue can hold.
+	capacity optional.Int
 }
 
-// NewLinkedQueue is a function that creates and returns a new instance of a LinkedQueue.
-// It takes a variadic parameter of type T, which represents the initial values to be
-// stored in the queue.
+// NewLinkedQueue is a function that creates and returns a new instance of a
+// LinkedQueue.
 //
-// If no initial values are provided, the function simply returns a new LinkedQueue with
-// all its fields set to their zero values.
+// Parameters:
 //
-// If initial values are provided, the function creates a new LinkedQueue and initializes
-// its size. It then creates a linked list of nodes
-// from the initial values, with each node holding one value, and sets the front and back
-// pointers of the queue. The new LinkedQueue is then returned.
+//   - values: A variadic parameter of type T, which represents the initial values to be
+//     stored in the queue.
+//
+// Returns:
+//
+//   - *LinkedQueue[T]: A pointer to the newly created LinkedQueue.
 func NewLinkedQueue[T any](values ...*T) *LinkedQueue[T] {
-	if len(values) == 0 {
-		return new(LinkedQueue[T])
-	}
-
 	queue := new(LinkedQueue[T])
 	queue.size = len(values)
 
@@ -58,21 +58,83 @@ func NewLinkedQueue[T any](values ...*T) *LinkedQueue[T] {
 	return queue
 }
 
+// WithCapacity is a method of the LinkedQueue type. It is used to set the maximum
+// number of elements the queue can hold.
+//
+// Panics with an error of type *ErrOperationFailed if the capacity is already set,
+// or with an error of type *ErrInvalidParameter if the provided capacity is negative
+// or less than the current number of elements in the queue.
+//
+// Parameters:
+//
+//   - capacity: An integer that represents the maximum number of elements the queue
+//     can hold.
+//
+// Returns:
+//
+//   - *LinkedQueue[T]: A pointer to the queue with the new capacity set.
+func (queue *LinkedQueue[T]) WithCapacity(capacity int) *LinkedQueue[T] {
+	queue.capacity.If(func(cap int) {
+		panic(ers.NewErrOperationFailed(
+			"set capacity", fmt.Errorf("capacity is already set to %d", cap),
+		))
+	})
+
+	if capacity < 0 {
+		panic(ers.NewErrInvalidParameter(
+			"capacity", fmt.Errorf("negative capacity (%d) is not allowed", capacity),
+		))
+	} else if queue.size > capacity {
+		panic(ers.NewErrInvalidParameter(
+			"values", fmt.Errorf("capacity (%d) is not big enough to hold %d elements",
+				capacity, queue.size),
+		))
+	}
+
+	queue.capacity = optional.NewInt(capacity)
+
+	return queue
+}
+
+// Enqueue is a method of the LinkedQueue type. It is used to add an element to
+// the end of the queue.
+//
+// Panics with an error of type *ErrOperationFailed if the queue is full.
+//
+// Parameters:
+//
+//   - value: A pointer to a value of type T, which is the element to be added to the
+//     queue.
 func (queue *LinkedQueue[T]) Enqueue(value *T) {
-	node := linkedNode[T]{
+	queue.capacity.If(func(cap int) {
+		ers.Check(queue.size < cap, ers.NewErrOperationFailed(
+			"enqueue", NewErrFullQueue(queue),
+		))
+	})
+
+	queue_node := &linkedNode[T]{
 		value: value,
 	}
 
 	if queue.back == nil {
-		queue.front = &node
+		queue.front = queue_node
 	} else {
-		queue.back.next = &node
+		queue.back.next = queue_node
 	}
 
-	queue.back = &node
+	queue.back = queue_node
+
 	queue.size++
 }
 
+// Dequeue is a method of the LinkedQueue type. It is used to remove and return
+// the element at the front of the queue.
+//
+// Panics with an error of type *ErrOperationFailed if the queue is empty.
+//
+// Returns:
+//
+//   - *T: A pointer to the value of the element at the front of the queue.
 func (queue *LinkedQueue[T]) Dequeue() *T {
 	if queue.front == nil {
 		panic(ers.NewErrOperationFailed(
@@ -80,70 +142,204 @@ func (queue *LinkedQueue[T]) Dequeue() *T {
 		))
 	}
 
-	var value *T
+	toRemove := queue.front
 
-	value, queue.front = queue.front.value, queue.front.next
+	queue.front = queue.front.next
 	if queue.front == nil {
 		queue.back = nil
 	}
 
 	queue.size--
+	toRemove.next = nil
 
-	return value
+	return toRemove.value
 }
 
+// Peek is a method of the LinkedQueue type. It is used to return the element at
+// the front of the queue without removing it.
+//
+// Panics with an error of type *ErrOperationFailed if the queue is empty.
+//
+// Returns:
+//
+//   - *T: A pointer to the value of the element at the front of the queue.
 func (queue *LinkedQueue[T]) Peek() *T {
-	if queue.front == nil {
-		panic(ers.NewErrOperationFailed(
-			"peek", NewErrEmptyQueue(queue),
-		))
+	if queue.front != nil {
+		return queue.front.value
 	}
 
-	return queue.front.value
+	panic(ers.NewErrOperationFailed(
+		"peek", NewErrEmptyQueue(queue),
+	))
 }
 
+// IsEmpty is a method of the LinkedQueue type. It is used to check if the queue
+// is empty.
+//
+// Returns:
+//
+//   - bool: A boolean value indicating whether the queue is empty.
 func (queue *LinkedQueue[T]) IsEmpty() bool {
 	return queue.front == nil
 }
 
+// Size is a method of the LinkedQueue type. It is used to return the current
+// number of elements in the queue.
+//
+// Returns:
+//
+//   - int: An integer representing the current number of elements in the queue.
 func (queue *LinkedQueue[T]) Size() int {
 	return queue.size
 }
 
+func (queue *LinkedQueue[T]) Capacity() optional.Int {
+	return queue.capacity
+}
+
+// ToSlice is a method of the LinkedQueue type. It is used to return a slice
+// containing the elements of the queue.
+//
+// Returns:
+//
+//   - []*T: A slice of pointers to the elements of the queue.
 func (queue *LinkedQueue[T]) ToSlice() []*T {
 	slice := make([]*T, 0, queue.size)
 
-	for node := queue.front; node != nil; node = node.next {
-		slice = append(slice, node.value)
+	for queue_node := queue.front; queue_node != nil; queue_node = queue_node.next {
+		slice = append(slice, queue_node.value)
 	}
 
 	return slice
 }
 
+// Clear is a method of the LinkedQueue type. It is used to remove all elements
+// from the queue.
 func (queue *LinkedQueue[T]) Clear() {
+	if queue.front == nil {
+		return // Queue is already empty
+	}
+
+	// 1. First node
+	queue.front.value = nil
+	prev := queue.front
+
+	// 2. Subsequent nodes
+	for node := queue.front.next; node != nil; node = node.next {
+		node.value = nil
+
+		prev = node
+		prev.next = nil
+	}
+
+	prev.next = nil
+
+	// 3. Reset queue fields
 	queue.front = nil
 	queue.back = nil
 	queue.size = 0
 }
 
-func (queue *LinkedQueue[T]) IsFull() bool {
-	return false
+// IsFull is a method of the LinkedQueue type. It is used to check if the queue is
+// full.
+//
+// Returns:
+//
+//   - isFull: A boolean value indicating whether the queue is full.
+func (queue *LinkedQueue[T]) IsFull() (isFull bool) {
+	queue.capacity.If(func(cap int) {
+		isFull = queue.size >= cap
+	})
+
+	return
 }
 
+// String is a method of the LinkedQueue type. It is used to return a string
+// representation of the queue including its size, capacity, and elements.
+//
+// Returns:
+//
+//   - string: A string representation of the queue.
 func (queue *LinkedQueue[T]) String() string {
 	var builder strings.Builder
 
-	fmt.Fprintf(&builder, "LinkedQueue[size=%d, values=[← ", queue.size)
+	builder.WriteString("LinkedQueue[")
 
-	if queue.front != nil {
-		fmt.Fprintf(&builder, "%v", *queue.front.value)
+	queue.capacity.If(func(cap int) {
+		fmt.Fprintf(&builder, "capacity=%d, ", cap)
+	})
 
-		for node := queue.front.next; node != nil; node = node.next {
-			fmt.Fprintf(&builder, ", %v", *node.value)
+	if queue.size == 0 {
+		builder.WriteString("size=0, values=[← ]]")
+
+		return builder.String()
+	}
+
+	fmt.Fprintf(&builder, "size=%d, values=[← %v", queue.size, queue.front.value)
+
+	for queue_node := queue.front.next; queue_node != nil; queue_node = queue_node.next {
+		fmt.Fprintf(&builder, ", %v", queue_node.value)
+	}
+
+	builder.WriteString("]]")
+
+	return builder.String()
+}
+
+// CutNilValues is a method of the LinkedQueue type. It is used to remove all nil
+// values from the queue.
+func (queue *LinkedQueue[T]) CutNilValues() {
+	if queue.front == nil {
+		return // Queue is empty
+	}
+
+	if queue.front.value == nil && queue.front == queue.back {
+		// Single node
+		queue.front = nil
+		queue.back = nil
+		queue.size = 0
+
+		return
+	}
+
+	var toDelete *linkedNode[T] = nil
+
+	// 1. First node
+	if queue.front.value == nil {
+		toDelete = queue.front
+
+		queue.front = queue.front.next
+
+		toDelete.next = nil
+		queue.size--
+	}
+
+	prev := queue.front
+
+	// 2. Subsequent nodes (except last)
+	for node := queue.front.next; node.next != nil; node = node.next {
+		if node.value != nil {
+			prev = node
+		} else {
+			prev.next = node.next
+			queue.size--
+
+			if toDelete != nil {
+				toDelete.next = nil
+			}
+
+			toDelete = node
 		}
 	}
 
-	fmt.Fprintf(&builder, "]]")
+	if toDelete != nil {
+		toDelete.next = nil
+	}
 
-	return builder.String()
+	// 3. Last node
+	if queue.back.value == nil {
+		queue.back = prev
+		queue.back.next = nil
+		queue.size--
+	}
 }

@@ -27,3 +27,17 @@ func (rw *RWSafe[T]) Set(value T) {
 	rw.value = value
 	rw.mutex.Unlock()
 }
+
+func (rw *RWSafe[T]) DoRead(f func(T)) {
+	rw.mutex.RLock()
+	defer rw.mutex.RUnlock()
+
+	f(rw.value)
+}
+
+func (rw *RWSafe[T]) DoWrite(f func(*T)) {
+	rw.mutex.Lock()
+	defer rw.mutex.Unlock()
+
+	f(&rw.value)
+}
