@@ -6,7 +6,13 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+
+	itf "github.com/PlayerR9/MyGoLib/Interfaces"
 )
+
+// ConditionCheck is a function that checks a condition and returns an error
+// if the condition is not met.
+type ConditionCheck func(any) error
 
 // ErrOutOfBound represents an error when a value is out of a specified range.
 type ErrOutOfBound struct {
@@ -14,74 +20,28 @@ type ErrOutOfBound struct {
 	// respectively.
 	lowerBound, upperBound int
 
-	// value is the value that caused the error.
-	value int
-
-	// lowerInclusive and upperInclusive are flags indicating whether the lower and upper
-	// bounds are inclusive, respectively.
+	// lowerInclusive and upperInclusive are flags indicating whether the lower
+	// and upper bounds are inclusive, respectively.
 	lowerInclusive, upperInclusive bool
 }
 
-// NewErrOutOfBound creates a new ErrOutOfBound error.
-//
-// Parameters:
-//
-//   - lowerBound is the lower bound of the range.
-//   - upperBound is the upper bound of the range.
-//   - value is the value that caused the error.
+// Error generates the error message for the ErrOutOfBound error, including the
+// value, the range, and whether the bounds are inclusive.
+// The message includes the range, and whether the bounds are inclusive.
 //
 // Returns:
 //
-//   - A pointer to the new ErrOutOfBound.
-func NewErrOutOfBound(lowerBound, upperBound, value int) *ErrOutOfBound {
-	return &ErrOutOfBound{
-		lowerBound:     lowerBound,
-		lowerInclusive: false,
-		upperBound:     upperBound,
-		upperInclusive: true,
-		value:          value,
-	}
-}
-
-// WithLowerBound sets the inclusivity of the lower bound.
-//
-// Parameters:
-//
-//   - isInclusive is a boolean indicating whether the lower bound is inclusive.
-//
-// Returns:
-//
-//   - The ErrOutOfBound instance for chaining.
-func (e *ErrOutOfBound) WithLowerBound(isInclusive bool) *ErrOutOfBound {
-	e.lowerInclusive = isInclusive
-	return e
-}
-
-// WithUpperBound sets the inclusivity of the upper bound.
-//
-// Parameters:
-//
-//   - isInclusive is a boolean indicating whether the upper bound is inclusive.
-//
-// Returns:
-//
-//   - The ErrOutOfBound instance for chaining.
-func (e *ErrOutOfBound) WithUpperBound(isInclusive bool) *ErrOutOfBound {
-	e.upperInclusive = isInclusive
-	return e
-}
-
-// Error generates the error message for the ErrOutOfBound error.
-// The message includes the value, the range, and whether the bounds are inclusive.
+//   - string: The error message.
 func (e *ErrOutOfBound) Error() string {
 	var builder strings.Builder
 
-	fmt.Fprintf(&builder, "value (%d) not in range ", e.value)
+	fmt.Fprintf(&builder, "value not in range ")
 	if e.lowerInclusive {
 		builder.WriteRune('[')
 	} else {
 		builder.WriteRune('(')
 	}
+
 	fmt.Fprintf(&builder, "%d, %d", e.lowerBound, e.upperBound)
 	if e.upperInclusive {
 		builder.WriteRune(']')
@@ -90,6 +50,97 @@ func (e *ErrOutOfBound) Error() string {
 	}
 
 	return builder.String()
+}
+
+// WithLowerBound sets the inclusivity of the lower bound.
+//
+// Parameters:
+//
+//   - isInclusive: A boolean indicating whether the lower bound is inclusive.
+//
+// Returns:
+//
+//   - *ErrOutOfBound: The error instance for chaining.
+func (e *ErrOutOfBound) WithLowerBound(isInclusive bool) *ErrOutOfBound {
+	e.lowerInclusive = isInclusive
+
+	return e
+}
+
+// WithUpperBound sets the inclusivity of the upper bound.
+//
+// Parameters:
+//
+//   - isInclusive: A boolean indicating whether the upper bound is inclusive.
+//
+// Returns:
+//
+//   - *ErrOutOfBound: The error instance for chaining.
+func (e *ErrOutOfBound) WithUpperBound(isInclusive bool) *ErrOutOfBound {
+	e.upperInclusive = isInclusive
+
+	return e
+}
+
+// NewOutOfBound creates a new ErrOutOfBound error. If no inclusivity flags are
+// provided, the lower bound is inclusive and the upper bound is exclusive.
+//
+// Parameters:
+//
+//   - lowerBound, upperbound: The lower and upper bounds of the range,
+//     respectively.
+//   - value: The value that caused the error.
+//
+// Returns:
+//
+//   - error: A pointer to the newly created ErrOutOfBound.
+func NewErrOutOfBound(lowerBound, upperBound int) error {
+	return &ErrOutOfBound{
+		lowerBound:     lowerBound,
+		upperBound:     upperBound,
+		lowerInclusive: true,
+		upperInclusive: false,
+	}
+}
+
+// OutOfBound is a constructor function that creates a new ErrOutOfBound error.
+// If no inclusivity flags are provided, the lower bound is inclusive and the
+// upper bound is exclusive.
+// The difference between this function and NewErrOutOfBound is that this
+// function is used in conjuction with Check to create a fluent interface for
+// error handling.
+//
+// Parameters:
+//
+//   - lowerBound, upperBound: The lower and upper bounds of the range,
+//     respectively.
+//
+// Returns:
+//
+//   - *ErrOutOfBound: A pointer to the newly created ErrOutOfBound.
+func OutOfBound(lowerBound, upperBound int) *ErrOutOfBound {
+	return &ErrOutOfBound{
+		lowerBound:     lowerBound,
+		upperBound:     upperBound,
+		lowerInclusive: true,
+		upperInclusive: false,
+	}
+}
+
+// IsIn creates a condition check that validates if a value is within the range
+// specified by the ErrOutOfBound error.
+//
+// Returns:
+//
+//   - ConditionCheck: A function that checks if a value is within the range.
+func (e *ErrOutOfBound) IsIn() ConditionCheck {
+	return func(v any) error {
+		if v.(int) >= e.lowerBound && v.(int) <= e.upperBound {
+			return nil
+		}
+
+		return e
+	}
 }
 
 // ErrInvalidParameter represents an error when a parameter is invalid.
@@ -101,20 +152,39 @@ type ErrInvalidParameter struct {
 	reason error
 }
 
-// NewErrInvalidParameter creates a new ErrInvalidParameter error.
-//
-// Parameters:
-//
-//   - parameter is the name of the parameter.
-//   - reason is the reason for the invalidity.
+// Error generates the error message for the ErrInvalidParameter error, including
+// the parameter name and the reason for its invalidity.
 //
 // Returns:
 //
-//   - A pointer to the new ErrInvalidParameter.
+//   - string: The error message.
+func (e *ErrInvalidParameter) Error() string {
+	return fmt.Sprintf("parameter (%s) is invalid: %v", e.parameter, e.reason)
+}
+
+// Unwrap returns the reason for the invalidity of the parameter.
+// It is used for error unwrapping.
 //
+// Returns:
+//
+//   - error: The reason for the invalidity of the parameter.
+func (e *ErrInvalidParameter) Unwrap() error {
+	return e.reason
+}
+
+// NewInvalidParameter creates a new ErrInvalidParameter error.
 // If the reason is not provided (nil), the reason is set to
 // "parameter is invalid" by default.
-func NewErrInvalidParameter(parameter string, reason error) *ErrInvalidParameter {
+//
+// Parameters:
+//
+//   - parameter: The name of the parameter.
+//   - reason: The reason for the invalidity.
+//
+// Returns:
+//
+//   - error: A pointer to the newly created ErrInvalidParameter.
+func NewInvalidParameter(parameter string, reason error) error {
 	if reason == nil {
 		reason = errors.New("parameter is invalid")
 	}
@@ -125,230 +195,215 @@ func NewErrInvalidParameter(parameter string, reason error) *ErrInvalidParameter
 	}
 }
 
-// Error generates the error message for the ErrInvalidParameter error.
-// The message includes the parameter name and the reason for its invalidity.
-func (e *ErrInvalidParameter) Error() string {
-	return fmt.Sprintf("invalid parameter: parameter=%s, reason=%v", e.parameter, e.reason)
-}
-
-// Unwrap returns the reason for the invalidity of the parameter.
-// It is used for error unwrapping.
-func (e *ErrInvalidParameter) Unwrap() error {
-	return e.reason
-}
-
-// NewErrNilParameter creates a new ErrInvalidParameter error with the reason
-// "parameter cannot be nil".
+// InvalidParameter creates a new ErrInvalidParameter error.
+// The difference between this function and NewInvalidParameter is that this
+// function is used in conjuction with Check to create a fluent interface for
+// error handling.
 //
 // Parameters:
 //
-//   - parameter is the name of the parameter.
+//   - parameter: The name of the parameter.
 //
 // Returns:
 //
-//   - A pointer to the new ErrInvalidParameter.
-func NewErrNilParameter(parameter string) *ErrInvalidParameter {
+//   - *ErrInvalidParameter: A pointer to the new ErrInvalidParameter.
+func InvalidParameter(parameter string) *ErrInvalidParameter {
 	return &ErrInvalidParameter{
 		parameter: parameter,
-		reason:    errors.New("parameter cannot be nil"),
+	}
+}
+
+// Not creates a condition check that validates if a value is not equal to the
+// provided value. Errors if the value is equal to the provided value.
+//
+// Parameters:
+//
+//   - other: The value to compare against.
+//
+// Returns:
+//
+//   - ConditionCheck: A function that checks if a value is not equal to the
+//     provided value.
+func (e *ErrInvalidParameter) Not(other any) ConditionCheck {
+	return func(v any) error {
+		if !reflect.DeepEqual(v, other) {
+			return nil
+		}
+
+		return &ErrInvalidParameter{
+			parameter: e.parameter,
+			reason:    fmt.Errorf("value (%v) is not allowed", v),
+		}
+	}
+}
+
+// NotNil creates a condition check that validates if a value is not nil.
+//
+// Returns:
+//
+//   - ConditionCheck: A function that checks if a value is not nil.
+func (e *ErrInvalidParameter) NotNil() ConditionCheck {
+	return func(v any) error {
+		if v != nil {
+			return nil
+		}
+
+		return &ErrInvalidParameter{
+			parameter: e.parameter,
+			reason:    fmt.Errorf("%T was found to be nil", v),
+		}
+	}
+}
+
+// NotZero creates a condition check that validates if a value is not the zero
+// value of its type.
+//
+// Returns:
+//
+//   - ConditionCheck: A function that checks if a value is not the zero value
+//     of its type.
+func (e *ErrInvalidParameter) NotZero() ConditionCheck {
+	return func(v any) error {
+		if !reflect.DeepEqual(v, reflect.Zero(reflect.TypeOf(v)).Interface()) {
+			return nil
+		}
+
+		return &ErrInvalidParameter{
+			parameter: e.parameter,
+			reason:    fmt.Errorf("value (%v) is the zero value of its type", v),
+		}
+	}
+}
+
+func (c *ErrInvalidParameter) Lt(other any) ConditionCheck {
+	return func(v any) error {
+		x, ok := v.(interface{ Less(other any) bool })
+		if ok {
+			if x.Less(other) {
+				return nil
+			}
+
+			return &ErrInvalidParameter{
+				parameter: c.parameter,
+				reason:    fmt.Errorf("value (%v) is not less than %v", v, other),
+			}
+		}
+
+		y, ok := other.(itf.InequalityComparable)
+
+		if itf.Less(v, other) {
+			return nil
+		}
+
+		return &ErrInvalidParameter{
+			parameter: c.parameter,
+			reason:    fmt.Errorf("value (%v) is not less than %v", v, other),
+		}
 	}
 }
 
 // ErrCallFailed represents an error that occurs when a function call fails.
 type ErrCallFailed struct {
+	// fnName is the name of the function.
+	fnName string
+
 	// signature is the signature of the function.
-	signature string
+	signature reflect.Type
 
 	// reason is the reason for the failure.
 	reason error
 }
 
-// NewErrCallFailed creates a new ErrCallFailed. It generates the function signature
-// from the provided function name and function, and sets the reason for the failure.
-//
-// Parameters:
-//
-//   - functionName is the name of the function.
-//   - function is the function that failed.
-//   - reason is the reason for the failure.
+// Error generates a string representation of an ErrCallFailed, including the
+// function name, signature, and the reason for the failure.
 //
 // Returns:
 //
-//   - A pointer to the new ErrCallFailed.
+//   - string: The error message.
+func (e *ErrCallFailed) Error() string {
+	return fmt.Sprintf("call to %s%v failed: %v",
+		e.fnName, e.signature, e.reason)
+}
+
+// Unwrap returns the underlying error that caused the ErrCallFailed.
+// It is used for error unwrapping.
 //
-// If the reason is not provided (nil), the reason is set to
-// "an error occurred while calling the function" by default.
-func NewErrCallFailed(functionName string, function any, reason error) *ErrCallFailed {
+// Returns:
+//
+//   - error: The reason for the failure.
+func (e *ErrCallFailed) Unwrap() error {
+	return e.reason
+}
+
+// NewCallFailed creates a new ErrCallFailed. If the reason is not provided (nil),
+// the reason is set to "an error occurred while calling the function" by default.
+//
+// Parameters:
+//
+//   - functionName: The name of the function.
+//   - function: The function that failed.
+//   - reason: The reason for the failure.
+//
+// Returns:
+//
+//   - error: A pointer to the new ErrCallFailed.
+func NewCallFailed(functionName string, function any, reason error) error {
 	if reason == nil {
 		reason = errors.New("an error occurred while calling the function")
 	}
 
 	return &ErrCallFailed{
-		signature: fmt.Sprintf("%s%v", functionName, reflect.ValueOf(function).Type()),
+		fnName:    functionName,
+		signature: reflect.ValueOf(function).Type(),
 		reason:    reason,
 	}
 }
 
-// Error generates a string representation of an ErrCallFailed.
-// It includes the function signature and the reason for the failure.
-func (e *ErrCallFailed) Error() string {
-	return fmt.Sprintf("call failed: function=%s, reason=%v", e.signature, e.reason)
-}
-
-// Unwrap returns the underlying error that caused the ErrCallFailed.
-// Returns: The underlying error.
-func (e *ErrCallFailed) Unwrap() error {
-	return e.reason
-}
-
-// RecoverFromPanic is a function that recovers from a panic and sets the provided
-// error pointer to the recovered value.
-// If the recovered value is an error, it sets the error pointer to that error.
-// Otherwise, it creates a new error with the recovered value and sets the error
-// pointer to that.
-//
-// The function should be called using the defer statement to recover from panics.
+// CallFailed creates a new ErrCallFailed.
+// The difference between this function and NewCallFailed is that this function
+// is used in conjuction with Check to create a fluent interface for error
+// handling.
 //
 // Parameters:
 //
-//   - err: The error pointer to set.
+//   - functionName is the name of the function.
+//   - function is the function that failed.
 //
-// Example:
+// Returns:
 //
-//	  func MyFunction(n int) (result int, err error) {
-//	      defer RecoverFromPanic(&err)
-//
-//	      // ...
-//
-//	      panic("something went wrong")
-//		}
-func RecoverFromPanic(err *error) {
-	r := recover()
-	if r == nil {
-		return
-	}
-
-	if recErr, ok := r.(error); ok {
-		*err = recErr
-	} else {
-		*err = fmt.Errorf("panic: %v", r)
+//   - *ErrCallFailed: A pointer to the new ErrCallFailed.
+func CallFailed(functionName string, function any) *ErrCallFailed {
+	return &ErrCallFailed{
+		fnName:    functionName,
+		signature: reflect.ValueOf(function).Type(),
 	}
 }
 
-// Check is a generic function that validates if the provided value is the
-// zero value of its type. If it is, the function triggers a panic with the
-// supplied error.
-//
-// This function is designed to be used in conjunction with RecoverFromPanic.
-// This combination allows a function to handle errors without the need for
-// explicit error checks at every step.
+// Success creates a condition check that validates if a function call is
+// successful. This is useful for functions that do not return a value, but
+// can fail.
 //
 // Parameters:
 //
-//   - val: The value to validate.
-//   - err: The error to trigger a panic with if the value is the zero value of its type.
+//   - f: The function to call.
 //
-// Example:
+// Returns:
 //
-//	  func MyFunction(n int) (result int, err error) {
-//	      defer RecoverFromPanic(&err)
-//
-//	      Check(n <= 0, NewErrInvalidParameter("n", fmt.Errorf("value (%d) must be positive", n)))
-//
-//	      return 60 / n, nil
-//		}
-//
-// In this example, if n is less than or equal to 0, the Check function will trigger
-// a panic with an ErrInvalidParameter error. The RecoverFromPanic function will then
-// capture the panic and assign the error to the err variable.
-//
-// The function then returns the result and the error. If n is greater than 0, the error
-// will be nil. If n is less than or equal to 0, the error will be the one captured by
-// the RecoverFromPanic function.
-//
-// The Check function uses the reflect.DeepEqual function to compare the value to the
-// zero value of its type, allowing it to be used with any type. However, it may not
-// behave as expected with types that have non-exported fields.
-//
-// Given this, it is recommended to use the Check function primarily with boolean or
-// error values, as these are the most common types to check for zero values.
-//
-//	Check(n <= 0, ...)
-//	Check(err, ...)
-func Check(toCheck any, override error) {
-	rf := reflect.TypeOf(toCheck)
+//   - ConditionCheck: A function that checks if a function call is successful.
+func (e *ErrCallFailed) Success(f func()) ConditionCheck {
+	return func(v any) (err error) {
+		defer func() {
+			if r := recover(); r != nil {
+				if recErr, ok := r.(error); ok {
+					err = recErr
+				} else {
+					err = fmt.Errorf("panic: %v", r)
+				}
+			}
+		}()
 
-	if !reflect.DeepEqual(toCheck, reflect.Zero(rf).Interface()) {
+		f()
+
 		return
 	}
-
-	if override != nil {
-		panic(override)
-	}
-
-	var reason error
-
-	switch rf.Kind() {
-	case reflect.Bool:
-		reason = errors.New("condition evaluates to false")
-	case reflect.String:
-		reason = errors.New("value is an empty string")
-	case reflect.Ptr:
-		reason = fmt.Errorf("value %T found to be nil", toCheck)
-	default:
-		val, ok := toCheck.(error)
-		if ok {
-			reason = val
-		} else {
-			reason = fmt.Errorf("value (%T) is the zero value of its type", toCheck)
-		}
-	}
-
-	panic(NewErrCallFailed("Check", Check, reason))
-}
-
-func CheckFunc[P, R any](val P, f func(P) (R, error), override error) R {
-	result, err := f(val)
-	if err == nil {
-		return result
-	}
-
-	if override != nil {
-		panic(override)
-	}
-
-	panic(err)
-}
-
-func CheckPred[P, R any](val P, f func(P) (R, bool), override error) R {
-	result, ok := f(val)
-	if ok {
-		return result
-	}
-
-	if override != nil {
-		panic(override)
-	}
-
-	panic(NewErrCallFailed("CheckPred", CheckPred[P, R], errors.New("predicate evaluates to false")))
-}
-
-type ErrOperationFailed struct {
-	operation string
-	reason    error
-}
-
-func NewErrOperationFailed(operation string, reason error) *ErrOperationFailed {
-	if reason == nil {
-		reason = errors.New("an error occurred while performing the operation")
-	}
-
-	return &ErrOperationFailed{
-		operation: operation,
-		reason:    reason,
-	}
-}
-
-func (e *ErrOperationFailed) Error() string {
-	return fmt.Sprintf("could not %s: %v", e.operation, e.reason)
 }

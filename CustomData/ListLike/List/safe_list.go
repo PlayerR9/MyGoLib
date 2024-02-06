@@ -133,7 +133,7 @@ func (list *SafeList[T]) Append(value *T) {
 	defer list.capacityMutex.RUnlock()
 
 	list.capacity.If(func(cap int) {
-		ers.Check(list.size < cap, ers.NewErrOperationFailed(
+		ers.CheckBool(list.size < cap, ers.NewErrOperationFailed(
 			"append element", NewErrFullList(list),
 		))
 	})
@@ -393,7 +393,7 @@ func (list *SafeList[T]) Prepend(value *T) {
 	defer list.capacityMutex.RUnlock()
 
 	list.capacity.If(func(cap int) {
-		ers.Check(list.size < cap, ers.NewErrOperationFailed(
+		ers.CheckBool(list.size < cap, ers.NewErrOperationFailed(
 			"prepend element", NewErrFullList(list),
 		))
 	})

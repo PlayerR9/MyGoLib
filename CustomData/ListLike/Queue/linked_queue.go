@@ -107,7 +107,7 @@ func (queue *LinkedQueue[T]) WithCapacity(capacity int) *LinkedQueue[T] {
 //     queue.
 func (queue *LinkedQueue[T]) Enqueue(value *T) {
 	queue.capacity.If(func(cap int) {
-		ers.Check(queue.size < cap, ers.NewErrOperationFailed(
+		ers.CheckBool(queue.size < cap, ers.NewErrOperationFailed(
 			"enqueue", NewErrFullQueue(queue),
 		))
 	})

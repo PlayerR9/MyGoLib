@@ -93,7 +93,7 @@ func (stack *ArrayStack[T]) WithCapacity(capacity int) *ArrayStack[T] {
 //   - value: A pointer to the element to be added to the stack.
 func (stack *ArrayStack[T]) Push(value *T) {
 	stack.capacity.If(func(cap int) {
-		ers.Check(len(stack.values) < cap, ers.NewErrOperationFailed(
+		ers.CheckBool(len(stack.values) < cap, ers.NewErrOperationFailed(
 			"push element", NewErrFullStack(stack),
 		))
 	})

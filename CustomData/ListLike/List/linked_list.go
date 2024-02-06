@@ -112,7 +112,7 @@ func (list *LinkedList[T]) WithCapacity(capacity int) *LinkedList[T] {
 //   - value: A pointer to an element of type T to be added to the list.
 func (list *LinkedList[T]) Append(value *T) {
 	list.capacity.If(func(cap int) {
-		ers.Check(list.size < cap, ers.NewErrOperationFailed(
+		ers.CheckBool(list.size < cap, ers.NewErrOperationFailed(
 			"append element", NewErrFullList(list),
 		))
 	})
@@ -313,7 +313,7 @@ func (list *LinkedList[T]) String() string {
 //   - value: A pointer to an element of type T to be added to the list.
 func (list *LinkedList[T]) Prepend(value *T) {
 	list.capacity.If(func(cap int) {
-		ers.Check(list.size < cap, ers.NewErrOperationFailed(
+		ers.CheckBool(list.size < cap, ers.NewErrOperationFailed(
 			"prepend element", NewErrFullList(list),
 		))
 	})

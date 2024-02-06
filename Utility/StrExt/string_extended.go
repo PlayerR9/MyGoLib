@@ -522,17 +522,17 @@ func CalculateNumberOfLines(text []string, width int) (int, bool) {
 func SplitTextInEqualSizedLines(text []string, width int, maxHeight optional.Int) (ts *TextSplitter, err error) {
 	defer ers.RecoverFromPanic(&err)
 
-	ers.Check(len(text), ers.NewErrInvalidParameter(
+	ers.CheckAny(len(text), ers.NewErrInvalidParameter(
 		"text", errors.New("text cannot be empty"),
 	))
-	ers.Check(width <= 0, ers.NewErrInvalidParameter(
+	ers.CheckAny(width <= 0, ers.NewErrInvalidParameter(
 		"width", fmt.Errorf("negative or zero width (%d) is not allowed", width),
 	))
 
 	height := maxHeight.OrElse(ers.CheckPred[int, int](width, func(width int) (int, bool) {
 		return CalculateNumberOfLines(text, width)
 	}, nil))
-	ers.Check(height < 1, ers.NewErrInvalidParameter(
+	ers.CheckBool(height < 1, ers.NewErrInvalidParameter(
 		"height", fmt.Errorf("negative or zero height (%d) is not allowed", height),
 	))
 
@@ -567,7 +567,7 @@ func SplitTextInEqualSizedLines(text []string, width int, maxHeight optional.Int
 	}
 
 	index := slices.IndexFunc(text, group.InsertWord)
-	ers.Check(index != -1, ers.NewErrOperationFailed(
+	ers.CheckBool(index != -1, ers.NewErrOperationFailed(
 		"insert word", fmt.Errorf("word at index %d (%s) is too long", index, text[index]),
 	))
 
@@ -684,7 +684,7 @@ func SplitSentenceIntoFields(sentence string, indentLevel int) [][]string {
 		return [][]string{}
 	}
 
-	ers.Check(indentLevel < 0, ers.NewErrInvalidParameter(
+	ers.CheckBool(indentLevel < 0, ers.NewErrInvalidParameter(
 		"indentLevel", errors.New("indent level cannot be negative"),
 	))
 
@@ -697,7 +697,7 @@ func SplitSentenceIntoFields(sentence string, indentLevel int) [][]string {
 		char, size := utf8.DecodeRuneInString(sentence)
 		sentence = sentence[size:]
 
-		ers.Check(char == utf8.RuneError, ers.NewErrOperationFailed(
+		ers.CheckBool(char == utf8.RuneError, ers.NewErrOperationFailed(
 			"rune at index", fmt.Errorf("rune at index %d is invalid", j),
 		))
 

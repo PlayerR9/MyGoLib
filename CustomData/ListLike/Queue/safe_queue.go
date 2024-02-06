@@ -104,7 +104,7 @@ func (queue *SafeQueue[T]) WithCapacity(capacity int) *SafeQueue[T] {
 	queue.backMutex.RLock()
 	defer queue.backMutex.RUnlock()
 
-	ers.Check(queue.size <= capacity, ers.NewErrInvalidParameter(
+	ers.CheckBool(queue.size <= capacity, ers.NewErrInvalidParameter(
 		"values", fmt.Errorf("capacity (%d) is not big enough to hold %d elements",
 			capacity, queue.size),
 	))
@@ -131,7 +131,7 @@ func (queue *SafeQueue[T]) Enqueue(value *T) {
 	defer queue.capacityMutex.RUnlock()
 
 	queue.capacity.If(func(cap int) {
-		ers.Check(queue.size < cap, ers.NewErrOperationFailed(
+		ers.CheckBool(queue.size < cap, ers.NewErrOperationFailed(
 			"enqueue element", NewErrFullQueue(queue),
 		))
 	})

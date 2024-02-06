@@ -104,7 +104,7 @@ func (stack *LinkedStack[T]) WithCapacity(capacity int) *LinkedStack[T] {
 //   - value: A pointer to a value of type T, which is the element to be added to the stack.
 func (stack *LinkedStack[T]) Push(value *T) {
 	stack.capacity.If(func(cap int) {
-		ers.Check(stack.size < cap, ers.NewErrOperationFailed(
+		ers.CheckBool(stack.size < cap, ers.NewErrOperationFailed(
 			"push element", NewErrFullStack(stack),
 		))
 	})

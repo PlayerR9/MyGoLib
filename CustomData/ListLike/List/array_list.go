@@ -56,10 +56,15 @@ func NewArrayList[T any](values ...*T) *ArrayList[T] {
 //   - Lister[T]: A pointer to the list with the new capacity set.
 func (list *ArrayList[T]) WithCapacity(capacity int) *ArrayList[T] {
 	list.capacity.If(func(cap int) {
-		panic(ers.NewErrOperationFailed(
-			"set capacity", fmt.Errorf("capacity is already set to %d", cap),
+		panic(ers.NewCallFailed("WithCapacity", list.WithCapacity,
+			fmt.Errorf("capacity is already set with a value of %d", cap),
 		))
 	})
+
+	ers.On(capacity).Check(
+		ers.InvalidParameter("capacity").
+			
+	)
 
 	if capacity < 0 {
 		panic(ers.NewErrInvalidParameter(
@@ -92,7 +97,7 @@ func (list *ArrayList[T]) WithCapacity(capacity int) *ArrayList[T] {
 //   - value: A pointer to an element of type T to be added to the list.
 func (list *ArrayList[T]) Append(value *T) {
 	list.capacity.If(func(cap int) {
-		ers.Check(len(list.values) < cap, ers.NewErrOperationFailed(
+		ers.CheckBool(len(list.values) < cap, ers.NewErrOperationFailed(
 			"append element", NewErrFullList(list),
 		))
 	})
@@ -109,7 +114,7 @@ func (list *ArrayList[T]) Append(value *T) {
 //
 //   - *T: A pointer to the first element in the list.
 func (list *ArrayList[T]) DeleteFirst() *T {
-	ers.Check(len(list.values) > 0, ers.NewErrOperationFailed(
+	ers.CheckBool(len(list.values) > 0, ers.NewErrOperationFailed(
 		"delete first element", NewErrEmptyList(list),
 	))
 
@@ -252,7 +257,7 @@ func (list *ArrayList[T]) String() string {
 //   - value: A pointer to an element of type T to be added to the list.
 func (list *ArrayList[T]) Prepend(value *T) {
 	list.capacity.If(func(cap int) {
-		ers.Check(len(list.values) < cap, ers.NewErrOperationFailed(
+		ers.CheckBool(len(list.values) < cap, ers.NewErrOperationFailed(
 			"prepend element", NewErrFullList(list),
 		))
 	})
@@ -269,7 +274,7 @@ func (list *ArrayList[T]) Prepend(value *T) {
 //
 //   - *T: A pointer to the last element in the list.
 func (list *ArrayList[T]) DeleteLast() *T {
-	ers.Check(len(list.values) > 0, ers.NewErrOperationFailed(
+	ers.CheckBool(len(list.values) > 0, ers.NewErrOperationFailed(
 		"delete last element", NewErrEmptyList(list),
 	))
 

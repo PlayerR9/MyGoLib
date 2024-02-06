@@ -88,7 +88,7 @@ func (queue *ArrayQueue[T]) WithCapacity(capacity int) *ArrayQueue[T] {
 //   - value: A pointer to a value of type T, which is the element to be added to the queue.
 func (queue *ArrayQueue[T]) Enqueue(value *T) {
 	queue.capacity.If(func(cap int) {
-		ers.Check(len(queue.values) < cap, ers.NewErrOperationFailed(
+		ers.CheckBool(len(queue.values) < cap, ers.NewErrOperationFailed(
 			"enqueue", NewErrFullQueue(queue),
 		))
 	})
@@ -105,7 +105,7 @@ func (queue *ArrayQueue[T]) Enqueue(value *T) {
 //
 //   - *T: A pointer to the element at the front of the queue.
 func (queue *ArrayQueue[T]) Dequeue() *T {
-	ers.Check(len(queue.values) > 0, ers.NewErrOperationFailed(
+	ers.CheckBool(len(queue.values) > 0, ers.NewErrOperationFailed(
 		"dequeue", NewErrEmptyQueue(queue),
 	))
 
