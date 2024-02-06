@@ -61,7 +61,7 @@ func NewLinkedQueue[T any](values ...*T) *LinkedQueue[T] {
 // WithCapacity is a method of the LinkedQueue type. It is used to set the maximum
 // number of elements the queue can hold.
 //
-// Panics with an error of type *ErrOperationFailed if the capacity is already set,
+// Panics with an error of type *ErrCallFailed if the capacity is already set,
 // or with an error of type *ErrInvalidParameter if the provided capacity is negative
 // or less than the current number of elements in the queue.
 //
@@ -74,20 +74,19 @@ func NewLinkedQueue[T any](values ...*T) *LinkedQueue[T] {
 //
 //   - *LinkedQueue[T]: A pointer to the queue with the new capacity set.
 func (queue *LinkedQueue[T]) WithCapacity(capacity int) *LinkedQueue[T] {
+	defer ers.PropagatePanic(ers.NewErrCallFailed("WithCapacity", queue.WithCapacity))
+
 	queue.capacity.If(func(cap int) {
-		panic(ers.NewErrOperationFailed(
-			"set capacity", fmt.Errorf("capacity is already set to %d", cap),
-		))
+		panic(fmt.Errorf("capacity is already set to %d", cap))
 	})
 
 	if capacity < 0 {
-		panic(ers.NewErrInvalidParameter(
-			"capacity", fmt.Errorf("negative capacity (%d) is not allowed", capacity),
-		))
+		panic(ers.NewErrInvalidParameter("capacity").
+			WithReason(fmt.Errorf("negative capacity (%d) is not allowed", capacity)),
+		)
 	} else if queue.size > capacity {
-		panic(ers.NewErrInvalidParameter(
-			"values", fmt.Errorf("capacity (%d) is not big enough to hold %d elements",
-				capacity, queue.size),
+		panic(ers.NewErrInvalidParameter("capacity").WithReason(
+			fmt.Errorf("capacity (%d) is not big enough to hold %d elements", capacity, queue.size),
 		))
 	}
 
@@ -99,7 +98,7 @@ func (queue *LinkedQueue[T]) WithCapacity(capacity int) *LinkedQueue[T] {
 // Enqueue is a method of the LinkedQueue type. It is used to add an element to
 // the end of the queue.
 //
-// Panics with an error of type *ErrOperationFailed if the queue is full.
+// Panics with an error of type *ErrCallFailed if the queue is full.
 //
 // Parameters:
 //
@@ -107,9 +106,9 @@ func (queue *LinkedQueue[T]) WithCapacity(capacity int) *LinkedQueue[T] {
 //     queue.
 func (queue *LinkedQueue[T]) Enqueue(value *T) {
 	queue.capacity.If(func(cap int) {
-		ers.CheckBool(queue.size < cap, ers.NewErrOperationFailed(
-			"enqueue", NewErrFullQueue(queue),
-		))
+		if queue.size >= cap {
+			panic(ers.NewErrCallFailed("Enqueue", NewErrFullQueue(queue)))
+		}
 	})
 
 	queue_node := &linkedNode[T]{
@@ -130,16 +129,16 @@ func (queue *LinkedQueue[T]) Enqueue(value *T) {
 // Dequeue is a method of the LinkedQueue type. It is used to remove and return
 // the element at the front of the queue.
 //
-// Panics with an error of type *ErrOperationFailed if the queue is empty.
+// Panics with an error of type *ErrCallFailed if the queue is empty.
 //
 // Returns:
 //
 //   - *T: A pointer to the value of the element at the front of the queue.
 func (queue *LinkedQueue[T]) Dequeue() *T {
 	if queue.front == nil {
-		panic(ers.NewErrOperationFailed(
-			"dequeue", NewErrEmptyQueue(queue),
-		))
+		panic(ers.NewErrCallFailed("Dequeue", queue.Dequeue).
+			WithReason(NewErrEmptyQueue(queue)),
+		)
 	}
 
 	toRemove := queue.front
@@ -158,7 +157,7 @@ func (queue *LinkedQueue[T]) Dequeue() *T {
 // Peek is a method of the LinkedQueue type. It is used to return the element at
 // the front of the queue without removing it.
 //
-// Panics with an error of type *ErrOperationFailed if the queue is empty.
+// Panics with an error of type *ErrCallFailed if the queue is empty.
 //
 // Returns:
 //
@@ -168,9 +167,9 @@ func (queue *LinkedQueue[T]) Peek() *T {
 		return queue.front.value
 	}
 
-	panic(ers.NewErrOperationFailed(
-		"peek", NewErrEmptyQueue(queue),
-	))
+	panic(ers.NewErrCallFailed("Peek", queue.Peek).
+		WithReason(NewErrEmptyQueue(queue)),
+	)
 }
 
 // IsEmpty is a method of the LinkedQueue type. It is used to check if the queue

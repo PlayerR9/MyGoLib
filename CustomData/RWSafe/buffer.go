@@ -66,13 +66,13 @@ type Buffer[T any] struct {
 //     channel will stop sending messages once the Buffer is empty, and then exit.
 //   - The Buffer will be cleaned up.
 func (b *Buffer[T]) Init(bufferSize int) (chan<- *T, <-chan *T) {
-	if bufferSize < 0 {
-		panic(ers.NewErrInvalidParameter(
-			"bufferSize", fmt.Errorf("value (%d) cannot be negative", bufferSize),
-		))
-	}
-
 	b.once.Do(func() {
+		if bufferSize < 0 {
+			panic(ers.NewErrInvalidParameter("bufferSize").WithReason(
+				fmt.Errorf("value (%d) cannot be negative", bufferSize),
+			))
+		}
+
 		b.q = Queue.NewSafeQueue[T]()
 		b.sendTo = make(chan *T, bufferSize)
 		b.receiveFrom = make(chan *T, bufferSize)

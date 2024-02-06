@@ -90,15 +90,15 @@ func NewStackIterator[T any](stack Stacker[T]) *StackIterator[T] {
 // GetNext is a method of the StackIterator type. It is used to move the iterator to the next
 // element in the stack and return the value of that element.
 //
-// Panics with an error of type *ErrOperationFailed if the iterator is at the end of the stack.
+// Panics with an error of type *ErrCallFailed if the iterator is at the end of the stack.
 //
 // Returns:
 //
 //   - *T: A pointer to the next element in the stack.
 func (iterator *StackIterator[T]) GetNext() *T {
 	if len(iterator.values) <= iterator.currentIndex {
-		panic(ers.NewErrOperationFailed(
-			"get next element", errors.New("iterator is out of bounds"),
+		panic(ers.NewErrCallFailed("GetNext", iterator.GetNext).WithReason(
+			errors.New("iterator is out of bounds"),
 		))
 	}
 

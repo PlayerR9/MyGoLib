@@ -68,12 +68,12 @@ func SplitIntoGroups[T any](slice []T, n int) [][]T {
 	}
 
 	if n < 0 {
-		panic(ers.NewErrInvalidParameter(
-			"n", fmt.Errorf("negative group number (%d) are not allowed", n),
+		panic(ers.NewErrInvalidParameter("n").WithReason(
+			fmt.Errorf("negative group number (%d) are not allowed", n),
 		))
 	} else if n == 0 {
-		panic(ers.NewErrInvalidParameter(
-			"n", errors.New("cannot split into 0 groups"),
+		panic(ers.NewErrInvalidParameter("n").WithReason(
+			errors.New("cannot split into 0 groups"),
 		))
 	}
 

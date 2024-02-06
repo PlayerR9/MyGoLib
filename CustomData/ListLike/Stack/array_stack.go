@@ -44,7 +44,7 @@ func NewArrayStack[T any](values ...*T) *ArrayStack[T] {
 // WithCapacity is a method of the ArrayStack type. It is used to set the maximum
 // number of elements the stack can hold.
 //
-// Panics with an error of type *ErrOperationFailed if the capacity is already set,
+// Panics with an error of type *ErrCallFailed if the capacity is already set,
 // or with an error of type *ErrInvalidParameter if the provided capacity is negative
 // or less than the current number of elements in the stack.
 //
@@ -56,19 +56,19 @@ func NewArrayStack[T any](values ...*T) *ArrayStack[T] {
 //
 //   - *ArrayStack[T]: A pointer to the stack with the new capacity set.
 func (stack *ArrayStack[T]) WithCapacity(capacity int) *ArrayStack[T] {
+	defer ers.PropagatePanic(ers.NewErrCallFailed("WithCapacity", stack.WithCapacity))
+
 	stack.capacity.If(func(cap int) {
-		panic(ers.NewErrOperationFailed(
-			"set capacity", fmt.Errorf("capacity is already set to %d", cap),
-		))
+		panic(fmt.Errorf("capacity is already set to %d", cap))
 	})
 
 	if capacity < 0 {
-		panic(ers.NewErrInvalidParameter(
-			"capacity", fmt.Errorf("negative capacity (%d) is not allowed", capacity),
-		))
+		panic(ers.NewErrInvalidParameter("capacity").
+			WithReason(fmt.Errorf("negative capacity (%d) is not allowed", capacity)),
+		)
 	} else if len(stack.values) > capacity {
-		panic(ers.NewErrInvalidParameter(
-			"capacity", fmt.Errorf("provided capacity (%d) is less than the current number of values (%d)",
+		panic(ers.NewErrInvalidParameter("capacity").WithReason(
+			fmt.Errorf("provided capacity (%d) is less than the current number of values (%d)",
 				capacity, len(stack.values)),
 		))
 	}
@@ -86,16 +86,16 @@ func (stack *ArrayStack[T]) WithCapacity(capacity int) *ArrayStack[T] {
 // Push is a method of the ArrayStack type. It is used to add an element to the
 // end of the stack.
 //
-// Panics with an error of type *ErrOperationFailed if the stack is full.
+// Panics with an error of type *ErrCallFailed if the stack is full.
 //
 // Parameters:
 //
 //   - value: A pointer to the element to be added to the stack.
 func (stack *ArrayStack[T]) Push(value *T) {
 	stack.capacity.If(func(cap int) {
-		ers.CheckBool(len(stack.values) < cap, ers.NewErrOperationFailed(
-			"push element", NewErrFullStack(stack),
-		))
+		if len(stack.values) <= cap {
+			panic(ers.NewErrCallFailed("Push", stack.Push))
+		}
 	})
 
 	stack.values = append(stack.values, value)
@@ -104,16 +104,16 @@ func (stack *ArrayStack[T]) Push(value *T) {
 // Pop is a method of the ArrayStack type. It is used to remove and return the
 // element at the end of the stack.
 //
-// Panics with an error of type *ErrOperationFailed if the stack is empty.
+// Panics with an error of type *ErrCallFailed if the stack is empty.
 //
 // Returns:
 //
 //   - *T: A pointer to the element that was removed from the stack.
 func (stack *ArrayStack[T]) Pop() *T {
 	if len(stack.values) == 0 {
-		panic(ers.NewErrOperationFailed(
-			"pop element", NewErrEmptyStack(stack),
-		))
+		panic(ers.NewErrCallFailed("Pop", stack.Pop).
+			WithReason(NewErrEmptyStack(stack)),
+		)
 	}
 
 	toRemove := stack.values[len(stack.values)-1]
@@ -125,16 +125,16 @@ func (stack *ArrayStack[T]) Pop() *T {
 // Peek is a method of the ArrayStack type. It is used to return the element at the
 // end of the stack without removing it.
 //
-// Panics with an error of type *ErrOperationFailed if the stack is empty.
+// Panics with an error of type *ErrCallFailed if the stack is empty.
 //
 // Returns:
 //
 //   - *T: A pointer to the element at the end of the stack.
 func (stack *ArrayStack[T]) Peek() *T {
 	if len(stack.values) == 0 {
-		panic(ers.NewErrOperationFailed(
-			"peek", NewErrEmptyStack(stack),
-		))
+		panic(ers.NewErrCallFailed("Peek", stack.Peek).
+			WithReason(NewErrEmptyStack(stack)),
+		)
 	}
 
 	return stack.values[len(stack.values)-1]

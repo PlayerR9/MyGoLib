@@ -37,9 +37,8 @@ func NewUpCounter(upperLimit int) UpCounter {
 		return UpCounter{upperLimit, 0, 0}
 	}
 
-	panic(ers.NewErrInvalidParameter(
-		"upperLimit", fmt.Errorf("value (%d) must be positive", upperLimit),
-	))
+	panic(ers.NewErrInvalidParameter("upperLimit").
+		WithReason(fmt.Errorf("value (%d) must be positive", upperLimit)))
 }
 
 // IsDone checks if the UpCounter has reached its upper limit.
@@ -53,32 +52,30 @@ func (c *UpCounter) IsDone() bool {
 }
 
 // Advance increments the current count of the UpCounter by one.
-// It panics with an error of type *ers.ErrOperationFailed if the current
+// It panics with an error of type *ers.ErrCallFailed if the current
 // count is already at or beyond the upper limit.
 func (c *UpCounter) Advance() {
-	if c.currentCount < c.upperLimit-c.retreatCount {
-		c.currentCount++
-		return
+	if c.currentCount >= c.upperLimit-c.retreatCount {
+		panic(ers.NewErrCallFailed("Advance", c.Advance).
+			WithReason(errors.New("current count is already at or beyond the upper limit")),
+		)
 	}
 
-	panic(ers.NewErrOperationFailed(
-		"advance UpCounter", errors.New("current count is already at or beyond the upper limit"),
-	))
+	c.currentCount++
 }
 
 // Retreat increments the retreat count and, as a result, decrements the
 // upper limit of the UpCounter by one.
-// It panics with an error of type *ers.ErrOperationFailed if the current
+// It panics with an error of type *ers.ErrCallFailed if the current
 // count is already at or beyond the upper limit.
 func (c *UpCounter) Retreat() {
-	if c.currentCount < c.upperLimit-c.retreatCount {
-		c.retreatCount++
-		return
+	if c.currentCount >= c.upperLimit-c.retreatCount {
+		panic(ers.NewErrCallFailed("Retreat", c.Retreat).WithReason(
+			errors.New("current count is already at or beyond the upper limit"),
+		))
 	}
 
-	panic(ers.NewErrOperationFailed(
-		"retreat UpCounter", errors.New("current count is already at or beyond the upper limit"),
-	))
+	c.retreatCount++
 }
 
 // GetRetreatCount returns the number of times the UpCounter has

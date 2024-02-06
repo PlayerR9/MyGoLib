@@ -108,7 +108,7 @@ func NewListIterator[T any](list Lister[T]) *ListIterator[T] {
 // GetNext is a method of the ListIterator type that moves the iterator to
 // the next element in the list and return the value of that element.
 //
-// Panics with *ErrOperationFailed if the iterator is at the end of the list.
+// Panics with *ErrCallFailed if the iterator is at the end of the list.
 //
 // Returns:
 //
@@ -121,8 +121,8 @@ func (iterator *ListIterator[T]) GetNext() *T {
 		return value
 	}
 
-	panic(ers.NewErrOperationFailed(
-		"get next element", errors.New("iterator is out of bounds")),
+	panic(ers.NewErrCallFailed("GetNext", iterator.GetNext).
+		WithReason(errors.New("iterator is out of bounds")),
 	)
 }
 

@@ -196,16 +196,14 @@ func WithFlag(name string, callback func(...string) (any, error), options ...Fla
 
 		name = strings.TrimSpace(name)
 		if name == "" {
-			return fmt.Errorf("could not create flag: %v",
-				ers.NewErrInvalidParameter(
-					"name", errors.New("flag name cannot be empty")),
+			return ers.NewErrInvalidParameter("name").WithReason(
+				errors.New("flag name cannot be empty"),
 			)
 		}
 
 		if callback == nil {
-			return fmt.Errorf("could not create flag %s: %v", name,
-				ers.NewErrInvalidParameter(
-					"callback", errors.New("flag callback cannot be nil")),
+			return ers.NewErrInvalidParameter("callback").WithReason(
+				errors.New("flag callback cannot be nil"),
 			)
 		}
 
@@ -235,7 +233,9 @@ func WithFlag(name string, callback func(...string) (any, error), options ...Fla
 func WithCallback(callback func(map[string]any) (any, error)) CommandInfoOption {
 	return func(command *ConsoleCommandInfo) error {
 		if callback == nil {
-			return ers.NewErrNilParameter("callback")
+			return ers.NewErrInvalidParameter("callback").WithReason(
+				errors.New("callback cannot be nil"),
+			)
 		}
 
 		command.callback = callback
@@ -359,8 +359,8 @@ func WithExecutableName(name string) CMLineOption {
 	return func(cm *CMLine) error {
 		name = strings.TrimSpace(name)
 		if name == "" {
-			return ers.NewErrInvalidParameter(
-				"name", errors.New("executable name cannot be empty"),
+			return ers.NewErrInvalidParameter("name").WithReason(
+				errors.New("executable name cannot be empty"),
 			)
 		}
 
@@ -386,8 +386,8 @@ func WithCommand(name string, options ...CommandInfoOption) CMLineOption {
 	return func(cm *CMLine) error {
 		name = strings.TrimSpace(name)
 		if name == "" {
-			return ers.NewErrInvalidParameter(
-				"name", errors.New("command name cannot be empty"),
+			return ers.NewErrInvalidParameter("name").WithReason(
+				errors.New("command name cannot be empty"),
 			)
 		}
 
@@ -476,9 +476,9 @@ func NewCMLine(options ...CMLineOption) (*CMLine, error) {
 func (cml *CMLine) ParseCommandLine(args []string) (string, any, error) {
 	// Check if any arguments were provided
 	if len(args) == 0 {
-		return "", nil, ers.NewErrInvalidParameter(
-			"args", errors.New("no arguments provided"),
-		)
+		panic(ers.NewErrInvalidParameter("args").WithReason(
+			errors.New("no arguments provided"),
+		))
 	}
 
 	// Get the command from the command map
@@ -508,7 +508,8 @@ func (cml *CMLine) ParseCommandLine(args []string) (string, any, error) {
 	// Call the callback function with the flags
 	commandSolution, err := command.callback(commandFlags)
 	if err != nil {
-		return "", nil, fmt.Errorf("failed to execute command '%s': reason=%v", command.name, err)
+		return "", nil, ers.NewErrCallFailed(command.name, command.callback).
+			WithReason(err)
 	}
 
 	return command.name, commandSolution, nil

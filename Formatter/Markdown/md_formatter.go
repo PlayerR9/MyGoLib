@@ -86,8 +86,8 @@ func (t *Table) AddRow(elements []string) {
 		return
 	}
 
-	panic(ers.NewErrInvalidParameter(
-		"elements", fmt.Errorf("number of elements (%d) does not match number of headers (%d)",
+	panic(ers.NewErrInvalidParameter("elements").WithReason(
+		fmt.Errorf("number of elements (%d) does not match number of headers (%d)",
 			len(elements), len(t.headers)),
 	))
 }

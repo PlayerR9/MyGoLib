@@ -49,7 +49,7 @@ func MediaDownloader(dest, url string) (filePath string, err error) {
 	fields := strings.Split(url, "/")
 	filePath = path.Join(dest, fields[len(fields)-1])
 
-	if ers.CheckFunc(filePath, FileExists, nil) {
+	if ers.CheckFunc(FileExists, filePath) {
 		return // Do nothing
 	}
 
@@ -58,19 +58,19 @@ func MediaDownloader(dest, url string) (filePath string, err error) {
 		return resp.StatusCode != http.StatusOK, err
 	}
 
-	if ers.CheckFunc(url, invalidResponseFunc, nil) {
+	if ers.CheckFunc(invalidResponseFunc, url) {
 		panic(fmt.Errorf("file does not exist on the server: %s", url))
 	}
 
-	resp := ers.CheckFunc(url, http.Get, nil)
+	resp := ers.CheckFunc(http.Get, url)
 	defer resp.Body.Close()
 
-	file := ers.CheckFunc(filePath, os.Create, nil)
+	file := ers.CheckFunc(os.Create, filePath)
 	defer file.Close()
 
-	ers.CheckFunc(file, func(file *os.File) (int64, error) {
+	ers.CheckFunc(func(file *os.File) (int64, error) {
 		return io.Copy(file, resp.Body)
-	}, nil)
+	}, file)
 
 	return
 }

@@ -174,9 +174,9 @@ func (pi *PageInterval) GetFirstPage() int {
 		return pi.intervals[0][0]
 	}
 
-	panic(ers.NewErrOperationFailed(
-		"get first page", errors.New("no pages have been set"),
-	))
+	panic(ers.NewErrCallFailed("GetFirstPage", pi.GetFirstPage).
+		WithReason(errors.New("no pages have been set")),
+	)
 }
 
 // GetLastPage returns the last page number in the PageInterval.
@@ -196,9 +196,9 @@ func (pi *PageInterval) GetLastPage() int {
 		return pi.intervals[len(pi.intervals)-1][1]
 	}
 
-	panic(ers.NewErrOperationFailed(
-		"get last page", errors.New("no pages have been set"),
-	))
+	panic(ers.NewErrCallFailed("GetLastPage", pi.GetLastPage).
+		WithReason(errors.New("no pages have been set")),
+	)
 }
 
 // AddPage adds a page to the PageInterval.

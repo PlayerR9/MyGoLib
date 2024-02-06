@@ -94,7 +94,7 @@ func NewQueueIterator[T any](queue Queuer[T]) *QueueIterator[T] {
 // GetNext is a method of the QueueIterator type. It is used to move the iterator
 // to the next element in the queue and return the value of that element.
 //
-// Panics with an error of type *ErrOperationFailed if the iterator is out of bounds.
+// Panics with an error of type *ErrCallFailed if the iterator is out of bounds.
 //
 // Returns:
 //
@@ -107,8 +107,8 @@ func (iterator *QueueIterator[T]) GetNext() *T {
 		return value
 	}
 
-	panic(ers.NewErrOperationFailed(
-		"get next element", errors.New("iterator is out of bounds")),
+	panic(ers.NewErrCallFailed("GetNext", iterator.GetNext).
+		WithReason(errors.New("iterator is out of bounds")),
 	)
 }
 

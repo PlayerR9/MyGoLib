@@ -60,7 +60,7 @@ func NewLinkedStack[T any](values ...*T) *LinkedStack[T] {
 // WithCapacity is a method of the LinkedStack type. It is used to set the maximum
 // number of elements the stack can hold.
 //
-// Panics with an error of type *ErrOperationFailed if the capacity is already set,
+// Panics with an error of type *ErrCallFailed if the capacity is already set,
 // or with an error of type *ErrInvalidParameter if the provided capacity is negative
 // or less than the current number of elements in the stack.
 //
@@ -72,19 +72,19 @@ func NewLinkedStack[T any](values ...*T) *LinkedStack[T] {
 //
 //   - *LinkedStack[T]: A pointer to the current instance of the LinkedStack.
 func (stack *LinkedStack[T]) WithCapacity(capacity int) *LinkedStack[T] {
+	defer ers.PropagatePanic(ers.NewErrCallFailed("WithCapacity", stack.WithCapacity))
+
 	stack.capacity.If(func(cap int) {
-		panic(ers.NewErrOperationFailed(
-			"set capacity", fmt.Errorf("capacity is already set to %d", cap),
-		))
+		panic(fmt.Errorf("capacity is already set to %d", cap))
 	})
 
 	if capacity < 0 {
-		panic(ers.NewErrInvalidParameter(
-			"capacity", fmt.Errorf("negative capacity (%d) is not allowed", capacity),
-		))
+		panic(ers.NewErrInvalidParameter("capacity").
+			WithReason(fmt.Errorf("negative capacity (%d) is not allowed", capacity)),
+		)
 	} else if stack.size > capacity {
-		panic(ers.NewErrInvalidParameter(
-			"capacity", fmt.Errorf("provided capacity (%d) is less than the current number of values (%d)",
+		panic(ers.NewErrInvalidParameter("capacity").WithReason(
+			fmt.Errorf("provided capacity (%d) is less than the current number of values (%d)",
 				capacity, stack.size),
 		))
 	}
@@ -97,16 +97,18 @@ func (stack *LinkedStack[T]) WithCapacity(capacity int) *LinkedStack[T] {
 // Push is a method of the LinkedStack type. It is used to add an element to
 // the end of the stack.
 //
-// Panics with an error of type *ErrOperationFailed if the stack is full.
+// Panics with an error of type *ErrCallFailed if the stack is full.
 //
 // Parameters:
 //
 //   - value: A pointer to a value of type T, which is the element to be added to the stack.
 func (stack *LinkedStack[T]) Push(value *T) {
 	stack.capacity.If(func(cap int) {
-		ers.CheckBool(stack.size < cap, ers.NewErrOperationFailed(
-			"push element", NewErrFullStack(stack),
-		))
+		if stack.size >= cap {
+			panic(ers.NewErrCallFailed("Push", stack.Push).
+				WithReason(NewErrFullStack(stack)),
+			)
+		}
 	})
 
 	node := &linkedNode[T]{
@@ -124,16 +126,16 @@ func (stack *LinkedStack[T]) Push(value *T) {
 // Pop is a method of the LinkedStack type. It is used to remove and return the
 // last element in the stack.
 //
-// Panics with an error of type *ErrOperationFailed if the stack is empty.
+// Panics with an error of type *ErrCallFailed if the stack is empty.
 //
 // Returns:
 //
 //   - *T: A pointer to the value of the last element in the stack.
 func (stack *LinkedStack[T]) Pop() *T {
 	if stack.front == nil {
-		panic(ers.NewErrOperationFailed(
-			"pop element", NewErrEmptyStack(stack),
-		))
+		panic(ers.NewErrCallFailed("Pop", stack.Pop).
+			WithReason(NewErrEmptyStack(stack)),
+		)
 	}
 
 	toRemove := stack.front
@@ -148,7 +150,7 @@ func (stack *LinkedStack[T]) Pop() *T {
 // Peek is a method of the LinkedStack type. It is used to return the last element
 // in the stack without removing it.
 //
-// Panics with an error of type *ErrOperationFailed if the stack is empty.
+// Panics with an error of type *ErrCallFailed if the stack is empty.
 //
 // Returns:
 //
@@ -158,9 +160,9 @@ func (stack *LinkedStack[T]) Peek() *T {
 		return stack.front.value
 	}
 
-	panic(ers.NewErrOperationFailed(
-		"peek element", NewErrEmptyStack(stack),
-	))
+	panic(ers.NewErrCallFailed("Peek", stack.Peek).
+		WithReason(NewErrEmptyStack(stack)),
+	)
 }
 
 // IsEmpty is a method of the LinkedStack type. It is used to check if the stack

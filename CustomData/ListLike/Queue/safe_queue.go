@@ -70,7 +70,7 @@ func NewSafeQueue[T any](values ...*T) *SafeQueue[T] {
 // WithCapacity is a method of the SafeQueue type. It is used to set the maximum
 // number of elements the queue can hold.
 //
-// Panics with an error of type *ErrOperationFailed if the capacity is already set,
+// Panics with an error of type *ErrCallFailed if the capacity is already set,
 // or with an error of type *ErrInvalidParameter if the provided capacity is negative
 // or less than the current number of elements in the queue.
 //
@@ -83,18 +83,18 @@ func NewSafeQueue[T any](values ...*T) *SafeQueue[T] {
 //
 //   - *SafeQueue[T]: A pointer to the queue with the new capacity set.
 func (queue *SafeQueue[T]) WithCapacity(capacity int) *SafeQueue[T] {
+	defer ers.PropagatePanic(ers.NewErrCallFailed("WithCapacity", queue.WithCapacity))
+
 	queue.capacityMutex.Lock()
 	defer queue.capacityMutex.Unlock()
 
 	queue.capacity.If(func(cap int) {
-		panic(ers.NewErrOperationFailed(
-			"set capacity", fmt.Errorf("capacity is already set to %d", cap),
-		))
+		panic(fmt.Errorf("capacity is already set to %d", cap))
 	})
 
 	if capacity < 0 {
-		panic(ers.NewErrInvalidParameter(
-			"capacity", fmt.Errorf("negative capacity (%d) is not allowed", capacity),
+		panic(ers.NewErrInvalidParameter("capacity").WithReason(
+			fmt.Errorf("negative capacity (%d) is not allowed", capacity),
 		))
 	}
 
@@ -104,10 +104,12 @@ func (queue *SafeQueue[T]) WithCapacity(capacity int) *SafeQueue[T] {
 	queue.backMutex.RLock()
 	defer queue.backMutex.RUnlock()
 
-	ers.CheckBool(queue.size <= capacity, ers.NewErrInvalidParameter(
-		"values", fmt.Errorf("capacity (%d) is not big enough to hold %d elements",
-			capacity, queue.size),
-	))
+	if queue.size > capacity {
+		panic(ers.NewErrInvalidParameter("capacity").WithReason(
+			fmt.Errorf("capacity (%d) is not big enough to hold %d elements",
+				capacity, queue.size),
+		))
+	}
 
 	queue.capacity = optional.NewInt(capacity)
 
@@ -117,7 +119,7 @@ func (queue *SafeQueue[T]) WithCapacity(capacity int) *SafeQueue[T] {
 // Enqueue is a method of the SafeQueue type. It is used to add an element to the
 // back of the queue.
 //
-// Panics with an error of type *ErrOperationFailed if the queue is full.
+// Panics with an error of type *ErrCallFailed if the queue is full.
 //
 // Parameters:
 //
@@ -131,9 +133,11 @@ func (queue *SafeQueue[T]) Enqueue(value *T) {
 	defer queue.capacityMutex.RUnlock()
 
 	queue.capacity.If(func(cap int) {
-		ers.CheckBool(queue.size < cap, ers.NewErrOperationFailed(
-			"enqueue element", NewErrFullQueue(queue),
-		))
+		if queue.size >= cap {
+			panic(ers.NewErrCallFailed("Enqueue", queue.Enqueue).
+				WithReason(NewErrFullQueue(queue)),
+			)
+		}
 	})
 
 	node := &linkedNode[T]{value: value}
@@ -153,7 +157,7 @@ func (queue *SafeQueue[T]) Enqueue(value *T) {
 // Dequeue is a method of the SafeQueue type. It is used to remove and return the
 // element at the front of the queue.
 //
-// Panics with an error of type *ErrOperationFailed if the queue is empty.
+// Panics with an error of type *ErrCallFailed if the queue is empty.
 //
 // Returns:
 //
@@ -166,9 +170,9 @@ func (queue *SafeQueue[T]) Dequeue() *T {
 	defer queue.capacityMutex.RUnlock()
 
 	if queue.front == nil {
-		panic(ers.NewErrOperationFailed(
-			"dequeue element", NewErrEmptyQueue(queue),
-		))
+		panic(ers.NewErrCallFailed("Dequeue", queue.Dequeue).
+			WithReason(NewErrEmptyQueue(queue)),
+		)
 	}
 
 	toRemove := queue.front
@@ -192,7 +196,7 @@ func (queue *SafeQueue[T]) Dequeue() *T {
 // Peek is a method of the SafeQueue type. It is used to return the element at the
 // front of the queue without removing it.
 //
-// Panics with an error of type *ErrOperationFailed if the queue is empty.
+// Panics with an error of type *ErrCallFailed if the queue is empty.
 //
 // Returns:
 //
@@ -205,9 +209,9 @@ func (queue *SafeQueue[T]) Peek() *T {
 		return queue.front.value
 	}
 
-	panic(ers.NewErrOperationFailed(
-		"peek element", NewErrEmptyQueue(queue),
-	))
+	panic(ers.NewErrCallFailed("Peek", queue.Peek).
+		WithReason(NewErrEmptyQueue(queue)),
+	)
 }
 
 // IsEmpty is a method of the SafeQueue type. It is used to check if the queue is

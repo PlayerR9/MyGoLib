@@ -41,7 +41,7 @@ func NewArrayQueue[T any](values ...*T) *ArrayQueue[T] {
 // WithCapacity is a method of the ArrayList type. It is used to set the maximum
 // number of elements the list can hold.
 //
-// Panics with an error of type *ErrOperationFailed if the capacity is already set,
+// Panics with an error of type *ErrCallFailed if the capacity is already set,
 // or with an error of type *ErrInvalidParameter if the provided capacity is negative
 // or less than the current number of elements in the list.
 //
@@ -53,21 +53,21 @@ func NewArrayQueue[T any](values ...*T) *ArrayQueue[T] {
 //
 //   - *ArrayList[T]: A pointer to the list.
 func (queue *ArrayQueue[T]) WithCapacity(capacity int) *ArrayQueue[T] {
+	defer ers.PropagatePanic(ers.NewErrCallFailed("WithCapacity", queue.WithCapacity))
+
 	queue.capacity.If(func(cap int) {
-		panic(ers.NewErrOperationFailed(
-			"set capacity", fmt.Errorf("capacity is already set to %d", cap),
-		))
+		panic(fmt.Errorf("capacity is already set to %d", cap))
 	})
 
 	if capacity < 0 {
-		panic(ers.NewErrInvalidParameter(
-			"capacity", fmt.Errorf("negative capacity (%d) is not allowed", capacity),
-		))
+		panic(ers.NewErrInvalidParameter("capacity").
+			WithReason(fmt.Errorf("negative capacity (%d) is not allowed", capacity)),
+		)
 	} else if len(queue.values) > capacity {
-		panic(ers.NewErrInvalidParameter(
-			"values", fmt.Errorf("capacity (%d) is not big enough to hold %d elements",
-				capacity, len(queue.values)),
-		))
+		panic(ers.NewErrInvalidParameter("capacity").WithReason(
+			fmt.Errorf("capacity (%d) is less than the current number of elements in the queue (%d)",
+				capacity, len(queue.values))),
+		)
 	}
 
 	newValues := make([]*T, len(queue.values), capacity)
@@ -81,16 +81,18 @@ func (queue *ArrayQueue[T]) WithCapacity(capacity int) *ArrayQueue[T] {
 // Enqueue is a method of the ArrayQueue type. It is used to add an element to the
 // end of the queue.
 //
-// Panics with an error of type *ErrOperationFailed if the queue is full.
+// Panics with an error of type *ErrCallFailed if the queue is full.
 //
 // Parameters:
 //
 //   - value: A pointer to a value of type T, which is the element to be added to the queue.
 func (queue *ArrayQueue[T]) Enqueue(value *T) {
 	queue.capacity.If(func(cap int) {
-		ers.CheckBool(len(queue.values) < cap, ers.NewErrOperationFailed(
-			"enqueue", NewErrFullQueue(queue),
-		))
+		if len(queue.values) >= cap {
+			panic(ers.NewErrCallFailed("Enqueue", queue.Enqueue).
+				WithReason(NewErrFullQueue(queue)),
+			)
+		}
 	})
 
 	queue.values = append(queue.values, value)
@@ -99,15 +101,17 @@ func (queue *ArrayQueue[T]) Enqueue(value *T) {
 // Dequeue is a method of the ArrayQueue type. It is used to remove and return the
 // element at the front of the queue.
 //
-// Panics with an error of type *ErrOperationFailed if the queue is empty.
+// Panics with an error of type *ErrCallFailed if the queue is empty.
 //
 // Returns:
 //
 //   - *T: A pointer to the element at the front of the queue.
 func (queue *ArrayQueue[T]) Dequeue() *T {
-	ers.CheckBool(len(queue.values) > 0, ers.NewErrOperationFailed(
-		"dequeue", NewErrEmptyQueue(queue),
-	))
+	if len(queue.values) <= 0 {
+		panic(ers.NewErrCallFailed("Dequeue", queue.Dequeue).
+			WithReason(NewErrEmptyQueue(queue)),
+		)
+	}
 
 	toRemove := queue.values[0]
 	queue.values[0], queue.values = nil, queue.values[1:]
@@ -117,7 +121,7 @@ func (queue *ArrayQueue[T]) Dequeue() *T {
 // Peek is a method of the ArrayQueue type. It is used to return the element at the
 // front of the queue without removing it.
 //
-// Panics with an error of type *ErrOperationFailed if the queue is empty.
+// Panics with an error of type *ErrCallFailed if the queue is empty.
 //
 // Returns:
 //
@@ -127,9 +131,9 @@ func (queue *ArrayQueue[T]) Peek() *T {
 		return queue.values[0]
 	}
 
-	panic(ers.NewErrOperationFailed(
-		"peek", NewErrEmptyQueue(queue),
-	))
+	panic(ers.NewErrCallFailed("Peek", queue.Peek).
+		WithReason(NewErrEmptyQueue(queue)),
+	)
 }
 
 // IsEmpty is a method of the ArrayQueue type. It is used to check if the queue is

@@ -36,9 +36,9 @@ func NewDownCounter(startingCount int) DownCounter {
 		return DownCounter{startingCount, startingCount, 0}
 	}
 
-	panic(ers.NewErrInvalidParameter(
-		"startingCount", fmt.Errorf("value (%d) must be positive", startingCount),
-	))
+	panic(ers.NewErrInvalidParameter("startingCount").
+		WithReason(fmt.Errorf("value (%d) must be positive", startingCount)),
+	)
 }
 
 // IsDone checks if the DownCounter has reached zero.
@@ -52,32 +52,29 @@ func (c *DownCounter) IsDone() bool {
 }
 
 // Advance decrements the current count of the DownCounter by one.
-// It panics with an error of type *ers.ErrOperationFailed if the current
+// It panics with an error of type *ers.ErrCallFailed if the current
 // count is already at or below zero.
 func (c *DownCounter) Advance() {
-	if c.currentCount-c.retreatCount > 0 {
-		c.currentCount--
-		return
+	if c.currentCount-c.retreatCount <= 0 {
+		panic(ers.NewErrCallFailed("Advance", c.Advance).
+			WithReason(errors.New("current count is already at or below zero")),
+		)
 	}
 
-	panic(ers.NewErrOperationFailed(
-		"advance DownCounter", errors.New("current count is already at or below zero"),
-	))
+	c.currentCount--
 }
 
 // Retreat increments the retrat count of the DownCounter by one and, as a result,
 // decrements the current count by one.
-// It panics with an error of type *ers.ErrOperationFailed if the starting
+// It panics with an error of type *ers.ErrCallFailed if the starting
 // count or current count is already at or below zero.
 func (c *DownCounter) Retreat() {
-	if c.currentCount-c.retreatCount > 0 {
-		c.retreatCount++
-		return
+	if c.currentCount-c.retreatCount <= 0 {
+		panic(ers.NewErrCallFailed("Retreat", c.Retreat).
+			WithReason(errors.New("current count is already at or below zero")))
 	}
 
-	panic(ers.NewErrOperationFailed(
-		"retreat DownCounter", errors.New("current count is already at or below zero"),
-	))
+	c.retreatCount++
 }
 
 // GetRetreatCount returns the number of times the DownCounter
