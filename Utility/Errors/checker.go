@@ -138,7 +138,7 @@ func ErrorOf[T any](f func(T), param T) (err error) {
 //
 //		return 60 / n, nil
 //	 }, On(42))
-func CheckFunc[I any, O any](f func(I) (O, error), param I) O {
+func CheckFunc[O any, I any](f func(I) (O, error), param I) O {
 	res, err := f(param)
 	if err != nil {
 		panic(err)

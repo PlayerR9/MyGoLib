@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"strings"
 
+	itf "github.com/PlayerR9/MyGoLib/Interfaces"
 	ers "github.com/PlayerR9/MyGoLib/Utility/Errors"
+	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 	"github.com/markphelps/optional"
 )
 
@@ -29,12 +31,14 @@ type ArrayList[T any] struct {
 // Returns:
 //
 //   - *ArrayList[T]: A pointer to the newly created ArrayList.
-func NewArrayList[T any](values ...*T) *ArrayList[T] {
+func NewArrayList[T any](values ...T) *ArrayList[T] {
 	list := &ArrayList[T]{
-		values: make([]*T, len(values)),
+		values: make([]*T, 0, len(values)),
 	}
 
-	copy(list.values, values)
+	for _, value := range values {
+		list.values = append(list.values, &value)
+	}
 
 	return list
 }
@@ -54,7 +58,7 @@ func NewArrayList[T any](values ...*T) *ArrayList[T] {
 // Returns:
 //
 //   - Lister[T]: A pointer to the list with the new capacity set.
-func (list *ArrayList[T]) WithCapacity(capacity int) *ArrayList[T] {
+func (list *ArrayList[T]) WithCapacity(capacity int) Lister[T] {
 	defer ers.PropagatePanic(ers.NewErrCallFailed("WithCapacity", list.WithCapacity))
 
 	list.capacity.If(func(cap int) {
@@ -92,7 +96,7 @@ func (list *ArrayList[T]) WithCapacity(capacity int) *ArrayList[T] {
 // Parameters:
 //
 //   - value: A pointer to an element of type T to be added to the list.
-func (list *ArrayList[T]) Append(value *T) {
+func (list *ArrayList[T]) Append(value T) {
 	list.capacity.If(func(cap int) {
 		if len(list.values) >= cap {
 			panic(ers.NewErrCallFailed("Append", list.Append).
@@ -101,7 +105,7 @@ func (list *ArrayList[T]) Append(value *T) {
 		}
 	})
 
-	list.values = append(list.values, value)
+	list.values = append(list.values, &value)
 }
 
 // DeleteFirst is a method of the ArrayList type. It is used to remove and return
@@ -111,8 +115,8 @@ func (list *ArrayList[T]) Append(value *T) {
 //
 // Returns:
 //
-//   - *T: A pointer to the first element in the list.
-func (list *ArrayList[T]) DeleteFirst() *T {
+//   - T: The first element in the list.
+func (list *ArrayList[T]) DeleteFirst() T {
 	if len(list.values) <= 0 {
 		panic(ers.NewErrCallFailed("DeleteFirst", list.DeleteFirst).
 			WithReason(NewErrEmptyList(list)),
@@ -121,7 +125,7 @@ func (list *ArrayList[T]) DeleteFirst() *T {
 
 	toRemove := list.values[0]
 	list.values[0], list.values = nil, list.values[1:]
-	return toRemove
+	return *toRemove
 }
 
 // PeekFirst is a method of the ArrayList type. It is used to return the first
@@ -131,10 +135,10 @@ func (list *ArrayList[T]) DeleteFirst() *T {
 //
 // Returns:
 //
-//   - *T: A pointer to the first element in the list.
-func (list *ArrayList[T]) PeekFirst() *T {
+//   - T: A pointer to the first element in the list.
+func (list *ArrayList[T]) PeekFirst() T {
 	if len(list.values) != 0 {
-		return list.values[0]
+		return *list.values[0]
 	}
 
 	panic(ers.NewErrCallFailed("PeekFirst", list.PeekFirst).
@@ -172,17 +176,19 @@ func (list *ArrayList[T]) Capacity() optional.Int {
 	return list.capacity
 }
 
-// ToSlice is a method of the ArrayList type. It returns a slice of pointers to
-// the elements in the list.
+// Iterator is a method of the ArrayList type. It returns an iterator for the list.
 //
 // Returns:
 //
-//   - []*T: A slice of pointers to the elements in the list.
-func (list *ArrayList[T]) ToSlice() []*T {
-	slice := make([]*T, len(list.values))
-	copy(slice, list.values)
+//   - itf.Iterater[T]: An iterator for the list.
+func (list *ArrayList[T]) Iterator() itf.Iterater[T] {
+	var builder itf.Builder[T]
 
-	return slice
+	for _, v := range list.values {
+		builder.Append(*v)
+	}
+
+	return builder.Build()
 }
 
 // Clear is a method of the ArrayList type. It is used to remove all elements from
@@ -237,10 +243,10 @@ func (list *ArrayList[T]) String() string {
 		return builder.String()
 	}
 
-	fmt.Fprintf(&builder, "size=%d, values=[%v", len(list.values), list.values[0])
+	fmt.Fprintf(&builder, "size=%d, values=[%v", len(list.values), *list.values[0])
 
 	for _, element := range list.values[1:] {
-		fmt.Fprintf(&builder, ", %v", element)
+		fmt.Fprintf(&builder, ", %v", *element)
 	}
 
 	fmt.Fprintf(&builder, "]]")
@@ -256,7 +262,7 @@ func (list *ArrayList[T]) String() string {
 // Parameters:
 //
 //   - value: A pointer to an element of type T to be added to the list.
-func (list *ArrayList[T]) Prepend(value *T) {
+func (list *ArrayList[T]) Prepend(value T) {
 	list.capacity.If(func(cap int) {
 		if len(list.values) >= cap {
 			panic(ers.NewErrCallFailed("Prepend", list.Prepend).
@@ -265,7 +271,7 @@ func (list *ArrayList[T]) Prepend(value *T) {
 		}
 	})
 
-	list.values = append([]*T{value}, list.values...)
+	list.values = append([]*T{&value}, list.values...)
 }
 
 // DeleteLast is a method of the ArrayList type. It is used to remove and return
@@ -275,8 +281,8 @@ func (list *ArrayList[T]) Prepend(value *T) {
 //
 // Returns:
 //
-//   - *T: A pointer to the last element in the list.
-func (list *ArrayList[T]) DeleteLast() *T {
+//   - T: The last element in the list.
+func (list *ArrayList[T]) DeleteLast() T {
 	if len(list.values) <= 0 {
 		panic(ers.NewErrCallFailed("DeleteLast", list.DeleteLast).
 			WithReason(NewErrEmptyList(list)),
@@ -285,7 +291,7 @@ func (list *ArrayList[T]) DeleteLast() *T {
 
 	toRemove := list.values[len(list.values)-1]
 	list.values[len(list.values)-1], list.values = nil, list.values[:len(list.values)-1]
-	return toRemove
+	return *toRemove
 }
 
 // PeekLast is a method of the ArrayList type. It is used to return the last
@@ -295,10 +301,10 @@ func (list *ArrayList[T]) DeleteLast() *T {
 //
 // Returns:
 //
-//   - *T: A pointer to the last element in the list.
-func (list *ArrayList[T]) PeekLast() *T {
+//   - T: The last element in the list.
+func (list *ArrayList[T]) PeekLast() T {
 	if len(list.values) != 0 {
-		return list.values[len(list.values)-1]
+		return *list.values[len(list.values)-1]
 	}
 
 	panic(ers.NewErrCallFailed("PeekLast", list.PeekLast).
@@ -310,7 +316,7 @@ func (list *ArrayList[T]) PeekLast() *T {
 // values from the list.
 func (list *ArrayList[T]) CutNilValues() {
 	for i := 0; i < len(list.values); {
-		if list.values[i] == nil {
+		if gen.IsNil(*list.values[i]) {
 			list.values = append(list.values[:i], list.values[i+1:]...)
 		} else {
 			i++

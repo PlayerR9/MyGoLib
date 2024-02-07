@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"strings"
 
+	itf "github.com/PlayerR9/MyGoLib/Interfaces"
 	ers "github.com/PlayerR9/MyGoLib/Utility/Errors"
+	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 	"github.com/markphelps/optional"
 )
 
@@ -33,7 +35,7 @@ type LinkedList[T any] struct {
 // Returns:
 //
 //   - *LinkedList[T]: A pointer to the newly created LinkedList.
-func NewLinkedList[T any](values ...*T) *LinkedList[T] {
+func NewLinkedList[T any](values ...T) *LinkedList[T] {
 	list := new(LinkedList[T])
 
 	if len(values) == 0 {
@@ -44,7 +46,7 @@ func NewLinkedList[T any](values ...*T) *LinkedList[T] {
 
 	// First node
 	list_node := &linkedNode[T]{
-		value: values[0],
+		value: &values[0],
 	}
 
 	list.front = list_node
@@ -53,7 +55,7 @@ func NewLinkedList[T any](values ...*T) *LinkedList[T] {
 	// Subsequent nodes
 	for _, element := range values {
 		list_node := &linkedNode[T]{
-			value: element,
+			value: &element,
 			prev:  list.back,
 		}
 
@@ -79,7 +81,7 @@ func NewLinkedList[T any](values ...*T) *LinkedList[T] {
 // Returns:
 //
 //   - Lister[T]: A pointer to the list with the new capacity set.
-func (list *LinkedList[T]) WithCapacity(capacity int) *LinkedList[T] {
+func (list *LinkedList[T]) WithCapacity(capacity int) Lister[T] {
 	defer ers.PropagatePanic(ers.NewErrCallFailed("WithCapacity", list.WithCapacity))
 
 	list.capacity.If(func(cap int) {
@@ -109,8 +111,8 @@ func (list *LinkedList[T]) WithCapacity(capacity int) *LinkedList[T] {
 //
 // Parameters:
 //
-//   - value: A pointer to an element of type T to be added to the list.
-func (list *LinkedList[T]) Append(value *T) {
+//   - value: An element of type T to be added to the list.
+func (list *LinkedList[T]) Append(value T) {
 	list.capacity.If(func(cap int) {
 		if list.size >= cap {
 			panic(ers.NewErrCallFailed("Append", list.Append).
@@ -120,7 +122,7 @@ func (list *LinkedList[T]) Append(value *T) {
 	})
 
 	list_node := &linkedNode[T]{
-		value: value,
+		value: &value,
 	}
 
 	if list.back == nil {
@@ -142,8 +144,8 @@ func (list *LinkedList[T]) Append(value *T) {
 //
 // Returns:
 //
-//   - *T: A pointer to the value of the first element in the list.
-func (list *LinkedList[T]) DeleteFirst() *T {
+//   - T: The first element in the list.
+func (list *LinkedList[T]) DeleteFirst() T {
 	if list.front == nil {
 		panic(ers.NewErrCallFailed("DeleteFirst", list.DeleteFirst).
 			WithReason(NewErrEmptyList(list)),
@@ -163,7 +165,7 @@ func (list *LinkedList[T]) DeleteFirst() *T {
 
 	toRemove.next = nil
 
-	return toRemove.value
+	return *toRemove.value
 }
 
 // PeekFirst is a method of the LinkedList type. It is used to return the first
@@ -173,10 +175,10 @@ func (list *LinkedList[T]) DeleteFirst() *T {
 //
 // Returns:
 //
-//   - value: A pointer to the value of the first element in the list.
-func (list *LinkedList[T]) PeekFirst() *T {
+//   - value: The first element in the list.
+func (list *LinkedList[T]) PeekFirst() T {
 	if list.front != nil {
-		return list.front.value
+		return *list.front.value
 	}
 
 	panic(ers.NewErrCallFailed("PeekFirst", list.PeekFirst).
@@ -215,20 +217,20 @@ func (list *LinkedList[T]) Capacity() optional.Int {
 	return list.capacity
 }
 
-// ToSlice is a method of the LinkedList type. It is used to convert the list to a
-// slice of pointers to its elements.
+// Iterator is a method of the LinkedList type. It is used to return an iterator
+// for the list.
 //
 // Returns:
 //
-//   - []*T: A slice of pointers to the elements in the list.
-func (list *LinkedList[T]) ToSlice() []*T {
-	slice := make([]*T, 0, list.size)
+//   - itf.Iterater[T]: An iterator for the list.
+func (list *LinkedList[T]) Iterator() itf.Iterater[T] {
+	var builder itf.Builder[T]
 
 	for list_node := list.front; list_node != nil; list_node = list_node.next {
-		slice = append(slice, list_node.value)
+		builder.Append(*list_node.value)
 	}
 
-	return slice
+	return builder.Build()
 }
 
 // Clear is a method of the LinkedList type. It is used to remove all elements from
@@ -294,10 +296,10 @@ func (list *LinkedList[T]) String() string {
 		return builder.String()
 	}
 
-	fmt.Fprintf(&builder, "size=%d, values=[%v", list.size, list.front.value)
+	fmt.Fprintf(&builder, "size=%d, values=[%v", list.size, *list.front.value)
 
 	for list_node := list.front.next; list_node != nil; list_node = list_node.next {
-		fmt.Fprintf(&builder, ", %v", list_node.value)
+		fmt.Fprintf(&builder, ", %v", *list_node.value)
 	}
 
 	fmt.Fprintf(&builder, "]]")
@@ -312,8 +314,8 @@ func (list *LinkedList[T]) String() string {
 //
 // Parameters:
 //
-//   - value: A pointer to an element of type T to be added to the list.
-func (list *LinkedList[T]) Prepend(value *T) {
+//   - value: An element of type T to be added to the list.
+func (list *LinkedList[T]) Prepend(value T) {
 	list.capacity.If(func(cap int) {
 		if list.size >= cap {
 			panic(ers.NewErrCallFailed("Prepend", list.Prepend).
@@ -323,7 +325,7 @@ func (list *LinkedList[T]) Prepend(value *T) {
 	})
 
 	list_node := &linkedNode[T]{
-		value: value,
+		value: &value,
 	}
 
 	if list.front == nil {
@@ -345,8 +347,8 @@ func (list *LinkedList[T]) Prepend(value *T) {
 //
 // Returns:
 //
-//   - *T: A pointer to the value of the last element in the list.
-func (list *LinkedList[T]) DeleteLast() *T {
+//   - T: The last element in the list.
+func (list *LinkedList[T]) DeleteLast() T {
 	if list.front == nil {
 		panic(ers.NewErrCallFailed("DeleteLast", list.DeleteLast).
 			WithReason(NewErrEmptyList(list)),
@@ -366,7 +368,7 @@ func (list *LinkedList[T]) DeleteLast() *T {
 
 	toRemove.prev = nil
 
-	return toRemove.value
+	return *toRemove.value
 }
 
 // PeekLast is a method of the LinkedList type. It is used to return the last
@@ -376,10 +378,10 @@ func (list *LinkedList[T]) DeleteLast() *T {
 //
 // Returns:
 //
-//   - value: A pointer to the value of the last element in the list.
-func (list *LinkedList[T]) PeekLast() *T {
+//   - value: The last element in the list.
+func (list *LinkedList[T]) PeekLast() T {
 	if list.front != nil {
-		return list.back.value
+		return *list.back.value
 
 	}
 
@@ -395,7 +397,7 @@ func (list *LinkedList[T]) CutNilValues() {
 		return // List is empty
 	}
 
-	if list.front.value == nil && list.front == list.back {
+	if gen.IsNil(*list.front.value) && list.front == list.back {
 		// Single node
 		list.front = nil
 		list.back = nil
@@ -407,7 +409,7 @@ func (list *LinkedList[T]) CutNilValues() {
 	var toDelete *linkedNode[T] = nil
 
 	// 1. First node
-	if list.front.value == nil {
+	if gen.IsNil(*list.front.value) {
 		toDelete = list.front
 
 		list.front = list.front.next
@@ -421,7 +423,7 @@ func (list *LinkedList[T]) CutNilValues() {
 
 	// 2. Subsequent nodes (except last)
 	for node := list.front.next; node.next != nil; node = node.next {
-		if node.value != nil {
+		if !gen.IsNil(*node.value) {
 			prev = node
 		} else {
 			prev.next = node.next

@@ -5,7 +5,9 @@ import (
 	"strings"
 	"sync"
 
+	itf "github.com/PlayerR9/MyGoLib/Interfaces"
 	ers "github.com/PlayerR9/MyGoLib/Utility/Errors"
+	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 	"github.com/markphelps/optional"
 )
 
@@ -42,7 +44,7 @@ type SafeList[T any] struct {
 // Returns:
 //
 //   - *SafeList[T]: A pointer to the newly created SafeList.
-func NewSafeList[T any](values ...*T) *SafeList[T] {
+func NewSafeList[T any](values ...T) *SafeList[T] {
 	list := new(SafeList[T])
 
 	if len(values) == 0 {
@@ -53,7 +55,7 @@ func NewSafeList[T any](values ...*T) *SafeList[T] {
 
 	// First node
 	list_node := &linkedNode[T]{
-		value: values[0],
+		value: &values[0],
 	}
 
 	list.front = list_node
@@ -62,7 +64,7 @@ func NewSafeList[T any](values ...*T) *SafeList[T] {
 	// Subsequent nodes
 	for _, element := range values {
 		list_node := &linkedNode[T]{
-			value: element,
+			value: &element,
 			prev:  list.back,
 		}
 
@@ -84,7 +86,11 @@ func NewSafeList[T any](values ...*T) *SafeList[T] {
 //
 //   - capacity: An integer that represents the maximum number of elements the list
 //     can hold.
-func (list *SafeList[T]) WithCapacity(capacity int) *SafeList[T] {
+//
+// Returns:
+//
+//   - Lister[T]: A pointer to the list with the new capacity set.
+func (list *SafeList[T]) WithCapacity(capacity int) Lister[T] {
 	defer ers.PropagatePanic(ers.NewErrCallFailed("WithCapacity", list.WithCapacity))
 
 	list.capacityMutex.Lock()
@@ -126,8 +132,8 @@ func (list *SafeList[T]) WithCapacity(capacity int) *SafeList[T] {
 //
 // Parameters:
 //
-//   - value: A pointer to a value of type T to be added to the list.
-func (list *SafeList[T]) Append(value *T) {
+//   - value: The value of type T to be added to the list.
+func (list *SafeList[T]) Append(value T) {
 	list.backMutex.Lock()
 	defer list.backMutex.Unlock()
 
@@ -141,7 +147,7 @@ func (list *SafeList[T]) Append(value *T) {
 		}
 	})
 
-	node := &linkedNode[T]{value: value}
+	node := &linkedNode[T]{value: &value}
 
 	if list.back != nil {
 		list.back.next = node
@@ -165,8 +171,8 @@ func (list *SafeList[T]) Append(value *T) {
 //
 // Returns:
 //
-//   - *T: A pointer to the value of the first element in the list.
-func (list *SafeList[T]) DeleteFirst() *T {
+//   - T: The first element in the list.
+func (list *SafeList[T]) DeleteFirst() T {
 	list.frontMutex.Lock()
 	defer list.frontMutex.Unlock()
 
@@ -197,7 +203,7 @@ func (list *SafeList[T]) DeleteFirst() *T {
 
 	toRemove.next = nil
 
-	return toRemove.value
+	return *toRemove.value
 }
 
 // PeekFirst is a method of the SafeList type. It is used to return the first
@@ -207,13 +213,13 @@ func (list *SafeList[T]) DeleteFirst() *T {
 //
 // Returns:
 //
-//   - *T: A pointer to the value of the first element in the list.
-func (list *SafeList[T]) PeekFirst() *T {
+//   - T: The first element in the list.
+func (list *SafeList[T]) PeekFirst() T {
 	list.frontMutex.RLock()
 	defer list.frontMutex.RUnlock()
 
 	if list.front != nil {
-		return list.front.value
+		return *list.front.value
 	}
 
 	panic(ers.NewErrCallFailed("PeekFirst", list.PeekFirst).
@@ -263,27 +269,27 @@ func (list *SafeList[T]) Capacity() optional.Int {
 	return list.capacity
 }
 
-// ToSlice is a method of the SafeList type. It is used to convert the list to a
-// slice of pointers to the values in the list.
+// Iterator is a method of the SafeList type. It is used to return an iterator
+// for the list.
+// However, the iterator does not share the list's thread safety.
 //
 // Returns:
 //
-//   - []*T: A slice of pointers to the values in the list.
-func (list *SafeList[T]) ToSlice() []*T {
+//   - itf.Iterater[T]: An iterator for the list.
+func (list *SafeList[T]) Iterator() itf.Iterater[T] {
 	list.frontMutex.RLock()
 	defer list.frontMutex.RUnlock()
 
 	list.backMutex.RLock()
 	defer list.backMutex.RUnlock()
 
-	slice := make([]*T, 0, list.size)
+	var builder itf.Builder[T]
 
-	// Add the values to the slice
 	for node := list.front; node != nil; node = node.next {
-		slice = append(slice, node.value)
+		builder.Append(*node.value)
 	}
 
-	return slice
+	return builder.Build()
 }
 
 // Clear is a method of the SafeList type. It is used to remove all elements from
@@ -387,8 +393,8 @@ func (list *SafeList[T]) String() string {
 //
 // Parameters:
 //
-//   - value: A pointer to a value of type T to be added to the list.
-func (list *SafeList[T]) Prepend(value *T) {
+//   - value: The value of type T to be added to the list.
+func (list *SafeList[T]) Prepend(value T) {
 	list.frontMutex.Lock()
 	defer list.frontMutex.Unlock()
 
@@ -403,7 +409,7 @@ func (list *SafeList[T]) Prepend(value *T) {
 		}
 	})
 
-	node := &linkedNode[T]{value: value}
+	node := &linkedNode[T]{value: &value}
 
 	if list.front == nil {
 		// The list is empty
@@ -427,8 +433,8 @@ func (list *SafeList[T]) Prepend(value *T) {
 //
 // Returns:
 //
-//   - *T: A pointer to the value of the last element in the list.
-func (list *SafeList[T]) DeleteLast() *T {
+//   - T: The last element in the list.
+func (list *SafeList[T]) DeleteLast() T {
 	list.backMutex.Lock()
 	defer list.backMutex.Unlock()
 
@@ -459,7 +465,7 @@ func (list *SafeList[T]) DeleteLast() *T {
 
 	toRemove.prev = nil
 
-	return toRemove.value
+	return *toRemove.value
 }
 
 // PeekLast is a method of the SafeList type. It is used to return the last element
@@ -469,13 +475,13 @@ func (list *SafeList[T]) DeleteLast() *T {
 //
 // Returns:
 //
-//   - *T: A pointer to the value of the last element in the list.
-func (list *SafeList[T]) PeekLast() *T {
+//   - T: The last element in the list.
+func (list *SafeList[T]) PeekLast() T {
 	list.backMutex.RLock()
 	defer list.backMutex.RUnlock()
 
 	if list.back != nil {
-		return list.back.value
+		return *list.back.value
 
 	}
 
@@ -500,7 +506,7 @@ func (list *SafeList[T]) CutNilValues() {
 		return // List is empty
 	}
 
-	if list.front.value == nil && list.front == list.back {
+	if gen.IsNil(*list.front.value) && list.front == list.back {
 		// Single node
 		list.front = nil
 		list.back = nil
@@ -512,7 +518,7 @@ func (list *SafeList[T]) CutNilValues() {
 	var toDelete *linkedNode[T] = nil
 
 	// 1. First node
-	if list.front.value == nil {
+	if gen.IsNil(*list.front.value) {
 		toDelete = list.front
 
 		list.front = list.front.next
@@ -526,7 +532,7 @@ func (list *SafeList[T]) CutNilValues() {
 
 	// 2. Subsequent nodes (except last)
 	for node := list.front.next; node.next != nil; node = node.next {
-		if node.value != nil {
+		if !gen.IsNil(*node.value) {
 			prev = node
 		} else {
 			prev.next = node.next

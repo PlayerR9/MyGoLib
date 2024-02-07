@@ -11,7 +11,7 @@ import (
 
 // Buffer is a thread-safe, generic data structure that allows multiple
 // goroutines to produce and consume elements in a synchronized manner.
-// It is implemented as a q and uses channels to synchronize the
+// It is implemented as a queue and uses channels to synchronize the
 // goroutines.
 // The Buffer should be initialized with the Init method before use.
 type Buffer[T any] struct {
@@ -19,10 +19,10 @@ type Buffer[T any] struct {
 	q *Queue.SafeQueue[T]
 
 	// A send-only channel of type T. Messages from the Buffer are sent to this channel.
-	sendTo chan *T
+	sendTo chan T
 
 	// A receive-only channel of type T. Messages sent to this channel are added to the Buffer.
-	receiveFrom chan *T
+	receiveFrom chan T
 
 	// A WaitGroup to wait for all goroutines to finish.
 	wg sync.WaitGroup
@@ -42,15 +42,18 @@ type Buffer[T any] struct {
 // multiple times.
 // It creates two channels and a condition variable, and starts two
 // goroutines:
-// one that listens for incoming messages on the send channel and adds
-// them to the Buffer, and another that sends messages from the Buffer
-// to the receive channel.
+//
+//   - one that listens for incoming messages on the send channel and adds
+//     them to the Buffer.
+//   - another that sends messages from the Buffer
+//     to the receive channel.
+//
 // This method should be called before using the Buffer.
 //
 // Parameters:
 //   - bufferSize: The size of the buffer for the send and receive channels.
 //     Must be a non-negative integer. If a negative integer is provided,
-//     the method will panic.
+//     the method will panic with an *ers.InvalidParameterError.
 //
 // Returns:
 //   - A send-only channel of type T. Messages sent to this channel are
@@ -65,7 +68,7 @@ type Buffer[T any] struct {
 //   - The goroutine that sends messages from the Buffer to the receive
 //     channel will stop sending messages once the Buffer is empty, and then exit.
 //   - The Buffer will be cleaned up.
-func (b *Buffer[T]) Init(bufferSize int) (chan<- *T, <-chan *T) {
+func (b *Buffer[T]) Init(bufferSize int) (chan<- T, <-chan T) {
 	b.once.Do(func() {
 		if bufferSize < 0 {
 			panic(ers.NewErrInvalidParameter("bufferSize").WithReason(
@@ -74,8 +77,8 @@ func (b *Buffer[T]) Init(bufferSize int) (chan<- *T, <-chan *T) {
 		}
 
 		b.q = Queue.NewSafeQueue[T]()
-		b.sendTo = make(chan *T, bufferSize)
-		b.receiveFrom = make(chan *T, bufferSize)
+		b.sendTo = make(chan T, bufferSize)
+		b.receiveFrom = make(chan T, bufferSize)
 		b.isClosed = false
 		b.isNotEmptyOrClosed = sync.NewCond(new(sync.Mutex))
 
@@ -88,20 +91,10 @@ func (b *Buffer[T]) Init(bufferSize int) (chan<- *T, <-chan *T) {
 	return b.receiveFrom, b.sendTo
 }
 
-// listenForIncomingMessages is a method of the Buffer type.
-// It runs in a separate goroutine and listens for incoming messages
-// from the receiveChannel.
-// Each incoming message is enqueued in the Buffer.
-// If the receiveChannel is closed, the method sets the Buffer's isClosed
-// field to true and exits the loop.
-// After exiting the loop, it signals the isNotEmptyOrClosed condition
-// variable one more time to ensure that any waiting goroutines proceed.
+// listenForIncomingMessages is a method of the Buffer type that listens for
+// incoming messages from the receiveChannel and enqueues them in the Buffer.
 //
-// This method is not thread-safe and should only be called from within
-// the Buffer's goroutine.
-//
-// Note: This method assumes that the setFirst, setLast, and isEmpty methods
-// of the Buffer type are thread-safe.
+// It must be run in a separate goroutine to avoid blocking the main thread.
 func (b *Buffer[T]) listenForIncomingMessages() {
 	defer b.wg.Done()
 
@@ -118,21 +111,10 @@ func (b *Buffer[T]) listenForIncomingMessages() {
 	b.isNotEmptyOrClosed.Signal()
 }
 
-// sendMessagesFromBuffer is a method of the Buffer type.
-// It runs in a separate goroutine and sends messages from the
-// Buffer to the sendChannel.
-// The method waits until the Buffer is not empty or is closed
-// before sending each message.
-// If the Buffer is closed, the method stops sending messages
-// and exits the loop.
-// After exiting the loop, it sends any remaining messages in
-// the Buffer to the sendChannel, and then closes the sendChannel.
+// sendMessagesFromBuffer is a method of the Buffer type that sends
+// messages from the Buffer to the sendChannel.
 //
-// This method is not thread-safe and should only be called from
-// within the Buffer's goroutine.
-//
-// Note: This method assumes that the dequeue and isEmpty
-// methods of the Buffer type are thread-safe.
+// It must be run in a separate goroutine to avoid blocking the main thread.
 func (b *Buffer[T]) sendMessagesFromBuffer() {
 	defer b.wg.Done()
 
@@ -164,19 +146,12 @@ func (b *Buffer[T]) sendMessagesFromBuffer() {
 // thread-safety during the operation.
 //
 // This method is safe for concurrent use by multiple goroutines.
-//
-// Note: This method assumes that the trimFrom method of the safeElement
-// type is thread-safe.
-//
-// If the Buffer is already empty, this method does nothing.
 func (b *Buffer[T]) CleanBuffer() {
 	b.q.Clear()
 }
 
-// Wait is a method of the Buffer type.
-// It blocks the calling goroutine until all goroutines launched by
-// the Buffer have finished executing.
-// This is achieved by waiting for the internal WaitGroup to be done.
+// Wait is a method of the Buffer type that waits for all goroutines
+// launched by the Buffer to finish executing.
 //
 // This method is thread-safe and can be called from multiple goroutines.
 func (b *Buffer[T]) Wait() {

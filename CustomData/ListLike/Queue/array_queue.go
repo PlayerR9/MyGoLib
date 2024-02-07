@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"strings"
 
+	itf "github.com/PlayerR9/MyGoLib/Interfaces"
 	ers "github.com/PlayerR9/MyGoLib/Utility/Errors"
+	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 	"github.com/markphelps/optional"
 )
 
@@ -51,8 +53,8 @@ func NewArrayQueue[T any](values ...*T) *ArrayQueue[T] {
 //
 // Returns:
 //
-//   - *ArrayList[T]: A pointer to the list.
-func (queue *ArrayQueue[T]) WithCapacity(capacity int) *ArrayQueue[T] {
+//   - Queuer[T]: A pointer to the list.
+func (queue *ArrayQueue[T]) WithCapacity(capacity int) Queuer[T] {
 	defer ers.PropagatePanic(ers.NewErrCallFailed("WithCapacity", queue.WithCapacity))
 
 	queue.capacity.If(func(cap int) {
@@ -85,8 +87,8 @@ func (queue *ArrayQueue[T]) WithCapacity(capacity int) *ArrayQueue[T] {
 //
 // Parameters:
 //
-//   - value: A pointer to a value of type T, which is the element to be added to the queue.
-func (queue *ArrayQueue[T]) Enqueue(value *T) {
+//   - value: The value of type T to be added to the queue.
+func (queue *ArrayQueue[T]) Enqueue(value T) {
 	queue.capacity.If(func(cap int) {
 		if len(queue.values) >= cap {
 			panic(ers.NewErrCallFailed("Enqueue", queue.Enqueue).
@@ -95,7 +97,7 @@ func (queue *ArrayQueue[T]) Enqueue(value *T) {
 		}
 	})
 
-	queue.values = append(queue.values, value)
+	queue.values = append(queue.values, &value)
 }
 
 // Dequeue is a method of the ArrayQueue type. It is used to remove and return the
@@ -105,8 +107,8 @@ func (queue *ArrayQueue[T]) Enqueue(value *T) {
 //
 // Returns:
 //
-//   - *T: A pointer to the element at the front of the queue.
-func (queue *ArrayQueue[T]) Dequeue() *T {
+//   - T: The element at the front of the queue.
+func (queue *ArrayQueue[T]) Dequeue() T {
 	if len(queue.values) <= 0 {
 		panic(ers.NewErrCallFailed("Dequeue", queue.Dequeue).
 			WithReason(NewErrEmptyQueue(queue)),
@@ -115,7 +117,7 @@ func (queue *ArrayQueue[T]) Dequeue() *T {
 
 	toRemove := queue.values[0]
 	queue.values[0], queue.values = nil, queue.values[1:]
-	return toRemove
+	return *toRemove
 }
 
 // Peek is a method of the ArrayQueue type. It is used to return the element at the
@@ -125,10 +127,10 @@ func (queue *ArrayQueue[T]) Dequeue() *T {
 //
 // Returns:
 //
-//   - *T: A pointer to the element at the front of the queue.
-func (queue *ArrayQueue[T]) Peek() *T {
+//   - T: The element at the front of the queue.
+func (queue *ArrayQueue[T]) Peek() T {
 	if len(queue.values) == 0 {
-		return queue.values[0]
+		return *queue.values[0]
 	}
 
 	panic(ers.NewErrCallFailed("Peek", queue.Peek).
@@ -167,17 +169,21 @@ func (queue *ArrayQueue[T]) Capacity() optional.Int {
 	return queue.capacity
 }
 
-// ToSlice is a method of the ArrayQueue type. It is used to return a slice containing
-// the elements in the queue.
+// Iterator is a method of the ArrayQueue type. It is used to return an iterator
+// that can be used to iterate over the elements in the queue.
 //
 // Returns:
 //
-//   - []*T: A slice of pointers to the elements in the queue.
-func (queue *ArrayQueue[T]) ToSlice() []*T {
-	slice := make([]*T, len(queue.values))
-	copy(slice, queue.values)
+//   - itf.Iterater[T]: An iterator that can be used to iterate over the elements
+//     in the queue.
+func (queue *ArrayQueue[T]) Iterator() itf.Iterater[T] {
+	var builder itf.Builder[T]
 
-	return slice
+	for _, value := range queue.values {
+		builder.Append(*value)
+	}
+
+	return builder.Build()
 }
 
 // Clear is a method of the ArrayQueue type. It is used to remove all the elements
@@ -228,10 +234,10 @@ func (queue *ArrayQueue[T]) String() string {
 		return builder.String()
 	}
 
-	fmt.Fprintf(&builder, "size=%d, values=[← %v", len(queue.values), queue.values[0])
+	fmt.Fprintf(&builder, "size=%d, values=[← %v", len(queue.values), *queue.values[0])
 
 	for _, element := range queue.values[1:] {
-		fmt.Fprintf(&builder, ", %v", element)
+		fmt.Fprintf(&builder, ", %v", *element)
 	}
 
 	builder.WriteString("]]")
@@ -243,7 +249,7 @@ func (queue *ArrayQueue[T]) String() string {
 // values from the queue.
 func (queue *ArrayQueue[T]) CutNilValues() {
 	for i := 0; i < len(queue.values); {
-		if queue.values[i] == nil {
+		if gen.IsNil(*queue.values[i]) {
 			queue.values = append(queue.values[:i], queue.values[i+1:]...)
 		} else {
 			i++

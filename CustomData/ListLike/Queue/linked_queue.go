@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"strings"
 
+	itf "github.com/PlayerR9/MyGoLib/Interfaces"
 	ers "github.com/PlayerR9/MyGoLib/Utility/Errors"
+	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 	"github.com/markphelps/optional"
 )
 
@@ -33,13 +35,13 @@ type LinkedQueue[T any] struct {
 // Returns:
 //
 //   - *LinkedQueue[T]: A pointer to the newly created LinkedQueue.
-func NewLinkedQueue[T any](values ...*T) *LinkedQueue[T] {
+func NewLinkedQueue[T any](values ...T) *LinkedQueue[T] {
 	queue := new(LinkedQueue[T])
 	queue.size = len(values)
 
 	// First node
 	node := linkedNode[T]{
-		value: values[0],
+		value: &values[0],
 	}
 
 	queue.front = &node
@@ -48,7 +50,7 @@ func NewLinkedQueue[T any](values ...*T) *LinkedQueue[T] {
 	// Subsequent nodes
 	for _, element := range values[1:] {
 		node = linkedNode[T]{
-			value: element,
+			value: &element,
 		}
 
 		queue.back.next = &node
@@ -72,8 +74,8 @@ func NewLinkedQueue[T any](values ...*T) *LinkedQueue[T] {
 //
 // Returns:
 //
-//   - *LinkedQueue[T]: A pointer to the queue with the new capacity set.
-func (queue *LinkedQueue[T]) WithCapacity(capacity int) *LinkedQueue[T] {
+//   - Queuer[T]: A pointer to the queue with the new capacity set.
+func (queue *LinkedQueue[T]) WithCapacity(capacity int) Queuer[T] {
 	defer ers.PropagatePanic(ers.NewErrCallFailed("WithCapacity", queue.WithCapacity))
 
 	queue.capacity.If(func(cap int) {
@@ -104,7 +106,7 @@ func (queue *LinkedQueue[T]) WithCapacity(capacity int) *LinkedQueue[T] {
 //
 //   - value: A pointer to a value of type T, which is the element to be added to the
 //     queue.
-func (queue *LinkedQueue[T]) Enqueue(value *T) {
+func (queue *LinkedQueue[T]) Enqueue(value T) {
 	queue.capacity.If(func(cap int) {
 		if queue.size >= cap {
 			panic(ers.NewErrCallFailed("Enqueue", NewErrFullQueue(queue)))
@@ -112,7 +114,7 @@ func (queue *LinkedQueue[T]) Enqueue(value *T) {
 	})
 
 	queue_node := &linkedNode[T]{
-		value: value,
+		value: &value,
 	}
 
 	if queue.back == nil {
@@ -133,8 +135,8 @@ func (queue *LinkedQueue[T]) Enqueue(value *T) {
 //
 // Returns:
 //
-//   - *T: A pointer to the value of the element at the front of the queue.
-func (queue *LinkedQueue[T]) Dequeue() *T {
+//   - T: The value of the element at the front of the queue.
+func (queue *LinkedQueue[T]) Dequeue() T {
 	if queue.front == nil {
 		panic(ers.NewErrCallFailed("Dequeue", queue.Dequeue).
 			WithReason(NewErrEmptyQueue(queue)),
@@ -151,7 +153,7 @@ func (queue *LinkedQueue[T]) Dequeue() *T {
 	queue.size--
 	toRemove.next = nil
 
-	return toRemove.value
+	return *toRemove.value
 }
 
 // Peek is a method of the LinkedQueue type. It is used to return the element at
@@ -161,10 +163,10 @@ func (queue *LinkedQueue[T]) Dequeue() *T {
 //
 // Returns:
 //
-//   - *T: A pointer to the value of the element at the front of the queue.
-func (queue *LinkedQueue[T]) Peek() *T {
+//   - T: The value of the element at the front of the queue.
+func (queue *LinkedQueue[T]) Peek() T {
 	if queue.front != nil {
-		return queue.front.value
+		return *queue.front.value
 	}
 
 	panic(ers.NewErrCallFailed("Peek", queue.Peek).
@@ -196,20 +198,20 @@ func (queue *LinkedQueue[T]) Capacity() optional.Int {
 	return queue.capacity
 }
 
-// ToSlice is a method of the LinkedQueue type. It is used to return a slice
-// containing the elements of the queue.
+// Iterator is a method of the LinkedQueue type. It is used to return an iterator
+// for the queue.
 //
 // Returns:
 //
-//   - []*T: A slice of pointers to the elements of the queue.
-func (queue *LinkedQueue[T]) ToSlice() []*T {
-	slice := make([]*T, 0, queue.size)
+//   - itf.Iterater[T]: An iterator for the queue.
+func (queue *LinkedQueue[T]) Iterator() itf.Iterater[T] {
+	var builder itf.Builder[T]
 
 	for queue_node := queue.front; queue_node != nil; queue_node = queue_node.next {
-		slice = append(slice, queue_node.value)
+		builder.Append(*queue_node.value)
 	}
 
-	return slice
+	return builder.Build()
 }
 
 // Clear is a method of the LinkedQueue type. It is used to remove all elements
@@ -274,10 +276,10 @@ func (queue *LinkedQueue[T]) String() string {
 		return builder.String()
 	}
 
-	fmt.Fprintf(&builder, "size=%d, values=[← %v", queue.size, queue.front.value)
+	fmt.Fprintf(&builder, "size=%d, values=[← %v", queue.size, *queue.front.value)
 
 	for queue_node := queue.front.next; queue_node != nil; queue_node = queue_node.next {
-		fmt.Fprintf(&builder, ", %v", queue_node.value)
+		fmt.Fprintf(&builder, ", %v", *queue_node.value)
 	}
 
 	builder.WriteString("]]")
@@ -292,7 +294,7 @@ func (queue *LinkedQueue[T]) CutNilValues() {
 		return // Queue is empty
 	}
 
-	if queue.front.value == nil && queue.front == queue.back {
+	if gen.IsNil(*queue.front.value) && queue.front == queue.back {
 		// Single node
 		queue.front = nil
 		queue.back = nil
@@ -304,7 +306,7 @@ func (queue *LinkedQueue[T]) CutNilValues() {
 	var toDelete *linkedNode[T] = nil
 
 	// 1. First node
-	if queue.front.value == nil {
+	if gen.IsNil(*queue.front.value) {
 		toDelete = queue.front
 
 		queue.front = queue.front.next
@@ -317,7 +319,7 @@ func (queue *LinkedQueue[T]) CutNilValues() {
 
 	// 2. Subsequent nodes (except last)
 	for node := queue.front.next; node.next != nil; node = node.next {
-		if node.value != nil {
+		if !gen.IsNil(*node.value) {
 			prev = node
 		} else {
 			prev.next = node.next

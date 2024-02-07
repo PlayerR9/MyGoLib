@@ -8,24 +8,60 @@ import (
 	ers "github.com/PlayerR9/MyGoLib/Utility/Errors"
 )
 
+// Comparable is an interface that defines the behavior of a type that can be
+// compared with other values of the same type using the < and > operators.
+// The interface is implemented by the built-in types int, int8, int16, int32,
+// int64, uint, uint8, uint16, uint32, uint64, float32, float64, and string.
+type Comparable interface {
+	~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 |
+		~float32 | ~float64 | ~string
+}
+
+// Min is a function that takes two parameters, a and b, of any type T that
+// implements the Comparable interface and returns the smaller of the two values.
+//
+// Parameters:
+//
+//   - a, b: The two values to compare.
+//
+// Return:
+//
+//   - T: The smaller of the two values.
+func Min[T Comparable](a, b T) T {
+	if a < b {
+		return a
+	} else {
+		return b
+	}
+}
+
+// Max is a function that takes two parameters, a and b, of any type T that
+// implements the Comparable interface and returns the larger of the two values.
+//
+// Parameters:
+//
+//   - a, b: The two values to compare.
+//
+// Return:
+//
+//   - T: The larger of the two values.
+func Max[T Comparable](a, b T) T {
+	if a < b {
+		return b
+	} else {
+		return a
+	}
+}
+
 // DeepCopy is a function that performs a deep copy of a given value.
-// It takes a parameter, value, of any type and returns a new value that is a
-// deep copy of the input value.
 //
-// The function first gets the type of the input value using the reflect.TypeOf
-// function.
+// Parameters:
 //
-// If the kind of the type is not a pointer, the function performs a shallow
-// copy of the value by simply returning the input value.
-// This is because non-pointer values in Go are passed by value, so a new
-// copy is created when the value is passed to the function.
+//   - value: The value to copy.
 //
-// If the kind of the type is a pointer, the function creates a new instance
-// of the underlying type of the pointer using the reflect.New function.
-// The new instance is then set to the value pointed to by the input pointer
-// using the reflect.ValueOf function and the Set method of the reflect.Value type.
+// Return:
 //
-// The function then returns the new value, which is a deep copy of the input value.
+//   - any: A deep copy of the input value.
 func DeepCopy(value any) any {
 	typ := reflect.TypeOf(value)
 
@@ -43,23 +79,27 @@ func DeepCopy(value any) any {
 	return newValue
 }
 
-// SplitIntoGroups takes a slice of any type and an integer n as input.
-// It splits the slice into n groups and returns a 2D slice where each
-// inner slice represents a group.
-// The elements are distributed based on their index in the original slice.
-// If there are more elements than groups, the remaining elements are
-// distributed to the groups in a round-robin fashion.
-// If the number of groups (n) is less than or equal to 0, it panics with
-// the message "The number of groups must be positive and non-zero".
-// If the length of the slice is less than 2 or n is 1, it returns the
-// original slice wrapped in a 2D slice.
+// SplitIntoGroups splits the slice into n groups and returns a 2D slice where
+// each inner slice represents a group.
+//
+// Panics with error of type *ers.ErrInvalidParameter if the number of groups
+// is less than or equal to 0.
+//
+// Parameters:
+//
+//   - slice: The slice to split.
+//   - n: The number of groups to split the slice into.
+//
+// Return:
+//
+//   - [][]T: A 2D slice where each inner slice represents a group.
 //
 // Example:
 //
-//	slice := []int{1, 2, 3, 4, 5, 6}
+//	slice := []int{1, 2, 3, 4, 5}
 //	n := 3
 //	groups := SplitIntoGroups(slice, n)
-//	fmt.Println(groups) // Output: [[1 4] [2 5] [3 6]]
+//	fmt.Println(groups) // Output: [[1 4] [2 5] [3]]
 func SplitIntoGroups[T any](slice []T, n int) [][]T {
 	if len(slice) == 0 {
 		return [][]T{}
@@ -88,6 +128,23 @@ func SplitIntoGroups[T any](slice []T, n int) [][]T {
 	return groups
 }
 
-func TransformToPointer[T any](value T) *T {
-	return &value
+// IsNil is a function that checks if a value is nil.
+//
+// Parameters:
+//
+//   - value: The value to check.
+//
+// Return:
+//
+//   - bool: True if the value is nil, false otherwise.
+func IsNil[T any](value T) bool {
+	switch reflect.ValueOf(value).Kind() {
+	case reflect.Ptr, reflect.Interface,
+		reflect.Map, reflect.Slice, reflect.Chan:
+		if reflect.ValueOf(value).IsNil() {
+			return true
+		}
+	}
+
+	return false
 }

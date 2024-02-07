@@ -13,11 +13,8 @@ import (
 )
 
 // ReplaceSuffix replaces the end of the given string with the provided suffix.
-// The function checks the lengths of the string and the suffix to determine the appropriate action:
-//   - If the length of the suffix is greater than the length of the string, the function returns an empty string and an ErrSuffixTooLong error.
-//   - If the length of the suffix is equal to the length of the string, the function returns the suffix.
-//   - If the length of the suffix is zero, the function returns the original string.
-//   - Otherwise, the function replaces the end of the string with the suffix and returns the result.
+//
+// Panics with an error of type *ers.ErrCallFailed if the suffix is longer than the string.
 //
 // Parameters:
 //
@@ -26,7 +23,7 @@ import (
 //
 // Returns:
 //
-//   - The modified string, or an error if the suffix is too long.
+//   - string: The resulting string after replacing the end with the suffix.
 func ReplaceSuffix(str, suffix string) string {
 	countStr := utf8.RuneCountInString(str)
 	countSuffix := utf8.RuneCountInString(suffix)
@@ -50,8 +47,9 @@ func ReplaceSuffix(str, suffix string) string {
 
 // FindContentIndexes searches for the positions of opening and closing tokens
 // in a slice of strings.
-// It returns the start and end indexes of the content between the tokens, and
-// an error if any.
+//
+// Panics with an error of type *ers.ErrInvalidParameter if the opening or closing tokens
+// are empty, or with an error of type *ers.ErrCallFailed if the opening token is not found.
 //
 // Parameters:
 //
@@ -60,20 +58,12 @@ func ReplaceSuffix(str, suffix string) string {
 //   - contentTokens: The slice of strings in which to search for the tokens.
 //
 // Returns:
-//   - The start index of the content (inclusive).
-//   - The end index of the content (exclusive).
-//   - An error if the opening or closing tokens are empty, or if they are not
-//     found in the correct order in the contentTokens.
 //
-// If the openingToken is found but the closingToken is not, the function will
-// return an error.
-// If the closingToken is found before the openingToken, the function will
-// return an error.
-// If the closingToken is a newline ("\n") and it is not found, the function will
-// return the length of the contentTokens as the end index.
-//
-// Errors returned can be of type ErrOpeningTokenEmpty, ErrClosingTokenEmpty,
-// ErrOpeningTokenNotFound, or a generic error with a message about the closing token.
+//   - int: The start index of the content (inclusive).
+//   - int: The end index of the content (exclusive).
+//   - error: An error of type *ErrNeverOpened if the closing token is found
+//     without any corresponding opening token, or an error of type *ErrClosingTokenNotFound
+//     if the closing token is not found.
 func FindContentIndexes(openingToken, closingToken string, contentTokens []string) (int, int, error) {
 	if openingToken == "" {
 		panic(ers.NewErrInvalidParameter("openingToken").WithReason(
@@ -123,16 +113,15 @@ func FindContentIndexes(openingToken, closingToken string, contentTokens []strin
 // GetOrdinalSuffix returns the ordinal suffix for a given integer.
 //
 // Parameters:
+//
 //   - number: The integer for which to get the ordinal suffix.
 //
-// The function returns a string that represents the number with its ordinal suffix.
+// Returns:
 //
-// For example, for the number 1, the function returns "1st"; for the number 2, it returns "2nd"; and so on.
-// For numbers ending in 11, 12, or 13, the function returns the number with the suffix "th" (e.g., "11th", "12th", "13th").
-// For negative numbers, the function also returns the number with the suffix "th".
+//   - string: The ordinal suffix for the number.
 //
-// If the last digit of the number is 0 or greater than 3 (and the last two digits are not 11, 12, or 13), the function returns the number with the suffix "th".
-// If the last digit of the number is 1, 2, or 3 (and the last two digits are not 11, 12, or 13), the function returns the number with the corresponding ordinal suffix ("st", "nd", or "rd").
+// For example, for the number 1, the function returns "1st"; for the number 2,
+// it returns "2nd"; and so on.
 func GetOrdinalSuffix(number int) string {
 	if number < 0 {
 		return fmt.Sprintf("%dth", number)
@@ -173,9 +162,14 @@ type SpltLine struct {
 }
 
 // NewSpltLine creates a new SpltLine instance.
-// The initial word is passed as an argument.
-// The length of the line is calculated based on the initial word.
-// It returns a pointer to the created SpltLine instance.
+//
+// Parameters:
+//
+//   - word: The initial word to add to the line.
+//
+// Returns:
+//
+//   - *SpltLine: A pointer to the created SpltLine instance.
 func NewSpltLine(word string) *SpltLine {
 	splt := new(SpltLine)
 
@@ -185,10 +179,11 @@ func NewSpltLine(word string) *SpltLine {
 	return splt
 }
 
-// shiftLeft is a method on the SpltLine struct.
-// It removes the first word from the Line slice and decreases the Len field by
-// the length of the word plus one (for the space).
-// The method returns the word that was removed.
+// shiftLeft is a method of SpltLine that removes the first word from the line.
+//
+// Returns:
+//
+//   - string: The word that was removed.
 func (sl *SpltLine) shiftLeft() string {
 	firstWord := sl.Line[0]
 
@@ -198,10 +193,11 @@ func (sl *SpltLine) shiftLeft() string {
 	return firstWord
 }
 
-// InsertWord is a method on the SpltLine struct.
-// It adds a given word to the end of the Line slice and increases the Len field
-// by the length of the word plus one (for the space).
-// The method does not return any value.
+// InsertWord is a method of SpltLine that adds a given word to the end of the line.
+//
+// Parameters:
+//
+//   - word: The word to add to the line.
 func (sl *SpltLine) InsertWord(word string) {
 	if word == "" {
 		return
@@ -211,11 +207,12 @@ func (sl *SpltLine) InsertWord(word string) {
 	sl.Len += (utf8.RuneCountInString(word) + 1)
 }
 
-// deepCopy is a method on the SpltLine struct.
-// It creates a deep copy of the SpltLine and returns a pointer to it.
-// The method creates a new slice for the Line field and copies all words
-// from the original Line slice to the new one.
-// The Len field is copied directly.
+// deepCopy is a method of SpltLine that creates a deep copy of the
+// SpltLine.
+//
+// Returns:
+//
+//   - *SpltLine: A pointer to the created deep copy of the SpltLine.
 func (sl *SpltLine) deepCopy() *SpltLine {
 	newLine := make([]string, len(sl.Line))
 	copy(newLine, sl.Line)
@@ -226,11 +223,12 @@ func (sl *SpltLine) deepCopy() *SpltLine {
 	}
 }
 
-// String is a method on the SpltLine struct.
-// It converts the SpltLine to a string.
-// The method joins all words in the Line slice with a space and returns
-// the resulting string.
-func (sl SpltLine) String() string {
+// String is a method of SpltLine that converts the SpltLine to a string.
+//
+// Returns:
+//
+//   - string: The resulting string.
+func (sl *SpltLine) String() string {
 	return strings.Join(sl.Line, " ")
 }
 
@@ -245,11 +243,12 @@ type TextSplitter struct {
 	Lines []*SpltLine
 }
 
-// GetFurthestRightEdge is a method on the TextSplitter struct.
-// It iterates over all lines in the TextSplitter and finds the length
-// of the longest line.
-// If no lines exist, it returns the width of the TextSplitter.
-// Otherwise, it returns the length of the longest line.
+// GetFurthestRightEdge is a method of TextSplitter that returns the length of the
+// longest line in the TextSplitter.
+//
+// Returns:
+//
+//   - int: The length of the longest line.
 func (ts *TextSplitter) GetFurthestRightEdge() int {
 	max := -1
 
@@ -266,12 +265,18 @@ func (ts *TextSplitter) GetFurthestRightEdge() int {
 	}
 }
 
-// CanInsertWord is a method on the TextSplitter struct.
-// It checks if a given word can be inserted into a specific line without
-// exceeding the width of the TextSplitter.
-// The method takes a string (word) and an integer (lineIndex) as input.
-// It returns true if the word can be inserted into the line at lineIndex
-// without exceeding the width, and false otherwise.
+// CanInsertWord is a method of TextSplitter that checks if a given word can be
+// inserted into a specific line without exceeding the width of the TextSplitter.
+//
+// Parameters:
+//
+//   - word: The word to check.
+//   - lineIndex: The index of the line to check.
+//
+// Returns:
+//
+//   - bool: True if the word can be inserted into the line at lineIndex without
+//     exceeding the width, and false otherwise.
 func (ts *TextSplitter) CanInsertWord(word string, lineIndex int) bool {
 	if lineIndex < 0 || lineIndex >= len(ts.Lines) {
 		return false
@@ -280,6 +285,15 @@ func (ts *TextSplitter) CanInsertWord(word string, lineIndex int) bool {
 	return ts.Lines[lineIndex].Len+utf8.RuneCountInString(word)+1 <= ts.Width
 }
 
+// InsertWordAt is a method of TextSplitter that attempts to insert a given word
+// into a specific line of the TextSplitter.
+//
+// Panics with an error of type *ers.ErrInvalidParameter if the lineIndex is out of bounds.
+//
+// Parameters:
+//
+//   - word: The word to insert.
+//   - lineIndex: The index of the line to insert the word into.
 func (ts *TextSplitter) InsertWordAt(word string, lineIndex int) {
 	if lineIndex < 0 || lineIndex >= len(ts.Lines) {
 		panic(ers.NewErrInvalidParameter("InsertWordAt").WithReason(
@@ -297,20 +311,26 @@ func (ts *TextSplitter) InsertWordAt(word string, lineIndex int) {
 		lineIndex--
 	}
 
-	// FIXME: Check why this is needed
-	ts.CanInsertWord(word, lineIndex)
+	/*
+		if !ts.CanInsertWord(word, lineIndex) {
+			panic(fmt.Errorf("word %s cannot be inserted into line %d", word, lineIndex))
+		}
+	*/
+
 	ts.Lines[lineIndex].InsertWord(word)
 }
 
-// InsertWord is a method on the TextSplitter struct.
-// It attempts to insert a given word into the TextSplitter.
-// If the length of the word is greater than the width of the TextSplitter,
-// it returns an ErrWordTooLong error.
-// If the word can be inserted without exceeding the width, it is added to
-// the Lines slice and the method returns nil.
-// If adding the word to the last line would exceed the width, the words of
-// the last line are shifted to the left until the word can be inserted or
-// there are no more lines.
+// InsertWord is a method of TextSplitter that attempts to insert a given word into
+// the TextSplitter.
+//
+// Parameters:
+//
+//   - word: The word to insert.
+//
+// Returns:
+//
+//   - bool: True if the word was successfully inserted, and false if the word is too long
+//     to fit within the width of the TextSplitter.
 func (ts *TextSplitter) InsertWord(word string) bool {
 	if len(ts.Lines) < cap(ts.Lines) {
 		if utf8.RuneCountInString(word) > ts.Width {
@@ -337,17 +357,19 @@ func (ts *TextSplitter) InsertWord(word string) bool {
 		lastLineIndex--
 	}
 
-	// FIXME: Check why this is needed
-	ts.CanInsertWord(word, lastLineIndex)
+	/*
+		ts.CanInsertWord(word, lastLineIndex)
+	*/
 	ts.Lines[lastLineIndex].InsertWord(word)
 
 	return true
 }
 
-// deepCopy is a method on the TextSplitter struct.
-// It creates a deep copy of the TextSplitter and returns a pointer to it.
-// The method iterates over all lines in the TextSplitter and adds a deep
-// copy of each line to the Lines slice of the new TextSplitter.
+// deepCopy is a method of TextSplitter that creates a deep copy of the TextSplitter.
+//
+// Returns:
+//
+//   - *TextSplitter: A pointer to the created deep copy of the TextSplitter.
 func (ts *TextSplitter) deepCopy() *TextSplitter {
 	newTs := &TextSplitter{
 		Width: ts.Width,
@@ -361,48 +383,53 @@ func (ts *TextSplitter) deepCopy() *TextSplitter {
 	return newTs
 }
 
-// canShiftUp is a method on the TextSplitter struct.
-// It checks if the first word of a given line can be shifted up to
-// the previous line without exceeding the width.
-// The method takes an integer (lineIndex) as input.
-// It returns true if the first word of the line at lineIndex can be
-// shifted up to the previous line without exceeding the width, and
-// false otherwise.
+// canShiftUp is a method of TextSplitter that checks if the first word of a given line
+// can be shifted up to the previous line without exceeding the width.
+//
+// Parameters:
+//
+//   - lineIndex: The index of the line to check.
+//
+// Returns:
+//
+//   - bool: True if the first word of the line at lineIndex can be shifted up to the
+//     previous line without exceeding the width, and false otherwise.
 func (ts *TextSplitter) canShiftUp(lineIndex int) bool {
 	return ts.CanInsertWord(ts.Lines[lineIndex].Line[0], lineIndex-1)
 }
 
-// shiftUp is a method on the TextSplitter struct.
-// It shifts the first word of a given line up to the previous line.
-// The method takes an integer (lineIndex) as input.
-// It does not return any value.
-// The method assumes that it is safe to shift the word up, i.e., the
-// canShiftUp method should be called before calling this method.
+// shiftUp is a method of TextSplitter that shifts the first word of a given line up to
+// the previous line.
+//
+// Panics with an error of type *ers.ErrInvalidParameter if the lineIndex is out of bounds.
+//
+// Parameters:
+//
+//   - lineIndex: The index of the line to shift up.
 func (ts *TextSplitter) shiftUp(lineIndex int) {
 	ts.Lines[lineIndex-1].InsertWord(ts.Lines[lineIndex].shiftLeft())
 }
 
 // CalculateNumberOfLines is a function that calculates the minimum number
-// of lines needed
-// to fit a given text within a specified width.
-// It takes a slice of strings (text) and an integer (width) as input.
-// The function returns the calculated number of lines and an error.
+// of lines needed to fit a given text within a specified width.
 //
-// If the input text is empty, the function returns 0 and an ErrEmptyText
-// error.
-// If the width is less than or equal to 0, the function returns 0 and an
-// ErrWidthTooSmall error.
+// Panics with an error of type *ers.ErrInvalidParameter if the text is empty,
+// or if the width is less than or equal to 0.
 //
-// The function calculates the total length of the text (Tl) and uses a
-// mathematical formula to estimate the minimum number of lines needed to
-// fit the text within the given width.
+// Parameters:
+//
+//   - text: The slice of strings representing the text to calculate the number of lines for.
+//   - width: The width to fit the text within.
+//
+// Returns:
+//
+//   - int: The calculated number of lines needed to fit the text within the width.
+//   - bool: True if the number of lines is greater than the estimated number of lines,
+//     and false otherwise.
+//
+// The function calculates the total length of the text (Tl) and uses a mathematical
+// formula to estimate the minimum number of lines needed to fit the text within the given width.
 // The formula is explained in detail in the comments within the function.
-//
-// If the calculated number of lines is greater than the number of words in
-// the text, the function returns 0 and an ErrWidthTooSmall error, indicating
-// that the width is too small.
-//
-// Otherwise, the function returns the calculated number of lines and no error.
 func CalculateNumberOfLines(text []string, width int) (int, bool) {
 	if len(text) == 0 {
 		panic(ers.NewErrInvalidParameter("text").WithReason(
@@ -486,38 +513,27 @@ func CalculateNumberOfLines(text []string, width int) (int, bool) {
 	return numberOfLines, numberOfLines > len(text)
 }
 
-// SplitTextInEqualSizedLines is a function that splits a given text into
-// lines of equal width.
-// It takes a slice of strings (text) and two integers (width, height) as
-// input.
-// The function returns a pointer to a TextSplitter struct and an error.
+// SplitTextInEqualSizedLines is a function that splits a given text into lines of equal width.
 //
-// If the input text is empty, the function returns nil and an ErrEmptyText
-// error.
-// If the width is less than or equal to 0, the function returns
-// nil and an ErrWidthTooSmall error.
+// Parameters:
 //
-// If the height is less than 1, the function calculates the height itself
+//   - text: The slice of strings representing the text to split.
+//   - width: The width of the lines.
+//   - maxHeight: The maximum height of the text.
+//
+// Returns:
+//
+//   - *TextSplitter: A pointer to the created TextSplitter instance.
+//   - error: An error of type *ErrEmptyText if the input text is empty, or an error of type
+//     *ErrWidthTooSmall if the width is less than or equal to 0.
+//
+// The function calculates the minimum number of lines needed to fit the text within the width
 // using the CalculateNumberOfLines function.
-// If CalculateNumberOfLines returns an error, SplitTextInEqualSizedLines
-// returns nil and the same error.
+// Furthermore, it uses the Sum of Squared Mean (SQM) to find the optimal solution
+// for splitting the text into lines of equal width.
 //
-// The function then creates a new TextSplitter struct and starts inserting
-// words into it.
-// If a word cannot be inserted, the function returns an error.
-//
-// After all words have been inserted, the function calculates the Sum of
-// Squared Mean (SQM) for the current solution and starts looking for an
-// optimal solution by moving words from the last line to the above line.
-//
-// The function keeps track of all candidates for the optimal solution and
-// their corresponding SQM.
-// The candidate with the lowest SQM is considered the optimal solution.
-//
-// If there are multiple candidates with the same lowest SQM, the function
-// simply returns the first one.
-//
-// The function finally returns the first line of the optimal solution and no error.
+// If maxHeight is not provided, the function calculates the number of lines needed to fit the text
+// within the width using the CalculateNumberOfLines function.
 func SplitTextInEqualSizedLines(text []string, width int, maxHeight optional.Int) (ts *TextSplitter, err error) {
 	defer ers.RecoverFromPanic(&err)
 
@@ -680,21 +696,26 @@ func SplitTextInEqualSizedLines(text []string, width int, maxHeight optional.Int
 	return candidateList[0], nil
 }
 
-// SplitSentenceIntoFields takes a string and an indent level as input.
-// It splits the string into fields, where each field is a substring separated by one or more whitespace characters.
-// The function also handles special characters such as tabs, vertical tabs, carriage returns, line feeds, and form feeds.
-// The indent level determines the number of spaces that a tab character is replaced with.
+// SplitSentenceIntoFields splits the string into fields, where each field is a
+// substring separated by one or more whitespace characters.
+// The function also handles special characters such as tabs, vertical tabs, carriage returns,
+// line feeds, and form feeds.
 //
-// The function returns a two-dimensional slice of strings.
-// Each inner slice represents the fields of a line from the input string.
-// Lines that do not contain any fields (i.e., they are empty or consist only of whitespace) are not included in the output.
+// Panics with an error of type *ers.ErrInvalidParameter if the indentLevel is negative.
 //
-// If the input string is empty, the function returns an empty two-dimensional slice.
-// If the indent level is negative, the function returns an ErrInvalidParameter error.
-// If the input string contains an invalid rune, the function returns an error.
-func SplitSentenceIntoFields(sentence string, indentLevel int) [][]string {
+// Parameters:
+//
+//   - sentence: The string to split into fields.
+//   - indentLevel: The number of spaces that a tab character is replaced with.
+//
+// Returns:
+//
+//   - [][]string: A two-dimensional slice of strings, where each inner slice represents
+//     the fields of a line from the input string.
+//   - error: An error if any of the runes in the string is invalid.
+func SplitSentenceIntoFields(sentence string, indentLevel int) ([][]string, error) {
 	if sentence == "" {
-		return [][]string{}
+		return [][]string{}, nil
 	}
 
 	if indentLevel < 0 {
@@ -713,9 +734,7 @@ func SplitSentenceIntoFields(sentence string, indentLevel int) [][]string {
 		sentence = sentence[size:]
 
 		if char == utf8.RuneError {
-			panic(ers.NewErrCallFailed("SplitSentenceIntoFields", SplitSentenceIntoFields).
-				WithReason(fmt.Errorf("rune at index %d is invalid", j)),
-			)
+			return nil, fmt.Errorf("rune at index %d is invalid", j)
 		}
 
 		switch char {
@@ -771,5 +790,5 @@ func SplitSentenceIntoFields(sentence string, indentLevel int) [][]string {
 		lines = append(lines, words)
 	}
 
-	return lines
+	return lines, nil
 }

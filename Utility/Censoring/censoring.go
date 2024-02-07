@@ -7,9 +7,16 @@ import (
 	"strings"
 )
 
-// FilterFunc is a function type that defines the filtering criteria for a string.
-// It takes a string as input and returns a boolean indicating whether the string
-// is acceptable or not.
+// FilterFunc is a function type that defines the filtering criteria for a string,
+// based on which the string is either accepted or rejected.
+//
+// Parameters:
+//
+//   - string: The string to be filtered.
+//
+// Returns:
+//
+//   - bool: A boolean value that is true if the string is rejected, and false otherwise.
 type FilterFunc func(string) bool
 
 // DefaultCensorLabel is a constant that defines the default label used to replace
@@ -23,18 +30,15 @@ const (
 // status of a string.
 type CensorValue bool
 
-// Censored and NotCensored are constants of type CensorValue that represent the two
-// possible censoring statuses.
-// Censored represents a string that has been censored, while NotCensored represents
-// a string that has not been censored.
 const (
-	Censored    CensorValue = true
+	// Censored represents a string that has been censored
+	Censored CensorValue = true
+
+	// NotCensored represents a string that has not been censored
 	NotCensored CensorValue = false
 )
 
 // Context is a type that encapsulates the context for a censoring operation.
-// It contains a censorLabel, which is the label used to replace unacceptable strings,
-// and a notCensored value, which indicates whether the string is censored or not.
 type Context struct {
 	// The label used to replace unacceptable strings
 	censorLabel string
@@ -44,10 +48,11 @@ type Context struct {
 }
 
 // NewContext creates a new Context with default values.
-// The default censorLabel is DefaultCensorLabel and the default notCensored value
-// is false.
+// The default censorLabel is DefaultCensorLabel and the context is censored.
 //
-// It returns a pointer to the newly created Context.
+// Returns:
+//
+//   - *Context: A pointer to the newly created Context.
 func NewContext() *Context {
 	return &Context{
 		censorLabel: DefaultCensorLabel,
@@ -56,11 +61,16 @@ func NewContext() *Context {
 }
 
 // WithLabel sets the censorLabel of the Context to the given label.
-// If the given label is an empty string, the censorLabel is set to DefaultCensorLabel.
-// It returns the Context itself to allow for method chaining, following the builder
-// pattern.
+// Empty strings will be replaced with DefaultCensorLabel.
+//
+// Parameters:
+//
+//   - label: The label to be set.
+//
+// Returns:
+//
+//   - *Context: A pointer to the Context itself.
 func (ctx *Context) WithLabel(label string) *Context {
-	label = strings.TrimSpace(label)
 	if label != "" {
 		ctx.censorLabel = label
 	} else {
@@ -70,9 +80,15 @@ func (ctx *Context) WithLabel(label string) *Context {
 	return ctx
 }
 
-// WithMode sets the notCensored value of the Context to the negation of the given mode.
-// It returns the Context itself to allow for method chaining, following the builder
-// pattern.
+// WithMode sets the notCensored value of the Context to the given mode.
+//
+// Parameters:
+//
+//   - mode: The mode to be set.
+//
+// Returns:
+//
+//   - *Context: A pointer to the Context itself.
 func (ctx *Context) WithMode(mode CensorValue) *Context {
 	ctx.notCensored = !mode
 
@@ -81,10 +97,6 @@ func (ctx *Context) WithMode(mode CensorValue) *Context {
 
 // Builder is a type that provides a fluent interface for constructing a
 // censoring operation.
-// It contains a slice of FilterFuncs, a separator string, a slice of values
-// to be censored,
-// a censor label, a Context, and a CensorValue indicating whether the
-// string is not censored.
 type Builder struct {
 	// The FilterFuncs used to determine whether each value should be censored
 	filters []FilterFunc
@@ -109,12 +121,17 @@ type Builder struct {
 type BuilderOption func(*Builder)
 
 // WithLabel returns a BuilderOption that sets the label of a Builder.
-// If the provided label is not an empty string, it replaces the current label
-// of the Builder.
-// The label is trimmed of any leading or trailing white space before being set.
+// Empty strings will be ignored and the label will not be set.
+//
+// Parameters:
+//
+//   - label: The label to be set.
+//
+// Returns:
+//
+//   - BuilderOption: A function that modifies the label of a Builder.
 func WithLabel(label string) BuilderOption {
 	return func(b *Builder) {
-		label = strings.TrimSpace(label)
 		if label != "" {
 			b.label = label
 		}
@@ -122,7 +139,14 @@ func WithLabel(label string) BuilderOption {
 }
 
 // WithMode returns a BuilderOption that sets the censorship mode of a Builder.
-// If the provided mode is true, the Builder will not censor values.
+//
+// Parameters:
+//
+//   - mode: The mode to be set.
+//
+// Returns:
+//
+//   - BuilderOption: A function that modifies the censorship mode of a Builder.
 func WithMode(mode CensorValue) BuilderOption {
 	return func(b *Builder) {
 		b.isNotCensored = !mode
@@ -130,7 +154,14 @@ func WithMode(mode CensorValue) BuilderOption {
 }
 
 // WithSeparator returns a BuilderOption that sets the separator of a Builder.
-// The separator is used to separate values in the output string.
+//
+// Parameters:
+//
+//   - sep: The separator to be set.
+//
+// Returns:
+//
+//   - BuilderOption: A function that modifies the separator of a Builder.
 func WithSeparator(sep rune) BuilderOption {
 	return func(b *Builder) {
 		b.sep = sep
@@ -138,7 +169,14 @@ func WithSeparator(sep rune) BuilderOption {
 }
 
 // WithFilters returns a BuilderOption that sets the filters of a Builder.
-// Filters are functions that modify the output string of the Builder.
+//
+// Parameters:
+//
+//   - filters: The filters to be set.
+//
+// Returns:
+//
+//   - BuilderOption: A function that modifies the filters of a Builder.
 func WithFilters(filters ...FilterFunc) BuilderOption {
 	return func(b *Builder) {
 		b.filters = filters
@@ -146,6 +184,17 @@ func WithFilters(filters ...FilterFunc) BuilderOption {
 }
 
 // WithValues returns a BuilderOption that sets the values of a Builder.
+//
+// Parameters:
+//
+//   - values: The values to be set.
+//
+// Returns:
+//
+//   - BuilderOption: A function that modifies the values of a Builder.
+//
+// Important:
+//
 // Values can be of any type and are converted to strings before being set.
 // If a value is a Builder, its output string is used as the value.
 func WithValues(values ...any) BuilderOption {
@@ -184,18 +233,21 @@ func WithValues(values ...any) BuilderOption {
 	}
 }
 
-// Make creates a new Builder with the given BuilderOptions.
-// It initializes the Builder's Context to the given Context, sets its
-// label to DefaultCensorLabel, and initializes its filters and values
-// to empty slices. It also sets the separator to a space character.
-// Each provided BuilderOption is then applied to the Builder in the order
-// they were provided.
-// After applying the BuilderOptions, it splits each value in the Builder's
-// values slice by the Builder's separator. It then replaces the original values
-// with the resulting fields. This operation is performed for each value in the
-// Builder's values slice.
+// Make is a method of Context that creates a new Builder with the given BuilderOptions.
 //
-// It returns a pointer to the newly created Builder.
+// Parameters:
+//
+//   - options: The BuilderOptions to be applied to the Builder.
+//
+// Returns:
+//
+//   - *Builder: A pointer to the newly created Builder.
+//
+// Important:
+//
+// The BuilderOptions are applied in the order they are provided. By default, the
+// Builder's label is set to DefaultCensorLabel and separator is set to a space
+// character.
 func (ctx *Context) Make(options ...BuilderOption) *Builder {
 	builder := &Builder{
 		ctx:     ctx,
@@ -222,14 +274,13 @@ func (ctx *Context) Make(options ...BuilderOption) *Builder {
 	return builder
 }
 
-// String is a method of the Builder type that returns a string
-// representation of the Builder.
-// If the Builder is not censored, it joins the values with the
-// separator and returns the resulting string.
-// If the Builder is censored, it creates a new slice of censored
-// values, checks each value against the filters, and replaces
-// unacceptable values with the censor label. It then joins the
-// censored values with the separator and returns the resulting string.
+// String is a method of the Builder type that returns a the censored or uncensored
+// content of the Builder as a string.
+// The value returned depends on the censoring status of the Builder.
+//
+// Returns:
+//
+//   - string: The censored or uncensored content of the Builder.
 func (b *Builder) String() string {
 	if !b.IsCensored() {
 		return strings.Join(b.values, string(b.sep))
@@ -256,9 +307,10 @@ func (b *Builder) String() string {
 
 // IsCensored is a method of the Builder type that returns a CensorValue
 // indicating whether the Builder is censored.
-// If the Builder's Context is nil, or if either the Context's notCensored
-// value or the Builder's isNotCensored value is false, it returns Censored.
-// Otherwise, it returns NotCensored.
+//
+// Returns:
+//
+//   - CensorValue: Censored if the Builder is censored, and NotCensored otherwise.
 func (b *Builder) IsCensored() CensorValue {
 	if b.ctx == nil || !b.ctx.notCensored || !b.isNotCensored {
 		return Censored
@@ -269,10 +321,13 @@ func (b *Builder) IsCensored() CensorValue {
 
 // Apply is a method of the Builder type that applies a given function to
 // the non-censored string representation of the Builder.
-// It joins the Builder's values with the separator to create the non-censored
-// string, and then passes this string to the given function.
-// This method allows you to perform operations on the non-censored string,
-// regardless of the current censor level.
+// However, because this allows you to perform operations on the non-censored
+// string, regardless of the current censor level, it is important to use it
+// with caution and only when necessary.
+//
+// Parameters:
+//
+//   - f: The function to be applied to the non-censored string.
 func (b *Builder) Apply(f func(s string)) {
 	f(strings.Join(b.values, string(b.sep)))
 }

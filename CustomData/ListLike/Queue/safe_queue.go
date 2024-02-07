@@ -5,7 +5,9 @@ import (
 	"strings"
 	"sync"
 
+	itf "github.com/PlayerR9/MyGoLib/Interfaces"
 	ers "github.com/PlayerR9/MyGoLib/Utility/Errors"
+	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 	"github.com/markphelps/optional"
 )
 
@@ -42,7 +44,7 @@ type SafeQueue[T any] struct {
 // Return:
 //
 //   - *SafeQueue[T]: A pointer to the newly created SafeQueue.
-func NewSafeQueue[T any](values ...*T) *SafeQueue[T] {
+func NewSafeQueue[T any](values ...T) *SafeQueue[T] {
 	if len(values) == 0 {
 		return new(SafeQueue[T])
 	}
@@ -51,14 +53,14 @@ func NewSafeQueue[T any](values ...*T) *SafeQueue[T] {
 	queue.size = len(values)
 
 	// First node
-	node := &linkedNode[T]{value: values[0]}
+	node := &linkedNode[T]{value: &values[0]}
 
 	queue.front = node
 	queue.back = node
 
 	// Subsequent nodes
 	for _, element := range values[1:] {
-		node = &linkedNode[T]{value: element}
+		node = &linkedNode[T]{value: &element}
 
 		queue.back.next = node
 		queue.back = node
@@ -81,8 +83,8 @@ func NewSafeQueue[T any](values ...*T) *SafeQueue[T] {
 //
 // Returns:
 //
-//   - *SafeQueue[T]: A pointer to the queue with the new capacity set.
-func (queue *SafeQueue[T]) WithCapacity(capacity int) *SafeQueue[T] {
+//   - Queuer[T]: A pointer to the queue with the new capacity set.
+func (queue *SafeQueue[T]) WithCapacity(capacity int) Queuer[T] {
 	defer ers.PropagatePanic(ers.NewErrCallFailed("WithCapacity", queue.WithCapacity))
 
 	queue.capacityMutex.Lock()
@@ -123,9 +125,8 @@ func (queue *SafeQueue[T]) WithCapacity(capacity int) *SafeQueue[T] {
 //
 // Parameters:
 //
-//   - value: A pointer to a value of type T, which is the element to be added to the
-//     queue.
-func (queue *SafeQueue[T]) Enqueue(value *T) {
+//   - value: The value of type T to be added to the queue.
+func (queue *SafeQueue[T]) Enqueue(value T) {
 	queue.backMutex.Lock()
 	defer queue.backMutex.Unlock()
 
@@ -140,7 +141,7 @@ func (queue *SafeQueue[T]) Enqueue(value *T) {
 		}
 	})
 
-	node := &linkedNode[T]{value: value}
+	node := &linkedNode[T]{value: &value}
 
 	if queue.back == nil {
 		queue.frontMutex.Lock()
@@ -161,8 +162,8 @@ func (queue *SafeQueue[T]) Enqueue(value *T) {
 //
 // Returns:
 //
-//   - *T: A pointer to the value of the element at the front of the queue.
-func (queue *SafeQueue[T]) Dequeue() *T {
+//   - T: The value of the element at the front of the queue.
+func (queue *SafeQueue[T]) Dequeue() T {
 	queue.frontMutex.Lock()
 	defer queue.frontMutex.Unlock()
 
@@ -190,7 +191,7 @@ func (queue *SafeQueue[T]) Dequeue() *T {
 	queue.size--
 	toRemove.next = nil
 
-	return toRemove.value
+	return *toRemove.value
 }
 
 // Peek is a method of the SafeQueue type. It is used to return the element at the
@@ -200,13 +201,13 @@ func (queue *SafeQueue[T]) Dequeue() *T {
 //
 // Returns:
 //
-//   - *T: A pointer to the value of the element at the front of the queue.
-func (queue *SafeQueue[T]) Peek() *T {
+//   - T: The value of the element at the front of the queue.
+func (queue *SafeQueue[T]) Peek() T {
 	queue.frontMutex.RLock()
 	defer queue.frontMutex.RUnlock()
 
 	if queue.front == nil {
-		return queue.front.value
+		return *queue.front.value
 	}
 
 	panic(ers.NewErrCallFailed("Peek", queue.Peek).
@@ -257,26 +258,28 @@ func (queue *SafeQueue[T]) Capacity() optional.Int {
 	return queue.capacity
 }
 
-// ToSlice is a method of the SafeQueue type. It is used to return a slice
-// containing the elements in the queue.
+// Iterator is a method of the SafeQueue type. It is used to return an iterator
+// that can be used to iterate over the elements in the queue.
+// However, the iterator does not share the queue's thread-safety.
 //
 // Returns:
 //
-//   - []*T: A slice of pointers to the elements in the queue.
-func (queue *SafeQueue[T]) ToSlice() []*T {
+//   - itf.Iterater[T]: An iterator that can be used to iterate over the elements
+//     in the queue.
+func (queue *SafeQueue[T]) Iterator() itf.Iterater[T] {
 	queue.frontMutex.RLock()
 	defer queue.frontMutex.RUnlock()
 
 	queue.backMutex.RLock()
 	defer queue.backMutex.RUnlock()
 
-	slice := make([]*T, 0, queue.size)
+	var builder itf.Builder[T]
 
 	for node := queue.front; node != nil; node = node.next {
-		slice = append(slice, node.value)
+		builder.Append(*node.value)
 	}
 
-	return slice
+	return builder.Build()
 }
 
 // Clear is a method of the SafeQueue type. It is used to remove all elements
@@ -356,10 +359,10 @@ func (queue *SafeQueue[T]) String() string {
 		return builder.String()
 	}
 
-	fmt.Fprintf(&builder, "size=%d, values=[← %v", queue.size, queue.front.value)
+	fmt.Fprintf(&builder, "size=%d, values=[← %v", queue.size, *queue.front.value)
 
 	for node := queue.front.next; node != nil; node = node.next {
-		fmt.Fprintf(&builder, ", %v", node.value)
+		fmt.Fprintf(&builder, ", %v", *node.value)
 	}
 
 	builder.WriteString("]]")
@@ -383,7 +386,7 @@ func (queue *SafeQueue[T]) CutNilValues() {
 		return // Queue is empty
 	}
 
-	if queue.front.value == nil && queue.front == queue.back {
+	if gen.IsNil(*queue.front.value) && queue.front == queue.back {
 		// Single node
 		queue.front = nil
 		queue.back = nil
@@ -395,7 +398,7 @@ func (queue *SafeQueue[T]) CutNilValues() {
 	var toDelete *linkedNode[T] = nil
 
 	// 1. First node
-	if queue.front.value == nil {
+	if gen.IsNil(*queue.front.value) {
 		toDelete = queue.front
 
 		queue.front = queue.front.next
@@ -408,7 +411,7 @@ func (queue *SafeQueue[T]) CutNilValues() {
 
 	// 2. Subsequent nodes (except last)
 	for node := queue.front.next; node.next != nil; node = node.next {
-		if node.value != nil {
+		if !gen.IsNil(*node.value) {
 			prev = node
 		} else {
 			prev.next = node.next

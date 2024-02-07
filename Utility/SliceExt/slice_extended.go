@@ -12,7 +12,7 @@ package SliceExt
 //
 // Returns:
 //
-// 	- slice of elements with the maximum weight.
+// 	- []T: slice of elements with the maximum weight.
 func FilterByPositiveWeight[T any](S []T, weightFunc func(T) int) []T {
 	if len(S) == 0 {
 		return []T{}
@@ -48,7 +48,7 @@ func FilterByPositiveWeight[T any](S []T, weightFunc func(T) int) []T {
 //
 // Returns:
 //
-// 	- slice of elements with the minimum weight.
+// 	- []T: slice of elements with the minimum weight.
 func FilterByNegativeWeight[T any](S []T, weightFunc func(T) int) []T {
 	if len(S) == 0 {
 		return []T{}
@@ -72,8 +72,15 @@ func FilterByNegativeWeight[T any](S []T, weightFunc func(T) int) []T {
 	return solution
 }
 
-// PredicateFilter is a type that defines a function that takes an element
-// and returns a bool.
+// PredicateFilter is a type that defines a slice filter function.
+//
+// Parameters:
+//
+//   - T: The type of the elements in the slice.
+//
+// Returns:
+//
+//   - bool: True if the element satisfies the filter function, otherwise false.
 type PredicateFilter[T any] func(T) bool
 
 // Intersect returns a PredicateFilter function that checks if an element
@@ -87,8 +94,8 @@ type PredicateFilter[T any] func(T) bool
 //
 // Returns:
 //
-//   - A PredicateFilter function that checks if a element satisfies all the
-//     PredicateFilter functions in funcs.
+//   - PredicateFilter: A PredicateFilter function that checks if a element satisfies
+//     all the PredicateFilter functions in funcs.
 func Intersect[T any](funcs ...PredicateFilter[T]) PredicateFilter[T] {
 	return func(e T) bool {
 		for _, f := range funcs {
@@ -112,8 +119,8 @@ func Intersect[T any](funcs ...PredicateFilter[T]) PredicateFilter[T] {
 //
 // Returns:
 //
-//   - A PredicateFilter function that checks if a element satisfies at least
-//     one of the PredicateFilter functions in funcs.
+//   - PredicateFilter: A PredicateFilter function that checks if a element satisfies
+//     at least one of the PredicateFilter functions in funcs.
 func Union[T any](funcs ...PredicateFilter[T]) PredicateFilter[T] {
 	return func(e T) bool {
 		for _, f := range funcs {
@@ -137,7 +144,7 @@ func Union[T any](funcs ...PredicateFilter[T]) PredicateFilter[T] {
 //
 // Returns:
 //
-// 	- slice of elements that satisfy the filter function.
+// 	- []T: slice of elements that satisfy the filter function.
 func SliceFilter[T any](S []T, filter PredicateFilter[T]) []T {
 	solution := make([]T, len(S))
 	copy(solution, S)

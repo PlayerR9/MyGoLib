@@ -5,7 +5,9 @@ import (
 	"slices"
 	"strings"
 
+	itf "github.com/PlayerR9/MyGoLib/Interfaces"
 	ers "github.com/PlayerR9/MyGoLib/Utility/Errors"
+	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 	"github.com/markphelps/optional"
 )
 
@@ -30,13 +32,15 @@ type ArrayStack[T any] struct {
 // Returns:
 //
 //   - *ArrayStack[T]: A pointer to the newly created ArrayStack.
-func NewArrayStack[T any](values ...*T) *ArrayStack[T] {
+func NewArrayStack[T any](values ...T) *ArrayStack[T] {
 	slices.Reverse(values)
 
 	stack := &ArrayStack[T]{
 		values: make([]*T, len(values)),
 	}
-	copy(stack.values, values)
+	for i, value := range values {
+		stack.values[i] = &value
+	}
 
 	return stack
 }
@@ -54,8 +58,8 @@ func NewArrayStack[T any](values ...*T) *ArrayStack[T] {
 //
 // Returns:
 //
-//   - *ArrayStack[T]: A pointer to the stack with the new capacity set.
-func (stack *ArrayStack[T]) WithCapacity(capacity int) *ArrayStack[T] {
+//   - Stacker[T]: A pointer to the stack with the new capacity set.
+func (stack *ArrayStack[T]) WithCapacity(capacity int) Stacker[T] {
 	defer ers.PropagatePanic(ers.NewErrCallFailed("WithCapacity", stack.WithCapacity))
 
 	stack.capacity.If(func(cap int) {
@@ -90,15 +94,15 @@ func (stack *ArrayStack[T]) WithCapacity(capacity int) *ArrayStack[T] {
 //
 // Parameters:
 //
-//   - value: A pointer to the element to be added to the stack.
-func (stack *ArrayStack[T]) Push(value *T) {
+//   - value: The value of type T to be added to the stack.
+func (stack *ArrayStack[T]) Push(value T) {
 	stack.capacity.If(func(cap int) {
 		if len(stack.values) <= cap {
 			panic(ers.NewErrCallFailed("Push", stack.Push))
 		}
 	})
 
-	stack.values = append(stack.values, value)
+	stack.values = append(stack.values, &value)
 }
 
 // Pop is a method of the ArrayStack type. It is used to remove and return the
@@ -108,8 +112,8 @@ func (stack *ArrayStack[T]) Push(value *T) {
 //
 // Returns:
 //
-//   - *T: A pointer to the element that was removed from the stack.
-func (stack *ArrayStack[T]) Pop() *T {
+//   - T: The element at the end of the stack.
+func (stack *ArrayStack[T]) Pop() T {
 	if len(stack.values) == 0 {
 		panic(ers.NewErrCallFailed("Pop", stack.Pop).
 			WithReason(NewErrEmptyStack(stack)),
@@ -119,7 +123,7 @@ func (stack *ArrayStack[T]) Pop() *T {
 	toRemove := stack.values[len(stack.values)-1]
 	stack.values[len(stack.values)-1], stack.values = nil, stack.values[:len(stack.values)-1]
 
-	return toRemove
+	return *toRemove
 }
 
 // Peek is a method of the ArrayStack type. It is used to return the element at the
@@ -129,15 +133,15 @@ func (stack *ArrayStack[T]) Pop() *T {
 //
 // Returns:
 //
-//   - *T: A pointer to the element at the end of the stack.
-func (stack *ArrayStack[T]) Peek() *T {
+//   - T: The element at the end of the stack.
+func (stack *ArrayStack[T]) Peek() T {
 	if len(stack.values) == 0 {
 		panic(ers.NewErrCallFailed("Peek", stack.Peek).
 			WithReason(NewErrEmptyStack(stack)),
 		)
 	}
 
-	return stack.values[len(stack.values)-1]
+	return *stack.values[len(stack.values)-1]
 }
 
 // IsEmpty is a method of the ArrayStack type. It is used to check if the stack is
@@ -171,19 +175,20 @@ func (stack *ArrayStack[T]) Capacity() optional.Int {
 	return stack.capacity
 }
 
-// ToSlice is a method of the ArrayStack type. It is used to return the elements in the
-// stack as a slice.
+// Iterator is a method of the ArrayStack type. It is used to return an iterator that
+// iterates over the elements in the stack.
 //
 // Returns:
 //
-//   - []*T: A slice of pointers to the elements in the stack.
-func (stack *ArrayStack[T]) ToSlice() []*T {
-	slice := make([]*T, len(stack.values))
+//   - itf.Iterater[T]: An iterator that iterates over the elements in the stack.
+func (stack *ArrayStack[T]) Iterator() itf.Iterater[T] {
+	var builder itf.Builder[T]
 
-	copy(slice, stack.values)
-	slices.Reverse(slice)
+	for i := len(stack.values) - 1; i >= 0; i-- {
+		builder.Append(*stack.values[i])
+	}
 
-	return slice
+	return builder.Build()
 }
 
 // Clear is a method of the ArrayStack type. It is used to remove all elements from the
@@ -234,10 +239,10 @@ func (stack *ArrayStack[T]) String() string {
 		return builder.String()
 	}
 
-	fmt.Fprintf(&builder, "size=%d, values=[%v", len(stack.values), stack.values[0])
+	fmt.Fprintf(&builder, "size=%d, values=[%v", len(stack.values), *stack.values[0])
 
 	for _, element := range stack.values[1:] {
-		fmt.Fprintf(&builder, ", %v", element)
+		fmt.Fprintf(&builder, ", %v", *element)
 	}
 
 	fmt.Fprintf(&builder, " →]]")
@@ -249,7 +254,7 @@ func (stack *ArrayStack[T]) String() string {
 // values from the stack.
 func (stack *ArrayStack[T]) CutNilValues() {
 	for i := 0; i < len(stack.values); {
-		if stack.values[i] == nil {
+		if gen.IsNil(*stack.values[i]) {
 			stack.values = append(stack.values[:i], stack.values[i+1:]...)
 		} else {
 			i++

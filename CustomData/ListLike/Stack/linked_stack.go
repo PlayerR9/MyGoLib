@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"strings"
 
+	itf "github.com/PlayerR9/MyGoLib/Interfaces"
 	ers "github.com/PlayerR9/MyGoLib/Utility/Errors"
+	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 	"github.com/markphelps/optional"
-	"golang.org/x/exp/slices"
 )
 
 // LinkedStack is a generic type that represents a stack data structure with
@@ -33,13 +34,13 @@ type LinkedStack[T any] struct {
 // Returns:
 //
 //   - *LinkedStack[T]: A pointer to the newly created LinkedStack.
-func NewLinkedStack[T any](values ...*T) *LinkedStack[T] {
+func NewLinkedStack[T any](values ...T) *LinkedStack[T] {
 	stack := new(LinkedStack[T])
 	stack.size = len(values)
 
 	// First node
 	node := &linkedNode[T]{
-		value: values[0],
+		value: &values[0],
 	}
 
 	stack.front = node
@@ -47,7 +48,7 @@ func NewLinkedStack[T any](values ...*T) *LinkedStack[T] {
 	// Subsequent nodes
 	for _, element := range values[1:] {
 		node = &linkedNode[T]{
-			value: element,
+			value: &element,
 			next:  stack.front,
 		}
 
@@ -70,8 +71,8 @@ func NewLinkedStack[T any](values ...*T) *LinkedStack[T] {
 //
 // Returns:
 //
-//   - *LinkedStack[T]: A pointer to the current instance of the LinkedStack.
-func (stack *LinkedStack[T]) WithCapacity(capacity int) *LinkedStack[T] {
+//   - Stacker[T]: A pointer to the current instance of the LinkedStack.
+func (stack *LinkedStack[T]) WithCapacity(capacity int) Stacker[T] {
 	defer ers.PropagatePanic(ers.NewErrCallFailed("WithCapacity", stack.WithCapacity))
 
 	stack.capacity.If(func(cap int) {
@@ -101,8 +102,8 @@ func (stack *LinkedStack[T]) WithCapacity(capacity int) *LinkedStack[T] {
 //
 // Parameters:
 //
-//   - value: A pointer to a value of type T, which is the element to be added to the stack.
-func (stack *LinkedStack[T]) Push(value *T) {
+//   - value: The value to be added to the stack.
+func (stack *LinkedStack[T]) Push(value T) {
 	stack.capacity.If(func(cap int) {
 		if stack.size >= cap {
 			panic(ers.NewErrCallFailed("Push", stack.Push).
@@ -112,7 +113,7 @@ func (stack *LinkedStack[T]) Push(value *T) {
 	})
 
 	node := &linkedNode[T]{
-		value: value,
+		value: &value,
 	}
 
 	if stack.front != nil {
@@ -130,8 +131,8 @@ func (stack *LinkedStack[T]) Push(value *T) {
 //
 // Returns:
 //
-//   - *T: A pointer to the value of the last element in the stack.
-func (stack *LinkedStack[T]) Pop() *T {
+//   - T: The value of the last element in the stack.
+func (stack *LinkedStack[T]) Pop() T {
 	if stack.front == nil {
 		panic(ers.NewErrCallFailed("Pop", stack.Pop).
 			WithReason(NewErrEmptyStack(stack)),
@@ -144,7 +145,7 @@ func (stack *LinkedStack[T]) Pop() *T {
 	stack.size--
 	toRemove.next = nil
 
-	return toRemove.value
+	return *toRemove.value
 }
 
 // Peek is a method of the LinkedStack type. It is used to return the last element
@@ -154,10 +155,10 @@ func (stack *LinkedStack[T]) Pop() *T {
 //
 // Returns:
 //
-//   - *T: A pointer to the value of the last element in the stack.
-func (stack *LinkedStack[T]) Peek() *T {
+//   - T: The value of the last element in the stack.
+func (stack *LinkedStack[T]) Peek() T {
 	if stack.front == nil {
-		return stack.front.value
+		return *stack.front.value
 	}
 
 	panic(ers.NewErrCallFailed("Peek", stack.Peek).
@@ -195,22 +196,20 @@ func (stack *LinkedStack[T]) Capacity() optional.Int {
 	return stack.capacity
 }
 
-// ToSlice is a method of the LinkedStack type. It is used to return the elements
-// in the stack as a slice.
+// Iterator is a method of the LinkedStack type. It is used to return an iterator
+// for the elements in the stack.
 //
 // Returns:
 //
-//   - []*T: A slice of pointers to the elements in the stack.
-func (stack *LinkedStack[T]) ToSlice() []*T {
-	slice := make([]*T, 0, stack.size)
+//   - itf.Iterater[T]: An iterator for the elements in the stack.
+func (stack *LinkedStack[T]) Iterator() itf.Iterater[T] {
+	var builder itf.Builder[T]
 
 	for stack_node := stack.front; stack_node != nil; stack_node = stack_node.next {
-		slice = append(slice, stack_node.value)
+		builder.Append(*stack_node.value)
 	}
 
-	slices.Reverse(slice)
-
-	return slice
+	return builder.Build()
 }
 
 // Clear is a method of the LinkedStack type. It is used to remove all elements
@@ -273,10 +272,10 @@ func (stack *LinkedStack[T]) String() string {
 		return builder.String()
 	}
 
-	fmt.Fprintf(&builder, "size=%d, values=[%v", stack.size, stack.front.value)
+	fmt.Fprintf(&builder, "size=%d, values=[%v", stack.size, *stack.front.value)
 
 	for stack_node := stack.front.next; stack_node != nil; stack_node = stack_node.next {
-		fmt.Fprintf(&builder, ", %v", stack_node.value)
+		fmt.Fprintf(&builder, ", %v", *stack_node.value)
 	}
 
 	fmt.Fprintf(&builder, " →]]")
@@ -291,7 +290,7 @@ func (stack *LinkedStack[T]) CutNilValues() {
 		return // Stack is empty
 	}
 
-	if stack.front.value == nil && stack.front.next == nil {
+	if gen.IsNil(*stack.front.value) && stack.front.next == nil {
 		// Single node
 		stack.front = nil
 		stack.size = 0
@@ -302,7 +301,7 @@ func (stack *LinkedStack[T]) CutNilValues() {
 	var toDelete *linkedNode[T] = nil
 
 	// 1. First node
-	if stack.front.value == nil {
+	if gen.IsNil(*stack.front.value) {
 		toDelete = stack.front
 
 		stack.front = stack.front.next
@@ -316,7 +315,7 @@ func (stack *LinkedStack[T]) CutNilValues() {
 	// 2. Subsequent nodes (except last)
 	node := stack.front.next
 	for ; node.next != nil; node = node.next {
-		if node.value != nil {
+		if !gen.IsNil(*node.value) {
 			prev = node
 		} else {
 			prev.next = node.next

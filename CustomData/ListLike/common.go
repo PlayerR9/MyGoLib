@@ -1,22 +1,38 @@
 package ListLike
 
 import (
-	List "github.com/PlayerR9/MyGoLib/CustomData/ListLike/List"
-	Queue "github.com/PlayerR9/MyGoLib/CustomData/ListLike/Queue"
-	Stack "github.com/PlayerR9/MyGoLib/CustomData/ListLike/Stack"
+	"fmt"
+
+	itf "github.com/PlayerR9/MyGoLib/Interfaces"
+	"github.com/markphelps/optional"
 )
 
 type ListLike[T any] interface {
-	// WithCapacity is a special function that modifies an existing list-like data
-	// structure to have a specific capacity. Panics if the list already has a capacity
-	// set or if the new capacity is less than the current size of the list-like data
-	// structure.
-	//
-	// As a result, it is recommended to use this function only when creating a new
-	// list-like data structure.
-	WithCapacity(int) ListLike[T]
+	// The IsEmpty method checks if the list is empty and returns a boolean value
+	// indicating whether it is empty or not.
+	IsEmpty() bool
 
-	List.Lister[T]
-	Queue.Queuer[T]
-	Stack.Stacker[T]
+	// The Size method returns the number of elements currently in the list.
+	Size() int
+
+	// The Capacity method returns the maximum number of elements that the list can hold.
+	Capacity() optional.Int
+
+	// The Clear method is used to remove all elements from the list, making it empty.
+	Clear()
+
+	// The IsFull method checks if the list is full, meaning it has reached its maximum
+	// capacity and cannot accept any more elements.
+	IsFull() bool
+
+	// The String method returns a string representation of the list.
+	// It is useful for debugging and logging purposes.
+	fmt.Stringer
+
+	// CutNilValues is a method that removes all nil values from the list.
+	// It is useful for cleaning up the list and removing any empty or nil elements.
+	CutNilValues()
+
+	// The itf.Iterable interface is used to provide an iterator for the list.
+	itf.Iterable[T]
 }

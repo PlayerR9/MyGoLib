@@ -10,12 +10,7 @@ import (
 	ers "github.com/PlayerR9/MyGoLib/Utility/Errors"
 )
 
-// ConsoleFlagInfo represents a flag for a console command. It
-// contains the name, arguments, and description of the flag,
-// as well as a boolean indicating whether the flag is required.
-// The Callback function is invoked when the flag is used, with
-// the provided arguments.
-// It returns a result and an error, if any.
+// ConsoleFlagInfo represents a flag for a console command.
 type ConsoleFlagInfo struct {
 	// Name of the flag.
 	name string
@@ -35,6 +30,10 @@ type ConsoleFlagInfo struct {
 }
 
 // FlagInfoOption is a function type that modifies ConsoleFlagInfo.
+//
+// Parameters:
+//
+//   - ConsoleFlagInfo: The ConsoleFlagInfo to modify.
 type FlagInfoOption func(*ConsoleFlagInfo)
 
 // WithArgs is a FlagInfoOption that sets the arguments for a
@@ -48,9 +47,8 @@ type FlagInfoOption func(*ConsoleFlagInfo)
 //
 // Returns:
 //
-//   - A FlagInfoOption that sets the arguments for a
-//
-// ConsoleFlagInfo.
+//   - FlagInfoOption: A FlagInfoOption that sets the arguments for a
+//     ConsoleFlagInfo.
 func WithArgs(args ...string) FlagInfoOption {
 	return func(flag *ConsoleFlagInfo) {
 		flag.args = make([]string, 0, len(args))
@@ -74,7 +72,7 @@ func WithArgs(args ...string) FlagInfoOption {
 //
 // Returns:
 //
-//   - A FlagInfoOption that sets the description for a
+//   - FlagInfoOption: A FlagInfoOption that sets the description for a
 //     ConsoleFlagInfo.
 func WithFlagDescription(description ...string) FlagInfoOption {
 	return func(flag *ConsoleFlagInfo) {
@@ -94,8 +92,8 @@ func WithFlagDescription(description ...string) FlagInfoOption {
 //
 // Returns:
 //
-//   - A FlagInfoOption that sets whether a ConsoleFlagInfo
-//     is required.
+//   - FlagInfoOption: A FlagInfoOption that sets whether a
+//     ConsoleFlagInfo is required.
 func WithRequired(required bool) FlagInfoOption {
 	return func(flag *ConsoleFlagInfo) {
 		flag.required = required
@@ -103,9 +101,10 @@ func WithRequired(required bool) FlagInfoOption {
 }
 
 // FString generates a formatted string representation of a
-// ConsoleFlagInfo.
-// It includes the flag name, arguments, description, and whether
-// it is required.
+// ConsoleFlagInfo, including the flag name, arguments, description,
+// and whether it is required.
+//
+// Panics if the indentLevel is less than 0.
 //
 // Parameters:
 //
@@ -113,7 +112,7 @@ func WithRequired(required bool) FlagInfoOption {
 //
 // Returns:
 //
-//   - A string representing the ConsoleFlagInfo.
+//   - String: A string representing the ConsoleFlagInfo.
 func (cfi *ConsoleFlagInfo) FString(indentLevel int) string {
 	var builder strings.Builder
 
@@ -144,10 +143,7 @@ func (cfi *ConsoleFlagInfo) FString(indentLevel int) string {
 	return builder.String()
 }
 
-// ConsoleCommandInfo represents a console command. It contains
-// the name, description, and flags of the command. The Callback
-// function is invoked when the command is executed, with the
-// provided arguments. It returns a result and an error, if any.
+// ConsoleCommandInfo represents a console command.
 type ConsoleCommandInfo struct {
 	// Name of the command.
 	name string
@@ -165,14 +161,22 @@ type ConsoleCommandInfo struct {
 
 // CommandInfoOption is a function type that modifies
 // ConsoleCommandInfo.
+//
+// Parameters:
+//
+//   - command: The ConsoleCommandInfo to modify.
+//
+// Returns:
+//
+//   - error: An error if the modification fails.
 type CommandInfoOption func(*ConsoleCommandInfo) error
 
 // WithFlag is a CommandInfoOption that adds a new flag to a
 // ConsoleCommandInfo.
 // It creates a new ConsoleFlagInfo with the provided name and
 // callback, and applies the provided options to it. If the
-// flag name is empty or the callback is nil, it sets the
-// errReason of the ConsoleCommandInfo.
+// flag name is empty or the callback is nil, it returns an error
+// of type *ErrInvalidParameter.
 //
 // Parameters:
 //
@@ -182,7 +186,7 @@ type CommandInfoOption func(*ConsoleCommandInfo) error
 //
 // Returns:
 //
-//   - A CommandInfoOption that adds a new flag to a
+//   - CommandInfoOption: A CommandInfoOption that adds a new flag to a
 //     ConsoleCommandInfo.
 func WithFlag(name string, callback func(...string) (any, error), options ...FlagInfoOption) CommandInfoOption {
 	return func(command *ConsoleCommandInfo) error {
@@ -219,8 +223,8 @@ func WithFlag(name string, callback func(...string) (any, error), options ...Fla
 
 // WithCallback is a CommandInfoOption that sets the callback for
 // a ConsoleCommandInfo.
-// If the provided callback is nil, it sets the errReason of the
-// ConsoleCommandInfo.
+// If the provided callback is nil, it returns an error of type
+// *ErrInvalidParameter.
 //
 // Parameters:
 //
@@ -228,8 +232,8 @@ func WithFlag(name string, callback func(...string) (any, error), options ...Fla
 //
 // Returns:
 //
-//   - A CommandInfoOption that sets the callback for a
-//     ConsoleCommandInfo.
+//   - CommandInfoOption: A CommandInfoOption that sets the callback for
+//     a ConsoleCommandInfo.
 func WithCallback(callback func(map[string]any) (any, error)) CommandInfoOption {
 	return func(command *ConsoleCommandInfo) error {
 		if callback == nil {
@@ -254,8 +258,8 @@ func WithCallback(callback func(map[string]any) (any, error)) CommandInfoOption 
 //
 // Returns:
 //
-//   - A CommandInfoOption that sets the description for a
-//     ConsoleCommandInfo.
+//   - CommandInfoOption: A CommandInfoOption that sets the description for
+//     a ConsoleCommandInfo.
 func WithCommandDescription(description ...string) CommandInfoOption {
 	return func(command *ConsoleCommandInfo) error {
 		for _, line := range description {
@@ -271,13 +275,15 @@ func WithCommandDescription(description ...string) CommandInfoOption {
 // It includes the command name, description, usage information for each flag,
 // and the list of flags and their details.
 //
+// Panics if the indentLevel is less than 0.
+//
 // Parameters:
 //
 //   - indentLevel: The level of indentation to use.
 //
 // Returns:
 //
-//   - A string representing the ConsoleCommandInfo.
+//   - string: A string representing the ConsoleCommandInfo.
 func (cci *ConsoleCommandInfo) FString(indentLevel int) string {
 	indentation := strings.Repeat("\t", indentLevel)
 	var builder strings.Builder
@@ -326,9 +332,7 @@ func (cci *ConsoleCommandInfo) FString(indentLevel int) string {
 	return builder.String()
 }
 
-// CMLine represents a command line interface. It contains the
-// name of the executable and a map of commands that the
-// interface accepts.
+// CMLine represents a command line interface.
 type CMLine struct {
 	// Name of the executable.
 	executableName string
@@ -341,12 +345,20 @@ type CMLine struct {
 }
 
 // CMLineOption is a function type that modifies CMLine.
+//
+// Parameters:
+//
+//   - cm: The CMLine to modify.
+//
+// Returns:
+//
+//   - error: An error if the modification fails.
 type CMLineOption func(*CMLine) error
 
 // WithExecutableName is a CMLineOption that sets the executable
 // name for a CMLine.
-// It trims the space from the name. If the name is empty, it sets
-// the errReason of the CMLine.
+// It trims the space from the name. If the name is empty, it
+// returns an error of type *ErrInvalidParameter.
 //
 // Parameters:
 //
@@ -354,7 +366,8 @@ type CMLineOption func(*CMLine) error
 //
 // Returns:
 //
-//   - A CMLineOption that sets the executable name for a CMLine.
+//   - CMLineOption: A CMLineOption that sets the executable name for
+//     a CMLine.
 func WithExecutableName(name string) CMLineOption {
 	return func(cm *CMLine) error {
 		name = strings.TrimSpace(name)
@@ -371,8 +384,8 @@ func WithExecutableName(name string) CMLineOption {
 }
 
 // WithCommand is a CMLineOption that adds a new command to a CMLine.
-// It trims the space from the name. If the name is empty, it sets
-// the errReason of the CMLine.
+// It trims the space from the name. If the name is empty, it returns
+// an error of type *ErrInvalidParameter.
 //
 // Parameters:
 //
@@ -381,7 +394,7 @@ func WithExecutableName(name string) CMLineOption {
 //
 // Returns:
 //
-//   - A CMLineOption that adds a new command to a CMLine.
+//   - CMLineOption: A CMLineOption that adds a new command to a CMLine.
 func WithCommand(name string, options ...CommandInfoOption) CMLineOption {
 	return func(cm *CMLine) error {
 		name = strings.TrimSpace(name)
@@ -421,7 +434,8 @@ func WithCommand(name string, options ...CommandInfoOption) CMLineOption {
 //
 // Returns:
 //
-//   - A CMLineOption that sets the description for a CMLine.
+//   - CMLineOption: A CMLineOption that sets the description for a
+//     CMLine.
 func WithDescription(description ...string) CMLineOption {
 	return func(cm *CMLine) error {
 		for _, line := range description {
@@ -434,8 +448,8 @@ func WithDescription(description ...string) CMLineOption {
 }
 
 // NewCMLine creates a new CMLine with the given options. If any
-// errors occur while creating the commands, it sets the errReason
-// of the CMLine.
+// errors occur while creating the commands, it panics
+// with the error of the invalid option.
 //
 // Parameters:
 //
@@ -443,26 +457,27 @@ func WithDescription(description ...string) CMLineOption {
 //
 // Returns:
 //
-//   - A pointer to the created CMLine.
-func NewCMLine(options ...CMLineOption) (*CMLine, error) {
+//   - *CMLine: A pointer to the newly created CMLine.
+func NewCMLine(options ...CMLineOption) *CMLine {
 	cml := &CMLine{
 		commands: make(map[string]*ConsoleCommandInfo),
 	}
 
 	for i, option := range options {
-		err := option(cml)
-		if err != nil {
-			return nil, fmt.Errorf("invalid option %d: %v", i, err)
+		if err := option(cml); err != nil {
+			panic(fmt.Errorf("invalid option %d: %v", i, err))
 		}
 	}
 
-	return cml, nil
+	return cml
 }
 
 // ParseCommandLine parses the provided command line arguments
 // and executes the corresponding command.
-// It returns the name of the executed command, the result of
-// the command, and an error, if any.
+//
+// Panics with an error of type *ErrInvalidParameter if no
+// arguments are provided, or with an error of type *ErrCallFailed
+// if the ParseCommandLine function fails.
 //
 // Parameters:
 //
@@ -470,10 +485,9 @@ func NewCMLine(options ...CMLineOption) (*CMLine, error) {
 //
 // Returns:
 //
-//   - The name of the executed command.
-//   - The result of the command.
-//   - An error, if any.
-func (cml *CMLine) ParseCommandLine(args []string) (string, any, error) {
+//   - string: The name of the executed command.
+//   - any: The result of the command.
+func (cml *CMLine) ParseCommandLine(args []string) (string, any) {
 	// Check if any arguments were provided
 	if len(args) == 0 {
 		panic(ers.NewErrInvalidParameter("args").WithReason(
@@ -481,10 +495,12 @@ func (cml *CMLine) ParseCommandLine(args []string) (string, any, error) {
 		))
 	}
 
+	defer ers.PropagatePanic(ers.NewErrCallFailed("ParseCommandLine", cml.ParseCommandLine))
+
 	// Get the command from the command map
 	command, exists := cml.commands[args[0]]
 	if !exists {
-		return "", nil, fmt.Errorf("command '%s' not found", args[0])
+		panic(fmt.Errorf("command '%s' not found", args[0]))
 	}
 
 	// Create a map to store the flags
@@ -492,31 +508,21 @@ func (cml *CMLine) ParseCommandLine(args []string) (string, any, error) {
 
 	if len(args) > 1 {
 		// Parse the flags if provided
-		var err error
-
-		commandFlags, err = parseConsoleFlags(args[1:], command.flags)
-		if err != nil {
-			return "", nil, err
-		}
+		commandFlags = ers.CheckFunc(func(s []string) (map[string]any, error) {
+			return parseConsoleFlags(s, command.flags)
+		}, args[1:])
 	}
 
 	// Check if the command has a callback function
 	if command.callback == nil {
-		return command.name, nil, nil
+		return command.name, nil
 	}
 
 	// Call the callback function with the flags
-	commandSolution, err := command.callback(commandFlags)
-	if err != nil {
-		return "", nil, ers.NewErrCallFailed(command.name, command.callback).
-			WithReason(err)
-	}
-
-	return command.name, commandSolution, nil
+	return command.name, ers.CheckFunc(command.callback, commandFlags)
 }
 
 // parseConsoleFlags parses the provided arguments into console flags.
-// It returns a map of the parsed flags and an error, if any.
 //
 // Parameters:
 //
@@ -525,8 +531,8 @@ func (cml *CMLine) ParseCommandLine(args []string) (string, any, error) {
 //
 // Returns:
 //
-//   - A map of the parsed flags.
-//   - An error, if any.
+//   - map[string]any: A map of the parsed flags.
+//   - error: An error, if any.
 func parseConsoleFlags(args []string, flags []*ConsoleFlagInfo) (map[string]any, error) {
 	// Create a map to store the console flags for quick lookup
 	consoleFlagMap := make(map[string]*ConsoleFlagInfo)
@@ -581,7 +587,7 @@ func parseConsoleFlags(args []string, flags []*ConsoleFlagInfo) (map[string]any,
 //
 // Returns:
 //
-//   - A string representing the CMLine.
+//   - string: A string representing the CMLine.
 func (cml *CMLine) FString() string {
 	var builder strings.Builder
 
