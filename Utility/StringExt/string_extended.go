@@ -1,4 +1,4 @@
-package StrExt
+package StringExt
 
 import (
 	"errors"
@@ -6,6 +6,7 @@ import (
 	"math"
 	"slices"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	ers "github.com/PlayerR9/MyGoLib/Utility/Errors"
@@ -791,4 +792,21 @@ func SplitSentenceIntoFields(sentence string, indentLevel int) ([][]string, erro
 	}
 
 	return lines, nil
+}
+
+// DateStringer prints the date in the format "1st January, 2006".
+//
+// Parameters:
+//
+//   - date: The date to print.
+//
+// Returns:
+//
+//   - string: The date in the format "1st January, 2006".
+func DateStringer(date time.Time) string {
+	return fmt.Sprintf("%v %v, %v",
+		GetOrdinalSuffix(date.Day()),
+		date.Month().String(),
+		date.Year(),
+	)
 }

@@ -146,3 +146,31 @@ func CheckFunc[O any, I any](f func(I) (O, error), param I) O {
 
 	return res
 }
+
+// TryFunc is a generic function that accepts a function and a parameter of
+// any type. It executes the provided function with the given parameter and
+// triggers a panic with the error that might occur during the execution of
+// the function.
+//
+// This function is useful for checking if a function can handle certain
+// inputs without causing a panic.
+//
+// Parameters:
+//
+//   - f: The function to execute.
+//   - param: The parameter to pass to the function.
+//
+// Example:
+//
+//	 TryFunc(func(n int) error {
+//		if n <= 0 {
+//			return NewErrInvalidParameter("n", fmt.Errorf("value (%d) must be positive", n))
+//		}
+//
+//		return nil
+//	 }, 42)
+func TryFunc[T any](f func(T) error, param T) {
+	if err := f(param); err != nil {
+		panic(err)
+	}
+}

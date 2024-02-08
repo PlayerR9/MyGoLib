@@ -1,4 +1,4 @@
-package StrExt
+package StringExt
 
 import "fmt"
 
