@@ -323,3 +323,19 @@ func (list *ArrayList[T]) CutNilValues() {
 		}
 	}
 }
+
+// Slice is a method of the ArrayList type that returns a slice of type T
+// containing the elements of the list.
+//
+// Returns:
+//
+//   - []T: A slice of type T containing the elements of the list.
+func (list *ArrayList[T]) Slice() []T {
+	slice := make([]T, 0, len(list.values))
+
+	for _, v := range list.values {
+		slice = append(slice, *v)
+	}
+
+	return slice
+}

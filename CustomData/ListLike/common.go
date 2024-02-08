@@ -35,4 +35,7 @@ type ListLike[T any] interface {
 
 	// The itf.Iterable interface is used to provide an iterator for the list.
 	itf.Iterable[T]
+
+	// The itf.Slicer interface is used to provide a slicer for the list.
+	itf.Slicer[T]
 }

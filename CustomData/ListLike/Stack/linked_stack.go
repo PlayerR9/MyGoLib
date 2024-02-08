@@ -340,3 +340,19 @@ func (stack *LinkedStack[T]) CutNilValues() {
 		stack.size--
 	}
 }
+
+// Slice is a method of the LinkedStack type. It is used to return a slice of the
+// elements in the stack.
+//
+// Returns:
+//
+//   - []T: A slice of the elements in the stack.
+func (stack *LinkedStack[T]) Slice() []T {
+	slice := make([]T, 0, stack.size)
+
+	for stack_node := stack.front; stack_node != nil; stack_node = stack_node.next {
+		slice = append(slice, *stack_node.value)
+	}
+
+	return slice
+}

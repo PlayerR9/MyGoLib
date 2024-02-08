@@ -558,3 +558,25 @@ func (list *SafeList[T]) CutNilValues() {
 		list.size--
 	}
 }
+
+// Slice is a method of the SafeList type. It is used to return a slice of the
+// elements in the list.
+//
+// Returns:
+//
+//   - []T: A slice of type T containing the elements of the list.
+func (list *SafeList[T]) Slice() []T {
+	list.frontMutex.RLock()
+	defer list.frontMutex.RUnlock()
+
+	list.backMutex.RLock()
+	defer list.backMutex.RUnlock()
+
+	slice := make([]T, 0, list.size)
+
+	for node := list.front; node != nil; node = node.next {
+		slice = append(slice, *node.value)
+	}
+
+	return slice
+}

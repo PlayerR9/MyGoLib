@@ -344,3 +344,19 @@ func (queue *LinkedQueue[T]) CutNilValues() {
 		queue.size--
 	}
 }
+
+// Slice is a method of the LinkedQueue type. It is used to return a slice of the
+// elements in the queue.
+//
+// Returns:
+//
+//   - []T: A slice of the elements in the queue.
+func (queue *LinkedQueue[T]) Slice() []T {
+	slice := make([]T, 0, queue.size)
+
+	for queue_node := queue.front; queue_node != nil; queue_node = queue_node.next {
+		slice = append(slice, *queue_node.value)
+	}
+
+	return slice
+}

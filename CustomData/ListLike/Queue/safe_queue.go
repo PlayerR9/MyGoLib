@@ -436,3 +436,25 @@ func (queue *SafeQueue[T]) CutNilValues() {
 		queue.size--
 	}
 }
+
+// Slice is a method of the SafeQueue type. It is used to return a slice of the
+// elements in the queue.
+//
+// Returns:
+//
+//   - []T: A slice of the elements in the queue.
+func (queue *SafeQueue[T]) Slice() []T {
+	queue.frontMutex.RLock()
+	defer queue.frontMutex.RUnlock()
+
+	queue.backMutex.RLock()
+	defer queue.backMutex.RUnlock()
+
+	slice := make([]T, 0, queue.size)
+
+	for node := queue.front; node != nil; node = node.next {
+		slice = append(slice, *node.value)
+	}
+
+	return slice
+}

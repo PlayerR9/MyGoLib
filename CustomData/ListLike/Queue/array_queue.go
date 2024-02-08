@@ -31,11 +31,13 @@ type ArrayQueue[T any] struct {
 // Returns:
 //
 //   - *ArrayQueue[T]: A pointer to the newly created ArrayQueue.
-func NewArrayQueue[T any](values ...*T) *ArrayQueue[T] {
+func NewArrayQueue[T any](values ...T) *ArrayQueue[T] {
 	queue := &ArrayQueue[T]{
 		values: make([]*T, len(values)),
 	}
-	copy(queue.values, values)
+	for i, value := range values {
+		queue.values[i] = &value
+	}
 
 	return queue
 }
@@ -255,4 +257,20 @@ func (queue *ArrayQueue[T]) CutNilValues() {
 			i++
 		}
 	}
+}
+
+// Slice is a method of the ArrayQueue type. It is used to return a slice of the
+// elements in the queue.
+//
+// Returns:
+//
+//   - []T: A slice of the elements in the queue.
+func (queue *ArrayQueue[T]) Slice() []T {
+	slice := make([]T, 0, len(queue.values))
+
+	for _, value := range queue.values {
+		slice = append(slice, *value)
+	}
+
+	return slice
 }

@@ -449,3 +449,18 @@ func (list *LinkedList[T]) CutNilValues() {
 		list.size--
 	}
 }
+
+// Slice is a method of the LinkedList type that returns a slice of type T
+//
+// Returns:
+//
+//   - []T: A slice of type T.
+func (list *LinkedList[T]) Slice() []T {
+	slice := make([]T, 0, list.size)
+
+	for list_node := list.front; list_node != nil; list_node = list_node.next {
+		slice = append(slice, *list_node.value)
+	}
+
+	return slice
+}

@@ -261,3 +261,21 @@ func (stack *ArrayStack[T]) CutNilValues() {
 		}
 	}
 }
+
+// Slice is a method of the ArrayStack type. It is used to return a slice of the
+// elements in the stack.
+//
+// Returns:
+//
+//   - []T: A slice of the elements in the stack.
+func (stack *ArrayStack[T]) Slice() []T {
+	slice := make([]T, 0, len(stack.values))
+
+	for _, value := range stack.values {
+		slice = append(slice, *value)
+	}
+
+	slices.Reverse(slice)
+
+	return slice
+}
