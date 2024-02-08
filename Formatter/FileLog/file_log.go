@@ -48,7 +48,6 @@ func (fl *FileLogger) Close() {
 func NewFileLogger(filePath string) *FileLogger {
 	fl := &FileLogger{
 		fileName: fmt.Sprintf("%s.log.md", filePath),
-		Logger:   log.New(os.Stdout, "", log.LstdFlags|log.Llongfile),
 	}
 
 	// Open the file for writing
@@ -58,6 +57,8 @@ func NewFileLogger(filePath string) *FileLogger {
 	if err != nil {
 		panic(err)
 	}
+
+	fl.Logger = log.New(fl.file, "", log.LstdFlags|log.Llongfile)
 
 	// Write the current time to the file
 
