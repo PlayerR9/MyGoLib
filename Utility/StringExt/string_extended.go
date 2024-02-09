@@ -425,8 +425,7 @@ func (ts *TextSplitter) shiftUp(lineIndex int) {
 // Returns:
 //
 //   - int: The calculated number of lines needed to fit the text within the width.
-//   - bool: True if the number of lines is greater than the estimated number of lines,
-//     and false otherwise.
+//   - bool: True if it is possible to fit the text within the width, and false otherwise.
 //
 // The function calculates the total length of the text (Tl) and uses a mathematical
 // formula to estimate the minimum number of lines needed to fit the text within the given width.
@@ -511,7 +510,7 @@ func CalculateNumberOfLines(text []string, width int) (int, bool) {
 
 	numberOfLines := int(math.Ceil(float64(Tl-width)/float64(width+1))) + 1
 
-	return numberOfLines, numberOfLines > len(text)
+	return numberOfLines, numberOfLines <= len(text)
 }
 
 // SplitTextInEqualSizedLines is a function that splits a given text into lines of equal width.
@@ -596,9 +595,10 @@ func SplitTextInEqualSizedLines(text []string, width int, maxHeight optional.Int
 		Lines: make([]*SpltLine, 0, height),
 	}
 
-	index := slices.IndexFunc(text, group.InsertWord)
-	if index == -1 {
-		panic(fmt.Errorf("word at index %d (%s) is too long", index, text[index]))
+	for i, word := range text {
+		if !group.InsertWord(word) {
+			panic(fmt.Errorf("word at index %d (%s) is too long", i, word))
+		}
 	}
 
 	// 3. Now we have A solution to the problem, but not THE solution as
