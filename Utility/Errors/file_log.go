@@ -1,12 +1,9 @@
-package FileLog
+package Errors
 
 import (
 	"fmt"
 	"log"
 	"os"
-	"time"
-
-	sext "github.com/PlayerR9/MyGoLib/Utility/StringExt"
 )
 
 // FileLogger is a struct that represents a file logger.
@@ -24,8 +21,10 @@ type FileLogger struct {
 
 // Close is a method of FileLogger that closes the file and releases the resources.
 func (fl *FileLogger) Close() {
-	fl.file.Close()
-	fl.file = nil
+	if fl.file != nil {
+		fl.file.Close()
+		fl.file = nil
+	}
 
 	fl.Logger = nil
 }
@@ -34,8 +33,6 @@ func (fl *FileLogger) Close() {
 // It creates a new file with the given file path and returns a pointer to the
 // FileLogger instance.
 //
-// Panics with if the file cannot be created or opened for writing.
-//
 // Parameters:
 //
 //   - filePath: The path of the file to log to.
@@ -43,9 +40,10 @@ func (fl *FileLogger) Close() {
 // Returns:
 //
 //   - *FileLogger: A pointer to the new FileLogger instance.
+//   - error: An error if the file cannot be created or opened for writing.
 //
 // The file name is created by appending the ".log.md" extension to the file path.
-func NewFileLogger(filePath string) *FileLogger {
+func NewFileLogger(filePath string) (*FileLogger, error) {
 	fl := &FileLogger{
 		fileName: fmt.Sprintf("%s.log.md", filePath),
 	}
@@ -55,19 +53,12 @@ func NewFileLogger(filePath string) *FileLogger {
 
 	fl.file, err = os.OpenFile(fl.fileName, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("cannot create or open file: %v", err)
 	}
 
 	fl.Logger = log.New(fl.file, "", log.LstdFlags|log.Llongfile)
 
-	// Write the current time to the file
-
-	currentTime := time.Now()
-
-	fmt.Fprintf(fl.file, "## Log of %v (%v : %v)\n",
-		sext.DateStringer(currentTime), currentTime.Hour(), currentTime.Minute())
-
-	return fl
+	return fl, nil
 }
 
 // GetFileName is a method of FileLogger that returns the name of the file to log to.

@@ -8,6 +8,18 @@ import (
 	"strings"
 )
 
+type ErrPanic struct {
+	value any
+}
+
+func (e *ErrPanic) Error() string {
+	return fmt.Sprintf("panic: %v", e.value)
+}
+
+func NewErrPanic(value any) *ErrPanic {
+	return &ErrPanic{value: value}
+}
+
 // ErrOutOfBound represents an error when a value is out of a specified range.
 type ErrOutOfBound struct {
 	// lowerBound and upperBound are the lower and upper bounds of the range,
