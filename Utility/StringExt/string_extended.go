@@ -810,3 +810,16 @@ func DateStringer(date time.Time) string {
 		date.Year(),
 	)
 }
+
+// TimeStringer prints the time in the format "3:04 PM".
+//
+// Parameters:
+//
+//   - time: The time to print.
+//
+// Returns:
+//
+//   - string: The time in the format "3:04 PM".
+func TimeStringer(time time.Time) string {
+	return time.Format("3:04 PM")
+}

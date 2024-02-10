@@ -8,14 +8,31 @@ import (
 	"strings"
 )
 
+// ErrPanic represents an error when a panic occurs.
 type ErrPanic struct {
+	// value is the value that caused the panic.
 	value any
 }
 
+// Error generates the error message for the ErrPanic error, including the value
+// that caused the panic.
+//
+// Returns:
+//
+//   - string: The error message.
 func (e *ErrPanic) Error() string {
 	return fmt.Sprintf("panic: %v", e.value)
 }
 
+// NewErrPanic creates a new ErrPanic error.
+//
+// Parameters:
+//
+//   - value: The value that caused the panic.
+//
+// Returns:
+//
+//   - error: A pointer to the newly created ErrPanic.
 func NewErrPanic(value any) *ErrPanic {
 	return &ErrPanic{value: value}
 }

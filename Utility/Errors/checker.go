@@ -1,10 +1,6 @@
 // Package Errors provides advanced error handling mechanisms.
 package Errors
 
-import (
-	"fmt"
-)
-
 // RecoverFromPanic is a function that recovers from a panic and sets the
 // provided error pointer to the recovered value. If the recovered value is
 // an error, it sets the error pointer to that error. Otherwise, it creates
@@ -30,10 +26,10 @@ func RecoverFromPanic(err *error) {
 		return
 	}
 
-	if recErr, ok := r.(error); ok {
-		*err = recErr
+	if x, ok := r.(error); ok {
+		*err = x
 	} else {
-		*err = fmt.Errorf("panic: %v", r)
+		*err = &ErrPanic{value: r}
 	}
 }
 
@@ -55,11 +51,13 @@ func PropagatePanic[T interface{ WithReason(error) T }](err T) {
 		return
 	}
 
-	if recErr, ok := r.(error); ok {
-		panic(err.WithReason(recErr))
+	if x, ok := r.(error); ok {
+		err.WithReason(x)
 	} else {
-		panic(fmt.Errorf("panic: %v", r))
+		err.WithReason(&ErrPanic{value: r})
 	}
+
+	panic(err)
 }
 
 // ErrorOf is a generic function that accepts a function and a parameter
@@ -94,12 +92,14 @@ func PropagatePanic[T interface{ WithReason(error) T }](err T) {
 func ErrorOf[T any](f func(T), param T) (err error) {
 	defer func() {
 		r := recover()
-		if r != nil {
-			if recErr, ok := r.(error); ok {
-				err = recErr
-			} else {
-				panic(fmt.Errorf("panic: %v", r))
-			}
+		if r == nil {
+			return
+		}
+
+		if x, ok := r.(error); ok {
+			err = x
+		} else {
+			err = &ErrPanic{value: r}
 		}
 	}()
 
@@ -108,26 +108,24 @@ func ErrorOf[T any](f func(T), param T) (err error) {
 	return
 }
 
-// CheckFunc is a generic function that accepts a function and a builder.
-// It executes the provided function with the target value of the builder and
-// returns a new builder with the result of the function as its target value.
+// CheckFunc is a generic function that accepts a function and a parameter.
+// It executes the provided function with the parameter and returns the result
+// of the function if and only if the function does not return an error.
 //
-// If the provided function returns an error, CheckFunc triggers a panic with
-// the error. The panic can be recovered using the RecoverFromPanic function.
-//
-// This function is useful for chaining operations on a value while handling
-// errors in a consistent manner.
+// Any error returned by the function triggers a panic. The panic can be
+// recovered using the RecoverFromPanic function.
+// However, it doesn't catch any panics that might occur during the execution
+// of the function.
 //
 // Parameters:
 //
 //   - f: The function to execute. It should accept a value of type I and
 //     return a value of type O and an error.
-//   - b: The builder whose target value should be passed to the function.
+//   - param: The parameter to pass to the function.
 //
 // Returns:
 //
-//   - *builder[O]: A new builder with the result of the function as its
-//     target value.
+//   - O: The result of the function if the function does not return an error.
 //
 // Example:
 //
@@ -137,40 +135,45 @@ func ErrorOf[T any](f func(T), param T) (err error) {
 //		}
 //
 //		return 60 / n, nil
-//	 }, On(42))
+//	 }, 42)
 func CheckFunc[O any, I any](f func(I) (O, error), param I) O {
 	res, err := f(param)
-	if err != nil {
-		panic(err)
+	if err == nil {
+		return res
 	}
 
-	return res
+	if x, ok := err.(*ErrPanic); ok {
+		panic(x.value)
+	} else {
+		panic(err)
+	}
 }
 
-// TryFunc is a generic function that accepts a function and a parameter of
-// any type. It executes the provided function with the given parameter and
-// triggers a panic with the error that might occur during the execution of
-// the function.
-//
-// This function is useful for checking if a function can handle certain
-// inputs without causing a panic.
+// TryFunc is a function that accepts a function and, after having executed
+// it, checks if the function returned an error. If the function returned an
+// error, TryFunc triggers a panic with the error. The panic can be recovered
+// using the RecoverFromPanic function.
 //
 // Parameters:
 //
 //   - f: The function to execute.
-//   - param: The parameter to pass to the function.
 //
 // Example:
 //
-//	 TryFunc(func(n int) error {
+//	 n := 42
+//	 TryFunc(func() error {
 //		if n <= 0 {
-//			return NewErrInvalidParameter("n", fmt.Errorf("value (%d) must be positive", n))
+//			return NewErrInvalidParameter("n").
+//	     	WithReason(fmt.Errorf("value (%d) must be positive", n))
 //		}
 //
 //		return nil
-//	 }, 42)
-func TryFunc[T any](f func(T) error, param T) {
-	if err := f(param); err != nil {
-		panic(err)
+//	})
+func TryFunc(f func() error) {
+	err := f()
+	if err == nil {
+		return
 	}
+
+	panic(err)
 }

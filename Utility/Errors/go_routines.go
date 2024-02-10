@@ -1,453 +1,117 @@
 package Errors
 
 import (
-	"fmt"
 	"sync"
 )
 
-type RecoverBuilder struct {
-}
-
-func (b *RecoverBuilder) Build() func() {
-	return func() {
-		r := recover()
-		if r == nil {
-			// success
-			return
-		}
-
-		if x, ok := r.(error); ok {
-			// error
-		} else {
-			// panic
-		}
-	}
-}
-
-func RecoverGeneral() {
-	r := recover()
-	if r == nil {
-		// success
-		// 1. Ignore: return //
-		// 2. Handle: success()
-		// 3. Default: default()
-		return
-	}
-
-	if x, ok := r.(error); ok {
-		// error
-		// 1. Forwards: panic(x)
-		// 2. Handle: error(x)
-		// 3. Default: default() //
-	} else {
-		// panic:
-		// 1. Forwards: panic(r) //
-		// 2. Handle: err = &ErrPanic{value: r}
-	}
-}
-
-// builder -> function
-
-type Y struct {
-	status error
-
+// GRHandler is a struct that represents a Go routine handler.
+// It is used to handle the result of a Go routine.
+type GRHandler struct {
+	// wg is a WaitGroup that is used to wait for the Go routine to finish.
 	wg sync.WaitGroup
 
-	whenSuccess func()
-	whenDone    func(error) // or when error
+	// id is the identifier of the Go routine.
+	id string
+
+	// errStatus is the error status of the Go routine.
+	errStatus error
 }
 
-func NewSimple(whenDone func(error)) *Y {
-	y := &Y{}
-
-	if whenDone == nil {
-		y.whenDone = func(err error) {
-			y.status = err
-		}
-	} else {
-		y.whenDone = whenDone
+// GoRun is a function that runs a Go routine and returns a GRHandler
+// to handle the result of the Go routine.
+//
+// Parameters:
+//
+//   - id: The identifier of the Go routine.
+//   - routine: The Go routine to run.
+//
+// Returns:
+//
+//   - *GRHandler: A pointer to the GRHandler that handles the result of the Go routine.
+//
+// The Go routine is automatically run when this function is called.
+func GoRun(id string, routine func()) *GRHandler {
+	h := &GRHandler{
+		id:        id,
+		errStatus: nil,
 	}
 
-	return y
-}
-
-func NewComplex(whenError func(error), whenSuccess func()) *Y {
-	y := &Y{}
-
-	if whenError == nil {
-		y.whenDone = func(err error) {
-			y.status = err
-		}
-	} else {
-		y.whenDone = whenError
-	}
-
-	if whenSuccess != nil {
-		y.whenSuccess = whenSuccess
-	} else {
-		y.whenSuccess = func() {
-			y.status = nil
-		}
-	}
-
-	return y
-}
-
-func (y *Y) Run(z func(), routine func()) {
-	y.wg.Add(1)
+	h.wg.Add(1)
 
 	go func() {
-		defer y.wg.Done()
+		defer h.wg.Done()
 
 		defer func() {
 			r := recover()
-			if r == nil {
-				if y.whenSuccess != nil {
-					y.whenSuccess()
-				} else {
-					y.whenDone(nil)
-				}
 
+			if r == nil {
 				return
 			}
 
-			// h.mu.Lock()
-			// defer h.mu.Unlock()
-
-			var err error
-
 			if x, ok := r.(error); ok {
-				err = x
+				h.errStatus = x
 			} else {
-				err = &ErrPanic{value: r}
+				h.errStatus = &ErrPanic{value: r}
 			}
-
-			y.whenDone(err)
 		}()
 
 		routine()
 	}()
+
+	return h
 }
 
-type GRHandler interface {
-	RunF(func())
-}
-
-type SimpleGRH struct {
-	wg sync.WaitGroup
-
-	status error
-	mu     sync.RWMutex
-
-	id string
-}
-
-type ComplexGRH struct {
-	wg sync.WaitGroup
-
-	status error
-	mu     sync.RWMutex
-
-	id          string
-	whenSuccess func()
-	whenError   func(error)
-}
-
+// Wait is a method of GRHandler that waits for the Go routine to finish
+// and returns the error status of the Go routine.
+//
+// Returns:
+//
+//   - error: The error status of the Go routine.
 func (h *GRHandler) Wait() error {
 	h.wg.Wait()
 
-	h.mu.RLock()
-	defer h.mu.RUnlock()
-
-	return h.status
+	return h.errStatus
 }
 
-func NewGRHandler(whenDone func(error)) *GRHandler {
-	var h *GRHandler
-
-	if whenDone == nil {
-		h = &GRHandler{
-			whenSuccess: func() {
-				h.status = nil
-			},
-			whenError: func(err error) {
-				h.status = err
-			},
-		}
-	} else {
-		h = &GRHandler{
-			whenSuccess: func() {
-				whenDone(nil)
-			},
-			whenError: whenDone,
-		}
-	}
-
-	h.wg.Add(1)
-
-	go func() {
-		defer h.wg.Done()
-
-		defer func() {
-			r := recover()
-			if r == nil {
-				if whenSuccess != nil {
-					whenSuccess()
-				} else {
-					whenDone(nil)
-				}
-
-				return
-			}
-
-			h.mu.Lock()
-			defer h.mu.Unlock()
-
-			var err error
-
-			if x, ok := r.(error); ok {
-				err = x
-			} else {
-				err = &ErrPanic{value: r}
-			}
-
-			if whenError != nil {
-				whenError(err)
-			} else {
-				whenDone(err)
-			}
-		}()
-
-		routine()
-	}()
-
-	return h
-
-	/*
-
-		h := &GRHandler{
-			status: nil,
-			id:     id,
-		}
-
-		/*
-			id
-			done
-			panic
-			err
-			success
-			routine
-
-
-		var whenSuccess func()
-		var whenError func(error)
-		var whenPanic func(interface{})
-
-	*/
-}
-
-func GoStartWithOptions(whenSuccess func(), whenError func(error), whenPanic func(any)) *GRHandler {
-	h := &GRHandler{}
-
-	if whenDone != nil {
-		h.whenDone = whenDone
-	} else {
-		h.whenDone = func(err error) {
-			h.status = err
-		}
-	}
-
-	h.wg.Add(1)
-
-	go func() {
-		defer h.wg.Done()
-
-		defer func() {
-			r := recover()
-			if r == nil {
-				if whenSuccess != nil {
-					whenSuccess()
-				} else {
-					whenDone(nil)
-				}
-
-				return
-			}
-
-			h.mu.Lock()
-			defer h.mu.Unlock()
-
-			if whenPanic == nil {
-				switch x := r.(type) {
-				case error:
-					if whenError != nil {
-						whenError(x)
-					} else {
-						whenDone(x)
-					}
-				default:
-					whenDone(&ErrPanic{value: r})
-				}
-			} else {
-				switch x := r.(type) {
-				case error:
-					if whenError != nil {
-						whenError(x)
-					} else {
-						whenDone(x)
-					}
-				default:
-					whenPanic(r)
-				}
-			}
-		}()
-
-		routine()
-	}()
-
-	return h
-
-	/*
-
-		h := &GRHandler{
-			status: nil,
-			id:     id,
-		}
-
-		/*
-			id
-			done
-			panic
-			err
-			success
-			routine
-
-
-		var whenSuccess func()
-		var whenError func(error)
-		var whenPanic func(interface{})
-
-	*/
-}
-
-func (h *GRHandler) Run(routine func()) *GRHandler {
-	h := &GRHandler{}
-
-	if whenDone != nil {
-		h.whenDone = whenDone
-	} else {
-		h.whenDone = func(err error) {
-			h.status = err
-		}
-	}
-
-	h.wg.Add(1)
-
-	go func() {
-		defer h.wg.Done()
-
-		defer func() {
-			r := recover()
-			if r == nil {
-				if whenSuccess != nil {
-					whenSuccess()
-				} else {
-					whenDone(nil)
-				}
-
-				return
-			}
-
-			h.mu.Lock()
-			defer h.mu.Unlock()
-
-			if whenPanic == nil {
-				switch x := r.(type) {
-				case error:
-					if whenError != nil {
-						whenError(x)
-					} else {
-						whenDone(x)
-					}
-				default:
-					whenDone(&ErrPanic{value: r})
-				}
-			} else {
-				switch x := r.(type) {
-				case error:
-					if whenError != nil {
-						whenError(x)
-					} else {
-						whenDone(x)
-					}
-				default:
-					whenPanic(r)
-				}
-			}
-		}()
-
-		routine()
-	}()
-
-	return h
-
-	/*
-
-		h := &GRHandler{
-			status: nil,
-			id:     id,
-		}
-
-		/*
-			id
-			done
-			panic
-			err
-			success
-			routine
-
-
-		var whenSuccess func()
-		var whenError func(error)
-		var whenPanic func(interface{})
-
-	*/
-}
-
-func (h *GRHandler) PanicIf() {
-	h.mu.RLock()
-	defer h.mu.RUnlock()
-
-	if h.status == nil {
-		return
-	}
-
-	panic(fmt.Errorf("goroutine %s failed: %v", h.id, h.status))
-}
-
+// Identifier is a method of GRHandler that returns the identifier of the Go routine.
+//
+// Returns:
+//
+//   - string: The identifier of the Go routine.
 func (h *GRHandler) Identifier() string {
 	return h.id
 }
 
-func (h *GRHandler) Error() error {
-	h.mu.RLock()
-	defer h.mu.RUnlock()
-
-	return h.status
-}
-
+// BatchBuilder is a struct that represents a Go routine batch builder.
+// It is used to build a batch of Go routines and their handlers.
 type BatchBuilder struct {
+	// routines is a slice of Go routines.
 	routines []func()
-	ids      []string
-	whenDone []func(error)
+
+	// ids is a slice of identifiers for the Go routines.
+	ids []string
 }
 
-func (b *BatchBuilder) Add(identifier string, whenDone func(error), routine func()) {
+// Add is a method of BatchBuilder that adds a Go routine to the batch.
+//
+// Parameters:
+//
+//   - identifier: The identifier of the Go routine.
+//   - routine: The Go routine to add to the batch.
+func (b *BatchBuilder) Add(identifier string, routine func()) {
 	b.routines = append(b.routines, routine)
-
 	b.ids = append(b.ids, identifier)
 }
 
+// Build is a method of BatchBuilder that builds the batch of Go routines
+// and their handlers.
+//
+// Returns:
+//
+//   - []*GRHandler: A slice of pointers to the GRHandler instances that handle the Go routines.
+//
+// All Go routines are automatically run when this method is called.
+// Finally, the batch is cleared after the Go routines are built.
 func (b *BatchBuilder) Build() []*GRHandler {
 	if b.routines == nil {
 		return nil
@@ -456,18 +120,41 @@ func (b *BatchBuilder) Build() []*GRHandler {
 	pairings := make([]*GRHandler, 0, len(b.routines))
 
 	for i, routine := range b.routines {
-		pairings = append(pairings, GoStart(b.ids[i], b.whenDone[i], routine))
+		pairings = append(pairings, GoRun(b.ids[i], routine))
 	}
+
+	b.routines = nil
+	b.ids = nil
 
 	return pairings
 }
 
-func WaitAll(batch []*GRHandler) {
+// Clear is a method of BatchBuilder that clears the batch of Go routines.
+func (b *BatchBuilder) Clear() {
+	b.routines = nil
+	b.ids = nil
+}
+
+// WaitAll is a function that waits for all Go routines in the batch to finish
+// and returns a slice of errors that represent the error statuses of the Go routines.
+//
+// Parameters:
+//
+//   - batch: A slice of pointers to the GRHandler instances that handle the Go routines.
+//
+// Returns:
+//
+//   - []error: A slice of errors that represent the error statuses of the Go routines.
+func WaitAll(batch []*GRHandler) []error {
+	errs := make([]error, 0, len(batch))
+
 	for _, pair := range batch {
 		if pair == nil {
 			continue
 		}
 
-		pair.Wait()
+		errs = append(errs, pair.Wait())
 	}
+
+	return errs
 }
