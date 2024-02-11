@@ -8,6 +8,60 @@ import (
 	"strings"
 )
 
+// ErrNoError represents an error when no error occurs.
+type ErrNoError struct {
+	// reason is the reason for the no error error.
+	reason error
+}
+
+// Error generates the error message for the ErrNoError error, that is, the reason
+// for the no error error.
+//
+// Returns:
+//
+//   - string: The error message.
+func (e *ErrNoError) Error() string {
+	return fmt.Sprintf("%v", e.reason)
+}
+
+// Unwrap returns the reason for the no error error.
+// It is used for error unwrapping.
+//
+// Returns:
+//
+//   - error: The reason for the no error error.
+func (e *ErrNoError) Unwrap() error {
+	return e.reason
+}
+
+// NewErrNoError creates a new ErrNoError error.
+//
+// Parameters:
+//
+//   - reason: The reason for the no error error.
+//
+// Returns:
+//
+//   - *ErrNoError: A pointer to the newly created ErrNoError.
+func NewErrNoError(reason error) *ErrNoError {
+	return &ErrNoError{reason: reason}
+}
+
+// WithReason sets the reason for the no error error.
+//
+// Parameters:
+//
+//   - reason: The reason for the no error error.
+//
+// Returns:
+//
+//   - *ErrNoError: The error instance for chaining.
+func (e *ErrNoError) WithReason(reason error) *ErrNoError {
+	e.reason = reason
+
+	return e
+}
+
 // ErrPanic represents an error when a panic occurs.
 type ErrPanic struct {
 	// value is the value that caused the panic.
