@@ -27,7 +27,11 @@ func RecoverFromPanic(err *error) {
 	}
 
 	if x, ok := r.(error); ok {
-		*err = x
+		if IsNoError(x) {
+			*err = nil
+		} else {
+			*err = x
+		}
 	} else {
 		*err = &ErrPanic{value: r}
 	}
@@ -97,7 +101,11 @@ func ErrorOf[T any](f func(T), param T) (err error) {
 		}
 
 		if x, ok := r.(error); ok {
-			err = x
+			if IsNoError(x) {
+				err = nil
+			} else {
+				err = x
+			}
 		} else {
 			err = &ErrPanic{value: r}
 		}
@@ -138,7 +146,7 @@ func ErrorOf[T any](f func(T), param T) (err error) {
 //	 }, 42)
 func CheckFunc[O any, I any](f func(I) (O, error), param I) O {
 	res, err := f(param)
-	if err == nil {
+	if IsNoError(err) {
 		return res
 	}
 
@@ -171,7 +179,7 @@ func CheckFunc[O any, I any](f func(I) (O, error), param I) O {
 //	})
 func TryFunc(f func() error) {
 	err := f()
-	if err == nil {
+	if IsNoError(err) {
 		return
 	}
 

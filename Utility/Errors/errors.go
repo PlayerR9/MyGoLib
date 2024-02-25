@@ -62,6 +62,25 @@ func (e *ErrNoError) WithReason(reason error) *ErrNoError {
 	return e
 }
 
+// IsNoError checks if an error is a no error error or if it is nil.
+//
+// Parameters:
+//
+//   - err: The error to check.
+//
+// Returns:
+//
+//   - bool: True if the error is a no error error or if it is nil, otherwise false.
+func IsNoError(err error) bool {
+	if err == nil {
+		return true
+	}
+
+	var errNoError *ErrNoError
+
+	return errors.As(err, &errNoError)
+}
+
 // ErrPanic represents an error when a panic occurs.
 type ErrPanic struct {
 	// value is the value that caused the panic.

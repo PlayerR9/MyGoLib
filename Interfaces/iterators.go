@@ -292,8 +292,11 @@ func (b *Builder[T]) Append(element T) {
 //
 //   - Iterater[T]: A pointer to a new iterator over the buffer of elements.
 func (b *Builder[T]) Build() Iterater[T] {
+	bufferCopy := make([]T, len(b.buffer))
+	copy(bufferCopy, b.buffer)
+
 	iter := &GenericIterator[T]{
-		values: &b.buffer,
+		values: &bufferCopy,
 		index:  optional.NewInt(-1),
 	}
 

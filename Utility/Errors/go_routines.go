@@ -49,6 +49,10 @@ func GoRun(id string, routine func()) *GRHandler {
 			}
 
 			if x, ok := r.(error); ok {
+				if IsNoError(x) {
+					return
+				}
+
 				h.errStatus = x
 			} else {
 				h.errStatus = &ErrPanic{value: r}
