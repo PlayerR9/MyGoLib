@@ -233,6 +233,7 @@ func (iter *ProceduralIterator[E, T]) Next() bool {
 		}
 
 		iter.current = iter.transition(iter.source.Value())
+		// FIXME: Problem with next: optional.Int(-1). It always panics
 	}
 
 	return true
