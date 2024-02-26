@@ -8,6 +8,14 @@ import (
 	"strings"
 )
 
+type PropagableError interface {
+	error
+	Unwrap() error
+
+	// Wrap sets the reason for the error.
+	Wrap(error) error
+}
+
 // ErrNoError represents an error when no error occurs.
 type ErrNoError struct {
 	// reason is the reason for the no error error.
@@ -47,38 +55,13 @@ func NewErrNoError(reason error) *ErrNoError {
 	return &ErrNoError{reason: reason}
 }
 
-// WithReason sets the reason for the no error error.
+// Wrap sets the reason for the no error error.
 //
 // Parameters:
 //
 //   - reason: The reason for the no error error.
-//
-// Returns:
-//
-//   - *ErrNoError: The error instance for chaining.
-func (e *ErrNoError) WithReason(reason error) *ErrNoError {
-	e.reason = reason
-
-	return e
-}
-
-// IsNoError checks if an error is a no error error or if it is nil.
-//
-// Parameters:
-//
-//   - err: The error to check.
-//
-// Returns:
-//
-//   - bool: True if the error is a no error error or if it is nil, otherwise false.
-func IsNoError(err error) bool {
-	if err == nil {
-		return true
-	}
-
-	var errNoError *ErrNoError
-
-	return errors.As(err, &errNoError)
+func (e *ErrNoError) Wrap(reason error) error {
+	return &ErrNoError{reason: reason}
 }
 
 // ErrPanic represents an error when a panic occurs.
@@ -254,10 +237,11 @@ func NewErrInvalidParameter(parameter string) *ErrInvalidParameter {
 // WithReason sets the reason for the invalidity of the parameter.
 // If the reason is not provided (nil), the reason is set to "parameter is invalid"
 // by default.
-func (e *ErrInvalidParameter) WithReason(reason error) *ErrInvalidParameter {
-	e.reason = reason
-
-	return e
+func (e *ErrInvalidParameter) Wrap(reason error) error {
+	return &ErrInvalidParameter{
+		parameter: e.parameter,
+		reason:    reason,
+	}
 }
 
 // ErrCallFailed represents an error that occurs when a function call fails.
@@ -324,8 +308,10 @@ func NewErrCallFailed(functionName string, function any) *ErrCallFailed {
 // Returns:
 //
 //   - *ErrCallFailed: The error instance for chaining.
-func (e *ErrCallFailed) WithReason(reason error) *ErrCallFailed {
-	e.reason = reason
-
-	return e
+func (e *ErrCallFailed) Wrap(reason error) error {
+	return &ErrCallFailed{
+		fnName:    e.fnName,
+		signature: e.signature,
+		reason:    reason,
+	}
 }

@@ -84,10 +84,10 @@ func (queue *LinkedQueue[T]) WithCapacity(capacity int) Queuer[T] {
 
 	if capacity < 0 {
 		panic(ers.NewErrInvalidParameter("capacity").
-			WithReason(fmt.Errorf("negative capacity (%d) is not allowed", capacity)),
+			Wrap(fmt.Errorf("negative capacity (%d) is not allowed", capacity)),
 		)
 	} else if queue.size > capacity {
-		panic(ers.NewErrInvalidParameter("capacity").WithReason(
+		panic(ers.NewErrInvalidParameter("capacity").Wrap(
 			fmt.Errorf("capacity (%d) is not big enough to hold %d elements", capacity, queue.size),
 		))
 	}
@@ -139,7 +139,7 @@ func (queue *LinkedQueue[T]) Enqueue(value T) {
 func (queue *LinkedQueue[T]) Dequeue() T {
 	if queue.front == nil {
 		panic(ers.NewErrCallFailed("Dequeue", queue.Dequeue).
-			WithReason(NewErrEmptyQueue(queue)),
+			Wrap(NewErrEmptyQueue(queue)),
 		)
 	}
 
@@ -170,7 +170,7 @@ func (queue *LinkedQueue[T]) Peek() T {
 	}
 
 	panic(ers.NewErrCallFailed("Peek", queue.Peek).
-		WithReason(NewErrEmptyQueue(queue)),
+		Wrap(NewErrEmptyQueue(queue)),
 	)
 }
 

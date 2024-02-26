@@ -31,7 +31,7 @@ import (
 func ExtractSpecificNode(node *html.Node, criteria *SearchCriteria) (nodes []*html.Node) {
 	if node == nil {
 		panic(ers.NewErrInvalidParameter("node").
-			WithReason(errors.New("node cannot be nil")))
+			Wrap(errors.New("node cannot be nil")))
 	}
 
 	// If no criteria is provided, then any node will match

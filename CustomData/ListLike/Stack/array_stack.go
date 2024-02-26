@@ -68,10 +68,10 @@ func (stack *ArrayStack[T]) WithCapacity(capacity int) Stacker[T] {
 
 	if capacity < 0 {
 		panic(ers.NewErrInvalidParameter("capacity").
-			WithReason(fmt.Errorf("negative capacity (%d) is not allowed", capacity)),
+			Wrap(fmt.Errorf("negative capacity (%d) is not allowed", capacity)),
 		)
 	} else if len(stack.values) > capacity {
-		panic(ers.NewErrInvalidParameter("capacity").WithReason(
+		panic(ers.NewErrInvalidParameter("capacity").Wrap(
 			fmt.Errorf("provided capacity (%d) is less than the current number of values (%d)",
 				capacity, len(stack.values)),
 		))
@@ -116,7 +116,7 @@ func (stack *ArrayStack[T]) Push(value T) {
 func (stack *ArrayStack[T]) Pop() T {
 	if len(stack.values) == 0 {
 		panic(ers.NewErrCallFailed("Pop", stack.Pop).
-			WithReason(NewErrEmptyStack(stack)),
+			Wrap(NewErrEmptyStack(stack)),
 		)
 	}
 
@@ -137,7 +137,7 @@ func (stack *ArrayStack[T]) Pop() T {
 func (stack *ArrayStack[T]) Peek() T {
 	if len(stack.values) == 0 {
 		panic(ers.NewErrCallFailed("Peek", stack.Peek).
-			WithReason(NewErrEmptyStack(stack)),
+			Wrap(NewErrEmptyStack(stack)),
 		)
 	}
 

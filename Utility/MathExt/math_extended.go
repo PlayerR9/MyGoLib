@@ -25,7 +25,7 @@ import (
 //     are their respective powers.
 func PrimeFactorization(inputNumber int) map[int]int {
 	if inputNumber == 0 {
-		panic(ers.NewErrInvalidParameter("inputNumber").WithReason(
+		panic(ers.NewErrInvalidParameter("inputNumber").Wrap(
 			errors.New("value of 0 cannot be factorized"),
 		))
 	}

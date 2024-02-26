@@ -151,7 +151,7 @@ func (pi *PageInterval) GetFirstPage() int {
 	}
 
 	panic(ers.NewErrCallFailed("GetFirstPage", pi.GetFirstPage).
-		WithReason(errors.New("no pages have been set")),
+		Wrap(errors.New("no pages have been set")),
 	)
 }
 
@@ -168,7 +168,7 @@ func (pi *PageInterval) GetLastPage() int {
 	}
 
 	panic(ers.NewErrCallFailed("GetLastPage", pi.GetLastPage).
-		WithReason(errors.New("no pages have been set")),
+		Wrap(errors.New("no pages have been set")),
 	)
 }
 
@@ -192,7 +192,7 @@ func (pi *PageInterval) GetLastPage() int {
 //	fmt.Println(pi.pageCount) // Output: 12
 func (pi *PageInterval) AddPage(page int) {
 	if page < 1 {
-		panic(ers.NewErrInvalidParameter("page").WithReason(
+		panic(ers.NewErrInvalidParameter("page").Wrap(
 			fmt.Errorf("page number (%d) must be greater than 0", page),
 		))
 	}

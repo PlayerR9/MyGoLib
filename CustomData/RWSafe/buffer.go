@@ -71,7 +71,7 @@ type Buffer[T any] struct {
 func (b *Buffer[T]) Init(bufferSize int) (chan<- T, <-chan T) {
 	b.once.Do(func() {
 		if bufferSize < 0 {
-			panic(ers.NewErrInvalidParameter("bufferSize").WithReason(
+			panic(ers.NewErrInvalidParameter("bufferSize").Wrap(
 				fmt.Errorf("value (%d) cannot be negative", bufferSize),
 			))
 		}

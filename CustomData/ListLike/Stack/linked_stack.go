@@ -81,10 +81,10 @@ func (stack *LinkedStack[T]) WithCapacity(capacity int) Stacker[T] {
 
 	if capacity < 0 {
 		panic(ers.NewErrInvalidParameter("capacity").
-			WithReason(fmt.Errorf("negative capacity (%d) is not allowed", capacity)),
+			Wrap(fmt.Errorf("negative capacity (%d) is not allowed", capacity)),
 		)
 	} else if stack.size > capacity {
-		panic(ers.NewErrInvalidParameter("capacity").WithReason(
+		panic(ers.NewErrInvalidParameter("capacity").Wrap(
 			fmt.Errorf("provided capacity (%d) is less than the current number of values (%d)",
 				capacity, stack.size),
 		))
@@ -107,7 +107,7 @@ func (stack *LinkedStack[T]) Push(value T) {
 	stack.capacity.If(func(cap int) {
 		if stack.size >= cap {
 			panic(ers.NewErrCallFailed("Push", stack.Push).
-				WithReason(NewErrFullStack(stack)),
+				Wrap(NewErrFullStack(stack)),
 			)
 		}
 	})
@@ -135,7 +135,7 @@ func (stack *LinkedStack[T]) Push(value T) {
 func (stack *LinkedStack[T]) Pop() T {
 	if stack.front == nil {
 		panic(ers.NewErrCallFailed("Pop", stack.Pop).
-			WithReason(NewErrEmptyStack(stack)),
+			Wrap(NewErrEmptyStack(stack)),
 		)
 	}
 
@@ -162,7 +162,7 @@ func (stack *LinkedStack[T]) Peek() T {
 	}
 
 	panic(ers.NewErrCallFailed("Peek", stack.Peek).
-		WithReason(NewErrEmptyStack(stack)),
+		Wrap(NewErrEmptyStack(stack)),
 	)
 }
 

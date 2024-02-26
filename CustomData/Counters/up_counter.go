@@ -32,13 +32,14 @@ type UpCounter struct {
 // Returns:
 //
 //   - The newly created UpCounter.
-func NewUpCounter(upperLimit int) UpCounter {
-	if upperLimit >= 0 {
-		return UpCounter{upperLimit, 0, 0}
+func NewUpCounter(upperLimit int) (UpCounter, error) {
+	if upperLimit < 0 {
+		return UpCounter{}, ers.NewErrInvalidParameter("upperLimit").Wrap(
+			fmt.Errorf("value (%d) must be positive", upperLimit),
+		)
 	}
 
-	panic(ers.NewErrInvalidParameter("upperLimit").
-		WithReason(fmt.Errorf("value (%d) must be positive", upperLimit)))
+	return UpCounter{upperLimit, 0, 0}, nil
 }
 
 // IsDone checks if the UpCounter has reached its upper limit.
@@ -54,28 +55,31 @@ func (c *UpCounter) IsDone() bool {
 // Advance increments the current count of the UpCounter by one.
 // It panics with an error of type *ers.ErrCallFailed if the current
 // count is already at or beyond the upper limit.
-func (c *UpCounter) Advance() {
+func (c *UpCounter) Advance() error {
 	if c.currentCount >= c.upperLimit-c.retreatCount {
-		panic(ers.NewErrCallFailed("Advance", c.Advance).
-			WithReason(errors.New("current count is already at or beyond the upper limit")),
-		)
+		return ers.NewErrCallFailed("Advance", c.Advance).
+			Wrap(errors.New("current count is already at or beyond the upper limit"))
 	}
 
 	c.currentCount++
+
+	return nil
 }
 
 // Retreat increments the retreat count and, as a result, decrements the
 // upper limit of the UpCounter by one.
 // It panics with an error of type *ers.ErrCallFailed if the current
 // count is already at or beyond the upper limit.
-func (c *UpCounter) Retreat() {
+func (c *UpCounter) Retreat() error {
 	if c.currentCount >= c.upperLimit-c.retreatCount {
-		panic(ers.NewErrCallFailed("Retreat", c.Retreat).WithReason(
+		return ers.NewErrCallFailed("Retreat", c.Retreat).Wrap(
 			errors.New("current count is already at or beyond the upper limit"),
-		))
+		)
 	}
 
 	c.retreatCount++
+
+	return nil
 }
 
 // GetRetreatCount returns the number of times the UpCounter has

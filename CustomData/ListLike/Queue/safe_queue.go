@@ -95,7 +95,7 @@ func (queue *SafeQueue[T]) WithCapacity(capacity int) Queuer[T] {
 	})
 
 	if capacity < 0 {
-		panic(ers.NewErrInvalidParameter("capacity").WithReason(
+		panic(ers.NewErrInvalidParameter("capacity").Wrap(
 			fmt.Errorf("negative capacity (%d) is not allowed", capacity),
 		))
 	}
@@ -107,7 +107,7 @@ func (queue *SafeQueue[T]) WithCapacity(capacity int) Queuer[T] {
 	defer queue.backMutex.RUnlock()
 
 	if queue.size > capacity {
-		panic(ers.NewErrInvalidParameter("capacity").WithReason(
+		panic(ers.NewErrInvalidParameter("capacity").Wrap(
 			fmt.Errorf("capacity (%d) is not big enough to hold %d elements",
 				capacity, queue.size),
 		))
@@ -136,7 +136,7 @@ func (queue *SafeQueue[T]) Enqueue(value T) {
 	queue.capacity.If(func(cap int) {
 		if queue.size >= cap {
 			panic(ers.NewErrCallFailed("Enqueue", queue.Enqueue).
-				WithReason(NewErrFullQueue(queue)),
+				Wrap(NewErrFullQueue(queue)),
 			)
 		}
 	})
@@ -172,7 +172,7 @@ func (queue *SafeQueue[T]) Dequeue() T {
 
 	if queue.front == nil {
 		panic(ers.NewErrCallFailed("Dequeue", queue.Dequeue).
-			WithReason(NewErrEmptyQueue(queue)),
+			Wrap(NewErrEmptyQueue(queue)),
 		)
 	}
 
@@ -211,7 +211,7 @@ func (queue *SafeQueue[T]) Peek() T {
 	}
 
 	panic(ers.NewErrCallFailed("Peek", queue.Peek).
-		WithReason(NewErrEmptyQueue(queue)),
+		Wrap(NewErrEmptyQueue(queue)),
 	)
 }
 

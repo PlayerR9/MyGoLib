@@ -98,7 +98,7 @@ func (list *SafeList[T]) WithCapacity(capacity int) Lister[T] {
 
 	list.capacity.If(func(cap int) {
 		panic(ers.NewErrInvalidParameter("capacity").
-			WithReason(fmt.Errorf("capacity is already set with a value of %d", cap)),
+			Wrap(fmt.Errorf("capacity is already set with a value of %d", cap)),
 		)
 	})
 
@@ -111,10 +111,10 @@ func (list *SafeList[T]) WithCapacity(capacity int) Lister[T] {
 
 	if capacity < 0 {
 		panic(ers.NewErrInvalidParameter("capacity").
-			WithReason(fmt.Errorf("negative capacity (%d) is not allowed", capacity)),
+			Wrap(fmt.Errorf("negative capacity (%d) is not allowed", capacity)),
 		)
 	} else if list.size > capacity {
-		panic(ers.NewErrInvalidParameter("capacity").WithReason(
+		panic(ers.NewErrInvalidParameter("capacity").Wrap(
 			fmt.Errorf("capacity (%d) is less than the current number of elements (%d)",
 				capacity, list.size)),
 		)
@@ -143,7 +143,7 @@ func (list *SafeList[T]) Append(value T) {
 	list.capacity.If(func(cap int) {
 		if list.size >= cap {
 			panic(ers.NewErrCallFailed("Append", list.Append).
-				WithReason(NewErrFullList(list)))
+				Wrap(NewErrFullList(list)))
 		}
 	})
 
@@ -181,7 +181,7 @@ func (list *SafeList[T]) DeleteFirst() T {
 
 	if list.front == nil {
 		panic(ers.NewErrCallFailed("DeleteFirst", list.DeleteFirst).
-			WithReason(NewErrEmptyList(list)),
+			Wrap(NewErrEmptyList(list)),
 		)
 	}
 
@@ -223,7 +223,7 @@ func (list *SafeList[T]) PeekFirst() T {
 	}
 
 	panic(ers.NewErrCallFailed("PeekFirst", list.PeekFirst).
-		WithReason(NewErrEmptyList(list)),
+		Wrap(NewErrEmptyList(list)),
 	)
 }
 
@@ -404,7 +404,7 @@ func (list *SafeList[T]) Prepend(value T) {
 	list.capacity.If(func(cap int) {
 		if list.size >= cap {
 			panic(ers.NewErrCallFailed("Prepend", list.Prepend).
-				WithReason(NewErrFullList(list)),
+				Wrap(NewErrFullList(list)),
 			)
 		}
 	})
@@ -443,7 +443,7 @@ func (list *SafeList[T]) DeleteLast() T {
 
 	if list.back == nil {
 		panic(ers.NewErrCallFailed("DeleteLast", list.DeleteLast).
-			WithReason(NewErrEmptyList(list)),
+			Wrap(NewErrEmptyList(list)),
 		)
 	}
 
@@ -486,7 +486,7 @@ func (list *SafeList[T]) PeekLast() T {
 	}
 
 	panic(ers.NewErrCallFailed("PeekLast", list.PeekLast).
-		WithReason(NewErrEmptyList(list)),
+		Wrap(NewErrEmptyList(list)),
 	)
 }
 

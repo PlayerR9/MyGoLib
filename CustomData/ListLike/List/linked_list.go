@@ -90,10 +90,10 @@ func (list *LinkedList[T]) WithCapacity(capacity int) Lister[T] {
 
 	if capacity < 0 {
 		panic(ers.NewErrInvalidParameter("capacity").
-			WithReason(fmt.Errorf("negative capacity (%d) is not allowed", capacity)),
+			Wrap(fmt.Errorf("negative capacity (%d) is not allowed", capacity)),
 		)
 	} else if list.size > capacity {
-		panic(ers.NewErrInvalidParameter("capacity").WithReason(
+		panic(ers.NewErrInvalidParameter("capacity").Wrap(
 			fmt.Errorf("capacity (%d) is not big enough to hold %d elements",
 				capacity, list.size)),
 		)
@@ -116,7 +116,7 @@ func (list *LinkedList[T]) Append(value T) {
 	list.capacity.If(func(cap int) {
 		if list.size >= cap {
 			panic(ers.NewErrCallFailed("Append", list.Append).
-				WithReason(NewErrFullList(list)),
+				Wrap(NewErrFullList(list)),
 			)
 		}
 	})
@@ -148,7 +148,7 @@ func (list *LinkedList[T]) Append(value T) {
 func (list *LinkedList[T]) DeleteFirst() T {
 	if list.front == nil {
 		panic(ers.NewErrCallFailed("DeleteFirst", list.DeleteFirst).
-			WithReason(NewErrEmptyList(list)),
+			Wrap(NewErrEmptyList(list)),
 		)
 	}
 
@@ -182,7 +182,7 @@ func (list *LinkedList[T]) PeekFirst() T {
 	}
 
 	panic(ers.NewErrCallFailed("PeekFirst", list.PeekFirst).
-		WithReason(NewErrEmptyList(list)),
+		Wrap(NewErrEmptyList(list)),
 	)
 }
 
@@ -319,7 +319,7 @@ func (list *LinkedList[T]) Prepend(value T) {
 	list.capacity.If(func(cap int) {
 		if list.size >= cap {
 			panic(ers.NewErrCallFailed("Prepend", list.Prepend).
-				WithReason(NewErrFullList(list)),
+				Wrap(NewErrFullList(list)),
 			)
 		}
 	})
@@ -351,7 +351,7 @@ func (list *LinkedList[T]) Prepend(value T) {
 func (list *LinkedList[T]) DeleteLast() T {
 	if list.front == nil {
 		panic(ers.NewErrCallFailed("DeleteLast", list.DeleteLast).
-			WithReason(NewErrEmptyList(list)),
+			Wrap(NewErrEmptyList(list)),
 		)
 	}
 
@@ -386,7 +386,7 @@ func (list *LinkedList[T]) PeekLast() T {
 	}
 
 	panic(ers.NewErrCallFailed("PeekLast", list.PeekLast).
-		WithReason(NewErrEmptyList(list)),
+		Wrap(NewErrEmptyList(list)),
 	)
 }
 

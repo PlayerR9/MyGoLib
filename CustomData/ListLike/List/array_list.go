@@ -58,24 +58,19 @@ func NewArrayList[T any](values ...T) *ArrayList[T] {
 // Returns:
 //
 //   - Lister[T]: A pointer to the list with the new capacity set.
-func (list *ArrayList[T]) WithCapacity(capacity int) Lister[T] {
-	defer ers.PropagatePanic(ers.NewErrCallFailed("WithCapacity", list.WithCapacity))
-
-	list.capacity.If(func(cap int) {
-		panic(ers.NewErrInvalidParameter("capacity").
-			WithReason(fmt.Errorf("capacity is already set with a value of %d", cap)),
-		)
-	})
+func (list *ArrayList[T]) WithCapacity(capacity int) (Lister[T], error) {
+	if list.capacity.Present() {
+		return nil, ers.NewErrInvalidParameter("capacity").
+			Wrap(fmt.Errorf("capacity is already set with a value of %d", list.capacity.MustGet()))
+	}
 
 	if capacity < 0 {
-		panic(ers.NewErrInvalidParameter("capacity").
-			WithReason(fmt.Errorf("negative capacity (%d) is not allowed", capacity)),
-		)
+		return nil, ers.NewErrInvalidParameter("capacity").
+			Wrap(fmt.Errorf("negative capacity (%d) is not allowed", capacity))
 	} else if len(list.values) > capacity {
-		panic(ers.NewErrInvalidParameter("capacity").WithReason(
-			fmt.Errorf("capacity (%d) is less than the current number of elements (%d)",
-				capacity, len(list.values))),
-		)
+		return nil, ers.NewErrInvalidParameter("capacity").
+			Wrap(fmt.Errorf("capacity (%d) is less than the current number of elements (%d)",
+				capacity, len(list.values)))
 	}
 
 	list.capacity = optional.NewInt(capacity)
@@ -85,7 +80,7 @@ func (list *ArrayList[T]) WithCapacity(capacity int) Lister[T] {
 
 	list.values = newValues
 
-	return list
+	return list, nil
 }
 
 // Append is a method of the ArrayList type. It is used to add an element to the
@@ -96,16 +91,18 @@ func (list *ArrayList[T]) WithCapacity(capacity int) Lister[T] {
 // Parameters:
 //
 //   - value: A pointer to an element of type T to be added to the list.
-func (list *ArrayList[T]) Append(value T) {
-	list.capacity.If(func(cap int) {
+func (list *ArrayList[T]) Append(value T) error {
+	if list.capacity.Present() {
+		cap := list.capacity.MustGet()
+
 		if len(list.values) >= cap {
-			panic(ers.NewErrCallFailed("Append", list.Append).
-				WithReason(fmt.Errorf("list is already full with a capacity of %d", cap)),
-			)
+			return fmt.Errorf("list is already full with a capacity of %d", cap)
 		}
-	})
+	}
 
 	list.values = append(list.values, &value)
+
+	return nil
 }
 
 // DeleteFirst is a method of the ArrayList type. It is used to remove and return
@@ -118,9 +115,7 @@ func (list *ArrayList[T]) Append(value T) {
 //   - T: The first element in the list.
 func (list *ArrayList[T]) DeleteFirst() T {
 	if len(list.values) <= 0 {
-		panic(ers.NewErrCallFailed("DeleteFirst", list.DeleteFirst).
-			WithReason(NewErrEmptyList(list)),
-		)
+		panic(NewErrEmptyList(list))
 	}
 
 	toRemove := list.values[0]
@@ -137,13 +132,11 @@ func (list *ArrayList[T]) DeleteFirst() T {
 //
 //   - T: A pointer to the first element in the list.
 func (list *ArrayList[T]) PeekFirst() T {
-	if len(list.values) != 0 {
-		return *list.values[0]
+	if len(list.values) == 0 {
+		panic(NewErrEmptyList(list))
 	}
 
-	panic(ers.NewErrCallFailed("PeekFirst", list.PeekFirst).
-		WithReason(NewErrEmptyList(list)),
-	)
+	return *list.values[0]
 }
 
 // IsEmpty is a method of the ArrayList type. It checks if the list is empty.
@@ -266,7 +259,7 @@ func (list *ArrayList[T]) Prepend(value T) {
 	list.capacity.If(func(cap int) {
 		if len(list.values) >= cap {
 			panic(ers.NewErrCallFailed("Prepend", list.Prepend).
-				WithReason(NewErrFullList(list)),
+				Wrap(NewErrFullList(list)),
 			)
 		}
 	})
@@ -283,10 +276,8 @@ func (list *ArrayList[T]) Prepend(value T) {
 //
 //   - T: The last element in the list.
 func (list *ArrayList[T]) DeleteLast() T {
-	if len(list.values) <= 0 {
-		panic(ers.NewErrCallFailed("DeleteLast", list.DeleteLast).
-			WithReason(NewErrEmptyList(list)),
-		)
+	if len(list.values) == 0 {
+		panic(NewErrEmptyList(list))
 	}
 
 	toRemove := list.values[len(list.values)-1]
@@ -303,13 +294,11 @@ func (list *ArrayList[T]) DeleteLast() T {
 //
 //   - T: The last element in the list.
 func (list *ArrayList[T]) PeekLast() T {
-	if len(list.values) != 0 {
-		return *list.values[len(list.values)-1]
+	if len(list.values) == 0 {
+		panic(NewErrEmptyList(list))
 	}
 
-	panic(ers.NewErrCallFailed("PeekLast", list.PeekLast).
-		WithReason(NewErrEmptyList(list)),
-	)
+	return *list.values[len(list.values)-1]
 }
 
 // CutNilValues is a method of the ArrayList type. It is used to remove all nil

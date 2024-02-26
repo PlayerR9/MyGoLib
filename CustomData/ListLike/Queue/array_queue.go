@@ -65,10 +65,10 @@ func (queue *ArrayQueue[T]) WithCapacity(capacity int) Queuer[T] {
 
 	if capacity < 0 {
 		panic(ers.NewErrInvalidParameter("capacity").
-			WithReason(fmt.Errorf("negative capacity (%d) is not allowed", capacity)),
+			Wrap(fmt.Errorf("negative capacity (%d) is not allowed", capacity)),
 		)
 	} else if len(queue.values) > capacity {
-		panic(ers.NewErrInvalidParameter("capacity").WithReason(
+		panic(ers.NewErrInvalidParameter("capacity").Wrap(
 			fmt.Errorf("capacity (%d) is less than the current number of elements in the queue (%d)",
 				capacity, len(queue.values))),
 		)
@@ -94,7 +94,7 @@ func (queue *ArrayQueue[T]) Enqueue(value T) {
 	queue.capacity.If(func(cap int) {
 		if len(queue.values) >= cap {
 			panic(ers.NewErrCallFailed("Enqueue", queue.Enqueue).
-				WithReason(NewErrFullQueue(queue)),
+				Wrap(NewErrFullQueue(queue)),
 			)
 		}
 	})
@@ -113,7 +113,7 @@ func (queue *ArrayQueue[T]) Enqueue(value T) {
 func (queue *ArrayQueue[T]) Dequeue() T {
 	if len(queue.values) <= 0 {
 		panic(ers.NewErrCallFailed("Dequeue", queue.Dequeue).
-			WithReason(NewErrEmptyQueue(queue)),
+			Wrap(NewErrEmptyQueue(queue)),
 		)
 	}
 
@@ -136,7 +136,7 @@ func (queue *ArrayQueue[T]) Peek() T {
 	}
 
 	panic(ers.NewErrCallFailed("Peek", queue.Peek).
-		WithReason(NewErrEmptyQueue(queue)),
+		Wrap(NewErrEmptyQueue(queue)),
 	)
 }
 

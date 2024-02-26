@@ -11,7 +11,7 @@ import (
 // string representation of the list.
 type Lister[T any] interface {
 	// The Append method adds a value of type T to the end of the list.
-	Append(value T)
+	Append(value T) error
 
 	// The DeleteFirst method is a convenience method that deletefirsts an element from
 	// the list and returns it.
@@ -24,7 +24,7 @@ type Lister[T any] interface {
 	PeekFirst() T
 
 	// The Prepend method adds a value of type T to the end of the list.
-	Prepend(value T)
+	Prepend(value T) error
 
 	// The DeleteLast method is a convenience method that deletelasts an element from the
 	// list and returns it.

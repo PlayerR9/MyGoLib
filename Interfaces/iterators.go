@@ -198,7 +198,7 @@ type ProceduralIterator[E, T any] struct {
 func IteratorFromIterator[E, T any](source Iterater[E], f func(E) Iterater[T]) Iterater[T] {
 	if f == nil {
 		panic(ers.NewErrInvalidParameter("f").
-			WithReason(errors.New("transition function cannot be nil")),
+			Wrap(errors.New("transition function cannot be nil")),
 		)
 	}
 
@@ -252,7 +252,7 @@ func (iter *ProceduralIterator[E, T]) Next() bool {
 func (iter *ProceduralIterator[E, T]) Value() T {
 	if iter.current == nil {
 		panic(ers.NewErrCallFailed("Value", iter.Value).
-			WithReason(errors.New("Next must be called before Value")),
+			Wrap(errors.New("Next must be called before Value")),
 		)
 	}
 

@@ -61,37 +61,44 @@ func FileExists(filePath string) (bool, error) {
 //	    log.Fatal(err)
 //	}
 //	fmt.Println(file_path) // Output: /path/to/destination/file.mp3
-func MediaDownloader(dest, url string) (filePath string, err error) {
-	defer ers.RecoverFromPanic(&err)
-
+func MediaDownloader(dest, url string) (string, error) {
 	// Extract the name of the file from the URL
 	fields := strings.Split(url, "/")
-	filePath = path.Join(dest, fields[len(fields)-1])
+	filePath := path.Join(dest, fields[len(fields)-1])
 
-	if ers.CheckFunc(FileExists, filePath) {
-		return // Do nothing
+	exists, err := FileExists(filePath)
+	if err != nil {
+		return "", fmt.Errorf("could not check if file exists")
+	} else if exists {
+		return filePath, nil // File already exists
 	}
 
-	invalidResponseFunc := func(url string) (bool, error) {
-		resp, err := http.Head(url)
-		return resp.StatusCode != http.StatusOK, err
+	headResp, err := http.Head(url)
+	if err != nil {
+		return "", fmt.Errorf("could not check if file exists on server")
+	} else if headResp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("file does not exist on the server: %s", url)
 	}
 
-	if ers.CheckFunc(invalidResponseFunc, url) {
-		panic(fmt.Errorf("file does not exist on the server: %s", url))
+	resp, err := http.Get(url)
+	if err != nil {
+		return "", fmt.Errorf("could not download file: %s", url)
 	}
-
-	resp := ers.CheckFunc(http.Get, url)
 	defer resp.Body.Close()
 
-	file := ers.CheckFunc(os.Create, filePath)
+	// Create the file
+	file, err := os.Create(filePath)
+	if err != nil {
+		return "", fmt.Errorf("could not create file: %s", filePath)
+	}
 	defer file.Close()
 
-	ers.CheckFunc(func(file *os.File) (int64, error) {
-		return io.Copy(file, resp.Body)
-	}, file)
+	// Write the file
+	if _, err := io.Copy(file, resp.Body); err != nil {
+		return "", fmt.Errorf("could not write to file: %s", filePath)
+	}
 
-	return
+	return filePath, nil
 }
 
 // ReadWholeFileLineByLine reads a file from the provided path line by line
