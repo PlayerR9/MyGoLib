@@ -81,16 +81,15 @@ func (t *Table) CanAddRow(elements []string) bool {
 	return len(elements) == len(t.headers)
 }
 
-func (t *Table) AddRow(elements []string) {
+func (t *Table) AddRow(elements []string) error {
 	if len(elements) == len(t.headers) {
 		t.rows = append(t.rows, elements)
-		return
+		return nil
 	}
 
-	panic(ers.NewErrInvalidParameter("elements").WithReason(
-		fmt.Errorf("number of elements (%d) does not match number of headers (%d)",
-			len(elements), len(t.headers)),
-	))
+	return ers.NewErrInvalidParameter("elements").
+		Wrap(fmt.Errorf("number of elements (%d) does not match number of headers (%d)",
+			len(elements), len(t.headers)))
 }
 
 func rowToString[T any](row []T, f func(T) string) string {

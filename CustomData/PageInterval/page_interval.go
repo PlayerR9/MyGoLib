@@ -77,7 +77,7 @@ func (pi *PageInterval) String() string {
 //
 //   - itf.Iterater[int]: An iterator for iterating over the pages in the PageInterval.
 func (pi *PageInterval) Iterator() itf.Iterater[int] {
-	return itf.IteratorFromIterator(
+	iter, err := itf.IteratorFromIterator(
 		itf.IteratorFromSlice(pi.intervals),
 		func(pr PageRange) itf.Iterater[int] {
 			var builder itf.Builder[int]
@@ -89,6 +89,11 @@ func (pi *PageInterval) Iterator() itf.Iterater[int] {
 			return builder.Build()
 		},
 	)
+	if err != nil {
+		panic(err)
+	}
+
+	return iter
 }
 
 // PageCount is a method of the PageInterval type that returns the total number
@@ -145,14 +150,12 @@ func (pi *PageInterval) HasPages() bool {
 // Returns:
 //
 //   - int: The first page number in the PageInterval.
-func (pi *PageInterval) GetFirstPage() int {
-	if pi.pageCount > 0 {
-		return pi.intervals[0][0]
+func (pi *PageInterval) GetFirstPage() (int, error) {
+	if pi.pageCount <= 0 {
+		return 0, errors.New("no pages have been set")
 	}
 
-	panic(ers.NewErrCallFailed("GetFirstPage", pi.GetFirstPage).
-		WithReason(errors.New("no pages have been set")),
-	)
+	return pi.intervals[0][0], nil
 }
 
 // GetLastPage is a method of the PageInterval type that returns the last
@@ -162,14 +165,12 @@ func (pi *PageInterval) GetFirstPage() int {
 // Returns:
 //
 //   - int: The last page number in the PageInterval.
-func (pi *PageInterval) GetLastPage() int {
-	if pi.pageCount > 0 {
-		return pi.intervals[len(pi.intervals)-1][1]
+func (pi *PageInterval) GetLastPage() (int, error) {
+	if pi.pageCount <= 0 {
+		return 0, errors.New("no pages have been set")
 	}
 
-	panic(ers.NewErrCallFailed("GetLastPage", pi.GetLastPage).
-		WithReason(errors.New("no pages have been set")),
-	)
+	return pi.intervals[len(pi.intervals)-1][1], nil
 }
 
 // AddPage is a method of the PageInterval type that adds a page to the
@@ -190,11 +191,10 @@ func (pi *PageInterval) GetLastPage() int {
 //	pi.AddPage(6)
 //	fmt.Println(pi.intervals) // Output: [[1 6] [10 15]]
 //	fmt.Println(pi.pageCount) // Output: 12
-func (pi *PageInterval) AddPage(page int) {
+func (pi *PageInterval) AddPage(page int) error {
 	if page < 1 {
-		panic(ers.NewErrInvalidParameter("page").WithReason(
-			fmt.Errorf("page number (%d) must be greater than 0", page),
-		))
+		return ers.NewErrInvalidParameter("page").
+			Wrap(fmt.Errorf("page number (%d) must be greater than 0", page))
 	}
 
 	if len(pi.intervals) == 0 {
@@ -218,6 +218,8 @@ func (pi *PageInterval) AddPage(page int) {
 
 	pi.pageCount++
 	reduce(pi)
+
+	return nil
 }
 
 // RemovePage is a method of the PageInterval type that removes the specified
@@ -413,7 +415,7 @@ func (pi *PageInterval) ReverseIterator() itf.Iterater[int] {
 
 	slices.Reverse(reversed)
 
-	return itf.IteratorFromIterator(
+	iter, err := itf.IteratorFromIterator(
 		itf.IteratorFromSlice(reversed),
 		func(pr PageRange) itf.Iterater[int] {
 			var builder itf.Builder[int]
@@ -425,6 +427,11 @@ func (pi *PageInterval) ReverseIterator() itf.Iterater[int] {
 			return builder.Build()
 		},
 	)
+	if err != nil {
+		panic(err)
+	}
+
+	return iter
 }
 
 // reduce merges overlapping intervals in the PageInterval.

@@ -100,21 +100,19 @@ func DeepCopy(value any) any {
 //	n := 3
 //	groups := SplitIntoGroups(slice, n)
 //	fmt.Println(groups) // Output: [[1 4] [2 5] [3]]
-func SplitIntoGroups[T any](slice []T, n int) [][]T {
+func SplitIntoGroups[T any](slice []T, n int) ([][]T, error) {
 	if len(slice) == 0 {
-		return [][]T{}
+		return [][]T{}, nil
 	} else if len(slice) == 1 || n == 1 {
-		return [][]T{slice}
+		return [][]T{slice}, nil
 	}
 
 	if n < 0 {
-		panic(ers.NewErrInvalidParameter("n").WithReason(
-			fmt.Errorf("negative group number (%d) are not allowed", n),
-		))
+		return nil, ers.NewErrInvalidParameter("n").
+			Wrap(fmt.Errorf("negative group number (%d) are not allowed", n))
 	} else if n == 0 {
-		panic(ers.NewErrInvalidParameter("n").WithReason(
-			errors.New("cannot split into 0 groups"),
-		))
+		return nil, ers.NewErrInvalidParameter("n").
+			Wrap(errors.New("cannot split into 0 groups"))
 	}
 
 	groups := make([][]T, n)
@@ -125,7 +123,7 @@ func SplitIntoGroups[T any](slice []T, n int) [][]T {
 		groups[groupNumber] = append(groups[groupNumber], element)
 	}
 
-	return groups
+	return groups, nil
 }
 
 // IsNil is a function that checks if a value is nil.

@@ -49,16 +49,16 @@ func RecoverFromPanic(err *error) {
 // Parameters:
 //
 //   - err: The error to propagate with the recovered value.
-func PropagatePanic[T interface{ WithReason(error) T }](err T) {
+func PropagatePanic[T interface{ Wrap(error) T }](err T) {
 	r := recover()
 	if r == nil {
 		return
 	}
 
 	if x, ok := r.(error); ok {
-		err.WithReason(x)
+		err.Wrap(x)
 	} else {
-		err.WithReason(&ErrPanic{value: r})
+		err.Wrap(&ErrPanic{value: r})
 	}
 
 	panic(err)
@@ -172,7 +172,7 @@ func CheckFunc[O any, I any](f func(I) (O, error), param I) O {
 //	 TryFunc(func() error {
 //		if n <= 0 {
 //			return NewErrInvalidParameter("n").
-//	     	WithReason(fmt.Errorf("value (%d) must be positive", n))
+//	     	Wrap(fmt.Errorf("value (%d) must be positive", n))
 //		}
 //
 //		return nil

@@ -84,20 +84,17 @@ func NewSafeQueue[T any](values ...T) *SafeQueue[T] {
 // Returns:
 //
 //   - Queuer[T]: A pointer to the queue with the new capacity set.
-func (queue *SafeQueue[T]) WithCapacity(capacity int) Queuer[T] {
-	defer ers.PropagatePanic(ers.NewErrCallFailed("WithCapacity", queue.WithCapacity))
-
+func (queue *SafeQueue[T]) WithCapacity(capacity int) (Queuer[T], error) {
 	queue.capacityMutex.Lock()
 	defer queue.capacityMutex.Unlock()
 
-	queue.capacity.If(func(cap int) {
-		panic(fmt.Errorf("capacity is already set to %d", cap))
-	})
+	if queue.capacity.Present() {
+		return nil, fmt.Errorf("capacity is already set to %d", queue.capacity.MustGet())
+	}
 
 	if capacity < 0 {
-		panic(ers.NewErrInvalidParameter("capacity").WithReason(
-			fmt.Errorf("negative capacity (%d) is not allowed", capacity),
-		))
+		return nil, ers.NewErrInvalidParameter("capacity").
+			Wrap(fmt.Errorf("negative capacity (%d) is not allowed", capacity))
 	}
 
 	queue.frontMutex.RLock()
@@ -107,15 +104,14 @@ func (queue *SafeQueue[T]) WithCapacity(capacity int) Queuer[T] {
 	defer queue.backMutex.RUnlock()
 
 	if queue.size > capacity {
-		panic(ers.NewErrInvalidParameter("capacity").WithReason(
-			fmt.Errorf("capacity (%d) is not big enough to hold %d elements",
-				capacity, queue.size),
-		))
+		return nil, ers.NewErrInvalidParameter("capacity").
+			Wrap(fmt.Errorf("capacity (%d) is not big enough to hold %d elements",
+				capacity, queue.size))
 	}
 
 	queue.capacity = optional.NewInt(capacity)
 
-	return queue
+	return queue, nil
 }
 
 // Enqueue is a method of the SafeQueue type. It is used to add an element to the
@@ -126,20 +122,16 @@ func (queue *SafeQueue[T]) WithCapacity(capacity int) Queuer[T] {
 // Parameters:
 //
 //   - value: The value of type T to be added to the queue.
-func (queue *SafeQueue[T]) Enqueue(value T) {
+func (queue *SafeQueue[T]) Enqueue(value T) error {
 	queue.backMutex.Lock()
 	defer queue.backMutex.Unlock()
 
 	queue.capacityMutex.RLock()
 	defer queue.capacityMutex.RUnlock()
 
-	queue.capacity.If(func(cap int) {
-		if queue.size >= cap {
-			panic(ers.NewErrCallFailed("Enqueue", queue.Enqueue).
-				WithReason(NewErrFullQueue(queue)),
-			)
-		}
-	})
+	if queue.capacity.Present() && queue.size >= queue.capacity.MustGet() {
+		return NewErrFullQueue(queue)
+	}
 
 	node := &linkedNode[T]{value: &value}
 
@@ -153,6 +145,8 @@ func (queue *SafeQueue[T]) Enqueue(value T) {
 
 	queue.back = node
 	queue.size++
+
+	return nil
 }
 
 // Dequeue is a method of the SafeQueue type. It is used to remove and return the
@@ -163,7 +157,7 @@ func (queue *SafeQueue[T]) Enqueue(value T) {
 // Returns:
 //
 //   - T: The value of the element at the front of the queue.
-func (queue *SafeQueue[T]) Dequeue() T {
+func (queue *SafeQueue[T]) Dequeue() (T, error) {
 	queue.frontMutex.Lock()
 	defer queue.frontMutex.Unlock()
 
@@ -171,9 +165,7 @@ func (queue *SafeQueue[T]) Dequeue() T {
 	defer queue.capacityMutex.RUnlock()
 
 	if queue.front == nil {
-		panic(ers.NewErrCallFailed("Dequeue", queue.Dequeue).
-			WithReason(NewErrEmptyQueue(queue)),
-		)
+		return *new(T), NewErrEmptyQueue(queue)
 	}
 
 	toRemove := queue.front
@@ -191,7 +183,7 @@ func (queue *SafeQueue[T]) Dequeue() T {
 	queue.size--
 	toRemove.next = nil
 
-	return *toRemove.value
+	return *toRemove.value, nil
 }
 
 // Peek is a method of the SafeQueue type. It is used to return the element at the
@@ -202,17 +194,15 @@ func (queue *SafeQueue[T]) Dequeue() T {
 // Returns:
 //
 //   - T: The value of the element at the front of the queue.
-func (queue *SafeQueue[T]) Peek() T {
+func (queue *SafeQueue[T]) Peek() (T, error) {
 	queue.frontMutex.RLock()
 	defer queue.frontMutex.RUnlock()
 
 	if queue.front == nil {
-		return *queue.front.value
+		return *new(T), NewErrEmptyQueue(queue)
 	}
 
-	panic(ers.NewErrCallFailed("Peek", queue.Peek).
-		WithReason(NewErrEmptyQueue(queue)),
-	)
+	return *queue.front.value, nil
 }
 
 // IsEmpty is a method of the SafeQueue type. It is used to check if the queue is

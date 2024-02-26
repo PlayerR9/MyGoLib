@@ -59,22 +59,19 @@ func NewArrayStack[T any](values ...T) *ArrayStack[T] {
 // Returns:
 //
 //   - Stacker[T]: A pointer to the stack with the new capacity set.
-func (stack *ArrayStack[T]) WithCapacity(capacity int) Stacker[T] {
-	defer ers.PropagatePanic(ers.NewErrCallFailed("WithCapacity", stack.WithCapacity))
-
-	stack.capacity.If(func(cap int) {
-		panic(fmt.Errorf("capacity is already set to %d", cap))
-	})
+func (stack *ArrayStack[T]) WithCapacity(capacity int) (Stacker[T], error) {
+	if stack.capacity.Present() {
+		return nil, fmt.Errorf("capacity is already set to %d", stack.capacity.MustGet())
+	}
 
 	if capacity < 0 {
-		panic(ers.NewErrInvalidParameter("capacity").
-			WithReason(fmt.Errorf("negative capacity (%d) is not allowed", capacity)),
-		)
+		return nil, ers.NewErrInvalidParameter("capacity").
+			Wrap(fmt.Errorf("negative capacity (%d) is not allowed", capacity))
 	} else if len(stack.values) > capacity {
-		panic(ers.NewErrInvalidParameter("capacity").WithReason(
-			fmt.Errorf("provided capacity (%d) is less than the current number of values (%d)",
+		return nil, ers.NewErrInvalidParameter("capacity").
+			Wrap(fmt.Errorf("provided capacity (%d) is less than the current number of values (%d)",
 				capacity, len(stack.values)),
-		))
+			)
 	}
 
 	stack.capacity = optional.NewInt(capacity)
@@ -84,7 +81,7 @@ func (stack *ArrayStack[T]) WithCapacity(capacity int) Stacker[T] {
 
 	stack.values = newValues
 
-	return stack
+	return stack, nil
 }
 
 // Push is a method of the ArrayStack type. It is used to add an element to the
@@ -95,14 +92,14 @@ func (stack *ArrayStack[T]) WithCapacity(capacity int) Stacker[T] {
 // Parameters:
 //
 //   - value: The value of type T to be added to the stack.
-func (stack *ArrayStack[T]) Push(value T) {
-	stack.capacity.If(func(cap int) {
-		if len(stack.values) <= cap {
-			panic(ers.NewErrCallFailed("Push", stack.Push))
-		}
-	})
+func (stack *ArrayStack[T]) Push(value T) error {
+	if stack.capacity.Present() && len(stack.values) == stack.capacity.MustGet() {
+		return NewErrFullStack(stack)
+	}
 
 	stack.values = append(stack.values, &value)
+
+	return nil
 }
 
 // Pop is a method of the ArrayStack type. It is used to remove and return the
@@ -113,17 +110,15 @@ func (stack *ArrayStack[T]) Push(value T) {
 // Returns:
 //
 //   - T: The element at the end of the stack.
-func (stack *ArrayStack[T]) Pop() T {
+func (stack *ArrayStack[T]) Pop() (T, error) {
 	if len(stack.values) == 0 {
-		panic(ers.NewErrCallFailed("Pop", stack.Pop).
-			WithReason(NewErrEmptyStack(stack)),
-		)
+		return *new(T), NewErrEmptyStack(stack)
 	}
 
 	toRemove := stack.values[len(stack.values)-1]
 	stack.values[len(stack.values)-1], stack.values = nil, stack.values[:len(stack.values)-1]
 
-	return *toRemove
+	return *toRemove, nil
 }
 
 // Peek is a method of the ArrayStack type. It is used to return the element at the
@@ -134,14 +129,12 @@ func (stack *ArrayStack[T]) Pop() T {
 // Returns:
 //
 //   - T: The element at the end of the stack.
-func (stack *ArrayStack[T]) Peek() T {
+func (stack *ArrayStack[T]) Peek() (T, error) {
 	if len(stack.values) == 0 {
-		panic(ers.NewErrCallFailed("Peek", stack.Peek).
-			WithReason(NewErrEmptyStack(stack)),
-		)
+		return *new(T), NewErrEmptyStack(stack)
 	}
 
-	return *stack.values[len(stack.values)-1]
+	return *stack.values[len(stack.values)-1], nil
 }
 
 // IsEmpty is a method of the ArrayStack type. It is used to check if the stack is

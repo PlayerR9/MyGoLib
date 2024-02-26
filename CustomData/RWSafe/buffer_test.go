@@ -6,8 +6,13 @@ import (
 
 func TestInit(t *testing.T) {
 	buffer := new(Buffer[int])
-	sendTo, receiveFrom := buffer.Init(1)
+
+	if err := buffer.Init(1); err != nil {
+		t.Errorf("Expected no error, got %v", err)
+	}
 	defer buffer.Wait()
+
+	sendTo, receiveFrom := buffer.GetSendChannel(), buffer.GetReceiveChannel()
 
 	sendTo <- 1
 	sendTo <- 2
@@ -26,8 +31,13 @@ func TestInit(t *testing.T) {
 
 func TestTrimFrom(t *testing.T) {
 	buffer := new(Buffer[int])
-	sendTo, receiveFrom := buffer.Init(0)
+
+	if err := buffer.Init(1); err != nil {
+		t.Errorf("Expected no error, got %v", err)
+	}
 	defer buffer.Wait()
+
+	sendTo, receiveFrom := buffer.GetSendChannel(), buffer.GetReceiveChannel()
 
 	sendTo <- 1
 	sendTo <- 2

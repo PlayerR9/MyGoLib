@@ -72,27 +72,24 @@ func NewLinkedStack[T any](values ...T) *LinkedStack[T] {
 // Returns:
 //
 //   - Stacker[T]: A pointer to the current instance of the LinkedStack.
-func (stack *LinkedStack[T]) WithCapacity(capacity int) Stacker[T] {
-	defer ers.PropagatePanic(ers.NewErrCallFailed("WithCapacity", stack.WithCapacity))
-
-	stack.capacity.If(func(cap int) {
-		panic(fmt.Errorf("capacity is already set to %d", cap))
-	})
+func (stack *LinkedStack[T]) WithCapacity(capacity int) (Stacker[T], error) {
+	if stack.capacity.Present() {
+		return nil, fmt.Errorf("capacity is already set to %d", stack.capacity.MustGet())
+	}
 
 	if capacity < 0 {
-		panic(ers.NewErrInvalidParameter("capacity").
-			WithReason(fmt.Errorf("negative capacity (%d) is not allowed", capacity)),
-		)
+		return nil, ers.NewErrInvalidParameter("capacity").
+			Wrap(fmt.Errorf("negative capacity (%d) is not allowed", capacity))
 	} else if stack.size > capacity {
-		panic(ers.NewErrInvalidParameter("capacity").WithReason(
+		return nil, ers.NewErrInvalidParameter("capacity").Wrap(
 			fmt.Errorf("provided capacity (%d) is less than the current number of values (%d)",
 				capacity, stack.size),
-		))
+		)
 	}
 
 	stack.capacity = optional.NewInt(capacity)
 
-	return stack
+	return stack, nil
 }
 
 // Push is a method of the LinkedStack type. It is used to add an element to
@@ -103,14 +100,10 @@ func (stack *LinkedStack[T]) WithCapacity(capacity int) Stacker[T] {
 // Parameters:
 //
 //   - value: The value to be added to the stack.
-func (stack *LinkedStack[T]) Push(value T) {
-	stack.capacity.If(func(cap int) {
-		if stack.size >= cap {
-			panic(ers.NewErrCallFailed("Push", stack.Push).
-				WithReason(NewErrFullStack(stack)),
-			)
-		}
-	})
+func (stack *LinkedStack[T]) Push(value T) error {
+	if stack.capacity.Present() && stack.size >= stack.capacity.MustGet() {
+		return NewErrFullStack(stack)
+	}
 
 	node := &linkedNode[T]{
 		value: &value,
@@ -122,6 +115,8 @@ func (stack *LinkedStack[T]) Push(value T) {
 
 	stack.front = node
 	stack.size++
+
+	return nil
 }
 
 // Pop is a method of the LinkedStack type. It is used to remove and return the
@@ -132,11 +127,9 @@ func (stack *LinkedStack[T]) Push(value T) {
 // Returns:
 //
 //   - T: The value of the last element in the stack.
-func (stack *LinkedStack[T]) Pop() T {
+func (stack *LinkedStack[T]) Pop() (T, error) {
 	if stack.front == nil {
-		panic(ers.NewErrCallFailed("Pop", stack.Pop).
-			WithReason(NewErrEmptyStack(stack)),
-		)
+		return *new(T), NewErrEmptyStack(stack)
 	}
 
 	toRemove := stack.front
@@ -145,7 +138,7 @@ func (stack *LinkedStack[T]) Pop() T {
 	stack.size--
 	toRemove.next = nil
 
-	return *toRemove.value
+	return *toRemove.value, nil
 }
 
 // Peek is a method of the LinkedStack type. It is used to return the last element
@@ -156,14 +149,13 @@ func (stack *LinkedStack[T]) Pop() T {
 // Returns:
 //
 //   - T: The value of the last element in the stack.
-func (stack *LinkedStack[T]) Peek() T {
+func (stack *LinkedStack[T]) Peek() (T, error) {
 	if stack.front == nil {
-		return *stack.front.value
+		return *new(T), NewErrEmptyStack(stack)
+
 	}
 
-	panic(ers.NewErrCallFailed("Peek", stack.Peek).
-		WithReason(NewErrEmptyStack(stack)),
-	)
+	return *stack.front.value, nil
 }
 
 // IsEmpty is a method of the LinkedStack type. It is used to check if the stack

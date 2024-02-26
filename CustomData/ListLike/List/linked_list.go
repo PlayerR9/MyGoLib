@@ -81,27 +81,23 @@ func NewLinkedList[T any](values ...T) *LinkedList[T] {
 // Returns:
 //
 //   - Lister[T]: A pointer to the list with the new capacity set.
-func (list *LinkedList[T]) WithCapacity(capacity int) Lister[T] {
-	defer ers.PropagatePanic(ers.NewErrCallFailed("WithCapacity", list.WithCapacity))
-
-	list.capacity.If(func(cap int) {
-		panic(fmt.Errorf("capacity is already set to %d", cap))
-	})
+func (list *LinkedList[T]) WithCapacity(capacity int) (Lister[T], error) {
+	if list.capacity.Present() {
+		return nil, fmt.Errorf("capacity is already set to %d", list.capacity.MustGet())
+	}
 
 	if capacity < 0 {
-		panic(ers.NewErrInvalidParameter("capacity").
-			WithReason(fmt.Errorf("negative capacity (%d) is not allowed", capacity)),
-		)
+		return nil, ers.NewErrInvalidParameter("capacity").
+			Wrap(fmt.Errorf("negative capacity (%d) is not allowed", capacity))
 	} else if list.size > capacity {
-		panic(ers.NewErrInvalidParameter("capacity").WithReason(
-			fmt.Errorf("capacity (%d) is not big enough to hold %d elements",
-				capacity, list.size)),
-		)
+		return nil, ers.NewErrInvalidParameter("capacity").
+			Wrap(fmt.Errorf("capacity (%d) is not big enough to hold %d elements",
+				capacity, list.size))
 	}
 
 	list.capacity = optional.NewInt(capacity)
 
-	return list
+	return list, nil
 }
 
 // Append is a method of the LinkedList type. It is used to add an element to
@@ -112,14 +108,10 @@ func (list *LinkedList[T]) WithCapacity(capacity int) Lister[T] {
 // Parameters:
 //
 //   - value: An element of type T to be added to the list.
-func (list *LinkedList[T]) Append(value T) {
-	list.capacity.If(func(cap int) {
-		if list.size >= cap {
-			panic(ers.NewErrCallFailed("Append", list.Append).
-				WithReason(NewErrFullList(list)),
-			)
-		}
-	})
+func (list *LinkedList[T]) Append(value T) error {
+	if list.capacity.Present() && list.size >= list.capacity.MustGet() {
+		return NewErrFullList(list)
+	}
 
 	list_node := &linkedNode[T]{
 		value: &value,
@@ -135,6 +127,8 @@ func (list *LinkedList[T]) Append(value T) {
 	list.back = list_node
 
 	list.size++
+
+	return nil
 }
 
 // DeleteFirst is a method of the LinkedList type. It is used to remove and return
@@ -145,11 +139,9 @@ func (list *LinkedList[T]) Append(value T) {
 // Returns:
 //
 //   - T: The first element in the list.
-func (list *LinkedList[T]) DeleteFirst() T {
+func (list *LinkedList[T]) DeleteFirst() (T, error) {
 	if list.front == nil {
-		panic(ers.NewErrCallFailed("DeleteFirst", list.DeleteFirst).
-			WithReason(NewErrEmptyList(list)),
-		)
+		return *new(T), NewErrEmptyList(list)
 	}
 
 	toRemove := list.front
@@ -165,7 +157,7 @@ func (list *LinkedList[T]) DeleteFirst() T {
 
 	toRemove.next = nil
 
-	return *toRemove.value
+	return *toRemove.value, nil
 }
 
 // PeekFirst is a method of the LinkedList type. It is used to return the first
@@ -176,14 +168,12 @@ func (list *LinkedList[T]) DeleteFirst() T {
 // Returns:
 //
 //   - value: The first element in the list.
-func (list *LinkedList[T]) PeekFirst() T {
-	if list.front != nil {
-		return *list.front.value
+func (list *LinkedList[T]) PeekFirst() (T, error) {
+	if list.front == nil {
+		return *new(T), NewErrEmptyList(list)
 	}
 
-	panic(ers.NewErrCallFailed("PeekFirst", list.PeekFirst).
-		WithReason(NewErrEmptyList(list)),
-	)
+	return *list.front.value, nil
 }
 
 // IsEmpty is a method of the LinkedList type. It is used to check if the list is
@@ -315,14 +305,10 @@ func (list *LinkedList[T]) String() string {
 // Parameters:
 //
 //   - value: An element of type T to be added to the list.
-func (list *LinkedList[T]) Prepend(value T) {
-	list.capacity.If(func(cap int) {
-		if list.size >= cap {
-			panic(ers.NewErrCallFailed("Prepend", list.Prepend).
-				WithReason(NewErrFullList(list)),
-			)
-		}
-	})
+func (list *LinkedList[T]) Prepend(value T) error {
+	if list.capacity.Present() && list.size >= list.capacity.MustGet() {
+		return NewErrFullList(list)
+	}
 
 	list_node := &linkedNode[T]{
 		value: &value,
@@ -338,6 +324,8 @@ func (list *LinkedList[T]) Prepend(value T) {
 	list.front = list_node
 
 	list.size++
+
+	return nil
 }
 
 // DeleteLast is a method of the LinkedList type. It is used to remove and return
@@ -348,11 +336,9 @@ func (list *LinkedList[T]) Prepend(value T) {
 // Returns:
 //
 //   - T: The last element in the list.
-func (list *LinkedList[T]) DeleteLast() T {
+func (list *LinkedList[T]) DeleteLast() (T, error) {
 	if list.front == nil {
-		panic(ers.NewErrCallFailed("DeleteLast", list.DeleteLast).
-			WithReason(NewErrEmptyList(list)),
-		)
+		return *new(T), NewErrEmptyList(list)
 	}
 
 	toRemove := list.back
@@ -368,7 +354,7 @@ func (list *LinkedList[T]) DeleteLast() T {
 
 	toRemove.prev = nil
 
-	return *toRemove.value
+	return *toRemove.value, nil
 }
 
 // PeekLast is a method of the LinkedList type. It is used to return the last
@@ -379,15 +365,12 @@ func (list *LinkedList[T]) DeleteLast() T {
 // Returns:
 //
 //   - value: The last element in the list.
-func (list *LinkedList[T]) PeekLast() T {
-	if list.front != nil {
-		return *list.back.value
-
+func (list *LinkedList[T]) PeekLast() (T, error) {
+	if list.front == nil {
+		return *new(T), NewErrEmptyList(list)
 	}
 
-	panic(ers.NewErrCallFailed("PeekLast", list.PeekLast).
-		WithReason(NewErrEmptyList(list)),
-	)
+	return *list.back.value, nil
 }
 
 // CutNilValues is a method of the LinkedList type. It is used to remove all nil

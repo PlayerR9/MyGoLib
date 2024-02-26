@@ -11,8 +11,6 @@ import (
 	"strings"
 
 	"golang.org/x/exp/slices"
-
-	ers "github.com/PlayerR9/MyGoLib/Utility/Errors"
 )
 
 // FileExists checks if a file exists at the given path.
@@ -61,37 +59,40 @@ func FileExists(filePath string) (bool, error) {
 //	    log.Fatal(err)
 //	}
 //	fmt.Println(file_path) // Output: /path/to/destination/file.mp3
-func MediaDownloader(dest, url string) (filePath string, err error) {
-	defer ers.RecoverFromPanic(&err)
-
+func MediaDownloader(dest, url string) (string, error) {
 	// Extract the name of the file from the URL
 	fields := strings.Split(url, "/")
-	filePath = path.Join(dest, fields[len(fields)-1])
+	filePath := path.Join(dest, fields[len(fields)-1])
 
-	if ers.CheckFunc(FileExists, filePath) {
-		return // Do nothing
+	exists, err := FileExists(filePath)
+	if err != nil {
+		return "", fmt.Errorf("could not check if file exists: %v", err)
+	} else if exists {
+		return filePath, nil // Do nothing
 	}
 
-	invalidResponseFunc := func(url string) (bool, error) {
-		resp, err := http.Head(url)
-		return resp.StatusCode != http.StatusOK, err
+	resp, err := http.Get(url)
+	if err != nil {
+		return "", fmt.Errorf("could not send GET request: %v", err)
 	}
-
-	if ers.CheckFunc(invalidResponseFunc, url) {
-		panic(fmt.Errorf("file does not exist on the server: %s", url))
-	}
-
-	resp := ers.CheckFunc(http.Get, url)
 	defer resp.Body.Close()
 
-	file := ers.CheckFunc(os.Create, filePath)
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("file does not exist on the server: %s", url)
+	}
+
+	file, err := os.Create(filePath)
+	if err != nil {
+		return "", fmt.Errorf("could not create file: %v", err)
+	}
 	defer file.Close()
 
-	ers.CheckFunc(func(file *os.File) (int64, error) {
-		return io.Copy(file, resp.Body)
-	}, file)
+	_, err = io.Copy(file, resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("could not copy file: %v", err)
+	}
 
-	return
+	return filePath, nil
 }
 
 // ReadWholeFileLineByLine reads a file from the provided path line by line
@@ -134,14 +135,19 @@ func ReadWholeFileLineByLine(path string) ([]string, error) {
 //   - filePath: A string representing the path to the file.
 //   - contents: A variadic parameter of strings representing the content
 //     to be appended.
-func AppendToFile(filePath string, contents ...string) {
+func AppendToFile(filePath string, contents ...string) error {
 	file, err := os.OpenFile(filePath, os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
-		panic(fmt.Errorf("could not open file: %v", err))
+		return fmt.Errorf("could not open file: %v", err)
 	}
 	defer file.Close()
 
-	ers.CheckFunc(file.WriteString, strings.Join(contents, "\n"))
+	_, err = file.WriteString(strings.Join(contents, "\n"))
+	if err != nil {
+		return fmt.Errorf("could not write to file: %v", err)
+	}
+
+	return nil
 }
 
 // GetAllFileNamesInDirectory is a function that retrieves all file names

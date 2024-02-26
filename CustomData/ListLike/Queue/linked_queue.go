@@ -75,26 +75,22 @@ func NewLinkedQueue[T any](values ...T) *LinkedQueue[T] {
 // Returns:
 //
 //   - Queuer[T]: A pointer to the queue with the new capacity set.
-func (queue *LinkedQueue[T]) WithCapacity(capacity int) Queuer[T] {
-	defer ers.PropagatePanic(ers.NewErrCallFailed("WithCapacity", queue.WithCapacity))
-
-	queue.capacity.If(func(cap int) {
-		panic(fmt.Errorf("capacity is already set to %d", cap))
-	})
+func (queue *LinkedQueue[T]) WithCapacity(capacity int) (Queuer[T], error) {
+	if queue.capacity.Present() {
+		return nil, fmt.Errorf("capacity is already set to %d", queue.capacity.MustGet())
+	}
 
 	if capacity < 0 {
-		panic(ers.NewErrInvalidParameter("capacity").
-			WithReason(fmt.Errorf("negative capacity (%d) is not allowed", capacity)),
-		)
+		return nil, ers.NewErrInvalidParameter("capacity").
+			Wrap(fmt.Errorf("negative capacity (%d) is not allowed", capacity))
 	} else if queue.size > capacity {
-		panic(ers.NewErrInvalidParameter("capacity").WithReason(
-			fmt.Errorf("capacity (%d) is not big enough to hold %d elements", capacity, queue.size),
-		))
+		return nil, ers.NewErrInvalidParameter("capacity").
+			Wrap(fmt.Errorf("capacity (%d) is not big enough to hold %d elements", capacity, queue.size))
 	}
 
 	queue.capacity = optional.NewInt(capacity)
 
-	return queue
+	return queue, nil
 }
 
 // Enqueue is a method of the LinkedQueue type. It is used to add an element to
@@ -106,12 +102,10 @@ func (queue *LinkedQueue[T]) WithCapacity(capacity int) Queuer[T] {
 //
 //   - value: A pointer to a value of type T, which is the element to be added to the
 //     queue.
-func (queue *LinkedQueue[T]) Enqueue(value T) {
-	queue.capacity.If(func(cap int) {
-		if queue.size >= cap {
-			panic(ers.NewErrCallFailed("Enqueue", NewErrFullQueue(queue)))
-		}
-	})
+func (queue *LinkedQueue[T]) Enqueue(value T) error {
+	if queue.capacity.Present() && queue.size >= queue.capacity.MustGet() {
+		return NewErrFullQueue(queue)
+	}
 
 	queue_node := &linkedNode[T]{
 		value: &value,
@@ -126,6 +120,8 @@ func (queue *LinkedQueue[T]) Enqueue(value T) {
 	queue.back = queue_node
 
 	queue.size++
+
+	return nil
 }
 
 // Dequeue is a method of the LinkedQueue type. It is used to remove and return
@@ -136,11 +132,9 @@ func (queue *LinkedQueue[T]) Enqueue(value T) {
 // Returns:
 //
 //   - T: The value of the element at the front of the queue.
-func (queue *LinkedQueue[T]) Dequeue() T {
+func (queue *LinkedQueue[T]) Dequeue() (T, error) {
 	if queue.front == nil {
-		panic(ers.NewErrCallFailed("Dequeue", queue.Dequeue).
-			WithReason(NewErrEmptyQueue(queue)),
-		)
+		return *new(T), NewErrEmptyQueue(queue)
 	}
 
 	toRemove := queue.front
@@ -153,7 +147,7 @@ func (queue *LinkedQueue[T]) Dequeue() T {
 	queue.size--
 	toRemove.next = nil
 
-	return *toRemove.value
+	return *toRemove.value, nil
 }
 
 // Peek is a method of the LinkedQueue type. It is used to return the element at
@@ -164,14 +158,12 @@ func (queue *LinkedQueue[T]) Dequeue() T {
 // Returns:
 //
 //   - T: The value of the element at the front of the queue.
-func (queue *LinkedQueue[T]) Peek() T {
-	if queue.front != nil {
-		return *queue.front.value
+func (queue *LinkedQueue[T]) Peek() (T, error) {
+	if queue.front == nil {
+		return *new(T), NewErrEmptyQueue(queue)
 	}
 
-	panic(ers.NewErrCallFailed("Peek", queue.Peek).
-		WithReason(NewErrEmptyQueue(queue)),
-	)
+	return *queue.front.value, nil
 }
 
 // IsEmpty is a method of the LinkedQueue type. It is used to check if the queue

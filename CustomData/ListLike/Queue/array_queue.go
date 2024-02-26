@@ -56,22 +56,20 @@ func NewArrayQueue[T any](values ...T) *ArrayQueue[T] {
 // Returns:
 //
 //   - Queuer[T]: A pointer to the list.
-func (queue *ArrayQueue[T]) WithCapacity(capacity int) Queuer[T] {
-	defer ers.PropagatePanic(ers.NewErrCallFailed("WithCapacity", queue.WithCapacity))
-
-	queue.capacity.If(func(cap int) {
-		panic(fmt.Errorf("capacity is already set to %d", cap))
-	})
+func (queue *ArrayQueue[T]) WithCapacity(capacity int) (Queuer[T], error) {
+	if queue.capacity.Present() {
+		return queue, fmt.Errorf("capacity is already set to %d", queue.capacity.MustGet())
+	}
 
 	if capacity < 0 {
-		panic(ers.NewErrInvalidParameter("capacity").
-			WithReason(fmt.Errorf("negative capacity (%d) is not allowed", capacity)),
-		)
+		return queue, ers.NewErrInvalidParameter("capacity").
+			Wrap(fmt.Errorf("negative capacity (%d) is not allowed", capacity))
 	} else if len(queue.values) > capacity {
-		panic(ers.NewErrInvalidParameter("capacity").WithReason(
-			fmt.Errorf("capacity (%d) is less than the current number of elements in the queue (%d)",
-				capacity, len(queue.values))),
-		)
+		return queue, ers.NewErrInvalidParameter("capacity").
+			Wrap(
+				fmt.Errorf("capacity (%d) is less than the current number of elements in the queue (%d)",
+					capacity, len(queue.values)),
+			)
 	}
 
 	newValues := make([]*T, len(queue.values), capacity)
@@ -79,7 +77,7 @@ func (queue *ArrayQueue[T]) WithCapacity(capacity int) Queuer[T] {
 
 	queue.values = newValues
 
-	return queue
+	return queue, nil
 }
 
 // Enqueue is a method of the ArrayQueue type. It is used to add an element to the
@@ -90,16 +88,14 @@ func (queue *ArrayQueue[T]) WithCapacity(capacity int) Queuer[T] {
 // Parameters:
 //
 //   - value: The value of type T to be added to the queue.
-func (queue *ArrayQueue[T]) Enqueue(value T) {
-	queue.capacity.If(func(cap int) {
-		if len(queue.values) >= cap {
-			panic(ers.NewErrCallFailed("Enqueue", queue.Enqueue).
-				WithReason(NewErrFullQueue(queue)),
-			)
-		}
-	})
+func (queue *ArrayQueue[T]) Enqueue(value T) error {
+	if queue.capacity.Present() && len(queue.values) >= queue.capacity.MustGet() {
+		return NewErrFullQueue(queue)
+	}
 
 	queue.values = append(queue.values, &value)
+
+	return nil
 }
 
 // Dequeue is a method of the ArrayQueue type. It is used to remove and return the
@@ -110,16 +106,14 @@ func (queue *ArrayQueue[T]) Enqueue(value T) {
 // Returns:
 //
 //   - T: The element at the front of the queue.
-func (queue *ArrayQueue[T]) Dequeue() T {
-	if len(queue.values) <= 0 {
-		panic(ers.NewErrCallFailed("Dequeue", queue.Dequeue).
-			WithReason(NewErrEmptyQueue(queue)),
-		)
+func (queue *ArrayQueue[T]) Dequeue() (T, error) {
+	if len(queue.values) == 0 {
+		return *new(T), NewErrEmptyQueue(queue)
 	}
 
 	toRemove := queue.values[0]
 	queue.values[0], queue.values = nil, queue.values[1:]
-	return *toRemove
+	return *toRemove, nil
 }
 
 // Peek is a method of the ArrayQueue type. It is used to return the element at the
@@ -130,14 +124,12 @@ func (queue *ArrayQueue[T]) Dequeue() T {
 // Returns:
 //
 //   - T: The element at the front of the queue.
-func (queue *ArrayQueue[T]) Peek() T {
+func (queue *ArrayQueue[T]) Peek() (T, error) {
 	if len(queue.values) == 0 {
-		return *queue.values[0]
+		return *new(T), NewErrEmptyQueue(queue)
 	}
 
-	panic(ers.NewErrCallFailed("Peek", queue.Peek).
-		WithReason(NewErrEmptyQueue(queue)),
-	)
+	return *queue.values[0], nil
 }
 
 // IsEmpty is a method of the ArrayQueue type. It is used to check if the queue is

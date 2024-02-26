@@ -23,15 +23,14 @@ import (
 //
 //   - map[int]int: A map where the keys are the prime factors and the values
 //     are their respective powers.
-func PrimeFactorization(inputNumber int) map[int]int {
+func PrimeFactorization(inputNumber int) (map[int]int, error) {
 	if inputNumber == 0 {
-		panic(ers.NewErrInvalidParameter("inputNumber").WithReason(
-			errors.New("value of 0 cannot be factorized"),
-		))
+		return nil, ers.NewErrInvalidParameter("inputNumber").
+			Wrap(errors.New("value of 0 cannot be factorized"))
 	}
 
 	if inputNumber == 1 || inputNumber == -1 {
-		return map[int]int{1: 1}
+		return map[int]int{1: 1}, nil
 	}
 
 	if inputNumber < 0 {
@@ -76,7 +75,7 @@ func PrimeFactorization(inputNumber int) map[int]int {
 		currentPrimeFactor++
 	}
 
-	return primeFactors
+	return primeFactors, nil
 }
 
 // GreatestCommonDivisor is a function that calculates the greatest common divisor

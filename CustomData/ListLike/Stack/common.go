@@ -9,17 +9,17 @@ import (
 type Stacker[T any] interface {
 	// The Push method adds a value of type T to the end of the stack.
 	// If the stack is full, it will panic.
-	Push(value T)
+	Push(value T) error
 
 	// The Pop method is a convenience method that pops an element from the stack
 	// and returns it.
 	// If the stack is empty, it will panic.
-	Pop() T
+	Pop() (T, error)
 
 	// Peek is a method that returns the value at the front of the stack without removing
 	// it.
 	// If the stack is empty, it will panic.
-	Peek() T
+	Peek() (T, error)
 
 	// WithCapacity is a special function that modifies an existing stack data
 	// structure to have a specific capacity. Panics if the list already has a capacity
@@ -28,7 +28,7 @@ type Stacker[T any] interface {
 	//
 	// As a result, it is recommended to use this function only when creating a new
 	// list-like data structure.
-	WithCapacity(int) Stacker[T]
+	WithCapacity(int) (Stacker[T], error)
 
 	// .ListLike[T] is an interface that defines methods for a stack data structure.
 	ListLike.ListLike[T]

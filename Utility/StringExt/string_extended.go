@@ -25,25 +25,23 @@ import (
 // Returns:
 //
 //   - string: The resulting string after replacing the end with the suffix.
-func ReplaceSuffix(str, suffix string) string {
+func ReplaceSuffix(str, suffix string) (string, error) {
 	countStr := utf8.RuneCountInString(str)
 	countSuffix := utf8.RuneCountInString(suffix)
 
 	if countStr < countSuffix {
-		panic(ers.NewErrCallFailed("ReplaceSuffix", ReplaceSuffix).
-			WithReason(fmt.Errorf("suffix (%s) is longer than the string (%s)", suffix, str)),
-		)
+		return "", fmt.Errorf("suffix (%s) is longer than the string (%s)", suffix, str)
 	}
 
 	if countStr == countSuffix {
-		return suffix
+		return suffix, nil
 	}
 
 	if countSuffix == 0 {
-		return str
+		return str, nil
 	}
 
-	return str[:countStr-countSuffix] + suffix
+	return str[:countStr-countSuffix] + suffix, nil
 }
 
 // FindContentIndexes searches for the positions of opening and closing tokens
@@ -67,22 +65,18 @@ func ReplaceSuffix(str, suffix string) string {
 //     if the closing token is not found.
 func FindContentIndexes(openingToken, closingToken string, contentTokens []string) (int, int, error) {
 	if openingToken == "" {
-		panic(ers.NewErrInvalidParameter("openingToken").WithReason(
-			errors.New("opening token cannot be empty"),
-		))
+		return 0, 0, ers.NewErrInvalidParameter("openingToken").
+			Wrap(errors.New("opening token cannot be empty"))
 	}
 
 	if closingToken == "" {
-		panic(ers.NewErrInvalidParameter("closingToken").WithReason(
-			errors.New("closing token cannot be empty"),
-		))
+		return 0, 0, ers.NewErrInvalidParameter("closingToken").
+			Wrap(errors.New("closing token cannot be empty"))
 	}
 
 	openingTokenIndex := slices.Index(contentTokens, openingToken)
 	if openingTokenIndex < 0 {
-		panic(ers.NewErrCallFailed("FindContentIndexes", FindContentIndexes).
-			WithReason(&ErrOpeningTokenNotFound{openingToken}),
-		)
+		return 0, 0, &ErrOpeningTokenNotFound{openingToken}
 	}
 
 	tokenStartIndex := openingTokenIndex + 1
@@ -295,11 +289,10 @@ func (ts *TextSplitter) CanInsertWord(word string, lineIndex int) bool {
 //
 //   - word: The word to insert.
 //   - lineIndex: The index of the line to insert the word into.
-func (ts *TextSplitter) InsertWordAt(word string, lineIndex int) {
+func (ts *TextSplitter) InsertWordAt(word string, lineIndex int) error {
 	if lineIndex < 0 || lineIndex >= len(ts.Lines) {
-		panic(ers.NewErrInvalidParameter("InsertWordAt").WithReason(
-			ers.NewErrOutOfBound(0, len(ts.Lines)-1, lineIndex),
-		))
+		return ers.NewErrInvalidParameter("InsertWordAt").
+			Wrap(ers.NewErrOutOfBound(0, len(ts.Lines)-1, lineIndex))
 	}
 
 	// Check if adding the next word to the last line exceeds the width.
@@ -319,6 +312,8 @@ func (ts *TextSplitter) InsertWordAt(word string, lineIndex int) {
 	*/
 
 	ts.Lines[lineIndex].InsertWord(word)
+
+	return nil
 }
 
 // InsertWord is a method of TextSplitter that attempts to insert a given word into
@@ -430,16 +425,14 @@ func (ts *TextSplitter) shiftUp(lineIndex int) {
 // The function calculates the total length of the text (Tl) and uses a mathematical
 // formula to estimate the minimum number of lines needed to fit the text within the given width.
 // The formula is explained in detail in the comments within the function.
-func CalculateNumberOfLines(text []string, width int) (int, bool) {
+func CalculateNumberOfLines(text []string, width int) (int, error) {
 	if len(text) == 0 {
-		panic(ers.NewErrInvalidParameter("text").WithReason(
-			errors.New("text cannot be empty"),
-		))
+		return 0, ers.NewErrInvalidParameter("text").
+			Wrap(errors.New("text cannot be empty"))
 	}
 	if width <= 0 {
-		panic(ers.NewErrInvalidParameter("width").WithReason(
-			fmt.Errorf("negative or zero width (%d) is not allowed", width),
-		))
+		return 0, ers.NewErrInvalidParameter("width").
+			Wrap(fmt.Errorf("negative or zero width (%d) is not allowed", width))
 	}
 
 	// Euristic to calculate the least amount of splits needed
@@ -510,7 +503,11 @@ func CalculateNumberOfLines(text []string, width int) (int, bool) {
 
 	numberOfLines := int(math.Ceil(float64(Tl-width)/float64(width+1))) + 1
 
-	return numberOfLines, numberOfLines <= len(text)
+	if numberOfLines > len(text) {
+		return 0, fmt.Errorf("number of lines (%d) is greater than the number of words (%d)", numberOfLines, len(text))
+	} else {
+		return numberOfLines, nil
+	}
 }
 
 // SplitTextInEqualSizedLines is a function that splits a given text into lines of equal width.
@@ -534,35 +531,33 @@ func CalculateNumberOfLines(text []string, width int) (int, bool) {
 //
 // If maxHeight is not provided, the function calculates the number of lines needed to fit the text
 // within the width using the CalculateNumberOfLines function.
-func SplitTextInEqualSizedLines(text []string, width int, maxHeight optional.Int) (ts *TextSplitter, err error) {
-	defer ers.RecoverFromPanic(&err)
-
+func SplitTextInEqualSizedLines(text []string, width int, maxHeight optional.Int) (*TextSplitter, error) {
 	if len(text) == 0 {
-		panic(ers.NewErrInvalidParameter("text").WithReason(
-			errors.New("text cannot be empty"),
-		))
+		return nil, ers.NewErrInvalidParameter("text").
+			Wrap(errors.New("text cannot be empty"))
 	}
 
 	if width <= 0 {
-		panic(ers.NewErrInvalidParameter("width").WithReason(
-			fmt.Errorf("negative or zero width (%d) is not allowed", width),
-		))
+		return nil, ers.NewErrInvalidParameter("width").
+			Wrap(fmt.Errorf("negative or zero width (%d) is not allowed", width))
 	}
 
-	height := maxHeight.OrElse(ers.CheckFunc[int, int](func(width int) (int, error) {
-		res, ok := CalculateNumberOfLines(text, width)
-		if !ok {
-			return 0, ers.NewErrCallFailed("CalculateNumberOfLines", CalculateNumberOfLines).
-				WithReason(fmt.Errorf("width (%d) is too small", width))
+	var height int
+
+	if maxHeight.Present() {
+		height = maxHeight.MustGet()
+	} else {
+		res, err := CalculateNumberOfLines(text, width)
+		if err != nil {
+			return nil, err
 		}
 
-		return res, nil
-	}, width))
+		height = res
+	}
 
 	if height < 1 {
-		panic(ers.NewErrInvalidParameter("height").WithReason(
-			fmt.Errorf("negative or zero height (%d) is not allowed", height),
-		))
+		return nil, ers.NewErrInvalidParameter("height").
+			Wrap(fmt.Errorf("negative or zero height (%d) is not allowed", height))
 	}
 
 	// We have to find the best way to split the text
@@ -597,7 +592,7 @@ func SplitTextInEqualSizedLines(text []string, width int, maxHeight optional.Int
 
 	for i, word := range text {
 		if !group.InsertWord(word) {
-			panic(fmt.Errorf("word at index %d (%s) is too long", i, word))
+			return nil, fmt.Errorf("word at index %d (%s) is too long", i, word)
 		}
 	}
 
@@ -720,9 +715,8 @@ func SplitSentenceIntoFields(sentence string, indentLevel int) ([][]string, erro
 	}
 
 	if indentLevel < 0 {
-		panic(ers.NewErrInvalidParameter("indentLevel").WithReason(
-			errors.New("indent level cannot be negative"),
-		))
+		return nil, ers.NewErrInvalidParameter("indentLevel").
+			Wrap(errors.New("indent level cannot be negative"))
 	}
 
 	lines := make([][]string, 0)

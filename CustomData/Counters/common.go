@@ -14,11 +14,11 @@ type Counter interface {
 
 	// Advance advances the counter by one step. It panics if the counter
 	// is already at its limit.
-	Advance()
+	Advance() error
 
 	// Retreat retreats the counter by one step. It panics if the counter
 	// is already at its minimum limit.
-	Retreat()
+	Retreat() error
 
 	// GetRetreatCount returns the number of times the counter has been retreated.
 	GetRetreatCount() int

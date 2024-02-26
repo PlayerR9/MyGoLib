@@ -90,17 +90,14 @@ func NewSafeList[T any](values ...T) *SafeList[T] {
 // Returns:
 //
 //   - Lister[T]: A pointer to the list with the new capacity set.
-func (list *SafeList[T]) WithCapacity(capacity int) Lister[T] {
-	defer ers.PropagatePanic(ers.NewErrCallFailed("WithCapacity", list.WithCapacity))
-
+func (list *SafeList[T]) WithCapacity(capacity int) (Lister[T], error) {
 	list.capacityMutex.Lock()
 	defer list.capacityMutex.Unlock()
 
-	list.capacity.If(func(cap int) {
-		panic(ers.NewErrInvalidParameter("capacity").
-			WithReason(fmt.Errorf("capacity is already set with a value of %d", cap)),
-		)
-	})
+	if list.capacity.Present() {
+		return nil, ers.NewErrInvalidParameter("capacity").
+			Wrap(fmt.Errorf("capacity is already set with a value of %d", list.capacity.MustGet()))
+	}
 
 	// This prevents the list from being modified while the capacity is being set
 	list.frontMutex.RLock()
@@ -110,19 +107,17 @@ func (list *SafeList[T]) WithCapacity(capacity int) Lister[T] {
 	defer list.backMutex.RUnlock()
 
 	if capacity < 0 {
-		panic(ers.NewErrInvalidParameter("capacity").
-			WithReason(fmt.Errorf("negative capacity (%d) is not allowed", capacity)),
-		)
+		return nil, ers.NewErrInvalidParameter("capacity").
+			Wrap(fmt.Errorf("negative capacity (%d) is not allowed", capacity))
 	} else if list.size > capacity {
-		panic(ers.NewErrInvalidParameter("capacity").WithReason(
+		return nil, ers.NewErrInvalidParameter("capacity").Wrap(
 			fmt.Errorf("capacity (%d) is less than the current number of elements (%d)",
-				capacity, list.size)),
-		)
+				capacity, list.size))
 	}
 
 	list.capacity = optional.NewInt(capacity)
 
-	return list
+	return list, nil
 }
 
 // Append is a method of the SafeList type. It is used to add an element to the
@@ -133,19 +128,16 @@ func (list *SafeList[T]) WithCapacity(capacity int) Lister[T] {
 // Parameters:
 //
 //   - value: The value of type T to be added to the list.
-func (list *SafeList[T]) Append(value T) {
+func (list *SafeList[T]) Append(value T) error {
 	list.backMutex.Lock()
 	defer list.backMutex.Unlock()
 
 	list.capacityMutex.RLock()
 	defer list.capacityMutex.RUnlock()
 
-	list.capacity.If(func(cap int) {
-		if list.size >= cap {
-			panic(ers.NewErrCallFailed("Append", list.Append).
-				WithReason(NewErrFullList(list)))
-		}
-	})
+	if list.capacity.Present() && list.size >= list.capacity.MustGet() {
+		return NewErrFullList(list)
+	}
 
 	node := &linkedNode[T]{value: &value}
 
@@ -162,6 +154,8 @@ func (list *SafeList[T]) Append(value T) {
 	list.back = node
 
 	list.size++
+
+	return nil
 }
 
 // DeleteFirst is a method of the SafeList type. It is used to remove and return
@@ -172,7 +166,7 @@ func (list *SafeList[T]) Append(value T) {
 // Returns:
 //
 //   - T: The first element in the list.
-func (list *SafeList[T]) DeleteFirst() T {
+func (list *SafeList[T]) DeleteFirst() (T, error) {
 	list.frontMutex.Lock()
 	defer list.frontMutex.Unlock()
 
@@ -180,9 +174,7 @@ func (list *SafeList[T]) DeleteFirst() T {
 	defer list.capacityMutex.RUnlock()
 
 	if list.front == nil {
-		panic(ers.NewErrCallFailed("DeleteFirst", list.DeleteFirst).
-			WithReason(NewErrEmptyList(list)),
-		)
+		return *new(T), NewErrEmptyList(list)
 	}
 
 	toRemove := list.front
@@ -203,7 +195,7 @@ func (list *SafeList[T]) DeleteFirst() T {
 
 	toRemove.next = nil
 
-	return *toRemove.value
+	return *toRemove.value, nil
 }
 
 // PeekFirst is a method of the SafeList type. It is used to return the first
@@ -214,17 +206,15 @@ func (list *SafeList[T]) DeleteFirst() T {
 // Returns:
 //
 //   - T: The first element in the list.
-func (list *SafeList[T]) PeekFirst() T {
+func (list *SafeList[T]) PeekFirst() (T, error) {
 	list.frontMutex.RLock()
 	defer list.frontMutex.RUnlock()
 
-	if list.front != nil {
-		return *list.front.value
+	if list.front == nil {
+		return *new(T), NewErrEmptyList(list)
 	}
 
-	panic(ers.NewErrCallFailed("PeekFirst", list.PeekFirst).
-		WithReason(NewErrEmptyList(list)),
-	)
+	return *list.front.value, nil
 }
 
 // IsEmpty is a method of the SafeList type. It checks if the list is empty.
@@ -394,20 +384,16 @@ func (list *SafeList[T]) String() string {
 // Parameters:
 //
 //   - value: The value of type T to be added to the list.
-func (list *SafeList[T]) Prepend(value T) {
+func (list *SafeList[T]) Prepend(value T) error {
 	list.frontMutex.Lock()
 	defer list.frontMutex.Unlock()
 
 	list.capacityMutex.RLock()
 	defer list.capacityMutex.RUnlock()
 
-	list.capacity.If(func(cap int) {
-		if list.size >= cap {
-			panic(ers.NewErrCallFailed("Prepend", list.Prepend).
-				WithReason(NewErrFullList(list)),
-			)
-		}
-	})
+	if list.capacity.Present() && list.size >= list.capacity.MustGet() {
+		return NewErrFullList(list)
+	}
 
 	node := &linkedNode[T]{value: &value}
 
@@ -424,6 +410,8 @@ func (list *SafeList[T]) Prepend(value T) {
 	list.front = node
 
 	list.size++
+
+	return nil
 }
 
 // DeleteLast is a method of the SafeList type. It is used to remove and return the
@@ -434,7 +422,7 @@ func (list *SafeList[T]) Prepend(value T) {
 // Returns:
 //
 //   - T: The last element in the list.
-func (list *SafeList[T]) DeleteLast() T {
+func (list *SafeList[T]) DeleteLast() (T, error) {
 	list.backMutex.Lock()
 	defer list.backMutex.Unlock()
 
@@ -442,9 +430,7 @@ func (list *SafeList[T]) DeleteLast() T {
 	defer list.capacityMutex.RUnlock()
 
 	if list.back == nil {
-		panic(ers.NewErrCallFailed("DeleteLast", list.DeleteLast).
-			WithReason(NewErrEmptyList(list)),
-		)
+		return *new(T), NewErrEmptyList(list)
 	}
 
 	toRemove := list.back
@@ -465,7 +451,7 @@ func (list *SafeList[T]) DeleteLast() T {
 
 	toRemove.prev = nil
 
-	return *toRemove.value
+	return *toRemove.value, nil
 }
 
 // PeekLast is a method of the SafeList type. It is used to return the last element
@@ -476,18 +462,15 @@ func (list *SafeList[T]) DeleteLast() T {
 // Returns:
 //
 //   - T: The last element in the list.
-func (list *SafeList[T]) PeekLast() T {
+func (list *SafeList[T]) PeekLast() (T, error) {
 	list.backMutex.RLock()
 	defer list.backMutex.RUnlock()
 
-	if list.back != nil {
-		return *list.back.value
-
+	if list.back == nil {
+		return *new(T), NewErrEmptyList(list)
 	}
 
-	panic(ers.NewErrCallFailed("PeekLast", list.PeekLast).
-		WithReason(NewErrEmptyList(list)),
-	)
+	return *list.back.value, nil
 }
 
 // CutNilValues is a method of the SafeList type. It is used to remove all nil

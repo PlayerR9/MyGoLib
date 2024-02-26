@@ -28,20 +28,28 @@ import (
 //   - nodes: A slice containing all nodes that match the search criteria.
 //
 // If no criteria is provided, then any node will match.
-func ExtractSpecificNode(node *html.Node, criteria *SearchCriteria) (nodes []*html.Node) {
+func ExtractSpecificNode(node *html.Node, criteria *SearchCriteria) ([]*html.Node, error) {
 	if node == nil {
-		panic(ers.NewErrInvalidParameter("node").
-			WithReason(errors.New("node cannot be nil")))
+		return nil, ers.NewErrInvalidParameter("node").
+			Wrap(errors.New("node cannot be nil"))
 	}
 
+	nodes := make([]*html.Node, 0)
+
 	// If no criteria is provided, then any node will match
-	for c := node.FirstChild; c != nil; c = c.NextSibling {
-		if criteria == nil || criteria.Match(c) {
+	if criteria == nil {
+		for c := node.FirstChild; c != nil; c = c.NextSibling {
 			nodes = append(nodes, c)
+		}
+	} else {
+		for c := node.FirstChild; c != nil; c = c.NextSibling {
+			if criteria.Match(c) {
+				nodes = append(nodes, c)
+			}
 		}
 	}
 
-	return
+	return nodes, nil
 }
 
 // MatchNodes performs a breadth-first search on an HTML section returning a
@@ -68,7 +76,7 @@ func MatchNodes(section *html.Node, criteria *SearchCriteria) []*html.Node {
 	Q := Queue.NewLinkedQueue(section)
 
 	for !Q.IsEmpty() {
-		node := Q.Dequeue()
+		node, _ := Q.Dequeue()
 
 		if criteria.Match(node) {
 			solution = append(solution, node)
@@ -140,7 +148,7 @@ func ExtractContentFromDocument(doc *html.Node, criteria *SearchCriteria) *html.
 	S := Stack.NewLinkedStack(doc)
 
 	for !S.IsEmpty() {
-		node := S.Pop()
+		node, _ := S.Pop()
 
 		if criteria == nil || criteria.Match(node) {
 			return node

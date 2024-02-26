@@ -4,7 +4,6 @@ package Errors
 import (
 	"errors"
 	"fmt"
-	"reflect"
 	"strings"
 )
 
@@ -47,7 +46,7 @@ func NewErrNoError(reason error) *ErrNoError {
 	return &ErrNoError{reason: reason}
 }
 
-// WithReason sets the reason for the no error error.
+// Wrap sets the reason for the no error error.
 //
 // Parameters:
 //
@@ -56,7 +55,7 @@ func NewErrNoError(reason error) *ErrNoError {
 // Returns:
 //
 //   - *ErrNoError: The error instance for chaining.
-func (e *ErrNoError) WithReason(reason error) *ErrNoError {
+func (e *ErrNoError) Wrap(reason error) *ErrNoError {
 	e.reason = reason
 
 	return e
@@ -251,15 +250,16 @@ func NewErrInvalidParameter(parameter string) *ErrInvalidParameter {
 	}
 }
 
-// WithReason sets the reason for the invalidity of the parameter.
+// Wrap sets the reason for the invalidity of the parameter.
 // If the reason is not provided (nil), the reason is set to "parameter is invalid"
 // by default.
-func (e *ErrInvalidParameter) WithReason(reason error) *ErrInvalidParameter {
+func (e *ErrInvalidParameter) Wrap(reason error) *ErrInvalidParameter {
 	e.reason = reason
 
 	return e
 }
 
+/*
 // ErrCallFailed represents an error that occurs when a function call fails.
 type ErrCallFailed struct {
 	// fnName is the name of the function.
@@ -313,7 +313,7 @@ func NewErrCallFailed(functionName string, function any) *ErrCallFailed {
 	}
 }
 
-// WithReason sets the reason for the failure.
+// Wrap sets the reason for the failure.
 // If the reason is not provided (nil), the reason is set to "an error occurred
 // while calling the function" by default.
 //
@@ -324,8 +324,9 @@ func NewErrCallFailed(functionName string, function any) *ErrCallFailed {
 // Returns:
 //
 //   - *ErrCallFailed: The error instance for chaining.
-func (e *ErrCallFailed) WithReason(reason error) *ErrCallFailed {
+func (e *ErrCallFailed) Wrap(reason error) *ErrCallFailed {
 	e.reason = reason
 
 	return e
 }
+*/

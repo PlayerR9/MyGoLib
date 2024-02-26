@@ -68,14 +68,14 @@ type Buffer[T any] struct {
 //   - The goroutine that sends messages from the Buffer to the receive
 //     channel will stop sending messages once the Buffer is empty, and then exit.
 //   - The Buffer will be cleaned up.
-func (b *Buffer[T]) Init(bufferSize int) (chan<- T, <-chan T) {
-	b.once.Do(func() {
-		if bufferSize < 0 {
-			panic(ers.NewErrInvalidParameter("bufferSize").WithReason(
-				fmt.Errorf("value (%d) cannot be negative", bufferSize),
-			))
-		}
+func (b *Buffer[T]) Init(bufferSize int) error {
+	if bufferSize < 0 {
+		return ers.NewErrInvalidParameter("bufferSize").Wrap(
+			fmt.Errorf("value (%d) cannot be negative", bufferSize),
+		)
+	}
 
+	b.once.Do(func() {
 		b.q = Queue.NewSafeQueue[T]()
 		b.sendTo = make(chan T, bufferSize)
 		b.receiveFrom = make(chan T, bufferSize)
@@ -88,7 +88,27 @@ func (b *Buffer[T]) Init(bufferSize int) (chan<- T, <-chan T) {
 		go b.sendMessagesFromBuffer()
 	})
 
-	return b.receiveFrom, b.sendTo
+	return nil
+}
+
+// GetSendChannel returns the send-only channel of the Buffer.
+//
+// This method is safe for concurrent use by multiple goroutines.
+//
+// Returns:
+//   - chan<- T: The send-only channel of the Buffer.
+func (b *Buffer[T]) GetSendChannel() chan<- T {
+	return b.sendTo
+}
+
+// GetReceiveChannel returns the receive-only channel of the Buffer.
+//
+// This method is safe for concurrent use by multiple goroutines.
+//
+// Returns:
+//   - <-chan T: The receive-only channel of the Buffer.
+func (b *Buffer[T]) GetReceiveChannel() <-chan T {
+	return b.receiveFrom
 }
 
 // listenForIncomingMessages is a method of the Buffer type that listens for
@@ -127,14 +147,16 @@ func (b *Buffer[T]) sendMessagesFromBuffer() {
 		if b.isClosed {
 			isClosed = true
 		} else {
-			b.sendTo <- b.q.Dequeue()
+			msg, _ := b.q.Dequeue()
+			b.sendTo <- msg
 		}
 
 		b.isNotEmptyOrClosed.L.Unlock()
 	}
 
 	for !b.q.IsEmpty() {
-		b.sendTo <- b.q.Dequeue()
+		msg, _ := b.q.Dequeue()
+		b.sendTo <- msg
 	}
 
 	close(b.sendTo)

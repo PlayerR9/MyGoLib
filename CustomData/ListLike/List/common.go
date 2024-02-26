@@ -11,30 +11,30 @@ import (
 // string representation of the list.
 type Lister[T any] interface {
 	// The Append method adds a value of type T to the end of the list.
-	Append(value T)
+	Append(value T) error
 
 	// The DeleteFirst method is a convenience method that deletefirsts an element from
 	// the list and returns it.
 	// If the list is empty, it will panic.
-	DeleteFirst() T
+	DeleteFirst() (T, error)
 
 	// PeekFirst is a method that returns the value at the front of the list without
 	// removing it.
 	// If the list is empty, it will panic.
-	PeekFirst() T
+	PeekFirst() (T, error)
 
 	// The Prepend method adds a value of type T to the end of the list.
-	Prepend(value T)
+	Prepend(value T) error
 
 	// The DeleteLast method is a convenience method that deletelasts an element from the
 	// list and returns it.
 	// If the list is empty, it will panic.
-	DeleteLast() T
+	DeleteLast() (T, error)
 
 	// PeekLast is a method that returns the value at the front of the list without
 	// removing it.
 	// If the list is empty, it will panic.
-	PeekLast() T
+	PeekLast() (T, error)
 
 	// WithCapacity is a special function that modifies an existing queue data
 	// structure to have a specific capacity. Panics if the list already has a capacity
@@ -43,7 +43,7 @@ type Lister[T any] interface {
 	//
 	// As a result, it is recommended to use this function only when creating a new
 	// list-like data structure.
-	WithCapacity(int) Lister[T]
+	WithCapacity(int) (Lister[T], error)
 
 	// ListLike[T] is an interface that defines methods for a list data structure.
 	ListLike.ListLike[T]

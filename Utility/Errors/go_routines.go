@@ -30,7 +30,7 @@ type GRHandler struct {
 //   - *GRHandler: A pointer to the GRHandler that handles the result of the Go routine.
 //
 // The Go routine is automatically run when this function is called.
-func GoRun(id string, routine func()) *GRHandler {
+func GoRun(id string, routine func() error) *GRHandler {
 	h := &GRHandler{
 		id:        id,
 		errStatus: nil,
@@ -42,24 +42,12 @@ func GoRun(id string, routine func()) *GRHandler {
 		defer h.wg.Done()
 
 		defer func() {
-			r := recover()
-
-			if r == nil {
-				return
-			}
-
-			if x, ok := r.(error); ok {
-				if IsNoError(x) {
-					return
-				}
-
-				h.errStatus = x
-			} else {
+			if r := recover(); r != nil {
 				h.errStatus = &ErrPanic{value: r}
 			}
 		}()
 
-		routine()
+		h.errStatus = routine()
 	}()
 
 	return h
@@ -90,7 +78,7 @@ func (h *GRHandler) Identifier() string {
 // It is used to build a batch of Go routines and their handlers.
 type BatchBuilder struct {
 	// routines is a slice of Go routines.
-	routines []func()
+	routines []func() error
 
 	// ids is a slice of identifiers for the Go routines.
 	ids []string
@@ -102,7 +90,7 @@ type BatchBuilder struct {
 //
 //   - identifier: The identifier of the Go routine.
 //   - routine: The Go routine to add to the batch.
-func (b *BatchBuilder) Add(identifier string, routine func()) {
+func (b *BatchBuilder) Add(identifier string, routine func() error) {
 	b.routines = append(b.routines, routine)
 	b.ids = append(b.ids, identifier)
 }

@@ -4,7 +4,6 @@ import (
 	"errors"
 
 	ers "github.com/PlayerR9/MyGoLib/Utility/Errors"
-	"github.com/markphelps/optional"
 )
 
 // Slicer is an interface that defines a method to convert a data structure to a slice.
@@ -27,7 +26,7 @@ type Iterater[T any] interface {
 	// It should be called after Next to get the current element.
 	//
 	// If the iterator is exhausted, it will panic.
-	Value() T
+	Value() (T, error)
 
 	// The Restart method resets the iterator to the beginning of the collection.
 	Restart()
@@ -46,7 +45,7 @@ type GenericIterator[T any] struct {
 	values *[]T
 
 	// The current index in the values slice.
-	index optional.Int
+	index int // -1 means not initialized
 }
 
 // IteratorFromSlice creates a new iterator over a slice of elements of type T.
@@ -62,7 +61,7 @@ type GenericIterator[T any] struct {
 func IteratorFromSlice[T any](values []T) Iterater[T] {
 	return &GenericIterator[T]{
 		values: &values,
-		index:  optional.NewInt(-1),
+		index:  -1,
 	}
 }
 
@@ -83,7 +82,7 @@ func IteratorFromSlicer[T any](slicer Slicer[T]) Iterater[T] {
 
 	return &GenericIterator[T]{
 		values: &elements,
-		index:  optional.NewInt(-1),
+		index:  -1,
 	}
 }
 
@@ -104,7 +103,7 @@ func IteratorFromValues[T any](values ...T) Iterater[T] {
 
 	return &GenericIterator[T]{
 		values: &valuesCopy,
-		index:  optional.NewInt(-1),
+		index:  -1,
 	}
 }
 
@@ -117,21 +116,13 @@ func IteratorFromValues[T any](values ...T) Iterater[T] {
 func (iter *GenericIterator[T]) Next() (hasNext bool) {
 	if iter.values == nil {
 		return false
+	} else if iter.index != -1 && iter.index >= len(*iter.values) {
+		return false
 	}
 
-	iter.index.If(func(index int) {
-		index++
+	iter.index++
 
-		if index < len(*iter.values) {
-			iter.index = optional.NewInt(index)
-
-			hasNext = true
-		} else {
-			iter.index = optional.Int{}
-		}
-	})
-
-	return
+	return true
 }
 
 // Value is a method of the GenericIterator type that returns the current element in
@@ -144,26 +135,22 @@ func (iter *GenericIterator[T]) Next() (hasNext bool) {
 // Returns:
 //
 //   - T: The current element in the collection.
-func (iter *GenericIterator[T]) Value() T {
-	defer ers.PropagatePanic(ers.NewErrCallFailed("Value", iter.Value))
-
+func (iter *GenericIterator[T]) Value() (T, error) {
 	if iter.values == nil {
-		panic(errors.New("iterator was never initialized"))
-	} else if !iter.index.Present() {
-		panic(errors.New("value called on exhausted iter"))
+		return *new(T), errors.New("iterator was never initialized")
+	} else if iter.index == -1 {
+		return *new(T), errors.New("Next must be called before Value")
+	} else if iter.index >= len(*iter.values) {
+		return *new(T), errors.New("value called on exhausted iter")
 	}
 
-	if index := iter.index.MustGet(); index >= 0 {
-		return (*iter.values)[index]
-	}
-
-	panic(errors.New("Next must be called before Value"))
+	return (*iter.values)[iter.index], nil
 }
 
 // Restart is a method of the GenericIterator type that resets the iterator to the
 // beginning of the collection.
 func (iter *GenericIterator[T]) Restart() {
-	iter.index = optional.NewInt(-1)
+	iter.index = -1
 }
 
 // ProceduralIterator is a struct that allows iterating over a collection of iterators
@@ -195,11 +182,10 @@ type ProceduralIterator[E, T any] struct {
 // Return:
 //
 //   - Iterater[T]: A pointer to a new iterator over the collection of iterators.
-func IteratorFromIterator[E, T any](source Iterater[E], f func(E) Iterater[T]) Iterater[T] {
+func IteratorFromIterator[E, T any](source Iterater[E], f func(E) Iterater[T]) (Iterater[T], error) {
 	if f == nil {
-		panic(ers.NewErrInvalidParameter("f").
-			WithReason(errors.New("transition function cannot be nil")),
-		)
+		return nil, ers.NewErrInvalidParameter("f").
+			Wrap(errors.New("transition function cannot be nil"))
 	}
 
 	iter := &ProceduralIterator[E, T]{
@@ -209,7 +195,7 @@ func IteratorFromIterator[E, T any](source Iterater[E], f func(E) Iterater[T]) I
 
 	iter.transition = f
 
-	return iter
+	return iter, nil
 }
 
 // Next is a method of the ProceduralIterator type that advances the iterator to the
@@ -232,8 +218,12 @@ func (iter *ProceduralIterator[E, T]) Next() bool {
 			return false
 		}
 
-		iter.current = iter.transition(iter.source.Value())
-		// FIXME: Problem with next: optional.Int(-1). It always panics
+		val, err := iter.source.Value()
+		if err != nil {
+			panic(err)
+		}
+
+		iter.current = iter.transition(val)
 	}
 
 	return true
@@ -249,11 +239,9 @@ func (iter *ProceduralIterator[E, T]) Next() bool {
 // Returns:
 //
 //   - T: The current element in the collection.
-func (iter *ProceduralIterator[E, T]) Value() T {
+func (iter *ProceduralIterator[E, T]) Value() (T, error) {
 	if iter.current == nil {
-		panic(ers.NewErrCallFailed("Value", iter.Value).
-			WithReason(errors.New("Next must be called before Value")),
-		)
+		return *new(T), errors.New("Next must be called before Value")
 	}
 
 	return iter.current.Value()
@@ -298,7 +286,7 @@ func (b *Builder[T]) Build() Iterater[T] {
 
 	iter := &GenericIterator[T]{
 		values: &bufferCopy,
-		index:  optional.NewInt(-1),
+		index:  -1,
 	}
 
 	b.buffer = make([]T, 0)
