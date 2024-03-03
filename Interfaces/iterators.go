@@ -116,7 +116,7 @@ func IteratorFromValues[T any](values ...T) Iterater[T] {
 func (iter *GenericIterator[T]) Next() (hasNext bool) {
 	if iter.values == nil {
 		return false
-	} else if iter.index != -1 && iter.index >= len(*iter.values) {
+	} else if iter.index+1 >= len(*iter.values) {
 		return false
 	}
 

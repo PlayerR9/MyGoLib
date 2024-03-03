@@ -1,6 +1,8 @@
 package StringExt
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"math"
@@ -816,4 +818,35 @@ func DateStringer(date time.Time) string {
 //   - string: The time in the format "3:04 PM".
 func TimeStringer(time time.Time) string {
 	return time.Format("3:04 PM")
+}
+
+// GenerateID generates a random ID of the specified size (in bytes).
+//
+// Parameters:
+//
+//   - size: The size of the ID to generate (in bytes).
+//
+// Returns:
+//
+//   - string: The generated ID.
+//   - error: An error of type *ers.ErrInvalidParameter if the size is less than 1. Otherwise, any error
+//     returned by the rand.Read function.
+//
+// The function uses the crypto/rand package to generate a random ID of the specified size.
+func GenerateID(size int) (string, error) {
+	if size < 1 {
+		return "", ers.NewErrInvalidParameter("size").
+			Wrap(errors.New("the size must be greater than 0"))
+	}
+
+	b := make([]byte, size) // 128 bits
+
+	_, err := rand.Read(b)
+	if err != nil {
+		return "", err
+	}
+
+	id := hex.EncodeToString(b)
+
+	return id, nil
 }
