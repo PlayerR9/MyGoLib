@@ -1,7 +1,6 @@
 package SiteNavigator
 
 import (
-	"errors"
 	"slices"
 
 	"github.com/markphelps/optional"
@@ -9,9 +8,9 @@ import (
 
 	Queue "github.com/PlayerR9/MyGoLib/CustomData/ListLike/Queue"
 	Stack "github.com/PlayerR9/MyGoLib/CustomData/ListLike/Stack"
-
-	ers "github.com/PlayerR9/MyGoLib/Utility/Errors"
 )
+
+var IsTextNodeSearch *SearchCriteria = NewSearchCriteria(html.TextNode)
 
 // ExtractSpecificNode finds all nodes that match the given search criteria and
 // that are direct children of the provided node.
@@ -28,10 +27,9 @@ import (
 //   - nodes: A slice containing all nodes that match the search criteria.
 //
 // If no criteria is provided, then any node will match.
-func ExtractSpecificNode(node *html.Node, criteria *SearchCriteria) ([]*html.Node, error) {
+func ExtractSpecificNode(node *html.Node, criteria *SearchCriteria) []*html.Node {
 	if node == nil {
-		return nil, ers.NewErrInvalidParameter("node").
-			Wrap(errors.New("node cannot be nil"))
+		return nil
 	}
 
 	nodes := make([]*html.Node, 0)
@@ -49,7 +47,7 @@ func ExtractSpecificNode(node *html.Node, criteria *SearchCriteria) ([]*html.Nod
 		}
 	}
 
-	return nodes, nil
+	return nodes
 }
 
 // MatchNodes performs a breadth-first search on an HTML section returning a
@@ -276,4 +274,16 @@ func (sc *SearchCriteria) Match(node *html.Node) bool {
 	}
 
 	return true
+}
+
+func GetDirectChildren(node *html.Node) []*html.Node {
+	if node == nil {
+		return nil
+	}
+
+	children := make([]*html.Node, 0)
+	for c := node.FirstChild; c != nil; c = c.NextSibling {
+		children = append(children, c)
+	}
+	return children
 }

@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	itf "github.com/PlayerR9/MyGoLib/Interfaces"
+
 	ers "github.com/PlayerR9/MyGoLib/Utility/Errors"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )

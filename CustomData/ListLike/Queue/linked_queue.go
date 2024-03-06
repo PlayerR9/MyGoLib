@@ -39,6 +39,10 @@ func NewLinkedQueue[T any](values ...T) *LinkedQueue[T] {
 	queue := new(LinkedQueue[T])
 	queue.size = len(values)
 
+	if len(values) == 0 {
+		return queue
+	}
+
 	// First node
 	node := linkedNode[T]{
 		value: &values[0],

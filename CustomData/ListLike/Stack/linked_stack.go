@@ -38,6 +38,10 @@ func NewLinkedStack[T any](values ...T) *LinkedStack[T] {
 	stack := new(LinkedStack[T])
 	stack.size = len(values)
 
+	if len(values) == 0 {
+		return stack
+	}
+
 	// First node
 	node := &linkedNode[T]{
 		value: &values[0],

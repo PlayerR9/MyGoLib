@@ -144,7 +144,9 @@ func (iter *GenericIterator[T]) Value() (T, error) {
 		return *new(T), errors.New("value called on exhausted iter")
 	}
 
-	return (*iter.values)[iter.index], nil
+	vals := *iter.values
+
+	return vals[iter.index], nil
 }
 
 // Restart is a method of the GenericIterator type that resets the iterator to the
@@ -224,6 +226,8 @@ func (iter *ProceduralIterator[E, T]) Next() bool {
 		}
 
 		iter.current = iter.transition(val)
+
+		iter.current.Next()
 	}
 
 	return true
