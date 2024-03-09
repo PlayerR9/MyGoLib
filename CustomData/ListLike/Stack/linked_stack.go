@@ -352,3 +352,38 @@ func (stack *LinkedStack[T]) Slice() []T {
 
 	return slice
 }
+
+// Copy is a method of the LinkedStack type. It is used to create a shallow copy
+// of the stack.
+//
+// Returns:
+//
+//   - itf.Copier: A copy of the stack.
+func (stack *LinkedStack[T]) Copy() itf.Copier {
+	stackCopy := LinkedStack[T]{
+		size:     stack.size,
+		capacity: stack.capacity,
+	}
+
+	if stack.front == nil {
+		return &stackCopy
+	}
+
+	// First node
+	node := &linkedNode[T]{
+		value: stack.front.value,
+	}
+
+	stackCopy.front = node
+
+	// Subsequent nodes
+	for stack_node := stack.front.next; stack_node != nil; stack_node = stack_node.next {
+		node.next = &linkedNode[T]{
+			value: stack_node.value,
+		}
+
+		node = node.next
+	}
+
+	return &stackCopy
+}

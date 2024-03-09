@@ -356,3 +356,40 @@ func (queue *LinkedQueue[T]) Slice() []T {
 
 	return slice
 }
+
+// Copy is a method of the LinkedQueue type. It is used to create a shallow copy
+// of the queue.
+//
+// Returns:
+//
+//   - itf.Copier: A copy of the queue.
+func (queue *LinkedQueue[T]) Copy() itf.Copier {
+	queueCopy := LinkedQueue[T]{
+		size:     queue.size,
+		capacity: queue.capacity,
+	}
+
+	if queue.size == 0 {
+		return &queueCopy
+	}
+
+	// First node
+	node := linkedNode[T]{
+		value: queue.front.value,
+	}
+
+	queueCopy.front = &node
+	queueCopy.back = &node
+
+	// Subsequent nodes
+	for queue_node := queue.front.next; queue_node != nil; queue_node = queue_node.next {
+		node = linkedNode[T]{
+			value: queue_node.value,
+		}
+
+		queueCopy.back.next = &node
+		queueCopy.back = &node
+	}
+
+	return &queueCopy
+}

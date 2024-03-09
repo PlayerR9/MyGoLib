@@ -447,3 +447,42 @@ func (list *LinkedList[T]) Slice() []T {
 
 	return slice
 }
+
+// Copy is a method of the LinkedList type. It is used to create a shallow copy
+// of the list.
+//
+// Returns:
+//
+//   - itf.Copier: A copy of the list.
+func (list *LinkedList[T]) Copy() itf.Copier {
+	listCopy := LinkedList[T]{
+		size:     list.size,
+		capacity: list.capacity,
+	}
+
+	if list.front == nil {
+		return &listCopy
+	}
+
+	// First node
+	listCopy.front = &linkedNode[T]{
+		value: list.front.value,
+	}
+
+	prev := listCopy.front
+
+	// Subsequent nodes
+	for list_node := list.front.next; list_node != nil; list_node = list_node.next {
+		list_node_copy := &linkedNode[T]{
+			value: list_node.value,
+			prev:  prev,
+		}
+
+		prev.next = list_node_copy
+		prev = list_node_copy
+	}
+
+	listCopy.back = prev
+
+	return &listCopy
+}

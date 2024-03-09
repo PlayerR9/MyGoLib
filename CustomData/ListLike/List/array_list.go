@@ -322,3 +322,19 @@ func (list *ArrayList[T]) Slice() []T {
 
 	return slice
 }
+
+// Copy is a method of the ArrayList type. It is used to create a shallow copy
+// of the list.
+//
+// Returns:
+//
+//   - itf.Copier: A copy of the list.
+func (list *ArrayList[T]) Copy() itf.Copier {
+	listCopy := ArrayList[T]{
+		values:   make([]*T, len(list.values)),
+		capacity: list.capacity,
+	}
+	copy(listCopy.values, list.values)
+
+	return &listCopy
+}

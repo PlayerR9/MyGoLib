@@ -3,6 +3,8 @@ package Counters
 
 import (
 	"fmt"
+
+	itf "github.com/PlayerR9/MyGoLib/Interfaces"
 )
 
 // Counter interface defines the methods that a counter must implement.
@@ -35,8 +37,7 @@ type Counter interface {
 	// String returns a string representation of the counter.
 	fmt.Stringer
 
-	// DeepCopy creates a deep copy of the counter.
-	DeepCopy() Counter
+	itf.Copier
 
 	// Reset resets the counter to its initial state.
 	Reset()

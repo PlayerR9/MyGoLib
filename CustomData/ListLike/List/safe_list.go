@@ -563,3 +563,48 @@ func (list *SafeList[T]) Slice() []T {
 
 	return slice
 }
+
+// Copy is a method of the SafeList type. It is used to create a shallow copy of
+// the list.
+//
+// Returns:
+//
+//   - itf.Copier: A copy of the list.
+func (list *SafeList[T]) Copy() itf.Copier {
+	list.frontMutex.RLock()
+	defer list.frontMutex.RUnlock()
+
+	list.backMutex.RLock()
+	defer list.backMutex.RUnlock()
+
+	listCopy := SafeList[T]{
+		size: list.size,
+	}
+
+	if list.capacity.Present() {
+		listCopy.capacity = optional.NewInt(list.capacity.MustGet())
+	}
+
+	if list.front == nil {
+		return &listCopy
+	}
+
+	// First node
+	listCopy.front = &linkedNode[T]{
+		value: list.front.value,
+	}
+
+	listCopy.back = listCopy.front
+
+	// Subsequent nodes
+	for node := list.front.next; node != nil; node = node.next {
+		listCopy.back.next = &linkedNode[T]{
+			value: node.value,
+			prev:  listCopy.back,
+		}
+
+		listCopy.back = listCopy.back.next
+	}
+
+	return &listCopy
+}

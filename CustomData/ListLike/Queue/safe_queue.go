@@ -448,3 +448,41 @@ func (queue *SafeQueue[T]) Slice() []T {
 
 	return slice
 }
+
+// Copy is a method of the SafeQueue type. It is used to create a shallow copy of
+// the queue.
+//
+// Returns:
+//
+//   - itf.Copier: A copy of the queue.
+func (queue *SafeQueue[T]) Copy() itf.Copier {
+	queue.frontMutex.RLock()
+	defer queue.frontMutex.RUnlock()
+
+	queue.backMutex.RLock()
+	defer queue.backMutex.RUnlock()
+
+	queueCopy := SafeQueue[T]{
+		size: queue.size,
+	}
+
+	if queue.front == nil {
+		return &queueCopy
+	}
+
+	// First node
+	node := &linkedNode[T]{value: queue.front.value}
+
+	queueCopy.front = node
+	queueCopy.back = node
+
+	// Subsequent nodes
+	for qNode := queue.front.next; qNode != nil; qNode = qNode.next {
+		node = &linkedNode[T]{value: qNode.value}
+
+		queueCopy.back.next = node
+		queueCopy.back = node
+	}
+
+	return &queueCopy
+}

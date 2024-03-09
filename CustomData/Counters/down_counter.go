@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	itf "github.com/PlayerR9/MyGoLib/Interfaces"
 	ers "github.com/PlayerR9/MyGoLib/Utility/Errors"
 )
 
@@ -133,4 +134,13 @@ func (c *DownCounter) String() string {
 func (c *DownCounter) Reset() {
 	c.currentCount = c.startingCount
 	c.retreatCount = 0
+}
+
+// Copy creates a shallow copy of the DownCounter.
+//
+// Returns:
+//
+//   - itf.Copier: A deep copy of the DownCounter.
+func (c *DownCounter) Copy() itf.Copier {
+	return &DownCounter{c.startingCount, c.currentCount, c.retreatCount}
 }

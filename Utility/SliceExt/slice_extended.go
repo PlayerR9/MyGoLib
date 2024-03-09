@@ -13,20 +13,44 @@ package SliceExt
 // Returns:
 //
 // 	- []T: slice of elements with the maximum weight.
-func FilterByPositiveWeight[T any](S []T, weightFunc func(T) int) []T {
+func FilterByPositiveWeight[T any](S []T, weightFunc func(T) (int, bool)) []T {
 	if len(S) == 0 {
 		return []T{}
 	}
 
-	solution := []T{S[0]}
+	var solution []T
+	var maxWeight int
 
-	maxWeight := weightFunc(S[0])
+	index := -1
 
-	for _, e := range S[1:] {
-		currentValue := weightFunc(e)
+	for i, e := range S {
+		currentValue, ok := weightFunc(e)
+		if ok {
+			solution = []T{e}
+			maxWeight = currentValue
+			index = i
+			break
+		}
+	}
+
+	if index == -1 {
+		return []T{}
+	}
+
+	for _, e := range S[index+1:] {
+		currentValue, ok := weightFunc(e)
+		if !ok {
+			continue
+		}
 
 		if currentValue > maxWeight {
 			maxWeight = currentValue
+
+			// Clear the solution and add the new element
+			for i := range solution {
+				solution[i] = *new(T)
+			}
+
 			solution = []T{e}
 		} else if currentValue == maxWeight {
 			solution = append(solution, e)

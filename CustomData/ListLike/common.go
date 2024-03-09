@@ -38,4 +38,7 @@ type ListLike[T any] interface {
 
 	// The itf.Slicer interface is used to provide a slicer for the list.
 	itf.Slicer[T]
+
+	// The itf.Copier interface is used to provide a method for copying the list.
+	itf.Copier
 }

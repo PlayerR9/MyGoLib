@@ -266,3 +266,19 @@ func (queue *ArrayQueue[T]) Slice() []T {
 
 	return slice
 }
+
+// Copy is a method of the ArrayQueue type. It is used to create a shallow copy
+// of the queue.
+//
+// Returns:
+//
+//   - itf.Copier: A copy of the queue.
+func (queue *ArrayQueue[T]) Copy() itf.Copier {
+	queueCopy := ArrayQueue[T]{
+		values:   make([]*T, len(queue.values)),
+		capacity: queue.capacity,
+	}
+	copy(queueCopy.values, queue.values)
+
+	return &queueCopy
+}

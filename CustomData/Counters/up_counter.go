@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	itf "github.com/PlayerR9/MyGoLib/Interfaces"
 	ers "github.com/PlayerR9/MyGoLib/Utility/Errors"
 )
 
@@ -135,4 +136,17 @@ func (c *UpCounter) String() string {
 func (c *UpCounter) Reset() {
 	c.currentCount = 0
 	c.retreatCount = 0
+}
+
+// Copy creates a shallow copy of the UpCounter.
+//
+// Returns:
+//
+//   - itf.Copier: A copy of the UpCounter.
+func (c *UpCounter) Copy() itf.Copier {
+	return &UpCounter{
+		upperLimit:   c.upperLimit,
+		currentCount: c.currentCount,
+		retreatCount: c.retreatCount,
+	}
 }

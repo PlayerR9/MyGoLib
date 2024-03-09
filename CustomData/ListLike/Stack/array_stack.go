@@ -272,3 +272,19 @@ func (stack *ArrayStack[T]) Slice() []T {
 
 	return slice
 }
+
+// Copy is a method of the ArrayStack type. It is used to create a shallow copy
+// of the stack.
+//
+// Returns:
+//
+//   - itf.Copier: A copy of the stack.
+func (stack *ArrayStack[T]) Copy() itf.Copier {
+	stackCopy := ArrayStack[T]{
+		values:   make([]*T, len(stack.values)),
+		capacity: stack.capacity,
+	}
+	copy(stackCopy.values, stack.values)
+
+	return &stackCopy
+}
