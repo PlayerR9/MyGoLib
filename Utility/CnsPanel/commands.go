@@ -1,6 +1,6 @@
-// Package CMLine provides a structure and functions for handling
+// Package CnsPanel provides a structure and functions for handling
 // console command flags.
-package CMLine
+package CnsPanel
 
 import (
 	"errors"

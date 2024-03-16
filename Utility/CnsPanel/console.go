@@ -1,6 +1,6 @@
-// Package CMLine provides a structure and functions for handling
+// Package CnsPanel provides a structure and functions for handling
 // console command flags.
-package CMLine
+package CnsPanel
 
 import (
 	"errors"
@@ -89,8 +89,8 @@ func (b *ConsoleBuilder) AddCommand(commandName string, options ...CommandInfoOp
 // Returns:
 //
 //   - *CMLine: A CMLine built from the ConsoleBuilder.
-func (b *ConsoleBuilder) Build() *consolePanel {
-	var cm consolePanel
+func (b *ConsoleBuilder) Build() *ConsolePanel {
+	var cm ConsolePanel
 
 	if b.commands == nil {
 		cm.commands = make(map[string]*ConsoleCommandInfo)
@@ -126,8 +126,8 @@ func (b *ConsoleBuilder) Reset() {
 	b.commands = nil
 }
 
-// consolePanel represents a command line interface.
-type consolePanel struct {
+// ConsolePanel represents a command line interface.
+type ConsolePanel struct {
 	// Name of the executable.
 	executableName string
 
@@ -154,7 +154,7 @@ type consolePanel struct {
 //
 //   - *parsedCommand: The parsed command.
 //   - error: An error, if any.
-func (cns *consolePanel) ParseArgs(args []string) (*parsedCommand, error) {
+func (cns *ConsolePanel) ParseArgs(args []string) (*parsedCommand, error) {
 	// Check if any arguments were provided
 	if len(args) == 0 {
 		return nil, ers.NewErrInvalidParameter("args").
@@ -253,7 +253,7 @@ func parseConsoleFlags(args []string, flags []*ConsoleFlagInfo) (map[string]any,
 // Returns:
 //
 //   - string: A string representing the CMLine.
-func (cns *consolePanel) FString(indentLevel int) string {
+func (cns *ConsolePanel) FString(indentLevel int) string {
 	if indentLevel < 0 {
 		indentLevel *= -1
 	}
