@@ -268,7 +268,10 @@ func (cns *ConsolePanel) FString(indentLevel int) string {
 		fmt.Fprintf(&builder, "%sDescription: [No description provided]\n", indentation)
 	} else {
 		fmt.Fprintf(&builder, "%sDescription:\n", indentation)
+
 		for _, line := range cns.description {
+			// FIXME: Pretty print the description
+
 			fmt.Fprintf(&builder, "%s\t%s\n", indentation, line)
 		}
 	}
