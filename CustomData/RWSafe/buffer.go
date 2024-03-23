@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sync"
 
-	Queue "github.com/PlayerR9/MyGoLib/CustomData/ListLike/Queue"
+	Queue "github.com/PlayerR9/MyGoLib/ListLike/Queue"
 
 	ers "github.com/PlayerR9/MyGoLib/Utility/Errors"
 )

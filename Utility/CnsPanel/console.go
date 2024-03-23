@@ -90,16 +90,14 @@ func (b *ConsoleBuilder) AddCommand(commandName string, options ...CommandInfoOp
 //
 //   - *CMLine: A CMLine built from the ConsoleBuilder.
 func (b *ConsoleBuilder) Build() *ConsolePanel {
-	var cm ConsolePanel
+	cm := &ConsolePanel{executableName: b.execName}
 
 	if b.commands == nil {
 		cm.commands = make(map[string]*ConsoleCommandInfo)
 		cm.description = make([][]string, 0)
-		cm.executableName = b.execName
 	} else {
 		cm.commands = b.commands
 		cm.description = b.description
-		cm.executableName = b.execName
 	}
 
 	// Clear the ConsoleBuilder
@@ -111,7 +109,7 @@ func (b *ConsoleBuilder) Build() *ConsolePanel {
 
 	b.commands = nil
 
-	return &cm
+	return cm
 }
 
 // Reset is a method of ConsoleBuilder that resets a ConsoleBuilder.

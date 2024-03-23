@@ -5,19 +5,15 @@ import (
 	"strings"
 
 	itf "github.com/PlayerR9/MyGoLib/Interfaces"
-	ers "github.com/PlayerR9/MyGoLib/Utility/Errors"
+	ll "github.com/PlayerR9/MyGoLib/ListLike"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
-	"github.com/markphelps/optional"
 )
 
 // ArrayQueue is a generic type that represents a queue data structure with
 // or without a limited capacity. It is implemented using an array.
 type ArrayQueue[T any] struct {
 	// values is a slice of type T that stores the elements in the queue.
-	values []*T
-
-	// capacity is the maximum number of elements the queue can hold.
-	capacity optional.Int
+	values []T
 }
 
 // NewArrayQueue is a function that creates and returns a new instance of a
@@ -33,51 +29,11 @@ type ArrayQueue[T any] struct {
 //   - *ArrayQueue[T]: A pointer to the newly created ArrayQueue.
 func NewArrayQueue[T any](values ...T) *ArrayQueue[T] {
 	queue := &ArrayQueue[T]{
-		values: make([]*T, len(values)),
+		values: make([]T, len(values)),
 	}
-	for i, value := range values {
-		queue.values[i] = &value
-	}
+	copy(queue.values, values)
 
 	return queue
-}
-
-// WithCapacity is a method of the ArrayList type. It is used to set the maximum
-// number of elements the list can hold.
-//
-// Panics with an error of type *ErrCallFailed if the capacity is already set,
-// or with an error of type *ErrInvalidParameter if the provided capacity is negative
-// or less than the current number of elements in the list.
-//
-// Parameters:
-//
-//   - capacity: An integer that represents the maximum number of elements the list can hold.
-//
-// Returns:
-//
-//   - Queuer[T]: A pointer to the list.
-func (queue *ArrayQueue[T]) WithCapacity(capacity int) (Queuer[T], error) {
-	if queue.capacity.Present() {
-		return queue, fmt.Errorf("capacity is already set to %d", queue.capacity.MustGet())
-	}
-
-	if capacity < 0 {
-		return queue, ers.NewErrInvalidParameter("capacity").
-			Wrap(fmt.Errorf("negative capacity (%d) is not allowed", capacity))
-	} else if len(queue.values) > capacity {
-		return queue, ers.NewErrInvalidParameter("capacity").
-			Wrap(
-				fmt.Errorf("capacity (%d) is less than the current number of elements in the queue (%d)",
-					capacity, len(queue.values)),
-			)
-	}
-
-	newValues := make([]*T, len(queue.values), capacity)
-	copy(newValues, queue.values)
-
-	queue.values = newValues
-
-	return queue, nil
 }
 
 // Enqueue is a method of the ArrayQueue type. It is used to add an element to the
@@ -88,14 +44,8 @@ func (queue *ArrayQueue[T]) WithCapacity(capacity int) (Queuer[T], error) {
 // Parameters:
 //
 //   - value: The value of type T to be added to the queue.
-func (queue *ArrayQueue[T]) Enqueue(value T) error {
-	if queue.capacity.Present() && len(queue.values) >= queue.capacity.MustGet() {
-		return NewErrFullQueue(queue)
-	}
-
-	queue.values = append(queue.values, &value)
-
-	return nil
+func (queue *ArrayQueue[T]) Enqueue(value T) {
+	queue.values = append(queue.values, value)
 }
 
 // Dequeue is a method of the ArrayQueue type. It is used to remove and return the
@@ -108,12 +58,12 @@ func (queue *ArrayQueue[T]) Enqueue(value T) error {
 //   - T: The element at the front of the queue.
 func (queue *ArrayQueue[T]) Dequeue() (T, error) {
 	if len(queue.values) == 0 {
-		return *new(T), NewErrEmptyQueue(queue)
+		return *new(T), ll.NewErrEmptyList(queue)
 	}
 
 	toRemove := queue.values[0]
-	queue.values[0], queue.values = nil, queue.values[1:]
-	return *toRemove, nil
+	queue.values = queue.values[1:]
+	return toRemove, nil
 }
 
 // Peek is a method of the ArrayQueue type. It is used to return the element at the
@@ -126,10 +76,10 @@ func (queue *ArrayQueue[T]) Dequeue() (T, error) {
 //   - T: The element at the front of the queue.
 func (queue *ArrayQueue[T]) Peek() (T, error) {
 	if len(queue.values) == 0 {
-		return *new(T), NewErrEmptyQueue(queue)
+		return *new(T), ll.NewErrEmptyList(queue)
 	}
 
-	return *queue.values[0], nil
+	return queue.values[0], nil
 }
 
 // IsEmpty is a method of the ArrayQueue type. It is used to check if the queue is
@@ -152,17 +102,6 @@ func (queue *ArrayQueue[T]) Size() int {
 	return len(queue.values)
 }
 
-// Capacity is a method of the ArrayQueue type. It is used to return the maximum
-// number of elements the queue can hold.
-//
-// Returns:
-//
-//   - optional.Int: An optional integer that represents the maximum number of elements
-//     the queue can hold.
-func (queue *ArrayQueue[T]) Capacity() optional.Int {
-	return queue.capacity
-}
-
 // Iterator is a method of the ArrayQueue type. It is used to return an iterator
 // that can be used to iterate over the elements in the queue.
 //
@@ -174,7 +113,7 @@ func (queue *ArrayQueue[T]) Iterator() itf.Iterater[T] {
 	var builder itf.Builder[T]
 
 	for _, value := range queue.values {
-		builder.Append(*value)
+		builder.Append(value)
 	}
 
 	return builder.Build()
@@ -183,29 +122,7 @@ func (queue *ArrayQueue[T]) Iterator() itf.Iterater[T] {
 // Clear is a method of the ArrayQueue type. It is used to remove all the elements
 // from the queue, making it empty.
 func (queue *ArrayQueue[T]) Clear() {
-	for i := range queue.values {
-		queue.values[i] = nil
-	}
-
-	if queue.capacity.Present() {
-		queue.values = make([]*T, 0, queue.capacity.MustGet())
-	} else {
-		queue.values = make([]*T, 0)
-	}
-}
-
-// IsFull is a method of the ArrayQueue type. It is used to check if the queue is
-// full.
-//
-// Returns:
-//
-//   - isFull: A boolean value that is true if the queue is full, and false otherwise.
-func (queue *ArrayQueue[T]) IsFull() (isFull bool) {
-	queue.capacity.If(func(cap int) {
-		isFull = len(queue.values) >= cap
-	})
-
-	return
+	queue.values = make([]T, 0)
 }
 
 // String is a method of the ArrayQueue type. It returns a string representation of
@@ -219,19 +136,15 @@ func (queue *ArrayQueue[T]) String() string {
 
 	builder.WriteString("ArrayQueue[")
 
-	queue.capacity.If(func(cap int) {
-		fmt.Fprintf(&builder, "capacity=%d, ", cap)
-	})
-
 	if len(queue.values) == 0 {
 		builder.WriteString("size=0, values=[← ]]")
 		return builder.String()
 	}
 
-	fmt.Fprintf(&builder, "size=%d, values=[← %v", len(queue.values), *queue.values[0])
+	fmt.Fprintf(&builder, "size=%d, values=[← %v", len(queue.values), queue.values[0])
 
 	for _, element := range queue.values[1:] {
-		fmt.Fprintf(&builder, ", %v", *element)
+		fmt.Fprintf(&builder, ", %v", element)
 	}
 
 	builder.WriteString("]]")
@@ -243,7 +156,7 @@ func (queue *ArrayQueue[T]) String() string {
 // values from the queue.
 func (queue *ArrayQueue[T]) CutNilValues() {
 	for i := 0; i < len(queue.values); {
-		if gen.IsNil(*queue.values[i]) {
+		if gen.IsNil(queue.values[i]) {
 			queue.values = append(queue.values[:i], queue.values[i+1:]...)
 		} else {
 			i++
@@ -258,11 +171,8 @@ func (queue *ArrayQueue[T]) CutNilValues() {
 //
 //   - []T: A slice of the elements in the queue.
 func (queue *ArrayQueue[T]) Slice() []T {
-	slice := make([]T, 0, len(queue.values))
-
-	for _, value := range queue.values {
-		slice = append(slice, *value)
-	}
+	slice := make([]T, len(queue.values))
+	copy(slice, queue.values)
 
 	return slice
 }
@@ -274,11 +184,10 @@ func (queue *ArrayQueue[T]) Slice() []T {
 //
 //   - itf.Copier: A copy of the queue.
 func (queue *ArrayQueue[T]) Copy() itf.Copier {
-	queueCopy := ArrayQueue[T]{
-		values:   make([]*T, len(queue.values)),
-		capacity: queue.capacity,
+	queueCopy := &ArrayQueue[T]{
+		values: make([]T, len(queue.values)),
 	}
 	copy(queueCopy.values, queue.values)
 
-	return &queueCopy
+	return queueCopy
 }

@@ -6,145 +6,12 @@ import (
 	"strings"
 )
 
-// GrammarBuilder represents a builder for a grammar.
-//
-// The default direction of the productions is LeftToRight.
-type GrammarBuilder struct {
-	// Slice of productions to add to the grammar.
-	productions []*Production
-
-	// Direction of the productions.
-	direction ProductionDirection
-}
-
-// String is a method of GrammarBuilder that returns a string
-// representation of a GrammarBuilder.
-//
-// Returns:
-//
-//   - string: A string representation of a GrammarBuilder.
-func (b *GrammarBuilder) String() string {
-	if b.productions == nil {
-		return "GrammarBuilder[nil]"
-	}
-
-	if len(b.productions) == 0 {
-		return "GrammarBuilder[total=0, productions=[]]"
-	}
-
-	var builder strings.Builder
-
-	fmt.Fprintf(&builder, "GrammarBuilder[total=%d, productions=[%v", len(b.productions), b.productions[0])
-
-	for _, production := range b.productions[1:] {
-		fmt.Fprintf(&builder, ", %v", production)
-	}
-
-	builder.WriteString("]]")
-
-	return builder.String()
-}
-
-// AddProduction is a method of GrammarBuilder that adds a production to
-// the GrammarBuilder.
-//
-// Parameters:
-//
-//   - p: The production to add to the GrammarBuilder.
-func (b *GrammarBuilder) AddProduction(p *Production) {
-	if p == nil {
-		return
-	}
-
-	if b.productions == nil {
-		b.productions = []*Production{p}
-	} else {
-		b.productions = append(b.productions, p)
-	}
-}
-
-// SetDirection is a method of GrammarBuilder that sets the direction of
-// the productions in the GrammarBuilder.
-//
-// Parameters:
-//
-//   - direction: The direction of the productions.
-func (b *GrammarBuilder) SetDirection(direction ProductionDirection) {
-	b.direction = direction
-}
-
-// Build is a method of GrammarBuilder that builds a Grammar from the
-// GrammarBuilder.
-//
-// Returns:
-//
-//   - *Grammar: A Grammar built from the GrammarBuilder.
-func (b *GrammarBuilder) Build() *Grammar {
-	if b.productions == nil {
-		b.direction = LeftToRight
-
-		return &Grammar{
-			productions: make([]*Production, 0),
-			symbols:     make([]string, 0),
-		}
-	}
-
-	grammar := Grammar{
-		symbols: make([]string, 0),
-	}
-
-	// 1. Remove duplicates
-	for i := 0; i < len(b.productions); {
-		index := slices.IndexFunc(b.productions[i+1:], func(p *Production) bool {
-			return p.IsEqual(b.productions[i])
-		})
-
-		if index != -1 {
-			b.productions = append(b.productions[:index], b.productions[index+1:]...)
-		} else {
-			i++
-		}
-	}
-
-	// 2. Make sure all productions follow the same direction
-	for _, p := range b.productions {
-		p.SetDirection(b.direction)
-	}
-
-	// 3. Add productions to grammar
-	grammar.productions = make([]*Production, len(b.productions))
-	copy(grammar.productions, b.productions)
-
-	// 3. Add symbols to grammar
-	for _, p := range b.productions {
-		for _, symbol := range p.GetSymbols() {
-			if !slices.Contains(grammar.symbols, symbol) {
-				grammar.symbols = append(grammar.symbols, symbol)
-			}
-		}
-	}
-
-	// 4. Clear builder
-	for i := range b.productions {
-		b.productions[i] = nil
-	}
-
-	b.productions = nil
-	b.direction = LeftToRight
-
-	return &grammar
-}
-
-// Reset is a method of GrammarBuilder that resets a GrammarBuilder.
-func (b *GrammarBuilder) Reset() {
-	for i := range b.productions {
-		b.productions[i] = nil
-	}
-
-	b.productions = nil
-
-	b.direction = LeftToRight
-}
+const (
+	// LeftToRight is the direction of a production from left to right.
+	LeftToRight   string = "->"
+	StartSymbolID string = "source"
+	EndSymbolID   string = "EOF"
+)
 
 // Grammar represents a context-free grammar.
 //
@@ -158,7 +25,12 @@ func (b *GrammarBuilder) Reset() {
 // non-terminal and terminal symbols in the grammar.
 type Grammar struct {
 	// productions is a slice of productions in the grammar.
-	productions []*Production
+	productions []Productioner
+
+	// skipProductions is a slice of booleans that indicate whether to
+	// skip a production. If skipProductions[i] is true, then
+	// productions[i] is skipped.
+	skipProductions []bool
 
 	// symbols is a slice of symbols in the grammar.
 	symbols []string
@@ -181,10 +53,18 @@ func (g *Grammar) String() string {
 
 	var builder strings.Builder
 
-	fmt.Fprintf(&builder, "Grammar[productions=[%v", g.productions[0])
+	if g.skipProductions[0] {
+		fmt.Fprintf(&builder, "Grammar[productions=[%v (skip)", g.productions[0])
+	} else {
+		fmt.Fprintf(&builder, "Grammar[productions=[%v", g.productions[0])
+	}
 
-	for _, production := range g.productions[1:] {
-		fmt.Fprintf(&builder, ", %v", production)
+	for i, production := range g.productions[1:] {
+		if g.skipProductions[i+1] {
+			fmt.Fprintf(&builder, ", %v (skip)", production)
+		} else {
+			fmt.Fprintf(&builder, ", %v", production)
+		}
 	}
 
 	fmt.Fprintf(&builder, "], symbols=[%v", g.symbols[0])
@@ -204,8 +84,8 @@ func (g *Grammar) String() string {
 // Returns:
 //
 //   - []*Production: A copy of the productions in the Grammar.
-func (g *Grammar) GetProductions() []*Production {
-	productions := make([]*Production, len(g.productions))
+func (g *Grammar) GetProductions() []Productioner {
+	productions := make([]Productioner, len(g.productions))
 	copy(productions, g.productions)
 
 	return productions
@@ -222,4 +102,48 @@ func (g *Grammar) GetSymbols() []string {
 	copy(symbols, g.symbols)
 
 	return symbols
+}
+
+func (g *Grammar) LhsToSkip() []string {
+	if len(g.productions) == 0 {
+		return make([]string, 0)
+	}
+
+	skip := make([]string, 0)
+
+	for i, production := range g.productions {
+		if !g.skipProductions[i] {
+			continue
+		}
+
+		lhs := production.GetLhs()
+
+		if !slices.Contains(skip, lhs) {
+			skip = append(skip, lhs)
+		}
+	}
+
+	return skip
+}
+
+type MatchedResult struct {
+	Matched   Tokener
+	RuleIndex int
+}
+
+func NewMatchResult(matched Tokener, ruleIndex int) MatchedResult {
+	return MatchedResult{Matched: matched, RuleIndex: ruleIndex}
+}
+
+func (g *Grammar) Match(at int, b any) []MatchedResult {
+	matches := make([]MatchedResult, 0)
+
+	for i, p := range g.productions {
+		matched := p.Match(at, b)
+		if matched != nil {
+			matches = append(matches, NewMatchResult(matched, i))
+		}
+	}
+
+	return matches
 }

@@ -5,9 +5,8 @@ import (
 	"strings"
 
 	itf "github.com/PlayerR9/MyGoLib/Interfaces"
-	ers "github.com/PlayerR9/MyGoLib/Utility/Errors"
+	ll "github.com/PlayerR9/MyGoLib/ListLike"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
-	"github.com/markphelps/optional"
 )
 
 // LinkedStack is a generic type that represents a stack data structure with
@@ -18,9 +17,6 @@ type LinkedStack[T any] struct {
 
 	// size is the current number of elements in the stack.
 	size int
-
-	// capacity is the maximum number of elements the stack can hold.
-	capacity optional.Int
 }
 
 // NewLinkedStack is a function that creates and returns a new instance of a
@@ -44,7 +40,7 @@ func NewLinkedStack[T any](values ...T) *LinkedStack[T] {
 
 	// First node
 	node := &linkedNode[T]{
-		value: &values[0],
+		value: values[0],
 	}
 
 	stack.front = node
@@ -52,7 +48,7 @@ func NewLinkedStack[T any](values ...T) *LinkedStack[T] {
 	// Subsequent nodes
 	for _, element := range values[1:] {
 		node = &linkedNode[T]{
-			value: &element,
+			value: element,
 			next:  stack.front,
 		}
 
@@ -60,40 +56,6 @@ func NewLinkedStack[T any](values ...T) *LinkedStack[T] {
 	}
 
 	return stack
-}
-
-// WithCapacity is a method of the LinkedStack type. It is used to set the maximum
-// number of elements the stack can hold.
-//
-// Panics with an error of type *ErrCallFailed if the capacity is already set,
-// or with an error of type *ErrInvalidParameter if the provided capacity is negative
-// or less than the current number of elements in the stack.
-//
-// Parameters:
-//
-//   - capacity: An integer representing the maximum number of elements the stack can hold.
-//
-// Returns:
-//
-//   - Stacker[T]: A pointer to the current instance of the LinkedStack.
-func (stack *LinkedStack[T]) WithCapacity(capacity int) (Stacker[T], error) {
-	if stack.capacity.Present() {
-		return nil, fmt.Errorf("capacity is already set to %d", stack.capacity.MustGet())
-	}
-
-	if capacity < 0 {
-		return nil, ers.NewErrInvalidParameter("capacity").
-			Wrap(fmt.Errorf("negative capacity (%d) is not allowed", capacity))
-	} else if stack.size > capacity {
-		return nil, ers.NewErrInvalidParameter("capacity").Wrap(
-			fmt.Errorf("provided capacity (%d) is less than the current number of values (%d)",
-				capacity, stack.size),
-		)
-	}
-
-	stack.capacity = optional.NewInt(capacity)
-
-	return stack, nil
 }
 
 // Push is a method of the LinkedStack type. It is used to add an element to
@@ -104,13 +66,9 @@ func (stack *LinkedStack[T]) WithCapacity(capacity int) (Stacker[T], error) {
 // Parameters:
 //
 //   - value: The value to be added to the stack.
-func (stack *LinkedStack[T]) Push(value T) error {
-	if stack.capacity.Present() && stack.size >= stack.capacity.MustGet() {
-		return NewErrFullStack(stack)
-	}
-
+func (stack *LinkedStack[T]) Push(value T) {
 	node := &linkedNode[T]{
-		value: &value,
+		value: value,
 	}
 
 	if stack.front != nil {
@@ -119,8 +77,6 @@ func (stack *LinkedStack[T]) Push(value T) error {
 
 	stack.front = node
 	stack.size++
-
-	return nil
 }
 
 // Pop is a method of the LinkedStack type. It is used to remove and return the
@@ -133,7 +89,7 @@ func (stack *LinkedStack[T]) Push(value T) error {
 //   - T: The value of the last element in the stack.
 func (stack *LinkedStack[T]) Pop() (T, error) {
 	if stack.front == nil {
-		return *new(T), NewErrEmptyStack(stack)
+		return *new(T), ll.NewErrEmptyList(stack)
 	}
 
 	toRemove := stack.front
@@ -142,7 +98,7 @@ func (stack *LinkedStack[T]) Pop() (T, error) {
 	stack.size--
 	toRemove.next = nil
 
-	return *toRemove.value, nil
+	return toRemove.value, nil
 }
 
 // Peek is a method of the LinkedStack type. It is used to return the last element
@@ -155,11 +111,11 @@ func (stack *LinkedStack[T]) Pop() (T, error) {
 //   - T: The value of the last element in the stack.
 func (stack *LinkedStack[T]) Peek() (T, error) {
 	if stack.front == nil {
-		return *new(T), NewErrEmptyStack(stack)
+		return *new(T), ll.NewErrEmptyList(stack)
 
 	}
 
-	return *stack.front.value, nil
+	return stack.front.value, nil
 }
 
 // IsEmpty is a method of the LinkedStack type. It is used to check if the stack
@@ -182,16 +138,6 @@ func (stack *LinkedStack[T]) Size() int {
 	return stack.size
 }
 
-// Capacity is a method of the LinkedStack type. It is used to return the maximum
-// number of elements the stack can hold.
-//
-// Returns:
-//
-//   - optional.Int: The maximum number of elements the stack can hold.
-func (stack *LinkedStack[T]) Capacity() optional.Int {
-	return stack.capacity
-}
-
 // Iterator is a method of the LinkedStack type. It is used to return an iterator
 // for the elements in the stack.
 //
@@ -202,7 +148,7 @@ func (stack *LinkedStack[T]) Iterator() itf.Iterater[T] {
 	var builder itf.Builder[T]
 
 	for stack_node := stack.front; stack_node != nil; stack_node = stack_node.next {
-		builder.Append(*stack_node.value)
+		builder.Append(stack_node.value)
 	}
 
 	return builder.Build()
@@ -216,13 +162,10 @@ func (stack *LinkedStack[T]) Clear() {
 	}
 
 	// 1. First node
-	stack.front.value = nil
 	prev := stack.front
 
 	// 2. Subsequent nodes
 	for node := stack.front.next; node != nil; node = node.next {
-		node.value = nil
-
 		prev = node
 		prev.next = nil
 	}
@@ -232,19 +175,6 @@ func (stack *LinkedStack[T]) Clear() {
 	// 3. Reset list fields
 	stack.front = nil
 	stack.size = 0
-}
-
-// IsFull is a method of the LinkedStack type. It is used to check if the stack is
-// full.
-//
-// Returns:
-//
-//   - isFull: true if the stack is full, and false otherwise.
-func (stack *LinkedStack[T]) IsFull() (isFull bool) {
-	stack.capacity.If(func(cap int) {
-		isFull = stack.size >= cap
-	})
-	return
 }
 
 // String is a method of the LinkedStack type. It is used to return a string
@@ -259,19 +189,15 @@ func (stack *LinkedStack[T]) String() string {
 
 	builder.WriteString("LinkedStack[")
 
-	stack.capacity.If(func(cap int) {
-		fmt.Fprintf(&builder, "capacity=%d, ", cap)
-	})
-
 	if stack.size == 0 {
 		builder.WriteString("size=0, values=[ →]]")
 		return builder.String()
 	}
 
-	fmt.Fprintf(&builder, "size=%d, values=[%v", stack.size, *stack.front.value)
+	fmt.Fprintf(&builder, "size=%d, values=[%v", stack.size, stack.front.value)
 
 	for stack_node := stack.front.next; stack_node != nil; stack_node = stack_node.next {
-		fmt.Fprintf(&builder, ", %v", *stack_node.value)
+		fmt.Fprintf(&builder, ", %v", stack_node.value)
 	}
 
 	fmt.Fprintf(&builder, " →]]")
@@ -286,7 +212,7 @@ func (stack *LinkedStack[T]) CutNilValues() {
 		return // Stack is empty
 	}
 
-	if gen.IsNil(*stack.front.value) && stack.front.next == nil {
+	if gen.IsNil(stack.front.value) && stack.front.next == nil {
 		// Single node
 		stack.front = nil
 		stack.size = 0
@@ -297,7 +223,7 @@ func (stack *LinkedStack[T]) CutNilValues() {
 	var toDelete *linkedNode[T] = nil
 
 	// 1. First node
-	if gen.IsNil(*stack.front.value) {
+	if gen.IsNil(stack.front.value) {
 		toDelete = stack.front
 
 		stack.front = stack.front.next
@@ -311,7 +237,7 @@ func (stack *LinkedStack[T]) CutNilValues() {
 	// 2. Subsequent nodes (except last)
 	node := stack.front.next
 	for ; node.next != nil; node = node.next {
-		if !gen.IsNil(*node.value) {
+		if !gen.IsNil(node.value) {
 			prev = node
 		} else {
 			prev.next = node.next
@@ -330,7 +256,7 @@ func (stack *LinkedStack[T]) CutNilValues() {
 	}
 
 	// 3. Last node
-	if node.value == nil {
+	if gen.IsNil(node.value) {
 		node = prev
 		node.next = nil
 		stack.size--
@@ -347,7 +273,7 @@ func (stack *LinkedStack[T]) Slice() []T {
 	slice := make([]T, 0, stack.size)
 
 	for stack_node := stack.front; stack_node != nil; stack_node = stack_node.next {
-		slice = append(slice, *stack_node.value)
+		slice = append(slice, stack_node.value)
 	}
 
 	return slice
@@ -360,13 +286,12 @@ func (stack *LinkedStack[T]) Slice() []T {
 //
 //   - itf.Copier: A copy of the stack.
 func (stack *LinkedStack[T]) Copy() itf.Copier {
-	stackCopy := LinkedStack[T]{
-		size:     stack.size,
-		capacity: stack.capacity,
+	stackCopy := &LinkedStack[T]{
+		size: stack.size,
 	}
 
 	if stack.front == nil {
-		return &stackCopy
+		return stackCopy
 	}
 
 	// First node
@@ -385,5 +310,5 @@ func (stack *LinkedStack[T]) Copy() itf.Copier {
 		node = node.next
 	}
 
-	return &stackCopy
+	return stackCopy
 }

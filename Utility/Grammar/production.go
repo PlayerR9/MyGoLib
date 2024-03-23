@@ -2,37 +2,21 @@ package Grammar
 
 import (
 	"fmt"
+	"regexp"
 	"slices"
 	"strings"
 
 	itf "github.com/PlayerR9/MyGoLib/Interfaces"
+	Stack "github.com/PlayerR9/MyGoLib/ListLike/Stack"
 	ers "github.com/PlayerR9/MyGoLib/Utility/Errors"
 )
 
-// ProductionDirection represents the direction of a production.
-type ProductionDirection bool
-
-const (
-	// LeftToRight is the direction of a production from left to right.
-	LeftToRight ProductionDirection = false
-
-	// RightToLeft is the direction of a production from right to left.
-	RightToLeft ProductionDirection = true
-)
-
-// String is a method of ProductionDirection that returns a string
-// representation of a ProductionDirection. It returns "->" if the
-// direction is LeftToRight, and "<-" if the direction is RightToLeft.
-//
-// Returns:
-//
-//   - string: A string representation of a ProductionDirection.
-func (d ProductionDirection) String() string {
-	if d == LeftToRight {
-		return "->"
-	} else {
-		return "<-"
-	}
+type Productioner interface {
+	fmt.Stringer
+	Equals(Productioner) bool
+	GetLhs() string
+	GetSymbols() []string
+	Match(int, any) Tokener
 }
 
 // Production represents a production in a grammar.
@@ -42,9 +26,6 @@ type Production struct {
 
 	// Right-hand side of the production.
 	rhs []string
-
-	// Direction of the production.
-	direction ProductionDirection
 }
 
 // String is a method of Production that returns a string representation
@@ -59,63 +40,13 @@ func (p *Production) String() string {
 	}
 
 	if len(p.rhs) == 0 {
-		return fmt.Sprintf("Production[%s %v]", p.lhs, p.direction)
+		return fmt.Sprintf("Production[%s %s]", p.lhs, LeftToRight)
+	} else {
+		return fmt.Sprintf("Production[%s %s %s]", p.lhs, LeftToRight, strings.Join(p.rhs, " "))
 	}
-
-	if p.direction == LeftToRight {
-		return fmt.Sprintf("Production[%s %v %s]", p.lhs, p.direction, strings.Join(p.rhs, " "))
-	}
-
-	var builder strings.Builder
-
-	fmt.Fprintf(&builder, "Production[%s %v %s", p.lhs, p.direction, p.rhs[len(p.rhs)-1])
-
-	for i := len(p.rhs) - 2; i >= 0; i-- {
-		fmt.Fprintf(&builder, " %s", p.rhs[i])
-	}
-
-	builder.WriteString("]")
-
-	return builder.String()
 }
 
-// Iterator is a method of Production that returns an iterator for the
-// production that iterates over the right-hand side of the production.
-//
-// Returns:
-//
-//   - itf.Iterater[string]: An iterator for the production.
-func (p *Production) Iterator() itf.Iterater[string] {
-	if p.direction == LeftToRight {
-		return itf.IteratorFromSlice(p.rhs)
-	}
-
-	var builder itf.Builder[string]
-
-	for i := len(p.rhs) - 1; i >= 0; i-- {
-		builder.Append(p.rhs[i])
-	}
-
-	return builder.Build()
-}
-
-// NewProduction is a function that returns a new Production with the
-// given left-hand side and right-hand side.
-//
-// Parameters:
-//
-//   - lhs: The left-hand side of the production.
-//   - rhs: The right-hand side of the production.
-//
-// Returns:
-//
-//   - *Production: A new Production with the given left-hand side and
-//     right-hand side.
-func NewProduction(lhs string, rhs ...string) *Production {
-	return &Production{lhs: lhs, rhs: rhs}
-}
-
-// IsEqual is a method of Production that returns whether the production
+// Equals is a method of Production that returns whether the production
 // is equal to another production. Two productions are equal if their
 // left-hand sides are equal and their right-hand sides are equal.
 //
@@ -126,22 +57,58 @@ func NewProduction(lhs string, rhs ...string) *Production {
 // Returns:
 //
 //   - bool: Whether the production is equal to the other production.
-func (p *Production) IsEqual(other *Production) bool {
-	if other == nil {
+func (p *Production) Equals(other Productioner) bool {
+	if p == nil || other == nil || other.GetLhs() != p.lhs {
 		return false
-	} else if p.lhs != other.lhs {
-		return false
-	} else if len(p.rhs) != len(other.rhs) {
+	}
+
+	val, ok := other.(*Production)
+	if !ok || len(val.rhs) != len(p.rhs) {
 		return false
 	}
 
 	for i, symbol := range p.rhs {
-		if symbol != other.rhs[i] {
+		if symbol != val.rhs[i] {
 			return false
 		}
 	}
 
 	return true
+}
+
+// GetLhs is a method of Production that returns the left-hand side of
+// the production.
+//
+// Returns:
+//
+//   - string: The left-hand side of the production.
+func (p *Production) GetLhs() string {
+	return p.lhs
+}
+
+// Iterator is a method of Production that returns an iterator for the
+// production that iterates over the right-hand side of the production.
+//
+// Returns:
+//
+//   - itf.Iterater[string]: An iterator for the production.
+func (p *Production) Iterator() itf.Iterater[string] {
+	return itf.IteratorFromSlice(p.rhs)
+}
+
+// ReverseIterator is a method of Production that returns a reverse
+// iterator for the production that iterates over the right-hand side of
+// the production in reverse.
+//
+// Returns:
+//
+//   - itf.Iterater[string]: A reverse iterator for the production.
+func (p *Production) ReverseIterator() itf.Iterater[string] {
+	slice := make([]string, len(p.rhs))
+	copy(slice, p.rhs)
+	slices.Reverse(slice)
+
+	return itf.IteratorFromSlice(slice)
 }
 
 // GetSymbols is a method of Production that returns a slice of symbols
@@ -172,14 +139,57 @@ func (p *Production) GetSymbols() []string {
 	return symbols
 }
 
-// SetDirection is a method of Production that sets the direction of the
-// production.
+// b must be of Stack.Stacker[Tokener]
+func (p *Production) Match(at int, b any) Tokener {
+	switch val := b.(type) {
+	case Stack.Stacker[Tokener]:
+		popped := Stack.NewLinkedStack[Tokener]()
+
+		for i := len(p.rhs) - 1; i >= 0; i-- {
+			top, err := val.Peek()
+			if err != nil {
+				// Push back the popped symbols.
+				for !popped.IsEmpty() {
+					elem, _ := popped.Pop()
+					val.Push(elem)
+				}
+
+				return nil
+			}
+
+			popped.Push(top)
+			val.Pop()
+		}
+
+		slice := popped.Slice()
+		slices.Reverse(slice)
+
+		// Push back the popped symbols.
+		for !popped.IsEmpty() {
+			elem, _ := popped.Pop()
+			val.Push(elem)
+		}
+
+		return NewNonLeafToken(p.lhs, at, "", slice...)
+	default:
+		return nil
+	}
+}
+
+// NewProduction is a function that returns a new Production with the
+// given left-hand side and right-hand side.
 //
 // Parameters:
 //
-//   - direction: The direction of the production.
-func (p *Production) SetDirection(direction ProductionDirection) {
-	p.direction = direction
+//   - lhs: The left-hand side of the production.
+//   - rhs: The right-hand side of the production.
+//
+// Returns:
+//
+//   - *Production: A new Production with the given left-hand side and
+//     right-hand side.
+func NewProduction(lhs string, rhs ...string) *Production {
+	return &Production{lhs: lhs, rhs: rhs}
 }
 
 // Size is a method of Production that returns the number of symbols in
@@ -215,22 +225,63 @@ func (p *Production) GetRhsAt(index int) (string, error) {
 	return p.rhs[index], nil
 }
 
-// GetLHS is a method of Production that returns the left-hand side of
-// the production.
-//
-// Returns:
-//
-//   - string: The left-hand side of the production.
-func (p *Production) GetLHS() string {
+func (p *Production) IndexOfRhs(rhs string) int {
+	return slices.Index(p.rhs, rhs)
+}
+
+type RegProduction struct {
+	lhs string
+	rhs string
+	rxp *regexp.Regexp
+}
+
+func (r *RegProduction) String() string {
+	if r == nil {
+		return "RegProduction[nil]"
+	}
+
+	if r.rxp == nil {
+		return fmt.Sprintf("RegProduction[lhs=%s, rhs=%s, rxp=N/A]", r.lhs, r.rhs)
+	}
+
+	return fmt.Sprintf("RegProduction[lhs=%s, rhs=%s, rxp=%v]", r.lhs, r.rhs, r.rxp)
+}
+
+func (p *RegProduction) Equals(other Productioner) bool {
+	if p == nil || other == nil || other.GetLhs() != p.lhs {
+		return false
+	}
+
+	val, ok := other.(*RegProduction)
+	return ok && val.rhs == p.rhs
+}
+
+func (p *RegProduction) GetLhs() string {
 	return p.lhs
 }
 
-// IsLeftToRight is a method of Production that returns whether the
-// production is left-to-right.
-//
-// Returns:
-//
-//   - bool: Whether the production is left-to-right.
-func (p *Production) IsLeftToRight() bool {
-	return p.direction == LeftToRight
+func (p *RegProduction) GetSymbols() []string {
+	return []string{p.lhs}
+}
+
+// return nil if no match
+func (p *RegProduction) Match(at int, b any) Tokener {
+	val, ok := b.([]byte)
+	if !ok {
+		return nil
+	}
+
+	data := p.rxp.Find(val)
+	if data == nil {
+		return nil
+	}
+
+	return NewLeafToken(p.lhs, string(data), at)
+}
+
+func NewRegProduction(lhs string, regex string) *RegProduction {
+	return &RegProduction{
+		lhs: lhs,
+		rhs: "^" + regex,
+	}
 }

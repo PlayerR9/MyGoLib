@@ -2,14 +2,14 @@
 package ListLike
 
 import (
-	"github.com/PlayerR9/MyGoLib/CustomData/ListLike"
+	"github.com/PlayerR9/MyGoLib/ListLike"
 )
 
 // Lister is an interface that defines methods for a list data structure.
 // It includes methods to add and remove elements, check if the list is empty or full,
 // get the size of the list, convert the list to a slice, clear the list, and get a
 // string representation of the list.
-type Lister[T any] interface {
+type LimitedLister[T any] interface {
 	// The Append method adds a value of type T to the end of the list.
 	Append(value T) error
 
@@ -36,24 +36,22 @@ type Lister[T any] interface {
 	// If the list is empty, it will panic.
 	PeekLast() (T, error)
 
-	// WithCapacity is a special function that modifies an existing queue data
-	// structure to have a specific capacity. Panics if the list already has a capacity
-	// set or if the new capacity is less than the current size of the list-like data
-	// structure.
-	//
-	// As a result, it is recommended to use this function only when creating a new
-	// list-like data structure.
-	WithCapacity(int) (Lister[T], error)
-
 	// ListLike[T] is an interface that defines methods for a list data structure.
 	ListLike.ListLike[T]
+
+	// The Capacity method returns the maximum number of elements that the list can hold.
+	Capacity() (int, bool)
+
+	// The IsFull method checks if the list is full, meaning it has reached its maximum
+	// capacity and cannot accept any more elements.
+	IsFull() bool
 }
 
 // linkedNode represents a node in a linked list. It holds a value of a generic type
 // and a reference to the next node in the list.
 type linkedNode[T any] struct {
 	// The value stored in the node.
-	value *T
+	value T
 
 	// A reference to the previous and next nodes in the list, respectively.
 	prev, next *linkedNode[T]

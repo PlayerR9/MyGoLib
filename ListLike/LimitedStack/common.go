@@ -2,11 +2,11 @@
 package ListLike
 
 import (
-	"github.com/PlayerR9/MyGoLib/CustomData/ListLike"
+	"github.com/PlayerR9/MyGoLib/ListLike"
 )
 
 // Stacker is an interface that defines methods for a stack data structure.
-type Stacker[T any] interface {
+type LimitedStacker[T any] interface {
 	// The Push method adds a value of type T to the end of the stack.
 	// If the stack is full, it will panic.
 	Push(value T) error
@@ -21,23 +21,21 @@ type Stacker[T any] interface {
 	// If the stack is empty, it will panic.
 	Peek() (T, error)
 
-	// WithCapacity is a special function that modifies an existing stack data
-	// structure to have a specific capacity. Panics if the list already has a capacity
-	// set or if the new capacity is less than the current size of the list-like data
-	// structure.
-	//
-	// As a result, it is recommended to use this function only when creating a new
-	// list-like data structure.
-	WithCapacity(int) (Stacker[T], error)
-
 	// .ListLike[T] is an interface that defines methods for a stack data structure.
 	ListLike.ListLike[T]
+
+	// The Capacity method returns the maximum number of elements that the list can hold.
+	Capacity() (int, bool)
+
+	// The IsFull method checks if the list is full, meaning it has reached its maximum
+	// capacity and cannot accept any more elements.
+	IsFull() bool
 }
 
 // linkedNode represents a node in a linked list.
 type linkedNode[T any] struct {
 	// value is the value stored in the node.
-	value *T
+	value T
 
 	// next is a pointer to the next linkedNode in the list.
 	next *linkedNode[T]

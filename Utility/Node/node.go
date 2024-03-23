@@ -109,6 +109,8 @@ func (n *Node[T]) Cleanup() {
 	for i := range n.children {
 		n.children[i] = nil
 	}
+
+	n.children = nil
 }
 
 // GetLeaves returns all the leaves of the tree rooted at n.
@@ -186,23 +188,39 @@ func (n *Node[T]) DFSTraversal(observer func(T) error) error {
 }
 
 // SnakeTraversal returns all the paths from n to the leaves of the tree rooted at n.
-// The paths are returned in the order of a breadth-first traversal.
+// The paths are returned in the order of a depth-first traversal.
 //
 // Returns:
 //
 //   - [][]T: A slice of slices of the values of the nodes in the paths.
 func (n *Node[T]) SnakeTraversal() [][]T {
-	if len(n.children) == 0 {
-		return [][]T{
-			{n.Data},
-		}
+	type StackNode struct {
+		node *Node[T]
+		path []T
 	}
 
-	result := make([][]T, 0)
+	S := Stack.NewLinkedStack(StackNode{
+		node: n,
+		path: []T{n.Data},
+	})
+	var result [][]T
 
-	for _, child := range n.children {
-		for _, tmp := range child.SnakeTraversal() {
-			result = append(result, append([]T{n.Data}, tmp...))
+	for !S.IsEmpty() {
+		top, _ := S.Pop()
+
+		if len(top.node.children) == 0 {
+			result = append(result, top.path)
+			continue
+		}
+
+		for _, child := range top.node.children {
+			newPath := make([]T, len(top.path))
+			copy(newPath, top.path)
+
+			S.Push(StackNode{
+				node: child,
+				path: append(newPath, child.Data),
+			})
 		}
 	}
 
@@ -252,6 +270,9 @@ func (n *Node[T]) HasChild(child *Node[T]) bool {
 // DeleteChild removes the given child from the children of the node.
 // No op if the child is nil or not a child of the node.
 //
+// This does not remove the child from the tree; it only removes the
+// parent-child relationship.
+//
 // Parameters:
 //
 //   - child: The child to remove.
@@ -300,10 +321,16 @@ func (n *Node[T]) PruneFunc(filter func(T) bool) bool {
 		return true
 	}
 
+	var childrenToDelete []*Node[T]
+
 	for _, child := range n.children {
 		if child.PruneFunc(filter) {
-			n.DeleteChild(child)
+			childrenToDelete = append(childrenToDelete, child)
 		}
+	}
+
+	for _, child := range childrenToDelete {
+		n.DeleteChild(child)
 	}
 
 	return false
