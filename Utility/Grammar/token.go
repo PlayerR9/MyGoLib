@@ -34,15 +34,12 @@ type Tokener interface {
 	GetID() string
 	GetData() any
 	GetPos() int
-	GetStatus() TokenStatus
-	SetStatus(TokenStatus)
 }
 
 type LeafToken struct {
-	id     string
-	data   string
-	at     int
-	status TokenStatus
+	id   string
+	data string
+	at   int
 }
 
 func (t *LeafToken) String() string {
@@ -50,11 +47,10 @@ func (t *LeafToken) String() string {
 		return "LeafToken[nil]"
 	}
 
-	return fmt.Sprintf("LeafToken[id=%s, data='%s', at=%d, status=%v]",
+	return fmt.Sprintf("LeafToken[id=%s, data='%s', at=%d]",
 		t.id,
 		t.data,
 		t.at,
-		t.status,
 	)
 }
 
@@ -70,29 +66,18 @@ func (t *LeafToken) GetPos() int {
 	return t.at
 }
 
-func (t *LeafToken) GetStatus() TokenStatus {
-	return t.status
-}
-
-func (t *LeafToken) SetStatus(status TokenStatus) {
-	t.status = status
-}
-
 func NewLeafToken(id string, data string, at int) *LeafToken {
 	return &LeafToken{
 		id,
 		data,
 		at,
-		TkIncomplete,
 	}
 }
 
 type NonLeafToken struct {
-	id        string
-	data      []Tokener
-	at        int
-	status    TokenStatus
-	lookahead string
+	id   string
+	data []Tokener
+	at   int
 }
 
 func (t *NonLeafToken) String() string {
@@ -101,10 +86,9 @@ func (t *NonLeafToken) String() string {
 	}
 
 	if len(t.data) == 0 {
-		return fmt.Sprintf("NonLeafToken[id=%s, data=[], at=%d, status=%v]",
+		return fmt.Sprintf("NonLeafToken[id=%s, data=[], at=%d]",
 			t.id,
 			t.at,
-			t.status,
 		)
 	}
 
@@ -116,10 +100,7 @@ func (t *NonLeafToken) String() string {
 		fmt.Fprintf(&builder, ", %v", token)
 	}
 
-	fmt.Fprintf(&builder, "], at=%d, status=%v]",
-		t.at,
-		t.status,
-	)
+	fmt.Fprintf(&builder, "], at=%d]", t.at)
 
 	return builder.String()
 }
@@ -136,20 +117,10 @@ func (t *NonLeafToken) GetPos() int {
 	return t.at
 }
 
-func (t *NonLeafToken) GetStatus() TokenStatus {
-	return t.status
-}
-
-func (t *NonLeafToken) SetStatus(status TokenStatus) {
-	t.status = status
-}
-
-func NewNonLeafToken(id string, at int, lookahead string, data ...Tokener) *NonLeafToken {
+func NewNonLeafToken(id string, at int, data ...Tokener) *NonLeafToken {
 	return &NonLeafToken{
-		id:        id,
-		at:        at,
-		data:      data,
-		status:    TkIncomplete,
-		lookahead: lookahead,
+		id:   id,
+		at:   at,
+		data: data,
 	}
 }

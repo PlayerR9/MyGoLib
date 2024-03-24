@@ -170,7 +170,7 @@ func (p *Production) Match(at int, b any) Tokener {
 			val.Push(elem)
 		}
 
-		return NewNonLeafToken(p.lhs, at, "", slice...)
+		return NewNonLeafToken(p.lhs, at, slice...)
 	default:
 		return nil
 	}

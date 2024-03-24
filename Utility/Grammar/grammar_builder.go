@@ -5,6 +5,8 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+
+	slext "github.com/PlayerR9/MyGoLib/Utility/SliceExt"
 )
 
 // GrammarBuilder represents a builder for a grammar.
@@ -14,9 +16,8 @@ type GrammarBuilder struct {
 	// Slice of productions to add to the grammar.
 	productions []Productioner
 
-	// Slice of booleans that indicate whether to skip a production.
-	// If skipProductions[i] is true, then productionss[i] is skipped.
-	skipProductions []bool
+	// Slice of productions to skip.
+	skipProductions []string
 }
 
 // String is a method of GrammarBuilder that returns a string
@@ -30,22 +31,24 @@ func (b *GrammarBuilder) String() string {
 		return "GrammarBuilder[nil]"
 	}
 
-	if len(b.productions) == 0 {
-		return "GrammarBuilder[total=0, productions=[], skipProductions=[]]"
-	}
-
 	var builder strings.Builder
 
-	if b.skipProductions[0] {
-		fmt.Fprintf(&builder, "GrammarBuilder[total=%d, productions=[%v (skip)", len(b.productions), b.productions[0])
-	} else {
-		fmt.Fprintf(&builder, "GrammarBuilder[total=%d, productions=[%v", len(b.productions), b.productions[0])
+	fmt.Fprintf(&builder, "GrammarBuilder[total=%d, productions=[", len(b.productions))
+
+	if len(b.productions) != 0 {
+		fmt.Fprintf(&builder, "%v", b.productions[0])
+
+		for _, production := range b.productions[1:] {
+			fmt.Fprintf(&builder, ", %v", production)
+		}
 	}
 
-	for i, production := range b.productions[1:] {
-		if b.skipProductions[i+1] {
-			fmt.Fprintf(&builder, ", %v (skip)", production)
-		} else {
+	builder.WriteString("], skipProductions=[")
+
+	if len(b.skipProductions) != 0 {
+		fmt.Fprintf(&builder, "%v", b.skipProductions[0])
+
+		for _, production := range b.skipProductions[1:] {
 			fmt.Fprintf(&builder, ", %v", production)
 		}
 	}
@@ -61,17 +64,23 @@ func (b *GrammarBuilder) String() string {
 // Parameters:
 //
 //   - p: The production to add to the GrammarBuilder.
-func (b *GrammarBuilder) AddProduction(p Productioner, skip bool) {
+func (b *GrammarBuilder) AddProduction(p Productioner) {
 	if p == nil {
 		return
 	}
 
 	if b.productions == nil {
 		b.productions = []Productioner{p}
-		b.skipProductions = []bool{skip}
 	} else {
 		b.productions = append(b.productions, p)
-		b.skipProductions = append(b.skipProductions, skip)
+	}
+}
+
+func (b *GrammarBuilder) SetToSkip(lhss ...string) {
+	if b.skipProductions == nil {
+		b.skipProductions = lhss
+	} else {
+		b.skipProductions = append(b.skipProductions, lhss...)
 	}
 }
 
@@ -84,14 +93,14 @@ func (b *GrammarBuilder) AddProduction(p Productioner, skip bool) {
 func (b *GrammarBuilder) Build() (*Grammar, error) {
 	if b.productions == nil {
 		return &Grammar{
-			productions:     make([]Productioner, 0),
-			symbols:         make([]string, 0),
-			skipProductions: make([]bool, 0),
+			Productions: make([]Productioner, 0),
+			Symbols:     make([]string, 0),
+			LhsToSkip:   make([]string, 0),
 		}, nil
 	}
 
-	grammar := Grammar{
-		symbols: make([]string, 0),
+	grammar := &Grammar{
+		Symbols: make([]string, 0),
 	}
 
 	// 1. Remove duplicates
@@ -107,18 +116,35 @@ func (b *GrammarBuilder) Build() (*Grammar, error) {
 		}
 	}
 
-	// 2. Add productions to grammar
-	grammar.productions = make([]Productioner, len(b.productions))
-	copy(grammar.productions, b.productions)
+	for i := 0; i < len(b.skipProductions); {
+		index := slices.Index(b.skipProductions[i+1:], b.skipProductions[i])
 
-	grammar.skipProductions = make([]bool, len(b.skipProductions))
-	copy(grammar.skipProductions, b.skipProductions)
+		if index != -1 {
+			b.skipProductions = append(b.skipProductions[:index], b.skipProductions[index+1:]...)
+		} else {
+			i++
+		}
+	}
 
-	// 3. Add symbols to grammar
+	// 2. Remove LHS to skip if they don't exist in productions
+	b.skipProductions = slext.SliceFilter(b.skipProductions, func(lhs string) bool {
+		return slices.ContainsFunc(b.productions, func(p Productioner) bool {
+			return p.GetLhs() == lhs
+		})
+	})
+
+	// 3. Add productions to grammar
+	grammar.Productions = make([]Productioner, len(b.productions))
+	copy(grammar.Productions, b.productions)
+
+	grammar.LhsToSkip = make([]string, len(b.skipProductions))
+	copy(grammar.LhsToSkip, b.skipProductions)
+
+	// 4. Add symbols to grammar
 	for _, p := range b.productions {
 		for _, symbol := range p.GetSymbols() {
-			if !slices.Contains(grammar.symbols, symbol) {
-				grammar.symbols = append(grammar.symbols, symbol)
+			if !slices.Contains(grammar.Symbols, symbol) {
+				grammar.Symbols = append(grammar.Symbols, symbol)
 			}
 		}
 	}
@@ -126,7 +152,7 @@ func (b *GrammarBuilder) Build() (*Grammar, error) {
 	// 4. Compile all regular expressions
 	var err error
 
-	for i, p := range grammar.productions {
+	for i, p := range grammar.Productions {
 		val, ok := p.(*RegProduction)
 		if !ok {
 			continue
@@ -137,7 +163,7 @@ func (b *GrammarBuilder) Build() (*Grammar, error) {
 			return nil, err
 		}
 
-		grammar.productions[i] = val
+		grammar.Productions[i] = val
 	}
 
 	// 4. Clear builder
@@ -146,8 +172,9 @@ func (b *GrammarBuilder) Build() (*Grammar, error) {
 	}
 
 	b.productions = nil
+	b.skipProductions = nil
 
-	return &grammar, nil
+	return grammar, nil
 }
 
 // Reset is a method of GrammarBuilder that resets a GrammarBuilder.
@@ -157,4 +184,5 @@ func (b *GrammarBuilder) Reset() {
 	}
 
 	b.productions = nil
+	b.skipProductions = nil
 }

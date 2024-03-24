@@ -2,7 +2,6 @@ package Grammar
 
 import (
 	"fmt"
-	"slices"
 	"strings"
 )
 
@@ -24,16 +23,14 @@ const (
 // The grammar also contains a set of symbols, which are the
 // non-terminal and terminal symbols in the grammar.
 type Grammar struct {
-	// productions is a slice of productions in the grammar.
-	productions []Productioner
+	// Productions is a slice of Productions in the grammar.
+	Productions []Productioner
 
-	// skipProductions is a slice of booleans that indicate whether to
-	// skip a production. If skipProductions[i] is true, then
-	// productions[i] is skipped.
-	skipProductions []bool
+	// LhsToSkip is a slice of productions to skip.
+	LhsToSkip []string
 
-	// symbols is a slice of symbols in the grammar.
-	symbols []string
+	// Symbols is a slice of Symbols in the grammar.
+	Symbols []string
 }
 
 // String is a method of Grammar that returns a string representation
@@ -47,83 +44,41 @@ func (g *Grammar) String() string {
 		return "Grammar[nil]"
 	}
 
-	if len(g.productions) == 0 {
-		return "Grammar[prouctions=[], symbols=[]]"
-	}
-
 	var builder strings.Builder
 
-	if g.skipProductions[0] {
-		fmt.Fprintf(&builder, "Grammar[productions=[%v (skip)", g.productions[0])
-	} else {
-		fmt.Fprintf(&builder, "Grammar[productions=[%v", g.productions[0])
-	}
+	builder.WriteString("Grammar[prouctions=[")
 
-	for i, production := range g.productions[1:] {
-		if g.skipProductions[i+1] {
-			fmt.Fprintf(&builder, ", %v (skip)", production)
-		} else {
+	if len(g.Productions) != 0 {
+		fmt.Fprintf(&builder, "%v", g.Productions[0])
+
+		for _, production := range g.Productions[1:] {
 			fmt.Fprintf(&builder, ", %v", production)
 		}
 	}
 
-	fmt.Fprintf(&builder, "], symbols=[%v", g.symbols[0])
+	builder.WriteString("], symbols=[")
 
-	for _, symbol := range g.symbols[1:] {
-		fmt.Fprintf(&builder, ", %v", symbol)
+	if len(g.Symbols) != 0 {
+		fmt.Fprintf(&builder, "%v", g.Symbols[0])
+
+		for _, symbol := range g.Symbols[1:] {
+			fmt.Fprintf(&builder, ", %v", symbol)
+		}
+	}
+
+	builder.WriteString("], skipProductions=[")
+
+	if len(g.LhsToSkip) != 0 {
+		fmt.Fprintf(&builder, "%v", g.LhsToSkip[0])
+
+		for _, production := range g.LhsToSkip[1:] {
+			fmt.Fprintf(&builder, ", %v", production)
+		}
 	}
 
 	builder.WriteString("]]")
 
 	return builder.String()
-}
-
-// GetProductions is a method of Grammar that returns a copy of the
-// productions in the Grammar.
-//
-// Returns:
-//
-//   - []*Production: A copy of the productions in the Grammar.
-func (g *Grammar) GetProductions() []Productioner {
-	productions := make([]Productioner, len(g.productions))
-	copy(productions, g.productions)
-
-	return productions
-}
-
-// GetSymbols is a method of Grammar that returns a copy of the symbols
-// in the Grammar.
-//
-// Returns:
-//
-//   - []string: A copy of the symbols in the Grammar.
-func (g *Grammar) GetSymbols() []string {
-	symbols := make([]string, len(g.symbols))
-	copy(symbols, g.symbols)
-
-	return symbols
-}
-
-func (g *Grammar) LhsToSkip() []string {
-	if len(g.productions) == 0 {
-		return make([]string, 0)
-	}
-
-	skip := make([]string, 0)
-
-	for i, production := range g.productions {
-		if !g.skipProductions[i] {
-			continue
-		}
-
-		lhs := production.GetLhs()
-
-		if !slices.Contains(skip, lhs) {
-			skip = append(skip, lhs)
-		}
-	}
-
-	return skip
 }
 
 type MatchedResult struct {
@@ -138,7 +93,7 @@ func NewMatchResult(matched Tokener, ruleIndex int) MatchedResult {
 func (g *Grammar) Match(at int, b any) []MatchedResult {
 	matches := make([]MatchedResult, 0)
 
-	for i, p := range g.productions {
+	for i, p := range g.Productions {
 		matched := p.Match(at, b)
 		if matched != nil {
 			matches = append(matches, NewMatchResult(matched, i))
