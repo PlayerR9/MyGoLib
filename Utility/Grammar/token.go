@@ -12,22 +12,6 @@ func IsTerminal(identifier string) bool {
 	return unicode.IsLetter(firstLetter) && unicode.IsUpper(firstLetter)
 }
 
-type TokenStatus int
-
-const (
-	TkComplete TokenStatus = iota
-	TkIncomplete
-	TkError
-)
-
-func (s TokenStatus) String() string {
-	return [...]string{
-		"complete",
-		"incomplete",
-		"error",
-	}[s]
-}
-
 type Tokener interface {
 	fmt.Stringer
 
