@@ -21,9 +21,9 @@ type Tokener interface {
 }
 
 type LeafToken struct {
-	id   string
-	data string
-	at   int
+	ID   string
+	Data string
+	At   int
 }
 
 func (t *LeafToken) String() string {
@@ -32,22 +32,22 @@ func (t *LeafToken) String() string {
 	}
 
 	return fmt.Sprintf("LeafToken[id=%s, data='%s', at=%d]",
-		t.id,
-		t.data,
-		t.at,
+		t.ID,
+		t.Data,
+		t.At,
 	)
 }
 
 func (t *LeafToken) GetID() string {
-	return t.id
+	return t.ID
 }
 
 func (t *LeafToken) GetData() any {
-	return t.data
+	return t.Data
 }
 
 func (t *LeafToken) GetPos() int {
-	return t.at
+	return t.At
 }
 
 func NewLeafToken(id string, data string, at int) *LeafToken {
@@ -59,9 +59,9 @@ func NewLeafToken(id string, data string, at int) *LeafToken {
 }
 
 type NonLeafToken struct {
-	id   string
-	data []Tokener
-	at   int
+	ID   string
+	Data []Tokener
+	At   int
 }
 
 func (t *NonLeafToken) String() string {
@@ -69,42 +69,42 @@ func (t *NonLeafToken) String() string {
 		return "NonLeafToken[nil]"
 	}
 
-	if len(t.data) == 0 {
+	if len(t.Data) == 0 {
 		return fmt.Sprintf("NonLeafToken[id=%s, data=[], at=%d]",
-			t.id,
-			t.at,
+			t.ID,
+			t.At,
 		)
 	}
 
 	var builder strings.Builder
 
-	fmt.Fprintf(&builder, "NonLeafToken[id=%s, data=[%v", t.id, t.data[0])
+	fmt.Fprintf(&builder, "NonLeafToken[id=%s, data=[%v", t.ID, t.Data[0])
 
-	for _, token := range t.data[1:] {
+	for _, token := range t.Data[1:] {
 		fmt.Fprintf(&builder, ", %v", token)
 	}
 
-	fmt.Fprintf(&builder, "], at=%d]", t.at)
+	fmt.Fprintf(&builder, "], at=%d]", t.At)
 
 	return builder.String()
 }
 
 func (t *NonLeafToken) GetID() string {
-	return t.id
+	return t.ID
 }
 
 func (t *NonLeafToken) GetData() any {
-	return t.data
+	return t.Data
 }
 
 func (t *NonLeafToken) GetPos() int {
-	return t.at
+	return t.At
 }
 
 func NewNonLeafToken(id string, at int, data ...Tokener) *NonLeafToken {
 	return &NonLeafToken{
-		id:   id,
-		at:   at,
-		data: data,
+		ID:   id,
+		At:   at,
+		Data: data,
 	}
 }
