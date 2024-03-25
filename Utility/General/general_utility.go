@@ -229,7 +229,7 @@ func RecoverFromPanic(logger *ers.FileLogger) {
 		if logger != nil {
 			logger.Printf("%v: %v\n", Panic, r)
 
-			fmt.Println("An unexpected error occurred. For more information, see the log file: ", logger.GetFileName())
+			fmt.Println("An unexpected error occurred. For more information, see the log file:", logger.GetFileName())
 		} else {
 			fmt.Printf("%v: %v\n", Panic, r)
 		}
