@@ -3,7 +3,10 @@ package General
 import (
 	"errors"
 	"fmt"
+	"os"
+	"os/exec"
 	"reflect"
+	"strings"
 
 	ers "github.com/PlayerR9/MyGoLib/Utility/Errors"
 )
@@ -145,4 +148,179 @@ func IsNil[T any](value T) bool {
 	}
 
 	return false
+}
+
+// RunInPowerShell is a function that returns a function that runs a program in
+// a new PowerShell process.
+//
+// Upon calling the returned function, a new PowerShell process is started with
+// the specified program and arguments. The function returns an error if the
+// process cannot be started.
+//
+// Parameters:
+//
+//   - program: The path to the program to run.
+//   - args: The arguments to pass to the program.
+//
+// Return:
+//
+//   - func() error: A function that runs the program in a new PowerShell process.
+func RunInPowerShell(program string, args ...string) func() error {
+	var builder strings.Builder
+
+	fmt.Fprintf(&builder, "'-NoExit', '%s'", program)
+
+	for _, arg := range args {
+		fmt.Fprintf(&builder, ", '%s'", arg)
+	}
+
+	cmd := exec.Command(
+		"powershell", "-Command", "Start-Process", "powershell", "-ArgumentList",
+		builder.String(),
+	)
+
+	return cmd.Run
+}
+
+// ExitCode is a custom type that represents the exit code of a program.
+type ExitCode int
+
+const (
+	// Success indicates that the program has finished successfully.
+	Success ExitCode = iota
+
+	// Panic indicates that a panic occurred during the execution of the program.
+	Panic
+
+	// SetupFailed indicates that the program could not be set up.
+	SetupFailed
+
+	// Error indicates that an error occurred during the execution of the program.
+	Error
+)
+
+// String returns a string representation of the exit code.
+//
+// Return:
+//
+//   - string: A string representation of the exit code.
+func (ec ExitCode) String() string {
+	return [...]string{
+		"Program has finished successfully",
+		"Panic occurred",
+		"Cound not set up the program",
+		"An error occurred",
+	}[ec]
+}
+
+// RecoverFromPanic is a function that recovers from a panic and logs the error
+// message to a log file.
+//
+// If a panic occurs during the execution of the program, this function will
+// recover from the panic, log the error message to the specified log file, and
+// exit the program with the Panic exit code.
+//
+// Parameters:
+//
+//   - logger: The logger to use for logging the error message. If nil, the
+//     error message is logged to the console.
+func RecoverFromPanic(logger *ers.FileLogger) {
+	if r := recover(); r != nil {
+		if logger != nil {
+			logger.Printf("%v: %v\n", Panic, r)
+
+			fmt.Println("An unexpected error occurred. For more information, see the log file: ", logger.GetFileName())
+		} else {
+			fmt.Printf("%v: %v\n", Panic, r)
+		}
+		fmt.Println()
+
+		fmt.Println("Press the enter key to exit...")
+		fmt.Scanln()
+	}
+
+	os.Exit(int(Panic))
+}
+
+// FinalizeResult is a function that finalizes the result of a program and logs
+// the error message to a log file.
+//
+// If an error occurs during the execution of the program, this function will
+// log the error message to the specified log file and exit the program with the
+// Error exit code. If no error occurs, the function will log a success message
+// to the log file and exit the program with the Success exit code.
+//
+// Parameters:
+//
+//   - logger: The logger to use for logging the error message. If nil, the
+//     error message is logged to the console.
+//   - result: The result of the program. If nil, the program is considered to
+//     have finished successfully.
+//
+// Return:
+//
+//   - int: The exit code of the program.
+//
+// Example:
+//
+// var logger *ers.FileLogger
+//
+//	func main() {
+//		// Set up the logger
+//		var err error
+//		logger, err = ers.NewFileLogger("log.txt")
+//		if err != nil {
+//			os.Exit(FinalizeResult(logger, err, true))
+//		}
+//		defer logger.Close()
+//
+//		defer RecoverFromPanic(logger) // handle panics gracefully
+//
+//		os.Exit(FinalizeResult(logger, mainBody(), false)) // handle errors gracefully
+//	}
+//
+//	func mainBody() error {
+//		// Perform the main logic of the program
+//	}
+func FinalizeResult(logger *ers.FileLogger, result error, isSetup bool) int {
+	var errType ExitCode
+
+	if isSetup {
+		errType = SetupFailed
+	} else {
+		errType = Error
+	}
+
+	if result != nil {
+		if logger != nil {
+			logger.Printf("%v: %v\n", errType, result)
+
+			if isSetup {
+				fmt.Print("Could not set up the program.")
+			} else {
+				fmt.Print("An error occurred.")
+			}
+
+			fmt.Println(" For more information, see the log file: ", logger.GetFileName())
+		} else {
+			fmt.Printf("%v: %v\n", errType, result)
+		}
+	} else {
+		fmt.Printf("%v\n", Success)
+	}
+
+	fmt.Println()
+
+	fmt.Println("Press the enter key to exit...")
+	fmt.Scanln()
+
+	if result != nil {
+		if isSetup {
+			return int(SetupFailed)
+		} else {
+			return int(Error)
+		}
+	} else {
+		return int(Success)
+	}
 }
