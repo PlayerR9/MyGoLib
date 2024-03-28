@@ -64,15 +64,17 @@ func (b *GrammarBuilder) String() string {
 // Parameters:
 //
 //   - p: The production to add to the GrammarBuilder.
-func (b *GrammarBuilder) AddProduction(p Productioner) {
-	if p == nil {
-		return
-	}
+func (b *GrammarBuilder) AddProduction(p ...Productioner) {
+	for _, production := range p {
+		if production == nil {
+			continue
+		}
 
-	if b.productions == nil {
-		b.productions = []Productioner{p}
-	} else {
-		b.productions = append(b.productions, p)
+		if b.productions == nil {
+			b.productions = []Productioner{production}
+		} else {
+			b.productions = append(b.productions, production)
+		}
 	}
 }
 

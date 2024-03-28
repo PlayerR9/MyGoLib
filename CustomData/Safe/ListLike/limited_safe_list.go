@@ -6,7 +6,6 @@ import (
 	"sync"
 
 	itf "github.com/PlayerR9/MyGoLib/Interfaces"
-	ll "github.com/PlayerR9/MyGoLib/ListLike"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
@@ -15,7 +14,7 @@ import (
 type LimitedSafeList[T any] struct {
 	// front and back are pointers to the first and last nodes in the safe list,
 	// respectively.
-	front, back *linkedNode[T]
+	front, back *listLinkedNode[T]
 
 	// frontMutex and backMutex are sync.RWMutexes, which are used to ensure that
 	// concurrent reads and writes to the front and back nodes are thread-safe.
@@ -49,7 +48,7 @@ func NewLimitedSafeList[T any](values ...T) *LimitedSafeList[T] {
 	list.size = len(values)
 
 	// First node
-	list_node := &linkedNode[T]{
+	list_node := &listLinkedNode[T]{
 		value: values[0],
 	}
 
@@ -58,7 +57,7 @@ func NewLimitedSafeList[T any](values ...T) *LimitedSafeList[T] {
 
 	// Subsequent nodes
 	for _, element := range values {
-		list_node := &linkedNode[T]{
+		list_node := &listLinkedNode[T]{
 			value: element,
 			prev:  list.back,
 		}
@@ -73,7 +72,7 @@ func NewLimitedSafeList[T any](values ...T) *LimitedSafeList[T] {
 // Append is a method of the LimitedSafeList type. It is used to add an element to the
 // end of the list.
 //
-// Panics with an error of type *ErrCallFailed if the list is full.
+// Panics with an error of type *ErrCallFailed if the list is fu
 //
 // Parameters:
 //
@@ -83,10 +82,10 @@ func (list *LimitedSafeList[T]) Append(value T) error {
 	defer list.backMutex.Unlock()
 
 	if list.size >= list.capacity {
-		return ll.NewErrFullList(list)
+		return NewErrFullList(list)
 	}
 
-	node := &linkedNode[T]{value: value}
+	node := &listLinkedNode[T]{value: value}
 
 	if list.back != nil {
 		list.back.next = node
@@ -118,7 +117,7 @@ func (list *LimitedSafeList[T]) DeleteFirst() (T, error) {
 	defer list.frontMutex.Unlock()
 
 	if list.front == nil {
-		return *new(T), ll.NewErrEmptyList(list)
+		return *new(T), NewErrEmptyList(list)
 	}
 
 	toRemove := list.front
@@ -155,7 +154,7 @@ func (list *LimitedSafeList[T]) PeekFirst() (T, error) {
 	defer list.frontMutex.RUnlock()
 
 	if list.front == nil {
-		return *new(T), ll.NewErrEmptyList(list)
+		return *new(T), NewErrEmptyList(list)
 	}
 
 	return list.front.value, nil
@@ -256,7 +255,7 @@ func (list *LimitedSafeList[T]) Clear() {
 	list.size = 0
 }
 
-// IsFull is a method of the LimitedSafeList type. It checks if the list is full.
+// IsFull is a method of the LimitedSafeList type. It checks if the list is fu
 //
 // Returns:
 //
@@ -304,7 +303,7 @@ func (list *LimitedSafeList[T]) String() string {
 // Prepend is a method of the LimitedSafeList type. It is used to add an element to the
 // front of the list.
 //
-// Panics with an error of type *ErrCallFailed if the list is full.
+// Panics with an error of type *ErrCallFailed if the list is fu
 //
 // Parameters:
 //
@@ -314,10 +313,10 @@ func (list *LimitedSafeList[T]) Prepend(value T) error {
 	defer list.frontMutex.Unlock()
 
 	if list.size >= list.capacity {
-		return ll.NewErrFullList(list)
+		return NewErrFullList(list)
 	}
 
-	node := &linkedNode[T]{value: value}
+	node := &listLinkedNode[T]{value: value}
 
 	if list.front == nil {
 		// The list is empty
@@ -349,7 +348,7 @@ func (list *LimitedSafeList[T]) DeleteLast() (T, error) {
 	defer list.backMutex.Unlock()
 
 	if list.back == nil {
-		return *new(T), ll.NewErrEmptyList(list)
+		return *new(T), NewErrEmptyList(list)
 	}
 
 	toRemove := list.back
@@ -386,7 +385,7 @@ func (list *LimitedSafeList[T]) PeekLast() (T, error) {
 	defer list.backMutex.RUnlock()
 
 	if list.back == nil {
-		return *new(T), ll.NewErrEmptyList(list)
+		return *new(T), NewErrEmptyList(list)
 	}
 
 	return list.back.value, nil
@@ -414,7 +413,7 @@ func (list *LimitedSafeList[T]) CutNilValues() {
 		return
 	}
 
-	var toDelete *linkedNode[T] = nil
+	var toDelete *listLinkedNode[T] = nil
 
 	// 1. First node
 	if gen.IsNil(list.front.value) {
@@ -503,7 +502,7 @@ func (list *LimitedSafeList[T]) Copy() itf.Copier {
 	}
 
 	// First node
-	listCopy.front = &linkedNode[T]{
+	listCopy.front = &listLinkedNode[T]{
 		value: list.front.value,
 	}
 
@@ -511,7 +510,7 @@ func (list *LimitedSafeList[T]) Copy() itf.Copier {
 
 	// Subsequent nodes
 	for node := list.front.next; node != nil; node = node.next {
-		nodeCopy := &linkedNode[T]{
+		nodeCopy := &listLinkedNode[T]{
 			value: node.value,
 			prev:  prev,
 		}

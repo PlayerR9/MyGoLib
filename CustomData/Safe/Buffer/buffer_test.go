@@ -1,4 +1,4 @@
-package RWSafe
+package Buffer
 
 import (
 	"testing"

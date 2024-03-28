@@ -1,9 +1,6 @@
 package Node
 
 import (
-	"fmt"
-	"slices"
-
 	Queue "github.com/PlayerR9/MyGoLib/ListLike/Queue"
 	Stack "github.com/PlayerR9/MyGoLib/ListLike/Stack"
 )
@@ -16,21 +13,11 @@ type Node[T any] struct {
 	// parent is the parent of the node.
 	parent *Node[T]
 
-	// children are the children of the node.
-	children []*Node[T]
-}
+	// firstChild is the first child of the node.
+	firstChild *Node[T]
 
-// String is a method of Node that returns a string representation of the node.
-//
-// Returns:
-//
-//   - string: A string representation of the node.
-func (n *Node[T]) String() string {
-	if n == nil {
-		return "Node[nil]"
-	}
-
-	return fmt.Sprintf("Node[%v]", n.Data)
+	// nextSibling is the next sibling of the node.
+	nextSibling *Node[T]
 }
 
 // NewNode creates a new node with the given data.
@@ -44,8 +31,7 @@ func (n *Node[T]) String() string {
 //   - *Node[T]: A pointer to the newly created node.
 func NewNode[T any](data T) *Node[T] {
 	return &Node[T]{
-		Data:     data,
-		children: make([]*Node[T], 0),
+		Data: data,
 	}
 }
 
@@ -56,12 +42,21 @@ func NewNode[T any](data T) *Node[T] {
 //   - data: The value of the new child.
 func (n *Node[T]) AddChild(data T) {
 	node := &Node[T]{
-		Data:     data,
-		parent:   n,
-		children: make([]*Node[T], 0),
+		Data:   data,
+		parent: n,
 	}
 
-	n.children = append(n.children, node)
+	if n.firstChild == nil {
+		n.firstChild = node
+	} else {
+		current := n.firstChild
+
+		for current.nextSibling != nil {
+			current = current.nextSibling
+		}
+
+		current.nextSibling = node
+	}
 }
 
 // AddChildren adds zero or more children to the node with the given data.
@@ -72,17 +67,35 @@ func (n *Node[T]) AddChild(data T) {
 func (n *Node[T]) AddChildren(children ...T) {
 	if len(children) == 0 {
 		return
-	} else if n.children == nil {
-		n.children = make([]*Node[T], 0)
 	}
 
-	var node *Node[T]
+	node := &Node[T]{
+		Data:   children[0],
+		parent: n,
+	}
 
-	for _, data := range children {
-		node = NewNode(data)
-		node.parent = n
+	if n.firstChild == nil {
+		n.firstChild = node
+	} else {
+		child := n.firstChild
 
-		n.children = append(n.children, node)
+		for child.nextSibling != nil {
+			child = child.nextSibling
+		}
+
+		child.nextSibling = node
+	}
+
+	current := node
+
+	for _, data := range children[1:] {
+		node := &Node[T]{
+			Data:   data,
+			parent: n,
+		}
+
+		current.nextSibling = node
+		current = node
 	}
 }
 
@@ -93,22 +106,32 @@ func (n *Node[T]) AddChildren(children ...T) {
 //
 //   - []*Node[T]: A slice of pointers to the children of the node.
 func (n *Node[T]) GetChildren() []*Node[T] {
-	return n.children
+	children := make([]*Node[T], 0)
+
+	current := n.firstChild
+
+	for current != nil {
+		children = append(children, current)
+		current = current.nextSibling
+	}
+
+	return children
 }
 
 // Cleanup removes the node from the tree; including all its children.
 func (n *Node[T]) Cleanup() {
 	n.parent = nil
 
-	for _, child := range n.children {
-		if child != nil {
-			child.Cleanup()
-		}
+	if n.firstChild != nil {
+		n.firstChild.Cleanup()
+		n.firstChild = nil
 	}
 
-	for i := range n.children {
-		n.children[i] = nil
+	for s := n.nextSibling; s != nil; s = s.nextSibling {
+		s.Cleanup()
 	}
+
+	n.nextSibling = nil
 }
 
 // GetLeaves returns all the leaves of the tree rooted at n.
@@ -120,16 +143,20 @@ func (n *Node[T]) Cleanup() {
 func (n *Node[T]) GetLeaves() []*Node[T] {
 	leaves := make([]*Node[T], 0)
 
-	Q := Queue.NewArrayQueue(n)
+	Q := Queue.NewLinkedQueue(n)
 
 	for !Q.IsEmpty() {
-		node, _ := Q.Dequeue()
+		node := Q.MustDequeue()
 
-		if len(node.children) == 0 {
+		if node.firstChild == nil {
 			leaves = append(leaves, node)
 		} else {
-			for _, child := range node.children {
-				Q.Enqueue(child)
+			current := node.firstChild
+
+			for current != nil {
+				Q.Enqueue(current)
+
+				current = current.nextSibling
 			}
 		}
 	}
@@ -144,16 +171,16 @@ func (n *Node[T]) GetLeaves() []*Node[T] {
 //
 //   - observer: A function that takes the value of a node and returns an error.
 func (n *Node[T]) BFSTraversal(observer func(T) error) error {
-	Q := Queue.NewArrayQueue(n)
+	Q := Queue.NewLinkedQueue(n)
 
 	for !Q.IsEmpty() {
-		node, _ := Q.Dequeue()
+		node := Q.MustDequeue()
 
 		if err := observer(node.Data); err != nil {
 			return err
 		}
 
-		for _, child := range node.children {
+		for child := node.firstChild; child != nil; child = child.nextSibling {
 			Q.Enqueue(child)
 		}
 	}
@@ -168,16 +195,16 @@ func (n *Node[T]) BFSTraversal(observer func(T) error) error {
 //
 //   - observer: A function that takes the value of a node and returns an error.
 func (n *Node[T]) DFSTraversal(observer func(T) error) error {
-	S := Stack.NewArrayStack(n)
+	S := Stack.NewLinkedStack(n)
 
 	for !S.IsEmpty() {
-		node, _ := S.Pop()
+		node := S.MustPop()
 
 		if err := observer(node.Data); err != nil {
 			return err
 		}
 
-		for _, child := range node.children {
+		for child := node.firstChild; child != nil; child = child.nextSibling {
 			S.Push(child)
 		}
 	}
@@ -192,7 +219,7 @@ func (n *Node[T]) DFSTraversal(observer func(T) error) error {
 //
 //   - [][]T: A slice of slices of the values of the nodes in the paths.
 func (n *Node[T]) SnakeTraversal() [][]T {
-	if len(n.children) == 0 {
+	if n.firstChild == nil {
 		return [][]T{
 			{n.Data},
 		}
@@ -200,7 +227,7 @@ func (n *Node[T]) SnakeTraversal() [][]T {
 
 	result := make([][]T, 0)
 
-	for _, child := range n.children {
+	for child := n.firstChild; child != nil; child = child.nextSibling {
 		for _, tmp := range child.SnakeTraversal() {
 			result = append(result, append([]T{n.Data}, tmp...))
 		}
@@ -218,7 +245,7 @@ func (n *Node[T]) SnakeTraversal() [][]T {
 //   - *Node[T]: A pointer to the branching point.
 func (n *Node[T]) FindBranchingPoint() *Node[T] {
 	for node := n; node.parent != nil; node = node.parent {
-		if len(node.parent.children) > 1 {
+		if node.parent.firstChild.nextSibling != nil {
 			return node.parent
 		}
 	}
@@ -240,8 +267,8 @@ func (n *Node[T]) HasChild(child *Node[T]) bool {
 		return false
 	}
 
-	for _, node := range n.children {
-		if node == child {
+	for c := n.firstChild; c != nil; c = c.nextSibling {
+		if c == child {
 			return true
 		}
 	}
@@ -264,14 +291,19 @@ func (n *Node[T]) DeleteChild(child *Node[T]) {
 		return
 	}
 
-	index := slices.Index(n.children, child)
-	if index == -1 {
-		return
+	for c := n.firstChild; c != nil; c = c.nextSibling {
+		if c != child {
+			continue
+		}
+
+		if c.nextSibling != nil {
+			c.nextSibling.parent = n
+		}
+
+		break
 	}
 
 	child.parent = nil
-
-	n.children = slices.Delete(n.children, index, index+1)
 }
 
 // Parent is a getter for the parent of the node.
@@ -300,7 +332,7 @@ func (n *Node[T]) PruneFunc(filter func(T) bool) bool {
 		return true
 	}
 
-	for _, child := range n.children {
+	for child := n.firstChild; child != nil; child = child.nextSibling {
 		if child.PruneFunc(filter) {
 			n.DeleteChild(child)
 		}

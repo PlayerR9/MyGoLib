@@ -1,3 +1,4 @@
+// Package PageInterval provides a data structure for managing page intervals.
 package PageInterval
 
 import (
@@ -62,8 +63,8 @@ func (pi *PageInterval) String() string {
 
 	fmt.Fprintf(&builder, "PageInterval[%d : %d", pi.intervals[0][0], pi.intervals[0][1])
 
-	for i := 1; i < len(pi.intervals); i++ {
-		fmt.Fprintf(&builder, ", %d : %d", pi.intervals[i][0], pi.intervals[i][1])
+	for _, interval := range pi.intervals[1:] {
+		fmt.Fprintf(&builder, ", %d : %d", interval[0], interval[1])
 	}
 
 	builder.WriteRune(']')
@@ -73,6 +74,8 @@ func (pi *PageInterval) String() string {
 
 // Iterator is a method of the PageInterval type that returns an iterator for
 // iterating over the pages in the PageInterval.
+//
+// Panics if an error occurs while creating the iterator.
 //
 // Returns:
 //
@@ -151,6 +154,7 @@ func (pi *PageInterval) HasPages() bool {
 // Returns:
 //
 //   - int: The first page number in the PageInterval.
+//   - error: An error if no pages have been set.
 func (pi *PageInterval) GetFirstPage() (int, error) {
 	if pi.pageCount <= 0 {
 		return 0, errors.New("no pages have been set")
@@ -166,6 +170,7 @@ func (pi *PageInterval) GetFirstPage() (int, error) {
 // Returns:
 //
 //   - int: The last page number in the PageInterval.
+//   - error: An error if no pages have been set.
 func (pi *PageInterval) GetLastPage() (int, error) {
 	if pi.pageCount <= 0 {
 		return 0, errors.New("no pages have been set")
@@ -181,6 +186,10 @@ func (pi *PageInterval) GetLastPage() (int, error) {
 // Parameters:
 //
 //   - page: The page number to add to the PageInterval.
+//
+// Returns:
+//
+//   - error: An error if the page number is less than 1.
 //
 // Example:
 //
@@ -406,6 +415,8 @@ func (pi *PageInterval) RemovePagesBetween(first, last int) {
 // PageIntervalReverseIterator for iterating over the intervals in the
 // PageInterval in reverse order.
 //
+// Panics if an error occurs while creating the iterator.
+//
 // Returns:
 //
 //   - itf.Iterater[int]: An iterator for iterating over the intervals in the
@@ -483,7 +494,7 @@ func reduce(pi *PageInterval) {
 //
 // Returns:
 //
-//   - index: The index of the interval in the intervals slice if found, otherwise -1.
+//   - int: The index of the interval in the intervals slice if found, otherwise -1.
 func findPageInterval(pi *PageInterval, page int) int {
 	if page < 1 || pi.pageCount == 0 {
 		return -1

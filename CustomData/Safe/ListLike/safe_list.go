@@ -6,7 +6,6 @@ import (
 	"sync"
 
 	itf "github.com/PlayerR9/MyGoLib/Interfaces"
-	ll "github.com/PlayerR9/MyGoLib/ListLike"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
@@ -15,7 +14,7 @@ import (
 type SafeList[T any] struct {
 	// front and back are pointers to the first and last nodes in the safe list,
 	// respectively.
-	front, back *linkedNode[T]
+	front, back *listLinkedNode[T]
 
 	// frontMutex and backMutex are sync.RWMutexes, which are used to ensure that
 	// concurrent reads and writes to the front and back nodes are thread-safe.
@@ -46,7 +45,7 @@ func NewSafeList[T any](values ...T) *SafeList[T] {
 	list.size = len(values)
 
 	// First node
-	list_node := &linkedNode[T]{
+	list_node := &listLinkedNode[T]{
 		value: values[0],
 	}
 
@@ -55,7 +54,7 @@ func NewSafeList[T any](values ...T) *SafeList[T] {
 
 	// Subsequent nodes
 	for _, element := range values {
-		list_node := &linkedNode[T]{
+		list_node := &listLinkedNode[T]{
 			value: element,
 			prev:  list.back,
 		}
@@ -70,7 +69,7 @@ func NewSafeList[T any](values ...T) *SafeList[T] {
 // Append is a method of the SafeList type. It is used to add an element to the
 // end of the list.
 //
-// Panics with an error of type *ErrCallFailed if the list is full.
+// Panics with an error of type *ErrCallFailed if the list is fu
 //
 // Parameters:
 //
@@ -79,7 +78,7 @@ func (list *SafeList[T]) Append(value T) {
 	list.backMutex.Lock()
 	defer list.backMutex.Unlock()
 
-	node := &linkedNode[T]{value: value}
+	node := &listLinkedNode[T]{value: value}
 
 	if list.back != nil {
 		list.back.next = node
@@ -109,7 +108,7 @@ func (list *SafeList[T]) DeleteFirst() (T, error) {
 	defer list.frontMutex.Unlock()
 
 	if list.front == nil {
-		return *new(T), ll.NewErrEmptyList(list)
+		return *new(T), NewErrEmptyList(list)
 	}
 
 	toRemove := list.front
@@ -146,7 +145,7 @@ func (list *SafeList[T]) PeekFirst() (T, error) {
 	defer list.frontMutex.RUnlock()
 
 	if list.front == nil {
-		return *new(T), ll.NewErrEmptyList(list)
+		return *new(T), NewErrEmptyList(list)
 	}
 
 	return list.front.value, nil
@@ -247,7 +246,7 @@ func (list *SafeList[T]) Clear() {
 	list.size = 0
 }
 
-// IsFull is a method of the SafeList type. It checks if the list is full.
+// IsFull is a method of the SafeList type. It checks if the list is fu
 //
 // Returns:
 //
@@ -295,7 +294,7 @@ func (list *SafeList[T]) String() string {
 // Prepend is a method of the SafeList type. It is used to add an element to the
 // front of the list.
 //
-// Panics with an error of type *ErrCallFailed if the list is full.
+// Panics with an error of type *ErrCallFailed if the list is fu
 //
 // Parameters:
 //
@@ -304,7 +303,7 @@ func (list *SafeList[T]) Prepend(value T) {
 	list.frontMutex.Lock()
 	defer list.frontMutex.Unlock()
 
-	node := &linkedNode[T]{value: value}
+	node := &listLinkedNode[T]{value: value}
 
 	if list.front == nil {
 		// The list is empty
@@ -334,7 +333,7 @@ func (list *SafeList[T]) DeleteLast() (T, error) {
 	defer list.backMutex.Unlock()
 
 	if list.back == nil {
-		return *new(T), ll.NewErrEmptyList(list)
+		return *new(T), NewErrEmptyList(list)
 	}
 
 	toRemove := list.back
@@ -371,7 +370,7 @@ func (list *SafeList[T]) PeekLast() (T, error) {
 	defer list.backMutex.RUnlock()
 
 	if list.back == nil {
-		return *new(T), ll.NewErrEmptyList(list)
+		return *new(T), NewErrEmptyList(list)
 	}
 
 	return list.back.value, nil
@@ -399,7 +398,7 @@ func (list *SafeList[T]) CutNilValues() {
 		return
 	}
 
-	var toDelete *linkedNode[T] = nil
+	var toDelete *listLinkedNode[T] = nil
 
 	// 1. First node
 	if gen.IsNil(list.front.value) {
@@ -487,7 +486,7 @@ func (list *SafeList[T]) Copy() itf.Copier {
 	}
 
 	// First node
-	listCopy.front = &linkedNode[T]{
+	listCopy.front = &listLinkedNode[T]{
 		value: list.front.value,
 	}
 
@@ -495,7 +494,7 @@ func (list *SafeList[T]) Copy() itf.Copier {
 
 	// Subsequent nodes
 	for node := list.front.next; node != nil; node = node.next {
-		nodeCopy := &linkedNode[T]{
+		nodeCopy := &listLinkedNode[T]{
 			value: node.value,
 			prev:  prev,
 		}

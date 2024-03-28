@@ -11,15 +11,23 @@ type Stacker[T any] interface {
 	// If the stack is full, it will panic.
 	Push(value T)
 
-	// The Pop method is a convenience method that pops an element from the stack
-	// and returns it.
-	// If the stack is empty, it will panic.
+	// The Pop method pops an element from the stack and returns it.
+	// If the stack is empty, it will return an error.
 	Pop() (T, error)
+
+	// The MustPop method pops an element from the stack and returns it.
+	// If the stack is empty, it will panic.
+	MustPop() T
+
+	// Peek is a method that returns the value at the front of the stack without removing
+	// it.
+	// If the stack is empty, it will error.
+	Peek() (T, error)
 
 	// Peek is a method that returns the value at the front of the stack without removing
 	// it.
 	// If the stack is empty, it will panic.
-	Peek() (T, error)
+	MustPeek() T
 
 	// .ListLike[T] is an interface that defines methods for a stack data structure.
 	ListLike.ListLike[T]

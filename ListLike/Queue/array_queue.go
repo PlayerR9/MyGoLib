@@ -66,6 +66,24 @@ func (queue *ArrayQueue[T]) Dequeue() (T, error) {
 	return toRemove, nil
 }
 
+// MustDequeue is a method of the ArrayQueue type. It is used to remove and return the
+// element at the front of the queue.
+//
+// Panics with an error of type *ll.ErrEmptyList if the queue is empty.
+//
+// Returns:
+//
+//   - T: The element at the front of the queue.
+func (queue *ArrayQueue[T]) MustDequeue() T {
+	if len(queue.values) == 0 {
+		panic(ll.NewErrEmptyList(queue))
+	}
+
+	toRemove := queue.values[0]
+	queue.values = queue.values[1:]
+	return toRemove
+}
+
 // Peek is a method of the ArrayQueue type. It is used to return the element at the
 // front of the queue without removing it.
 //
@@ -80,6 +98,22 @@ func (queue *ArrayQueue[T]) Peek() (T, error) {
 	}
 
 	return queue.values[0], nil
+}
+
+// MustPeek is a method of the ArrayQueue type. It is used to return the element
+// at the front of the queue without removing it.
+//
+// Panics with an error of type *ll.ErrEmptyList if the queue is empty.
+//
+// Returns:
+//
+//   - T: The element at the front of the queue.
+func (queue *ArrayQueue[T]) MustPeek() T {
+	if len(queue.values) == 0 {
+		panic(ll.NewErrEmptyList(queue))
+	}
+
+	return queue.values[0]
 }
 
 // IsEmpty is a method of the ArrayQueue type. It is used to check if the queue is

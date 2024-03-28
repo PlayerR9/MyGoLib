@@ -1,10 +1,10 @@
-package RWSafe
+package Buffer
 
 import (
 	"fmt"
 	"sync"
 
-	Queue "github.com/PlayerR9/MyGoLib/ListLike/Queue"
+	sll "github.com/PlayerR9/MyGoLib/CustomData/Safe/ListLike"
 
 	ers "github.com/PlayerR9/MyGoLib/Utility/Errors"
 )
@@ -16,7 +16,7 @@ import (
 // The Buffer should be initialized with the Init method before use.
 type Buffer[T any] struct {
 	// A pointer to the RWSafeQueue that stores the elements of the Buffer.
-	q *Queue.SafeQueue[T]
+	q *sll.SafeQueue[T]
 
 	// A send-only channel of type T. Messages from the Buffer are sent to this channel.
 	sendTo chan T
@@ -56,10 +56,7 @@ type Buffer[T any] struct {
 //     the method will panic with an *ers.InvalidParameterError.
 //
 // Returns:
-//   - A send-only channel of type T. Messages sent to this channel are
-//     added to the Buffer.
-//   - A receive-only channel of type T. Messages from the Buffer are sent
-//     to this channel.
+//   - error: An error if the buffer size is negative.
 //
 // Information: To close the buffer, just close the send-only channel.
 // Once that is done, a cascade of events will happen:
@@ -76,7 +73,7 @@ func (b *Buffer[T]) Init(bufferSize int) error {
 	}
 
 	b.once.Do(func() {
-		b.q = Queue.NewSafeQueue[T]()
+		b.q = sll.NewSafeQueue[T]()
 		b.sendTo = make(chan T, bufferSize)
 		b.receiveFrom = make(chan T, bufferSize)
 		b.isClosed = false

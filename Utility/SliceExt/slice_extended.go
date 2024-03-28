@@ -1,5 +1,7 @@
 package SliceExt
 
+import "slices"
+
 // FilterByPositiveWeight is a function that iterates over the slice and applies
 // the weight function to each element. The returned slice contains the elements
 // with the maximum weight. If multiple elements have the same maximum weight,
@@ -174,7 +176,7 @@ func SliceFilter[T any](S []T, filter PredicateFilter[T]) []T {
 	copy(solution, S)
 
 	pos := 0
-	for _, item := range solution {
+	for _, item := range S {
 		if filter(item) {
 			solution[pos] = item
 			pos++
@@ -182,4 +184,64 @@ func SliceFilter[T any](S []T, filter PredicateFilter[T]) []T {
 	}
 
 	return solution[:pos]
+}
+
+// SFSeparate is a function that iterates over the slice and applies the filter
+// function to each element. The returned slices contain the elements that
+// satisfy and do not satisfy the filter function.
+//
+// Parameters:
+//
+// 	- S: slice of elements.
+// 	- filter: function that takes an element and returns a bool.
+//
+// Returns:
+//
+// 	- []T: slice of elements that satisfy the filter function.
+// 	- []T: slice of elements that do not satisfy the filter function.
+func SFSeparate[T any](S []T, filter PredicateFilter[T]) ([]T, []T) {
+	success := make([]T, 0)
+	failed := make([]T, 0)
+
+	for _, item := range S {
+		if filter(item) {
+			success = append(success, item)
+		} else {
+			failed = append(failed, item)
+		}
+	}
+
+	return success, failed
+}
+
+// SFSeparateEarly is a variant of SFSeparate that returns all successful elements.
+// If there are none, it returns the original slice and false.
+//
+// Parameters:
+//
+// 	- S: slice of elements.
+// 	- filter: function that takes an element and returns a bool.
+//
+// Returns:
+//
+// 	- []T: slice of elements that satisfy the filter function or the original slice.
+// 	- bool: true if there are successful elements, otherwise false.
+func SFSeparateEarly[T any](S []T, filter PredicateFilter[T]) ([]T, bool) {
+	index := slices.IndexFunc(S, filter)
+	if index == -1 {
+		return S, false
+	}
+
+	success := make([]T, len(S)-index)
+	copy(success, S[index:])
+
+	pos := 0
+	for _, item := range S[index:] {
+		if filter(item) {
+			success[pos] = item
+			pos++
+		}
+	}
+
+	return success[:pos], true
 }

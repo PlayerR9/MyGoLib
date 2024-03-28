@@ -70,6 +70,25 @@ func (stack *ArrayStack[T]) Pop() (T, error) {
 	return toRemove, nil
 }
 
+// Pop is a method of the ArrayStack type. It is used to remove and return the
+// element at the end of the stack.
+//
+// Panics with an error of type *ll.ErrEmptyList if the stack is empty.
+//
+// Returns:
+//
+//   - T: The element at the end of the stack.
+func (stack *ArrayStack[T]) MustPop() T {
+	if len(stack.values) == 0 {
+		panic(ll.NewErrEmptyList(stack))
+	}
+
+	toRemove := stack.values[len(stack.values)-1]
+	stack.values = stack.values[:len(stack.values)-1]
+
+	return toRemove
+}
+
 // Peek is a method of the ArrayStack type. It is used to return the element at the
 // end of the stack without removing it.
 //
@@ -84,6 +103,22 @@ func (stack *ArrayStack[T]) Peek() (T, error) {
 	}
 
 	return stack.values[len(stack.values)-1], nil
+}
+
+// Peek is a method of the ArrayStack type. It is used to return the element at the
+// end of the stack without removing it.
+//
+// Panics with an error of type *ll.ErrEmptyList if the stack is empty.
+//
+// Returns:
+//
+//   - T: The element at the end of the stack.
+func (stack *ArrayStack[T]) MustPeek() T {
+	if len(stack.values) == 0 {
+		panic(ll.NewErrEmptyList(stack))
+	}
+
+	return stack.values[len(stack.values)-1]
 }
 
 // IsEmpty is a method of the ArrayStack type. It is used to check if the stack is

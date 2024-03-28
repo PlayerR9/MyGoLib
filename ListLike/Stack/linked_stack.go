@@ -101,6 +101,28 @@ func (stack *LinkedStack[T]) Pop() (T, error) {
 	return toRemove.value, nil
 }
 
+// MustPop is a method of the LinkedStack type. It is used to remove and return the
+// last element in the stack.
+//
+// Panics with an error of type *ll.ErrEmptyList if the stack is empty.
+//
+// Returns:
+//
+//   - T: The value of the last element in the stack.
+func (stack *LinkedStack[T]) MustPop() T {
+	if stack.front == nil {
+		panic(ll.NewErrEmptyList(stack))
+	}
+
+	toRemove := stack.front
+	stack.front = stack.front.next
+
+	stack.size--
+	toRemove.next = nil
+
+	return toRemove.value
+}
+
 // Peek is a method of the LinkedStack type. It is used to return the last element
 // in the stack without removing it.
 //
@@ -116,6 +138,22 @@ func (stack *LinkedStack[T]) Peek() (T, error) {
 	}
 
 	return stack.front.value, nil
+}
+
+// Peek is a method of the LinkedStack type. It is used to return the last element
+// in the stack without removing it.
+//
+// Panics with an error of type *ll.ErrEmptyList if the stack is empty.
+//
+// Returns:
+//
+//   - T: The value of the last element in the stack.
+func (stack *LinkedStack[T]) MustPeek() T {
+	if stack.front == nil {
+		panic(ll.NewErrEmptyList(stack))
+	}
+
+	return stack.front.value
 }
 
 // IsEmpty is a method of the LinkedStack type. It is used to check if the stack

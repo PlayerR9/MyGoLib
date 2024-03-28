@@ -17,6 +17,8 @@ type Productioner interface {
 	GetLhs() string
 	GetSymbols() []string
 	Match(int, any) Tokener
+
+	itf.Copier
 }
 
 // Production represents a production in a grammar.
@@ -143,7 +145,7 @@ func (p *Production) GetSymbols() []string {
 func (p *Production) Match(at int, b any) Tokener {
 	switch val := b.(type) {
 	case Stack.Stacker[Tokener]:
-		popped := Stack.NewLinkedStack[Tokener]()
+		popped := Stack.NewArrayStack[Tokener]()
 
 		for i := len(p.rhs) - 1; i >= 0; i-- {
 			top, err := val.Peek()
@@ -173,6 +175,16 @@ func (p *Production) Match(at int, b any) Tokener {
 		return NewNonLeafToken(p.lhs, at, slice...)
 	default:
 		return nil
+	}
+}
+
+func (p *Production) Copy() itf.Copier {
+	rhsCopy := make([]string, len(p.rhs))
+	copy(rhsCopy, p.rhs)
+
+	return &Production{
+		lhs: p.lhs,
+		rhs: rhsCopy,
 	}
 }
 
@@ -277,6 +289,14 @@ func (p *RegProduction) Match(at int, b any) Tokener {
 	}
 
 	return NewLeafToken(p.lhs, string(data), at)
+}
+
+func (p *RegProduction) Copy() itf.Copier {
+	return &RegProduction{
+		lhs: p.lhs,
+		rhs: p.rhs,
+		rxp: p.rxp,
+	}
 }
 
 func NewRegProduction(lhs string, regex string) *RegProduction {

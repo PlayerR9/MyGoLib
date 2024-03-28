@@ -6,7 +6,6 @@ import (
 	"sync"
 
 	itf "github.com/PlayerR9/MyGoLib/Interfaces"
-	ll "github.com/PlayerR9/MyGoLib/ListLike"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
@@ -15,7 +14,7 @@ import (
 type SafeQueue[T any] struct {
 	// front and back are pointers to the first and last nodes in the safe queue,
 	// respectively.
-	front, back *linkedNode[T]
+	front, back *queueLinkedNode[T]
 
 	// frontMutex and backMutex are sync.RWMutexes, which are used to ensure that
 	// concurrent reads and writes to the front and back nodes are thread-safe.
@@ -45,14 +44,14 @@ func NewSafeQueue[T any](values ...T) *SafeQueue[T] {
 	queue.size = len(values)
 
 	// First node
-	node := &linkedNode[T]{value: values[0]}
+	node := &queueLinkedNode[T]{value: values[0]}
 
 	queue.front = node
 	queue.back = node
 
 	// Subsequent nodes
 	for _, element := range values[1:] {
-		node = &linkedNode[T]{value: element}
+		node = &queueLinkedNode[T]{value: element}
 
 		queue.back.next = node
 		queue.back = node
@@ -64,7 +63,7 @@ func NewSafeQueue[T any](values ...T) *SafeQueue[T] {
 // Enqueue is a method of the SafeQueue type. It is used to add an element to the
 // back of the queue.
 //
-// Panics with an error of type *ErrCallFailed if the queue is full.
+// Panics with an error of type *ErrCallFailed if the queue is fu
 //
 // Parameters:
 //
@@ -73,7 +72,7 @@ func (queue *SafeQueue[T]) Enqueue(value T) {
 	queue.backMutex.Lock()
 	defer queue.backMutex.Unlock()
 
-	node := &linkedNode[T]{value: value}
+	node := &queueLinkedNode[T]{value: value}
 
 	if queue.back == nil {
 		queue.frontMutex.Lock()
@@ -100,7 +99,7 @@ func (queue *SafeQueue[T]) Dequeue() (T, error) {
 	defer queue.frontMutex.Unlock()
 
 	if queue.front == nil {
-		return *new(T), ll.NewErrEmptyList(queue)
+		return *new(T), NewErrEmptyList(queue)
 	}
 
 	toRemove := queue.front
@@ -134,7 +133,7 @@ func (queue *SafeQueue[T]) Peek() (T, error) {
 	defer queue.frontMutex.RUnlock()
 
 	if queue.front == nil {
-		return *new(T), ll.NewErrEmptyList(queue)
+		return *new(T), NewErrEmptyList(queue)
 	}
 
 	return queue.front.value, nil
@@ -275,7 +274,7 @@ func (queue *SafeQueue[T]) CutNilValues() {
 		return
 	}
 
-	var toDelete *linkedNode[T] = nil
+	var toDelete *queueLinkedNode[T] = nil
 
 	// 1. First node
 	if gen.IsNil(queue.front.value) {
@@ -361,14 +360,14 @@ func (queue *SafeQueue[T]) Copy() itf.Copier {
 	}
 
 	// First node
-	node := &linkedNode[T]{value: queue.front.value}
+	node := &queueLinkedNode[T]{value: queue.front.value}
 
 	queueCopy.front = node
 	queueCopy.back = node
 
 	// Subsequent nodes
 	for qNode := queue.front.next; qNode != nil; qNode = qNode.next {
-		node = &linkedNode[T]{value: qNode.value}
+		node = &queueLinkedNode[T]{value: qNode.value}
 
 		queueCopy.back.next = node
 		queueCopy.back = node

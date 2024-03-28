@@ -1,4 +1,4 @@
-// Package counter provides a set of interfaces and methods for managing counters.
+// Package Counters provides a set of interfaces and methods for managing counters.
 package Counters
 
 import (
@@ -22,38 +22,39 @@ type DownCounter struct {
 }
 
 // NewDownCounter creates a new DownCounter with the specified starting count.
-// It panics with an error of type *ers.ErrInvalidParameter if the starting count
-// is less than 0.
 //
 // Parameters:
 //
-//   - startingCount is the initial value of the counter.
+//   - startingCount: The initial value of the counter.
 //
 // Returns:
 //
-//   - The newly created DownCounter.
-func NewDownCounter(startingCount int) (DownCounter, error) {
+//   - *DownCounter: A pointer to the newly created DownCounter.
+//   - error: An error of type *ers.ErrInvalidParameter if the starting count
+//     is less than 0.
+func NewDownCounter(startingCount int) (*DownCounter, error) {
 	if startingCount < 0 {
-		return DownCounter{}, ers.NewErrInvalidParameter("startingCount").
+		return nil, ers.NewErrInvalidParameter("startingCount").
 			Wrap(fmt.Errorf("value (%d) must be positive", startingCount))
 	}
 
-	return DownCounter{startingCount, startingCount, 0}, nil
+	return &DownCounter{startingCount, startingCount, 0}, nil
 }
 
 // IsDone checks if the DownCounter has reached zero.
 //
 // Returns:
 //
-//   - true if the current count is less than or equal to zero.
-//     false otherwise.
+//   - bool: true if the counter has reached zero, false otherwise.
 func (c *DownCounter) IsDone() bool {
 	return c.currentCount-c.retreatCount <= 0
 }
 
 // Advance decrements the current count of the DownCounter by one.
-// It panics with an error of type *ers.ErrCallFailed if the current
-// count is already at or below zero.
+//
+// Returns:
+//
+//   - error: An error if the current count is already at or below zero.
 func (c *DownCounter) Advance() error {
 	if c.currentCount-c.retreatCount <= 0 {
 		return errors.New("current count is already at or below zero")
@@ -66,8 +67,10 @@ func (c *DownCounter) Advance() error {
 
 // Retreat increments the retrat count of the DownCounter by one and, as a result,
 // decrements the current count by one.
-// It panics with an error of type *ers.ErrCallFailed if the starting
-// count or current count is already at or below zero.
+//
+// Returns:
+//
+//   - error: An error if the current count is already at or below zero.
 func (c *DownCounter) Retreat() error {
 	if c.currentCount-c.retreatCount <= 0 {
 		return errors.New("current count is already at or below zero")
@@ -83,7 +86,7 @@ func (c *DownCounter) Retreat() error {
 //
 // Returns:
 //
-//   - An integer representing the number of times the counter has been retreated.
+//   - int: The number of times the DownCounter has been retreated.
 func (c *DownCounter) GetRetreatCount() int {
 	return c.retreatCount
 }
@@ -94,7 +97,7 @@ func (c *DownCounter) GetRetreatCount() int {
 //
 // Returns:
 //
-//   - An integer representing the current count.
+//   - int: The current count of the DownCounter.
 func (c *DownCounter) GetDistance() int {
 	return c.currentCount - c.retreatCount
 }
@@ -103,7 +106,7 @@ func (c *DownCounter) GetDistance() int {
 //
 // Returns:
 //
-//   - An integer representing the current count.
+//   - int: The current count of the DownCounter.
 func (c *DownCounter) GetCurrentCount() int {
 	return c.currentCount
 }
@@ -113,7 +116,7 @@ func (c *DownCounter) GetCurrentCount() int {
 //
 // Returns:
 //
-//   - An integer representing the initial count.
+//   - int: The starting count of the DownCounter.
 func (c *DownCounter) GetInitialCount() int {
 	return c.startingCount
 }
@@ -122,9 +125,11 @@ func (c *DownCounter) GetInitialCount() int {
 // The string includes the starting count, current count, retreat
 // count, and whether the counter is done.
 //
+// This is used for debugging and logging purposes.
+//
 // Returns:
 //
-//   - A string representing the DownCounter.
+//   - string: A string representation of the DownCounter.
 func (c *DownCounter) String() string {
 	return fmt.Sprintf("DownCounter[startingCount=%d, currentCount=%d, retreatCount=%d, isDone=%t]",
 		c.startingCount, c.currentCount, c.retreatCount, c.IsDone())
@@ -140,7 +145,7 @@ func (c *DownCounter) Reset() {
 //
 // Returns:
 //
-//   - itf.Copier: A deep copy of the DownCounter.
+//   - itf.Copier: A shallow copy of the DownCounter.
 func (c *DownCounter) Copy() itf.Copier {
 	return &DownCounter{c.startingCount, c.currentCount, c.retreatCount}
 }

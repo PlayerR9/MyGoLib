@@ -111,6 +111,32 @@ func (queue *LinkedQueue[T]) Dequeue() (T, error) {
 	return toRemove.value, nil
 }
 
+// MustDequeue is a method of the LinkedQueue type. It is used to remove and return
+// the element at the front of the queue.
+//
+// Panics with an error of type *ll.ErrEmptyList if the queue is empty.
+//
+// Returns:
+//
+//   - T: The value of the element at the front of the queue.
+func (queue *LinkedQueue[T]) MustDequeue() T {
+	if queue.front == nil {
+		panic(ll.NewErrEmptyList(queue))
+	}
+
+	toRemove := queue.front
+
+	queue.front = queue.front.next
+	if queue.front == nil {
+		queue.back = nil
+	}
+
+	queue.size--
+	toRemove.next = nil
+
+	return toRemove.value
+}
+
 // Peek is a method of the LinkedQueue type. It is used to return the element at
 // the front of the queue without removing it.
 //
@@ -125,6 +151,22 @@ func (queue *LinkedQueue[T]) Peek() (T, error) {
 	}
 
 	return queue.front.value, nil
+}
+
+// MustPeek is a method of the LinkedQueue type. It is used to return the element at
+// the front of the queue without removing it.
+//
+// Panics with an error of type *ll.ErrEmptyList if the queue is empty.
+//
+// Returns:
+//
+//   - T: The value of the element at the front of the queue.
+func (queue *LinkedQueue[T]) MustPeek() T {
+	if queue.front == nil {
+		panic(ll.NewErrEmptyList(queue))
+	}
+
+	return queue.front.value
 }
 
 // IsEmpty is a method of the LinkedQueue type. It is used to check if the queue
