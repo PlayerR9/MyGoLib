@@ -3,6 +3,7 @@ package General
 import (
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"reflect"
@@ -224,12 +225,12 @@ func (ec ExitCode) String() string {
 //
 //   - logger: The logger to use for logging the error message. If nil, the
 //     error message is logged to the console.
-func RecoverFromPanic(logger *ers.FileLogger) {
+func RecoverFromPanic(logger *log.Logger) {
 	if r := recover(); r != nil {
 		if logger != nil {
 			logger.Printf("%v: %v\n", Panic, r)
 
-			fmt.Println("An unexpected error occurred. For more information, see the log file:", logger.GetFileName())
+			fmt.Println("An unexpected error occurred. For more information, see the log")
 		} else {
 			fmt.Printf("%v: %v\n", Panic, r)
 		}
@@ -282,7 +283,7 @@ func RecoverFromPanic(logger *ers.FileLogger) {
 //	func mainBody() error {
 //		// Perform the main logic of the program
 //	}
-func FinalizeResult(logger *ers.FileLogger, result error, isSetup bool) int {
+func FinalizeResult(logger *log.Logger, result error, isSetup bool) int {
 	var errType ExitCode
 
 	if isSetup {
@@ -301,7 +302,7 @@ func FinalizeResult(logger *ers.FileLogger, result error, isSetup bool) int {
 				fmt.Print("An error occurred.")
 			}
 
-			fmt.Println(" For more information, see the log file: ", logger.GetFileName())
+			fmt.Println(" For more information, see the log")
 		} else {
 			fmt.Printf("%v: %v\n", errType, result)
 		}

@@ -4,6 +4,7 @@ package Errors
 import (
 	"errors"
 	"fmt"
+	"reflect"
 	"strings"
 )
 
@@ -259,7 +260,6 @@ func (e *ErrInvalidParameter) Wrap(reason error) *ErrInvalidParameter {
 	return e
 }
 
-/*
 // ErrCallFailed represents an error that occurs when a function call fails.
 type ErrCallFailed struct {
 	// fnName is the name of the function.
@@ -329,4 +329,3 @@ func (e *ErrCallFailed) Wrap(reason error) *ErrCallFailed {
 
 	return e
 }
-*/
