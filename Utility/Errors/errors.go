@@ -370,3 +370,7 @@ func (e *ErrUnexpected[T]) Error() string {
 func NewErrUnexpected[T any](got *T, expected ...string) *ErrUnexpected[T] {
 	return &ErrUnexpected[T]{expected: expected, actual: got}
 }
+
+func NewErrNilParameter(parameter string) *ErrInvalidParameter {
+	return &ErrInvalidParameter{parameter: parameter, reason: errors.New("value cannot be nil")}
+}
