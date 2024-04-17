@@ -8,7 +8,6 @@ import (
 	"math"
 	"slices"
 	"strings"
-	"time"
 	"unicode/utf8"
 
 	ers "github.com/PlayerR9/MyGoLib/Utility/Errors"
@@ -105,46 +104,6 @@ func FindContentIndexes(openingToken, closingToken string, contentTokens []strin
 	}
 
 	return 0, 0, &ErrClosingTokenNotFound{closingToken}
-}
-
-// GetOrdinalSuffix returns the ordinal suffix for a given integer.
-//
-// Parameters:
-//
-//   - number: The integer for which to get the ordinal suffix.
-//
-// Returns:
-//
-//   - string: The ordinal suffix for the number.
-//
-// For example, for the number 1, the function returns "1st"; for the number 2,
-// it returns "2nd"; and so on.
-func GetOrdinalSuffix(number int) string {
-	if number < 0 {
-		return fmt.Sprintf("%dth", number)
-	}
-
-	lastTwoDigits := number % 100
-	lastDigit := lastTwoDigits % 10
-
-	if lastTwoDigits >= 11 && lastTwoDigits <= 13 {
-		return fmt.Sprintf("%dth", number)
-	}
-
-	if lastDigit == 0 || lastDigit > 3 {
-		return fmt.Sprintf("%dth", number)
-	}
-
-	switch lastDigit {
-	case 1:
-		return fmt.Sprintf("%dst", number)
-	case 2:
-		return fmt.Sprintf("%dnd", number)
-	case 3:
-		return fmt.Sprintf("%drd", number)
-	}
-
-	return ""
 }
 
 // SpltLine is a helper struct used in the SplitTextInEqualSizedLines function.
@@ -788,36 +747,6 @@ func SplitSentenceIntoFields(sentence string, indentLevel int) ([][]string, erro
 	}
 
 	return lines, nil
-}
-
-// DateStringer prints the date in the format "1st January, 2006".
-//
-// Parameters:
-//
-//   - date: The date to print.
-//
-// Returns:
-//
-//   - string: The date in the format "1st January, 2006".
-func DateStringer(date time.Time) string {
-	return fmt.Sprintf("%v %v, %v",
-		GetOrdinalSuffix(date.Day()),
-		date.Month().String(),
-		date.Year(),
-	)
-}
-
-// TimeStringer prints the time in the format "3:04 PM".
-//
-// Parameters:
-//
-//   - time: The time to print.
-//
-// Returns:
-//
-//   - string: The time in the format "3:04 PM".
-func TimeStringer(time time.Time) string {
-	return time.Format("3:04 PM")
 }
 
 // GenerateID generates a random ID of the specified size (in bytes).
