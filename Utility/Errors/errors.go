@@ -329,3 +329,44 @@ func (e *ErrCallFailed) Wrap(reason error) *ErrCallFailed {
 
 	return e
 }
+
+type ErrUnexpected[T any] struct {
+	expected []string
+	actual   *T
+}
+
+func (e *ErrUnexpected[T]) Error() string {
+	var got string
+
+	if e.actual == nil {
+		got = "nothing"
+	} else {
+		got = fmt.Sprintf("%v", e.actual)
+	}
+
+	switch len(e.expected) {
+	case 0:
+		return fmt.Sprintf("expected nothing, got %s instead", got)
+	case 1:
+		return fmt.Sprintf("expected %s, got %s instead", e.expected[0], got)
+	case 2:
+		return fmt.Sprintf("expected %s or %s, got %s instead",
+			e.expected[0], e.expected[1], got)
+	default:
+		var builder strings.Builder
+
+		fmt.Fprintf(&builder, "expected %s", e.expected[0])
+
+		for i := 1; i < len(e.expected)-1; i++ {
+			fmt.Fprintf(&builder, ", %s", e.expected[i])
+		}
+
+		fmt.Fprintf(&builder, ", or %s, got %s instead", e.expected[len(e.expected)-1], got)
+
+		return builder.String()
+	}
+}
+
+func NewErrUnexpected[T any](got *T, expected ...string) *ErrUnexpected[T] {
+	return &ErrUnexpected[T]{expected: expected, actual: got}
+}
