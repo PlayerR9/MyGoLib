@@ -116,9 +116,9 @@ func (t *LeafToken) GetPos() int {
 //
 // Returns:
 //
-//   - *LeafToken: A pointer to the new leaf token.
-func NewLeafToken(id string, data string, at int) *LeafToken {
-	return &LeafToken{
+//   - LeafToken: The new leaf token.
+func NewLeafToken(id string, data string, at int) LeafToken {
+	return LeafToken{
 		id,
 		data,
 		at,
@@ -201,8 +201,14 @@ func (t *NonLeafToken) GetPos() int {
 // Parameters:
 //
 //   - id: The identifier of the token.
-func NewNonLeafToken(id string, at int, data ...Tokener) *NonLeafToken {
-	return &NonLeafToken{
+//   - data: The data of the token.
+//   - at: The position of the token in the input string.
+//
+// Returns:
+//
+//   - NonLeafToken: The new non-leaf token.
+func NewNonLeafToken(id string, at int, data ...Tokener) NonLeafToken {
+	return NonLeafToken{
 		ID:   id,
 		At:   at,
 		Data: data,

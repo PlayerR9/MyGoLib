@@ -248,7 +248,9 @@ func (p *Production) Match(at int, b any) Tokener {
 			val.Push(elem)
 		}
 
-		return NewNonLeafToken(p.lhs, at, slice...)
+		tok := NewNonLeafToken(p.lhs, at, slice...)
+
+		return &tok
 	default:
 		return nil
 	}
@@ -432,7 +434,9 @@ func (p *RegProduction) Match(at int, b any) Tokener {
 		return nil
 	}
 
-	return NewLeafToken(p.lhs, string(data), at)
+	tok := NewLeafToken(p.lhs, string(data), at)
+
+	return &tok
 }
 
 // Copy is a method of RegProduction that returns a copy of the production.
