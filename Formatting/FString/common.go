@@ -52,5 +52,9 @@ type FStringer interface {
 //
 //   - string: A string representation of the object.
 func FString(obj FStringer) string {
+	if obj == nil {
+		return ""
+	}
+
 	return strings.Join(obj.FString(0), "\n")
 }

@@ -73,9 +73,7 @@ func WithFlag(name string, callback func(...string) (any, error), options ...Fla
 		}
 
 		if callback == nil {
-			return ers.NewErrInvalidParameter("callback").Wrap(
-				errors.New("flag callback cannot be nil"),
-			)
+			return ers.NewErrNilParameter("callback")
 		}
 
 		for _, option := range options {
@@ -104,9 +102,7 @@ func WithFlag(name string, callback func(...string) (any, error), options ...Fla
 func WithCallback(callback func(map[string]any) (any, error)) CommandInfoOption {
 	return func(command *ConsoleCommandInfo) error {
 		if callback == nil {
-			return ers.NewErrInvalidParameter("callback").Wrap(
-				errors.New("callback cannot be nil"),
-			)
+			return ers.NewErrNilParameter("callback")
 		}
 
 		command.callback = callback

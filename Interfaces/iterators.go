@@ -141,6 +141,30 @@ func (iter *GenericIterator[T]) Value() (T, error) {
 	return vals[iter.index], nil
 }
 
+// ValueNoErr is a method of the GenericIterator type that returns the current element in
+// the collection without an error.
+// It should be called after Next to get the current element.
+//
+// Panics with *ErrCallFailed if the iterator is exhausted, if it is called before the
+// iterator is initialized, or if it is called before Next.
+//
+// Returns:
+//
+//   - T: The current element in the collection.
+func (iter *GenericIterator[T]) ValueNoErr() T {
+	if iter.values == nil {
+		panic(errors.New("iterator was never initialized"))
+	} else if iter.index == -1 {
+		panic(errors.New("Next must be called before Value"))
+	} else if iter.index >= len(*iter.values) {
+		panic(errors.New("value called on exhausted iter"))
+	}
+
+	vals := *iter.values
+
+	return vals[iter.index]
+}
+
 // Restart is a method of the GenericIterator type that resets the iterator to the
 // beginning of the collection.
 func (iter *GenericIterator[T]) Restart() {
@@ -178,8 +202,7 @@ type ProceduralIterator[E, T any] struct {
 //   - Iterater[T]: A pointer to a new iterator over the collection of iterators.
 func IteratorFromIterator[E, T any](source Iterater[E], f func(E) Iterater[T]) (Iterater[T], error) {
 	if f == nil {
-		return nil, ers.NewErrInvalidParameter("f").
-			Wrap(errors.New("transition function cannot be nil"))
+		return nil, ers.NewErrNilParameter("f")
 	}
 
 	iter := &ProceduralIterator[E, T]{
@@ -241,6 +264,29 @@ func (iter *ProceduralIterator[E, T]) Value() (T, error) {
 	}
 
 	return iter.current.Value()
+}
+
+// ValueNoErr is a method of the ProceduralIterator type that returns the current element
+// in the collection without an error.
+// It should be called after Next to get the current element.
+//
+// Panics with *ErrCallFailed if the iterator is exhausted, if it is called before the
+// iterator is initialized, or if it is called before Next.
+//
+// Returns:
+//
+//   - T: The current element in the collection.
+func (iter *ProceduralIterator[E, T]) ValueNoErr() T {
+	if iter.current == nil {
+		panic(errors.New("Next must be called before Value"))
+	}
+
+	val, err := iter.current.Value()
+	if err != nil {
+		panic(err)
+	}
+
+	return val
 }
 
 // Restart is a method of the ProceduralIterator type that resets the iterator to the

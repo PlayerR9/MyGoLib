@@ -26,27 +26,39 @@ type DoubleStack[T any] struct {
 // NewDoubleLinkedStack creates a new double stack that uses a linked stack as
 // the main stack.
 //
+// Parameters:
+//
+//   - values: The values to push onto the double stack.
+//
 // Returns:
 //
 //   - *DoubleStack: A pointer to the new double stack.
-func NewDoubleLinkedStack[T any]() *DoubleStack[T] {
-	return &DoubleStack[T]{
-		mainStack: Stack.NewLinkedStack[T](),
+func NewDoubleLinkedStack[T any](values ...T) *DoubleStack[T] {
+	ds := &DoubleStack[T]{
+		mainStack: Stack.NewLinkedStack[T](values...),
 		auxStack:  Stack.NewArrayStack[T](),
 	}
+
+	return ds
 }
 
 // NewDoubleArrayStack creates a new double stack that uses an array stack as
 // the main stack.
 //
+// Parameters:
+//
+//   - values: The values to push onto the double stack.
+//
 // Returns:
 //
 //   - *DoubleStack: A pointer to the new double stack.
-func NewDoubleArrayStack[T any]() *DoubleStack[T] {
-	return &DoubleStack[T]{
-		mainStack: Stack.NewArrayStack[T](),
+func NewDoubleArrayStack[T any](values ...T) *DoubleStack[T] {
+	ds := &DoubleStack[T]{
+		mainStack: Stack.NewArrayStack[T](values...),
 		auxStack:  Stack.NewArrayStack[T](),
 	}
+
+	return ds
 }
 
 // Clear clears the double stack.
