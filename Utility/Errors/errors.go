@@ -330,13 +330,41 @@ func (e *ErrCallFailed) Wrap(reason error) *ErrCallFailed {
 	return e
 }
 
-type ErrUnexpected[T any] struct {
+// ErrUnexpected represents an error that occurs when an unexpected value is
+// encountered.
+type ErrUnexpected struct {
+	// expected is the list of expected values.
 	expected []string
-	actual   *T
+
+	// actual is the actual value encountered.
+	actual fmt.Stringer
 }
 
-func (e *ErrUnexpected[T]) Error() string {
-	var got string
+// Error generates a string representation of an ErrUnexpected, including the
+// expected values and the actual value encountered.
+func (e *ErrUnexpected) Error() string {
+	var expected, got string
+
+	switch len(e.expected) {
+	case 0:
+		expected = "nothing"
+	case 1:
+		expected = fmt.Sprintf("%q", e.expected[0])
+	case 2:
+		expected = fmt.Sprintf("%q or %q", e.expected[0], e.expected[1])
+	default:
+		var builder strings.Builder
+
+		fmt.Fprintf(&builder, "%q", e.expected[0])
+
+		for i := 1; i < len(e.expected)-1; i++ {
+			fmt.Fprintf(&builder, ", %q", e.expected[i])
+		}
+
+		fmt.Fprintf(&builder, ", or %q", e.expected[len(e.expected)-1])
+
+		expected = builder.String()
+	}
 
 	if e.actual == nil {
 		got = "nothing"
@@ -344,33 +372,33 @@ func (e *ErrUnexpected[T]) Error() string {
 		got = fmt.Sprintf("%v", e.actual)
 	}
 
-	switch len(e.expected) {
-	case 0:
-		return fmt.Sprintf("expected nothing, got %s instead", got)
-	case 1:
-		return fmt.Sprintf("expected %s, got %s instead", e.expected[0], got)
-	case 2:
-		return fmt.Sprintf("expected %s or %s, got %s instead",
-			e.expected[0], e.expected[1], got)
-	default:
-		var builder strings.Builder
-
-		fmt.Fprintf(&builder, "expected %s", e.expected[0])
-
-		for i := 1; i < len(e.expected)-1; i++ {
-			fmt.Fprintf(&builder, ", %s", e.expected[i])
-		}
-
-		fmt.Fprintf(&builder, ", or %s, got %s instead", e.expected[len(e.expected)-1], got)
-
-		return builder.String()
-	}
+	return fmt.Sprintf("expected %s, got %s instead", expected, got)
 }
 
-func NewErrUnexpected[T any](got *T, expected ...string) *ErrUnexpected[T] {
-	return &ErrUnexpected[T]{expected: expected, actual: got}
+// NewErrUnexpected creates a new ErrUnexpected error.
+//
+// Parameters:
+//
+//   - got: The actual value encountered.
+//   - expected: The list of expected values.
+//
+// Returns:
+//
+//   - *ErrUnexpected: A pointer to the newly created ErrUnexpected.
+func NewErrUnexpected(got fmt.Stringer, expected ...string) *ErrUnexpected {
+	return &ErrUnexpected{expected: expected, actual: got}
 }
 
+// ErrNilParameter represents an error when a parameter is nil.
+// This is a shorthand for NewErrInvalidParameter(parameter).Wrap(errors.New("value is nil")).
+//
+// Parameters:
+//
+//   - parameter: The name of the parameter.
+//
+// Returns:
+//
+//   - *ErrInvalidParameter: A pointer to the newly created ErrInvalidParameter.
 func NewErrNilParameter(parameter string) *ErrInvalidParameter {
-	return &ErrInvalidParameter{parameter: parameter, reason: errors.New("value cannot be nil")}
+	return &ErrInvalidParameter{parameter: parameter, reason: errors.New("value is nil")}
 }

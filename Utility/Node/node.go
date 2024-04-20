@@ -20,7 +20,8 @@ type Node[T any] struct {
 	children []*Node[T]
 }
 
-// String is a method of Node that returns a string representation of the node.
+// String is a method of fmt.Stringer interface.
+// It should only be used for debugging and logging purposes.
 //
 // Returns:
 //

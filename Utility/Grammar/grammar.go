@@ -7,9 +7,13 @@ import (
 
 const (
 	// LeftToRight is the direction of a production from left to right.
-	LeftToRight   string = "->"
+	LeftToRight string = "->"
+
+	// StartSymbolID is the identifier of the start symbol in the grammar.
 	StartSymbolID string = "source"
-	EndSymbolID   string = "EOF"
+
+	// EndSymbolID is the identifier of the end symbol in the grammar.
+	EndSymbolID string = "EOF"
 )
 
 // Grammar represents a context-free grammar.
@@ -35,6 +39,8 @@ type Grammar struct {
 
 // String is a method of Grammar that returns a string representation
 // of a Grammar.
+//
+// It should only be used for debugging and logging purposes.
 //
 // Returns:
 //
@@ -81,15 +87,39 @@ func (g *Grammar) String() string {
 	return builder.String()
 }
 
+// MatchedResult represents the result of a match operation.
 type MatchedResult struct {
-	Matched   Tokener
+	// Matched is the matched token.
+	Matched Tokener
+
+	// RuleIndex is the index of the production that matched.
 	RuleIndex int
 }
 
+// NewMatchResult is a constructor of MatchedResult.
+//
+// Parameters:
+//
+//   - matched: The matched token.
+//   - ruleIndex: The index of the production that matched.
+//
+// Returns:
+//
+//   - MatchedResult: A new MatchedResult.
 func NewMatchResult(matched Tokener, ruleIndex int) MatchedResult {
 	return MatchedResult{Matched: matched, RuleIndex: ruleIndex}
 }
 
+// Match returns a slice of MatchedResult that match the input token.
+//
+// Parameters:
+//
+//   - at: The position in the input string.
+//   - b: The input stream to match. Refers to Productioner.Match.
+//
+// Returns:
+//
+//   - []MatchedResult: A slice of MatchedResult that match the input token.
 func (g *Grammar) Match(at int, b any) []MatchedResult {
 	matches := make([]MatchedResult, 0)
 

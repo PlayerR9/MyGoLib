@@ -23,6 +23,8 @@ type GrammarBuilder struct {
 // String is a method of GrammarBuilder that returns a string
 // representation of a GrammarBuilder.
 //
+// It should only be used for debugging and logging purposes.
+//
 // Returns:
 //
 //   - string: A string representation of a GrammarBuilder.
@@ -78,6 +80,12 @@ func (b *GrammarBuilder) AddProduction(p ...Productioner) {
 	}
 }
 
+// SetToSkip is a method of GrammarBuilder that sets the productions to skip
+// in the GrammarBuilder.
+//
+// Parameters:
+//
+//   - lhss: The left-hand sides of the productions to skip.
 func (b *GrammarBuilder) SetToSkip(lhss ...string) {
 	if b.skipProductions == nil {
 		b.skipProductions = lhss
