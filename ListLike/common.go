@@ -3,7 +3,8 @@ package ListLike
 import (
 	"fmt"
 
-	itf "github.com/PlayerR9/MyGoLib/Interfaces"
+	itff "github.com/PlayerR9/MyGoLib/Common/Interfaces"
+	itf "github.com/PlayerR9/MyGoLib/CustomData/Iterators"
 )
 
 type ListLike[T any] interface {
@@ -29,10 +30,10 @@ type ListLike[T any] interface {
 	itf.Iterable[T]
 
 	// The itf.Slicer interface is used to provide a slicer for the list.
-	itf.Slicer[T]
+	itff.Slicer[T]
 
 	// The itf.Copier interface is used to provide a method for copying the list.
-	itf.Copier
+	itff.Copier
 }
 
 type ErrEmptyList[T any] struct {

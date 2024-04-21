@@ -47,8 +47,10 @@ func IsValidNumber(n []int, base int) bool {
 //   - error: An error if the base is invalid.
 func DecToBase(n, base int) ([]int, error) {
 	if base < 1 {
-		return nil, ers.NewErrInvalidParameter("base").
-			Wrap(NewErrInvalidBase())
+		return nil, ers.NewErrInvalidParameter(
+			"base",
+			NewErrInvalidBase(),
+		)
 	}
 
 	if n < 0 {
@@ -87,8 +89,10 @@ func DecToBase(n, base int) ([]int, error) {
 //   - error: An error if the base is invalid.
 func Add(n1, n2 []int, base int) ([]int, error) {
 	if base < 1 {
-		return nil, ers.NewErrInvalidParameter("base").
-			Wrap(NewErrInvalidBase())
+		return nil, ers.NewErrInvalidParameter(
+			"base",
+			NewErrInvalidBase(),
+		)
 	}
 
 	if base == 1 {
@@ -145,8 +149,10 @@ func Add(n1, n2 []int, base int) ([]int, error) {
 //   - error: An error if the base is invalid or the subtraction resulted in a negative number.
 func Subtract(n1, n2 []int, base int) ([]int, error) {
 	if base < 1 {
-		return nil, ers.NewErrInvalidParameter("base").
-			Wrap(NewErrInvalidBase())
+		return nil, ers.NewErrInvalidParameter(
+			"base",
+			NewErrInvalidBase(),
+		)
 	}
 
 	if base == 1 {
@@ -212,8 +218,10 @@ func Subtract(n1, n2 []int, base int) ([]int, error) {
 //   - error: An error if the base is invalid or the number is invalid for the given base.
 func BaseToDec(n []int, base int) (int, error) {
 	if base < 1 {
-		return 0, ers.NewErrInvalidParameter("base").
-			Wrap(NewErrInvalidBase())
+		return 0, ers.NewErrInvalidParameter(
+			"base",
+			NewErrInvalidBase(),
+		)
 	}
 
 	if base == 1 {
@@ -224,7 +232,7 @@ func BaseToDec(n []int, base int) (int, error) {
 
 	for i, digit := range n {
 		if digit < 0 || digit >= base {
-			return 0, fmt.Errorf("invalid digit at %d: %v", i, ers.NewErrOutOfBound(digit, 0, base))
+			return 0, fmt.Errorf("invalid digit at %d: %v", i, ers.NewErrOutOfBounds(digit, 0, base))
 		}
 
 		result += digit * int(math.Pow(float64(base), float64(i)))

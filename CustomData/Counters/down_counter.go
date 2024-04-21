@@ -2,7 +2,6 @@
 package Counters
 
 import (
-	"errors"
 	"fmt"
 
 	itf "github.com/PlayerR9/MyGoLib/Interfaces"
@@ -34,8 +33,10 @@ type DownCounter struct {
 //     is less than 0.
 func NewDownCounter(startingCount int) (*DownCounter, error) {
 	if startingCount < 0 {
-		return nil, ers.NewErrInvalidParameter("startingCount").
-			Wrap(fmt.Errorf("value (%d) must be positive", startingCount))
+		return nil, ers.NewErrInvalidParameter(
+			"startingCount",
+			fmt.Errorf("value (%d) must be positive", startingCount),
+		)
 	}
 
 	return &DownCounter{startingCount, startingCount, 0}, nil
@@ -54,10 +55,11 @@ func (c *DownCounter) IsDone() bool {
 //
 // Returns:
 //
-//   - error: An error if the current count is already at or below zero.
+//   - error: An error of type *ErrCurrentCountBelowZero if the current count
+//     is already at or below zero.
 func (c *DownCounter) Advance() error {
 	if c.currentCount-c.retreatCount <= 0 {
-		return errors.New("current count is already at or below zero")
+		return NewErrCurrentCountBelowZero()
 	}
 
 	c.currentCount--
@@ -70,10 +72,11 @@ func (c *DownCounter) Advance() error {
 //
 // Returns:
 //
-//   - error: An error if the current count is already at or below zero.
+//   - error: An error of type *ErrCurrentCountBelowZero if the current count
+//     is already at or below zero.
 func (c *DownCounter) Retreat() error {
 	if c.currentCount-c.retreatCount <= 0 {
-		return errors.New("current count is already at or below zero")
+		return NewErrCurrentCountBelowZero()
 	}
 
 	c.retreatCount++

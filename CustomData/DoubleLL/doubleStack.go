@@ -1,10 +1,11 @@
 package DoubleLL
 
 import (
-	"errors"
 	"fmt"
 
-	itf "github.com/PlayerR9/MyGoLib/Interfaces"
+	itff "github.com/PlayerR9/MyGoLib/Common/Interfaces"
+	itf "github.com/PlayerR9/MyGoLib/CustomData/Iterators"
+	ll "github.com/PlayerR9/MyGoLib/ListLike"
 	Stack "github.com/PlayerR9/MyGoLib/ListLike/Stack"
 )
 
@@ -114,14 +115,14 @@ func (ds *DoubleStack[T]) Push(value T) {
 // MustPop pops a value from the double stack.
 //
 // It stores the popped value in the auxiliary stack.
-// Panics if the main stack is empty.
+// Panics with an error of type *ll.ErrEmptyList if the main stack is empty.
 //
 // Returns:
 //
 //   - T: The value that was popped from the double stack.
 func (ds *DoubleStack[T]) MustPop() T {
 	if ds.mainStack.IsEmpty() {
-		panic(errors.New("main stack is empty"))
+		panic(ll.NewErrEmptyList(ds))
 	}
 
 	top := ds.mainStack.MustPop()
@@ -133,15 +134,14 @@ func (ds *DoubleStack[T]) MustPop() T {
 // Pop pops a value from the double stack.
 //
 // It stores the popped value in the auxiliary stack.
-// Returns an error if the main stack is empty.
 //
 // Returns:
 //
 //   - T: The value that was popped from the double stack.
-//   - error: An error if the main stack is empty.
+//   - error: An error of type *ll.ErrEmptyList if the main stack is empty.
 func (ds *DoubleStack[T]) Pop() (T, error) {
 	if ds.mainStack.IsEmpty() {
-		return *new(T), errors.New("main stack is empty")
+		return *new(T), ll.NewErrEmptyList(ds)
 	}
 
 	top := ds.mainStack.MustPop()
@@ -155,10 +155,10 @@ func (ds *DoubleStack[T]) Pop() (T, error) {
 // Returns:
 //
 //   - T: The value at the top of the double stack.
-//   - error: An error if the main stack is empty.
+//   - error: An error of type *ll.ErrEmptyList if the main stack is empty.
 func (ds *DoubleStack[T]) Peek() (T, error) {
 	if ds.mainStack.IsEmpty() {
-		return *new(T), errors.New("main stack is empty")
+		return *new(T), ll.NewErrEmptyList(ds)
 	}
 
 	return ds.mainStack.Peek()
@@ -166,14 +166,14 @@ func (ds *DoubleStack[T]) Peek() (T, error) {
 
 // MustPeek returns the value at the top of the double stack without removing it.
 //
-// Panics if the main stack is empty.
+// Panics with an error of type *ll.ErrEmptyList if the main stack is empty.
 //
 // Returns:
 //
 //   - T: The value at the top of the double stack.
 func (ds *DoubleStack[T]) MustPeek() T {
 	if ds.mainStack.IsEmpty() {
-		panic(errors.New("main stack is empty"))
+		panic(ll.NewErrEmptyList(ds))
 	}
 
 	return ds.mainStack.MustPeek()
@@ -234,16 +234,22 @@ func (ds *DoubleStack[T]) Slice() []T {
 // Returns:
 //
 //   - *DoubleStack: A pointer to a new double stack that is a copy of the original.
-func (ds *DoubleStack[T]) Copy() itf.Copier {
+func (ds *DoubleStack[T]) Copy() itff.Copier {
 	return &DoubleStack[T]{
 		mainStack: ds.mainStack.Copy().(Stack.Stacker[T]),
 		auxStack:  ds.auxStack.Copy().(*Stack.ArrayStack[T]),
 	}
 }
 
+// RefuseOne refuses one element that has been popped from the stack.
+// The element is pushed back onto the stack.
+//
+// Returns:
+//
+//   - error: An error of type *ErrNoElementsHaveBeenPopped if the auxiliary stack is empty.
 func (ds *DoubleStack[T]) RefuseOne() error {
 	if ds.auxStack.IsEmpty() {
-		return errors.New("no elements have been popped")
+		return NewErrNoElementsHaveBeenPopped()
 	}
 
 	ds.mainStack.Push(ds.auxStack.MustPop())

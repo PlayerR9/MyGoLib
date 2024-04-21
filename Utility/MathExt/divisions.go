@@ -25,8 +25,10 @@ import (
 //     are their respective powers.
 func PrimeFactorization(inputNumber int) (map[int]int, error) {
 	if inputNumber == 0 {
-		return nil, ers.NewErrInvalidParameter("inputNumber").
-			Wrap(errors.New("value of 0 cannot be factorized"))
+		return nil, ers.NewErrInvalidParameter(
+			"inputNumber",
+			errors.New("value of 0 cannot be factorized"),
+		)
 	}
 
 	if inputNumber == 1 || inputNumber == -1 {

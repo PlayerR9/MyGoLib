@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	itf "github.com/PlayerR9/MyGoLib/Interfaces"
+	itff "github.com/PlayerR9/MyGoLib/Common/Interfaces"
+	itf "github.com/PlayerR9/MyGoLib/CustomData/Iterators"
 	ll "github.com/PlayerR9/MyGoLib/ListLike"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
@@ -394,7 +395,7 @@ func (list *LinkedList[T]) Slice() []T {
 // Returns:
 //
 //   - itf.Copier: A copy of the list.
-func (list *LinkedList[T]) Copy() itf.Copier {
+func (list *LinkedList[T]) Copy() itff.Copier {
 	listCopy := &LinkedList[T]{
 		size: list.size,
 	}

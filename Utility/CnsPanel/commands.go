@@ -68,7 +68,8 @@ func WithFlag(name string, callback func(...string) (any, error), options ...Fla
 
 		name = strings.TrimSpace(name)
 		if name == "" {
-			return ers.NewErrInvalidParameter("name").Wrap(
+			return ers.NewErrInvalidParameter(
+				"name",
 				errors.New("flag name cannot be empty"),
 			)
 		}

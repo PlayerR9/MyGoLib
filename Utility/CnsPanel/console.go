@@ -155,8 +155,10 @@ type ConsolePanel struct {
 func (cns *ConsolePanel) ParseArgs(args []string) (*parsedCommand, error) {
 	// Check if any arguments were provided
 	if len(args) == 0 {
-		return nil, ers.NewErrInvalidParameter("args").
-			Wrap(errors.New("no arguments provided"))
+		return nil, ers.NewErrInvalidParameter(
+			"args",
+			errors.New("no arguments provided"),
+		)
 	}
 
 	// Get the command from the command map

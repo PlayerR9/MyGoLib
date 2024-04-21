@@ -5,7 +5,8 @@ import (
 	"slices"
 	"strings"
 
-	itf "github.com/PlayerR9/MyGoLib/Interfaces"
+	itff "github.com/PlayerR9/MyGoLib/Common/Interfaces"
+	itf "github.com/PlayerR9/MyGoLib/CustomData/Iterators"
 	ll "github.com/PlayerR9/MyGoLib/ListLike"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
@@ -223,7 +224,7 @@ func (stack *ArrayStack[T]) Slice() []T {
 // Returns:
 //
 //   - itf.Copier: A copy of the stack.
-func (stack *ArrayStack[T]) Copy() itf.Copier {
+func (stack *ArrayStack[T]) Copy() itff.Copier {
 	stackCopy := &ArrayStack[T]{
 		values: make([]T, len(stack.values)),
 	}

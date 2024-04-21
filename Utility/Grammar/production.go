@@ -6,7 +6,8 @@ import (
 	"slices"
 	"strings"
 
-	itf "github.com/PlayerR9/MyGoLib/Interfaces"
+	itff "github.com/PlayerR9/MyGoLib/Common/Interfaces"
+	itf "github.com/PlayerR9/MyGoLib/CustomData/Iterators"
 	Stack "github.com/PlayerR9/MyGoLib/ListLike/Stack"
 	ers "github.com/PlayerR9/MyGoLib/Utility/Errors"
 )
@@ -72,7 +73,7 @@ type Productioner interface {
 	Match(at int, b any) Tokener
 
 	fmt.Stringer
-	itf.Copier
+	itff.Copier
 }
 
 // Production represents a production in a grammar.
@@ -260,8 +261,8 @@ func (p *Production) Match(at int, b any) Tokener {
 //
 // Returns:
 //
-//   - itf.Copier: A copy of the production.
-func (p *Production) Copy() itf.Copier {
+//   - itff.Copier: A copy of the production.
+func (p *Production) Copy() itff.Copier {
 	rhsCopy := make([]string, len(p.rhs))
 	copy(rhsCopy, p.rhs)
 
@@ -313,8 +314,10 @@ func (p *Production) Size() int {
 //     invalid.
 func (p *Production) GetRhsAt(index int) (string, error) {
 	if index < 0 || index >= len(p.rhs) {
-		return "", ers.NewErrInvalidParameter("index").
-			Wrap(ers.NewErrOutOfBound(index, 0, len(p.rhs)))
+		return "", ers.NewErrInvalidParameter(
+			"index",
+			ers.NewErrOutOfBounds(index, 0, len(p.rhs)),
+		)
 	}
 
 	return p.rhs[index], nil
@@ -443,8 +446,8 @@ func (p *RegProduction) Match(at int, b any) Tokener {
 //
 // Returns:
 //
-//   - itf.Copier: A copy of the production.
-func (p *RegProduction) Copy() itf.Copier {
+//   - itff.Copier: A copy of the production.
+func (p *RegProduction) Copy() itff.Copier {
 	return &RegProduction{
 		lhs: p.lhs,
 		rhs: p.rhs,

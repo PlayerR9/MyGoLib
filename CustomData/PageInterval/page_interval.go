@@ -2,13 +2,12 @@
 package PageInterval
 
 import (
-	"errors"
 	"fmt"
 	"slices"
 	"sort"
 	"strings"
 
-	itf "github.com/PlayerR9/MyGoLib/Interfaces"
+	itf "github.com/PlayerR9/MyGoLib/CustomData/Iterators"
 
 	ers "github.com/PlayerR9/MyGoLib/Utility/Errors"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
@@ -154,10 +153,10 @@ func (pi *PageInterval) HasPages() bool {
 // Returns:
 //
 //   - int: The first page number in the PageInterval.
-//   - error: An error if no pages have been set.
+//   - error: An error of type *ers.ErrNoPagesInInterval if no pages have been set.
 func (pi *PageInterval) GetFirstPage() (int, error) {
 	if pi.pageCount <= 0 {
-		return 0, errors.New("no pages have been set")
+		return 0, NewErrNoPagesInInterval()
 	}
 
 	return pi.intervals[0][0], nil
@@ -170,10 +169,10 @@ func (pi *PageInterval) GetFirstPage() (int, error) {
 // Returns:
 //
 //   - int: The last page number in the PageInterval.
-//   - error: An error if no pages have been set.
+//   - error: An error of type *ers.ErrNoPagesInInterval if no pages have been set.
 func (pi *PageInterval) GetLastPage() (int, error) {
 	if pi.pageCount <= 0 {
-		return 0, errors.New("no pages have been set")
+		return 0, NewErrNoPagesInInterval()
 	}
 
 	return pi.intervals[len(pi.intervals)-1][1], nil
@@ -181,7 +180,6 @@ func (pi *PageInterval) GetLastPage() (int, error) {
 
 // AddPage is a method of the PageInterval type that adds a page to the
 // PageInterval, maintaining the non-overlapping, non-duplicate intervals.
-// It panics with *ers.ErrInvalidParameter if the page number is less than 1.
 //
 // Parameters:
 //
@@ -189,7 +187,7 @@ func (pi *PageInterval) GetLastPage() (int, error) {
 //
 // Returns:
 //
-//   - error: An error if the page number is less than 1.
+//   - error: An error of type *ers.ErrInvalidParameter if the page number is less than 1.
 //
 // Example:
 //
@@ -203,8 +201,10 @@ func (pi *PageInterval) GetLastPage() (int, error) {
 //	fmt.Println(pi.pageCount) // Output: 12
 func (pi *PageInterval) AddPage(page int) error {
 	if page < 1 {
-		return ers.NewErrInvalidParameter("page").
-			Wrap(fmt.Errorf("page number (%d) must be greater than 0", page))
+		return ers.NewErrInvalidParameter(
+			"page",
+			fmt.Errorf("page number (%d) must be greater than 0", page),
+		)
 	}
 
 	if len(pi.intervals) == 0 {

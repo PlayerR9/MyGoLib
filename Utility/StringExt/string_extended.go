@@ -66,13 +66,17 @@ func ReplaceSuffix(str, suffix string) (string, error) {
 //     if the closing token is not found.
 func FindContentIndexes(openingToken, closingToken string, contentTokens []string) (int, int, error) {
 	if openingToken == "" {
-		return 0, 0, ers.NewErrInvalidParameter("openingToken").
-			Wrap(errors.New("opening token cannot be empty"))
+		return 0, 0, ers.NewErrInvalidParameter(
+			"openingToken",
+			errors.New("opening token cannot be empty"),
+		)
 	}
 
 	if closingToken == "" {
-		return 0, 0, ers.NewErrInvalidParameter("closingToken").
-			Wrap(errors.New("closing token cannot be empty"))
+		return 0, 0, ers.NewErrInvalidParameter(
+			"closingToken",
+			errors.New("closing token cannot be empty"),
+		)
 	}
 
 	openingTokenIndex := slices.Index(contentTokens, openingToken)
@@ -252,8 +256,10 @@ func (ts *TextSplitter) CanInsertWord(word string, lineIndex int) bool {
 //   - lineIndex: The index of the line to insert the word into.
 func (ts *TextSplitter) InsertWordAt(word string, lineIndex int) error {
 	if lineIndex < 0 || lineIndex >= len(ts.Lines) {
-		return ers.NewErrInvalidParameter("InsertWordAt").
-			Wrap(ers.NewErrOutOfBound(0, len(ts.Lines)-1, lineIndex))
+		return ers.NewErrInvalidParameter(
+			"InsertWordAt",
+			ers.NewErrOutOfBounds(0, len(ts.Lines)-1, lineIndex),
+		)
 	}
 
 	// Check if adding the next word to the last line exceeds the width.
@@ -388,12 +394,16 @@ func (ts *TextSplitter) shiftUp(lineIndex int) {
 // The formula is explained in detail in the comments within the function.
 func CalculateNumberOfLines(text []string, width int) (int, error) {
 	if len(text) == 0 {
-		return 0, ers.NewErrInvalidParameter("text").
-			Wrap(errors.New("text cannot be empty"))
+		return 0, ers.NewErrInvalidParameter(
+			"text",
+			errors.New("text cannot be empty"),
+		)
 	}
 	if width <= 0 {
-		return 0, ers.NewErrInvalidParameter("width").
-			Wrap(fmt.Errorf("negative or zero width (%d) is not allowed", width))
+		return 0, ers.NewErrInvalidParameter(
+			"width",
+			fmt.Errorf("negative or zero width (%d) is not allowed", width),
+		)
 	}
 
 	// Euristic to calculate the least amount of splits needed
@@ -494,13 +504,17 @@ func CalculateNumberOfLines(text []string, width int) (int, error) {
 // within the width using the CalculateNumberOfLines function.
 func SplitTextInEqualSizedLines(text []string, width int, maxHeight optional.Int) (*TextSplitter, error) {
 	if len(text) == 0 {
-		return nil, ers.NewErrInvalidParameter("text").
-			Wrap(errors.New("text cannot be empty"))
+		return nil, ers.NewErrInvalidParameter(
+			"text",
+			errors.New("text cannot be empty"),
+		)
 	}
 
 	if width <= 0 {
-		return nil, ers.NewErrInvalidParameter("width").
-			Wrap(fmt.Errorf("negative or zero width (%d) is not allowed", width))
+		return nil, ers.NewErrInvalidParameter(
+			"width",
+			fmt.Errorf("negative or zero width (%d) is not allowed", width),
+		)
 	}
 
 	var height int
@@ -517,8 +531,10 @@ func SplitTextInEqualSizedLines(text []string, width int, maxHeight optional.Int
 	}
 
 	if height < 1 {
-		return nil, ers.NewErrInvalidParameter("height").
-			Wrap(fmt.Errorf("negative or zero height (%d) is not allowed", height))
+		return nil, ers.NewErrInvalidParameter(
+			"height",
+			fmt.Errorf("negative or zero height (%d) is not allowed", height),
+		)
 	}
 
 	// We have to find the best way to split the text
@@ -676,8 +692,7 @@ func SplitSentenceIntoFields(sentence string, indentLevel int) ([][]string, erro
 	}
 
 	if indentLevel < 0 {
-		return nil, ers.NewErrInvalidParameter("indentLevel").
-			Wrap(errors.New("indent level cannot be negative"))
+		indentLevel *= -1
 	}
 
 	lines := make([][]string, 0)
@@ -764,8 +779,10 @@ func SplitSentenceIntoFields(sentence string, indentLevel int) ([][]string, erro
 // The function uses the crypto/rand package to generate a random ID of the specified size.
 func GenerateID(size int) (string, error) {
 	if size < 1 {
-		return "", ers.NewErrInvalidParameter("size").
-			Wrap(errors.New("the size must be greater than 0"))
+		return "", ers.NewErrInvalidParameter(
+			"size",
+			errors.New("the size must be greater than 0"),
+		)
 	}
 
 	b := make([]byte, size) // 128 bits

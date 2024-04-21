@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	itf "github.com/PlayerR9/MyGoLib/Interfaces"
+	itff "github.com/PlayerR9/MyGoLib/Common/Interfaces"
+	itf "github.com/PlayerR9/MyGoLib/CustomData/Iterators"
 	ll "github.com/PlayerR9/MyGoLib/ListLike"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
@@ -217,7 +218,7 @@ func (queue *ArrayQueue[T]) Slice() []T {
 // Returns:
 //
 //   - itf.Copier: A copy of the queue.
-func (queue *ArrayQueue[T]) Copy() itf.Copier {
+func (queue *ArrayQueue[T]) Copy() itff.Copier {
 	queueCopy := &ArrayQueue[T]{
 		values: make([]T, len(queue.values)),
 	}

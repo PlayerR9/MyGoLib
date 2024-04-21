@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	itf "github.com/PlayerR9/MyGoLib/Interfaces"
+	itff "github.com/PlayerR9/MyGoLib/Common/Interfaces"
+	itf "github.com/PlayerR9/MyGoLib/CustomData/Iterators"
 	ll "github.com/PlayerR9/MyGoLib/ListLike"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
@@ -270,7 +271,7 @@ func (list *LimitedArrayList[T]) Slice() []T {
 // Returns:
 //
 //   - itf.Copier: A copy of the list.
-func (list *LimitedArrayList[T]) Copy() itf.Copier {
+func (list *LimitedArrayList[T]) Copy() itff.Copier {
 	listCopy := &LimitedArrayList[T]{
 		values:   make([]T, len(list.values)),
 		capacity: list.capacity,

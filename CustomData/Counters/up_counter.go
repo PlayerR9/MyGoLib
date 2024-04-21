@@ -2,7 +2,6 @@
 package Counters
 
 import (
-	"errors"
 	"fmt"
 
 	itf "github.com/PlayerR9/MyGoLib/Interfaces"
@@ -35,8 +34,10 @@ type UpCounter struct {
 //     is less than 0.
 func NewUpCounter(upperLimit int) (*UpCounter, error) {
 	if upperLimit < 0 {
-		return nil, ers.NewErrInvalidParameter("upperLimit").
-			Wrap(fmt.Errorf("value (%d) must be positive", upperLimit))
+		return nil, ers.NewErrInvalidParameter(
+			"upperLimit",
+			fmt.Errorf("value (%d) must be positive", upperLimit),
+		)
 	}
 
 	return &UpCounter{upperLimit, 0, 0}, nil
@@ -55,10 +56,11 @@ func (c *UpCounter) IsDone() bool {
 //
 // Returns:
 //
-//   - error: An error if the current count is already at or beyond the upper limit.
+//   - error: An error of type *ErrCurrentCountAboveUpperLimit if the current count
+//     is already at or beyond the upper limit.
 func (c *UpCounter) Advance() error {
 	if c.currentCount >= c.upperLimit-c.retreatCount {
-		return errors.New("current count is already at or beyond the upper limit")
+		return NewErrCurrentCountAboveUpperLimit()
 	}
 
 	c.currentCount++
@@ -71,10 +73,11 @@ func (c *UpCounter) Advance() error {
 //
 // Returns:
 //
-//   - error: An error if the current count is already at or beyond the upper limit.
+//   - error: An error of type *ErrCurrentCountAboveUpperLimit if the current count
+//     is already at or beyond the upper limit.
 func (c *UpCounter) Retreat() error {
 	if c.currentCount >= c.upperLimit-c.retreatCount {
-		return errors.New("current count is already at or beyond the upper limit")
+		return NewErrCurrentCountAboveUpperLimit()
 	}
 
 	c.retreatCount++

@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	itf "github.com/PlayerR9/MyGoLib/Interfaces"
+	itff "github.com/PlayerR9/MyGoLib/Common/Interfaces"
+	itf "github.com/PlayerR9/MyGoLib/CustomData/Iterators"
 	ll "github.com/PlayerR9/MyGoLib/ListLike"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
@@ -318,7 +319,7 @@ func (queue *LimitedLinkedQueue[T]) Slice() []T {
 // Returns:
 //
 //   - itf.Copier: A copy of the queue.
-func (queue *LimitedLinkedQueue[T]) Copy() itf.Copier {
+func (queue *LimitedLinkedQueue[T]) Copy() itff.Copier {
 	queueCopy := &LimitedLinkedQueue[T]{
 		size:     queue.size,
 		capacity: queue.capacity,

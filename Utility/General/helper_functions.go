@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"reflect"
 
-	itf "github.com/PlayerR9/MyGoLib/Interfaces"
+	itf "github.com/PlayerR9/MyGoLib/Common/Interfaces"
 	ers "github.com/PlayerR9/MyGoLib/Utility/Errors"
 )
 
@@ -100,11 +100,15 @@ func SplitIntoGroups[T any](slice []T, n int) ([][]T, error) {
 	}
 
 	if n < 0 {
-		return nil, ers.NewErrInvalidParameter("n").
-			Wrap(fmt.Errorf("negative group number (%d) are not allowed", n))
+		return nil, ers.NewErrInvalidParameter(
+			"n",
+			fmt.Errorf("negative group number (%d) are not allowed", n),
+		)
 	} else if n == 0 {
-		return nil, ers.NewErrInvalidParameter("n").
-			Wrap(errors.New("cannot split into 0 groups"))
+		return nil, ers.NewErrInvalidParameter(
+			"n",
+			errors.New("cannot split into 0 groups"),
+		)
 	}
 
 	groups := make([][]T, n)

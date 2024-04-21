@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	itf "github.com/PlayerR9/MyGoLib/Interfaces"
+	itff "github.com/PlayerR9/MyGoLib/Common/Interfaces"
+	itf "github.com/PlayerR9/MyGoLib/CustomData/Iterators"
 	ll "github.com/PlayerR9/MyGoLib/ListLike"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
@@ -323,7 +324,7 @@ func (stack *LinkedStack[T]) Slice() []T {
 // Returns:
 //
 //   - itf.Copier: A copy of the stack.
-func (stack *LinkedStack[T]) Copy() itf.Copier {
+func (stack *LinkedStack[T]) Copy() itff.Copier {
 	stackCopy := &LinkedStack[T]{
 		size: stack.size,
 	}

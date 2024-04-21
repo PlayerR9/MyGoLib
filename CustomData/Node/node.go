@@ -3,6 +3,9 @@ package Node
 import (
 	Queue "github.com/PlayerR9/MyGoLib/ListLike/Queue"
 	Stack "github.com/PlayerR9/MyGoLib/ListLike/Stack"
+	slext "github.com/PlayerR9/MyGoLib/Utility/SliceExt"
+
+	itff "github.com/PlayerR9/MyGoLib/Common/Functions"
 )
 
 // Node is a generic data structure that represents a node in a tree.
@@ -170,7 +173,11 @@ func (n *Node[T]) GetLeaves() []*Node[T] {
 // Parameters:
 //
 //   - observer: A function that takes the value of a node and returns an error.
-func (n *Node[T]) BFSTraversal(observer func(T) error) error {
+//
+// Returns:
+//
+//   - error: An error returned by the observer.
+func (n *Node[T]) BFSTraversal(observer itff.ObserverFunc[T]) error {
 	Q := Queue.NewLinkedQueue(n)
 
 	for !Q.IsEmpty() {
@@ -194,7 +201,11 @@ func (n *Node[T]) BFSTraversal(observer func(T) error) error {
 // Parameters:
 //
 //   - observer: A function that takes the value of a node and returns an error.
-func (n *Node[T]) DFSTraversal(observer func(T) error) error {
+//
+// Returns:
+//
+//   - error: An error returned by the observer.
+func (n *Node[T]) DFSTraversal(observer itff.ObserverFunc[T]) error {
 	S := Stack.NewLinkedStack(n)
 
 	for !S.IsEmpty() {
@@ -327,7 +338,7 @@ func (n *Node[T]) Parent() *Node[T] {
 // Returns:
 //
 //   - bool: True if the node satisfies the filter, false otherwise.
-func (n *Node[T]) PruneFunc(filter func(T) bool) bool {
+func (n *Node[T]) PruneFunc(filter slext.PredicateFilter[T]) bool {
 	if filter(n.Data) {
 		return true
 	}

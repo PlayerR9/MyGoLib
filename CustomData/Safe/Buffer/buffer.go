@@ -56,7 +56,8 @@ type Buffer[T any] struct {
 //     the method will panic with an *ers.InvalidParameterError.
 //
 // Returns:
-//   - error: An error if the buffer size is negative.
+//   - error: An error of type *ers.InvalidParameterError if
+//     the buffer size is negative.
 //
 // Information: To close the buffer, just close the send-only channel.
 // Once that is done, a cascade of events will happen:
@@ -67,7 +68,8 @@ type Buffer[T any] struct {
 //   - The Buffer will be cleaned up.
 func (b *Buffer[T]) Init(bufferSize int) error {
 	if bufferSize < 0 {
-		return ers.NewErrInvalidParameter("bufferSize").Wrap(
+		return ers.NewErrInvalidParameter(
+			"bufferSize",
 			fmt.Errorf("value (%d) cannot be negative", bufferSize),
 		)
 	}
