@@ -5,8 +5,8 @@ package CnsPanel
 import (
 	"errors"
 	"fmt"
-	"strings"
 
+	fs "github.com/PlayerR9/MyGoLib/Formatting/FString"
 	ers "github.com/PlayerR9/MyGoLib/Utility/Errors"
 )
 
@@ -250,39 +250,35 @@ func parseConsoleFlags(args []string, flags []*ConsoleFlagInfo) (map[string]any,
 //
 // Returns:
 //
-//   - string: A string representing the CMLine.
-func (cns *ConsolePanel) FString(indentLevel int) string {
-	if indentLevel < 0 {
-		indentLevel *= -1
-	}
+//   - []string: A slice of strings representing the CMLine.
+func (cns *ConsolePanel) FString(indentLevel int) []string {
+	indentCfig := fs.NewIndentConfig(fs.DefaultIndentation, 0, true, false)
+	indent := indentCfig.String()
 
-	indentation := strings.Repeat("\t", indentLevel)
+	results := make([]string, 0)
 
-	var builder strings.Builder
-
-	fmt.Fprintf(&builder, "%sUsage: %s <command> [flags]\n", indentation, cns.executableName)
+	results = append(results, fmt.Sprintf("%sUsage: %s <command> [flags]", indent, cns.executableName))
 
 	if len(cns.description) == 0 {
-		fmt.Fprintf(&builder, "%sDescription: [No description provided]\n", indentation)
+		results = append(results, fmt.Sprintf("%sDescription: [No description provided]", indent))
 	} else {
-		fmt.Fprintf(&builder, "%sDescription:\n", indentation)
+		results = append(results, fmt.Sprintf("%sDescription:", indent))
 
 		for _, line := range cns.description {
 			// FIXME: Pretty print the description
-
-			fmt.Fprintf(&builder, "%s\t%s\n", indentation, line)
+			results = append(results, fmt.Sprintf("%s\t%s", indent, line))
 		}
 	}
 
 	if len(cns.commands) == 0 {
-		fmt.Fprintf(&builder, "%sCommands: None\n", indentation)
+		results = append(results, fmt.Sprintf("%sCommands: None", indent))
 	} else {
-		fmt.Fprintf(&builder, "%sCommands:\n", indentation)
+		results = append(results, fmt.Sprintf("%sCommands:", indent))
 
 		for _, command := range cns.commands {
-			fmt.Fprintf(&builder, "%s\n", command.FString(indentLevel+1))
+			results = append(results, command.FString(indentLevel+1)...)
 		}
 	}
 
-	return builder.String()
+	return results
 }

@@ -240,3 +240,13 @@ func (ds *DoubleStack[T]) Copy() itf.Copier {
 		auxStack:  ds.auxStack.Copy().(*Stack.ArrayStack[T]),
 	}
 }
+
+func (ds *DoubleStack[T]) RefuseOne() error {
+	if ds.auxStack.IsEmpty() {
+		return errors.New("no elements have been popped")
+	}
+
+	ds.mainStack.Push(ds.auxStack.MustPop())
+
+	return nil
+}

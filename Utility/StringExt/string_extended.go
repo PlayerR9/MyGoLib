@@ -77,7 +77,7 @@ func FindContentIndexes(openingToken, closingToken string, contentTokens []strin
 
 	openingTokenIndex := slices.Index(contentTokens, openingToken)
 	if openingTokenIndex < 0 {
-		return 0, 0, &ErrOpeningTokenNotFound{openingToken}
+		return 0, 0, NewErrOpeningTokenNotFound(openingToken)
 	}
 
 	tokenStartIndex := openingTokenIndex + 1
@@ -98,12 +98,12 @@ func FindContentIndexes(openingToken, closingToken string, contentTokens []strin
 	}
 
 	if tokenBalance < 0 {
-		return 0, 0, &ErrNeverOpened{openingToken, closingToken}
+		return 0, 0, NewErrNeverOpened(openingToken, closingToken)
 	} else if tokenBalance == 1 && closingToken == "\n" {
 		return tokenStartIndex, len(contentTokens), nil
 	}
 
-	return 0, 0, &ErrClosingTokenNotFound{closingToken}
+	return 0, 0, NewErrClosingTokenNotFound(closingToken)
 }
 
 // SpltLine is a helper struct used in the SplitTextInEqualSizedLines function.

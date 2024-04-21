@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strings"
 
+	fs "github.com/PlayerR9/MyGoLib/Formatting/FString"
 	ers "github.com/PlayerR9/MyGoLib/Utility/Errors"
 )
 
@@ -144,31 +145,32 @@ func WithCommandDescription(description ...string) CommandInfoOption {
 //
 // Returns:
 //
-//   - string: A string representing the ConsoleCommandInfo.
-func (cci *ConsoleCommandInfo) FString(indentLevel int) string {
-	if indentLevel < 0 {
-		indentLevel *= -1
-	}
+//   - []string: A slice of strings representing the ConsoleCommandInfo.
+func (cci *ConsoleCommandInfo) FString(indentLevel int) []string {
+	indentCfig := fs.NewIndentConfig(fs.DefaultIndentation, 0, true, false)
+	indent := indentCfig.String()
 
-	indentation := strings.Repeat("\t", indentLevel)
-	var builder strings.Builder
+	results := make([]string, 0)
 
 	// Add the command name
-	fmt.Fprintf(&builder, "%sCommand: %s\n", indentation, cci.name)
+	results = append(results, fmt.Sprintf("%sCommand: %s", indent, cci.name))
 
 	// Add the command description
 	if len(cci.description) == 0 {
-		fmt.Fprintf(&builder, "%sDescription: [No description provided]\n", indentation)
+		results = append(results, fmt.Sprintf("%sDescription: [No description provided]", indent))
 	} else {
-		fmt.Fprintf(&builder, "%sDescription:\n", indentation)
+		results = append(results, fmt.Sprintf("%sDescription:", indent))
+
 		for _, line := range cci.description {
-			fmt.Fprintf(&builder, "%s\t%s\n", indentation, line)
+			results = append(results, fmt.Sprintf("%s\t%s", indent, line))
 		}
 	}
 
 	// Add the usage information for each flag
+	var builder strings.Builder
+
 	for _, flag := range cci.flags {
-		fmt.Fprintf(&builder, "%sUsage: %s", indentation, cci.name)
+		fmt.Fprintf(&builder, "%sUsage: %s", indent, cci.name)
 
 		if flag.required {
 			fmt.Fprintf(&builder, " %s", flag.name)
@@ -180,21 +182,22 @@ func (cci *ConsoleCommandInfo) FString(indentLevel int) string {
 			fmt.Fprintf(&builder, " <%s>", arg)
 		}
 
-		builder.WriteString("\n")
+		results = append(results, builder.String())
+		builder.Reset()
 	}
 
 	// Add the flag information
 	if len(cci.flags) == 0 {
-		fmt.Fprintf(&builder, "%sFlags: None\n", indentation)
+		results = append(results, fmt.Sprintf("%sFlags: None", indent))
 	} else {
-		fmt.Fprintf(&builder, "%sFlags:\n", indentation)
+		results = append(results, fmt.Sprintf("%sFlags:", indent))
 
 		for _, flag := range cci.flags {
-			fmt.Fprintf(&builder, "%s\n", flag.FString(indentLevel+1))
+			results = append(results, flag.FString(indentLevel+1)...)
 		}
 	}
 
-	return builder.String()
+	return results
 }
 
 type parsedCommand struct {

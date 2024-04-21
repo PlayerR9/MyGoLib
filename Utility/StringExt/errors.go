@@ -15,7 +15,20 @@ type ErrOpeningTokenNotFound struct {
 //
 //   - string: The error message.
 func (e *ErrOpeningTokenNotFound) Error() string {
-	return fmt.Sprintf("opening token (%s) not found in content", e.token)
+	return fmt.Sprintf("opening token (%q) not found in content", e.token)
+}
+
+// NewErrOpeningTokenNotFound is a constructor of ErrOpeningTokenNotFound.
+//
+// Parameters:
+//
+//   - token: The opening token that was not found in the content.
+//
+// Returns:
+//
+//   - error: The new error.
+func NewErrOpeningTokenNotFound(token string) error {
+	return &ErrOpeningTokenNotFound{token: token}
 }
 
 // ErrClosingTokenNotFound is a struct that represents an error when a
@@ -32,7 +45,20 @@ type ErrClosingTokenNotFound struct {
 //
 //   - string: The error message.
 func (e *ErrClosingTokenNotFound) Error() string {
-	return fmt.Sprintf("closing token (%s) not found in content", e.token)
+	return fmt.Sprintf("closing token (%q) not found in content", e.token)
+}
+
+// NewErrClosingTokenNotFound is a constructor of ErrClosingTokenNotFound.
+//
+// Parameters:
+//
+//   - token: The closing token that was not found in the content.
+//
+// Returns:
+//
+//   - error: The new error.
+func NewErrClosingTokenNotFound(token string) error {
+	return &ErrClosingTokenNotFound{token: token}
 }
 
 // ErrNeverOpened is a struct that represents an error when a closing
@@ -50,6 +76,20 @@ type ErrNeverOpened struct {
 //
 //   - string: The error message.
 func (e *ErrNeverOpened) Error() string {
-	return fmt.Sprintf("closing token (%s) found without a corresponding opening token (%s)",
+	return fmt.Sprintf("closing token (%q) found without a corresponding opening token (%q)",
 		e.closingToken, e.openingToken)
+}
+
+// NewErrNeverOpened is a constructor of ErrNeverOpened.
+//
+// Parameters:
+//
+//   - openingToken: The opening token that was never closed.
+//   - closingToken: The closing token that was found without a corresponding opening token.
+//
+// Returns:
+//
+//   - error: The new error.
+func NewErrNeverOpened(openingToken, closingToken string) error {
+	return &ErrNeverOpened{openingToken: openingToken, closingToken: closingToken}
 }

@@ -43,7 +43,7 @@ func GoRun(id string, routine func() error) *GRHandler {
 
 		defer func() {
 			if r := recover(); r != nil {
-				h.errStatus = &ErrPanic{value: r}
+				h.errStatus = NewErrPanic(r)
 			}
 		}()
 
