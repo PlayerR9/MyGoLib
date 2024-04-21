@@ -6,10 +6,10 @@ import (
 	"slices"
 	"strings"
 
-	itff "github.com/PlayerR9/MyGoLib/Common/Interfaces"
 	itf "github.com/PlayerR9/MyGoLib/CustomData/Iterators"
 	Stack "github.com/PlayerR9/MyGoLib/ListLike/Stack"
-	ers "github.com/PlayerR9/MyGoLib/Utility/Errors"
+	ers "github.com/PlayerR9/MyGoLibUnits/Errors"
+	itff "github.com/PlayerR9/MyGoLibUnits/Interfaces"
 )
 
 // Productioner is an interface that defines methods for a production in a grammar.

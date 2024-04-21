@@ -3,8 +3,8 @@ package ListLike
 import (
 	"fmt"
 
-	itff "github.com/PlayerR9/MyGoLib/Common/Interfaces"
 	itf "github.com/PlayerR9/MyGoLib/CustomData/Iterators"
+	itff "github.com/PlayerR9/MyGoLibUnits/Interfaces"
 )
 
 type ListLike[T any] interface {

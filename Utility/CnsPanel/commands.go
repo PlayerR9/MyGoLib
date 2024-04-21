@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	fs "github.com/PlayerR9/MyGoLib/Formatting/FString"
-	ers "github.com/PlayerR9/MyGoLib/Utility/Errors"
+	ers "github.com/PlayerR9/MyGoLibUnits/Errors"
 )
 
 // ConsoleCommandInfo represents a console command.

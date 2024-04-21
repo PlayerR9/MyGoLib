@@ -3,7 +3,7 @@ package SliceExt
 import (
 	"slices"
 
-	itf "github.com/PlayerR9/MyGoLib/Common/Interfaces"
+	itf "github.com/PlayerR9/MyGoLibUnits/Interfaces"
 )
 
 // FilterByPositiveWeight is a function that iterates over the slice and applies

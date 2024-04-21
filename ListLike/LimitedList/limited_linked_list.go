@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"strings"
 
-	itff "github.com/PlayerR9/MyGoLib/Common/Interfaces"
 	itf "github.com/PlayerR9/MyGoLib/CustomData/Iterators"
 	ll "github.com/PlayerR9/MyGoLib/ListLike"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
+	itff "github.com/PlayerR9/MyGoLibUnits/Interfaces"
 )
 
 // LimitedLinkedList is a generic type that represents a list data structure with

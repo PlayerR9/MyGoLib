@@ -5,10 +5,10 @@ import (
 	"slices"
 	"strings"
 
-	itff "github.com/PlayerR9/MyGoLib/Common/Interfaces"
 	itf "github.com/PlayerR9/MyGoLib/CustomData/Iterators"
 	ll "github.com/PlayerR9/MyGoLib/ListLike"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
+	itff "github.com/PlayerR9/MyGoLibUnits/Interfaces"
 )
 
 // LimitedArrayStack is a generic type that represents a stack data structure with

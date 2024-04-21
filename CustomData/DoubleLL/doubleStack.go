@@ -3,10 +3,10 @@ package DoubleLL
 import (
 	"fmt"
 
-	itff "github.com/PlayerR9/MyGoLib/Common/Interfaces"
 	itf "github.com/PlayerR9/MyGoLib/CustomData/Iterators"
 	ll "github.com/PlayerR9/MyGoLib/ListLike"
 	Stack "github.com/PlayerR9/MyGoLib/ListLike/Stack"
+	itff "github.com/PlayerR9/MyGoLibUnits/Interfaces"
 )
 
 // DoubleStack is a stack that can be accepted or refused.

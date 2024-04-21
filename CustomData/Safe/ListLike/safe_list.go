@@ -5,9 +5,9 @@ import (
 	"strings"
 	"sync"
 
-	itff "github.com/PlayerR9/MyGoLib/Common/Interfaces"
 	itf "github.com/PlayerR9/MyGoLib/CustomData/Iterators"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
+	itff "github.com/PlayerR9/MyGoLibUnits/Interfaces"
 )
 
 // SafeList is a generic type that represents a thread-safe list data

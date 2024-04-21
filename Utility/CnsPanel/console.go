@@ -7,7 +7,7 @@ import (
 	"fmt"
 
 	fs "github.com/PlayerR9/MyGoLib/Formatting/FString"
-	ers "github.com/PlayerR9/MyGoLib/Utility/Errors"
+	ers "github.com/PlayerR9/MyGoLibUnits/Errors"
 )
 
 // ConsoleBuilder represents a builder for a command line interface.

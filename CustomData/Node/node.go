@@ -5,7 +5,7 @@ import (
 	Stack "github.com/PlayerR9/MyGoLib/ListLike/Stack"
 	slext "github.com/PlayerR9/MyGoLib/Utility/SliceExt"
 
-	itff "github.com/PlayerR9/MyGoLib/Common/Functions"
+	itff "github.com/PlayerR9/MyGoLibUnits/Functions"
 )
 
 // Node is a generic data structure that represents a node in a tree.
