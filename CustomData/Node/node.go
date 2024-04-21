@@ -1,9 +1,11 @@
 package Node
 
+// FIXME: Update Queue import when MyGoLists is updated
+
 import (
-	Queue "github.com/PlayerR9/MyGoLib/ListLike/Queue"
-	Stack "github.com/PlayerR9/MyGoLib/ListLike/Stack"
 	slext "github.com/PlayerR9/MyGoLib/Utility/SliceExt"
+	Queue "github.com/PlayerR9/MyGoLists/Implementations/Queue"
+	"github.com/PlayerR9/MyGoLists/Implementations/Stack"
 
 	itff "github.com/PlayerR9/MyGoLibUnits/Functions"
 )

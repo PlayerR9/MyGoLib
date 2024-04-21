@@ -1,5 +1,7 @@
 github.com/PlayerR9/MyGoLibUnits v0.1.0 h1:1JHApIg0j71SZZhbLUwVfToHEZVuRAcEmZ1chlueE0s=
 github.com/PlayerR9/MyGoLibUnits v0.1.0/go.mod h1:WGGX7AJvvW4jhcHB/6oGgherh+HhcmxXqVWVSDPneWs=
+github.com/PlayerR9/MyGoLists v0.1.0 h1:ChA1T0rCWLT8/xJUxSuvXyBAgOItLkfvuNHsYp2CsJI=
+github.com/PlayerR9/MyGoLists v0.1.0/go.mod h1:OSLK1EUozml1IEOZjg2Yn88PI8QHm37RML3Op99CmvY=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

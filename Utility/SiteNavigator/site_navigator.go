@@ -3,8 +3,8 @@ package SiteNavigator
 import (
 	"golang.org/x/net/html"
 
-	Queue "github.com/PlayerR9/MyGoLib/ListLike/Queue"
-	Stack "github.com/PlayerR9/MyGoLib/ListLike/Stack"
+	Queue "github.com/PlayerR9/MyGoLists/Implementations/Queue"
+	"github.com/PlayerR9/MyGoLists/Implementations/Stack"
 )
 
 var IsTextNodeSearch *SearchCriteria = NewSearchCriteria(html.TextNode)

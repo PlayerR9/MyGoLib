@@ -7,9 +7,10 @@ import (
 	"strings"
 
 	itf "github.com/PlayerR9/MyGoLib/CustomData/Iterators"
-	Stack "github.com/PlayerR9/MyGoLib/ListLike/Stack"
 	ers "github.com/PlayerR9/MyGoLibUnits/Errors"
 	itff "github.com/PlayerR9/MyGoLibUnits/Interfaces"
+	"github.com/PlayerR9/MyGoLists/Common/Stacker"
+	impl "github.com/PlayerR9/MyGoLists/Implementations/Stack"
 )
 
 // Productioner is an interface that defines methods for a production in a grammar.
@@ -221,8 +222,8 @@ func (p *Production) GetSymbols() []string {
 //     'b'.
 func (p *Production) Match(at int, b any) Tokener {
 	switch val := b.(type) {
-	case Stack.Stacker[Tokener]:
-		popped := Stack.NewArrayStack[Tokener]()
+	case Stacker.Stacker[Tokener]:
+		popped := impl.NewArrayStack[Tokener]()
 
 		for i := len(p.rhs) - 1; i >= 0; i-- {
 			top, err := val.Peek()
