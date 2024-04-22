@@ -3,7 +3,8 @@ package SliceExt
 import (
 	"slices"
 
-	itf "github.com/PlayerR9/MyGoLibUnits/Interfaces"
+	util "github.com/PlayerR9/MyGoLib/util"
+	intf "github.com/PlayerR9/MyGoLibUnits/Interfaces"
 )
 
 // FilterByPositiveWeight is a function that iterates over the slice and applies
@@ -259,7 +260,7 @@ func SFSeparateEarly[T any](S []T, filter PredicateFilter[T]) ([]T, bool) {
 // Returns:
 //
 //   - []T: slice of elements with duplicates removed.
-func RemoveDuplicates[T itf.Comparable](S []T) []T {
+func RemoveDuplicates[T intf.Comparable](S []T) []T {
 	if len(S) < 2 {
 		return S
 	}
@@ -288,7 +289,9 @@ func RemoveDuplicates[T itf.Comparable](S []T) []T {
 // Returns:
 //
 //   - []T: slice of elements with duplicates removed.
-func RemoveDuplicatesFunc[T any](S []T, equals func(T, T) bool) []T {
+func RemoveDuplicatesFunc[T interface {
+	Equals(T) bool
+}](S []T) []T {
 	if len(S) < 2 {
 		return S
 	}
@@ -299,7 +302,7 @@ func RemoveDuplicatesFunc[T any](S []T, equals func(T, T) bool) []T {
 		found := false
 
 		for _, u := range unique {
-			if equals(u, e) {
+			if u.Equals(e) {
 				found = true
 				break
 			}
@@ -323,7 +326,7 @@ func RemoveDuplicatesFunc[T any](S []T, equals func(T, T) bool) []T {
 // Returns:
 //
 //   - int: index of the first duplicate element or -1 if there are no duplicates.
-func IndexOfDuplicate[T itf.Comparable](S []T) int {
+func IndexOfDuplicate[T intf.Comparable](S []T) int {
 	if len(S) < 2 {
 		return -1
 	}
@@ -362,6 +365,135 @@ func IndexOfDuplicateFunc[T any](S []T, equals func(T, T) bool) int {
 			if equals(e, S[j]) {
 				return i
 			}
+		}
+	}
+
+	return -1
+}
+
+// FindSubBytesFrom finds the first occurrence of a subslice in a byte
+// slice starting from a given index.
+//
+// If the subslice is not found, the function returns -1.
+//
+// Parameters:
+//
+//   - s: The byte slice to search in.
+//   - subS: The byte slice to search for.
+//   - at: The index to start searching from.
+//
+// Returns:
+//
+//   - int: The index of the first occurrence of the subslice.
+func FindSubsliceFrom[T intf.Comparable](s []T, subS []T, at int) int {
+	if len(subS) == 0 || len(s) == 0 || at+len(subS) > len(s) {
+		return -1
+	}
+
+	if at < 0 {
+		at = 0
+	}
+
+	possibleStarts := make([]int, 0)
+
+	// Find all possible starting points.
+	for i := at; i < len(s)-len(subS); i++ {
+		if s[i] == subS[0] {
+			possibleStarts = append(possibleStarts, i)
+		}
+	}
+
+	// Check only the possible starting points that have enough space
+	// to contain the subslice in full.
+	top := 0
+
+	for i := 0; i < len(possibleStarts)-1; i++ {
+		if possibleStarts[i+1]-possibleStarts[i] >= len(subS) {
+			possibleStarts[top] = possibleStarts[i]
+			top++
+		}
+	}
+
+	possibleStarts = possibleStarts[:top]
+
+	// Check if the subslice is present at any of the possible starting points
+	for _, start := range possibleStarts {
+		found := true
+
+		for j := 0; j < len(subS); j++ {
+			if s[start+j] != subS[j] {
+				found = false
+				break
+			}
+		}
+
+		if found {
+			return start
+		}
+	}
+
+	return -1
+}
+
+// FindSubsliceFromFunc finds the first occurrence of a subslice in a byte
+// slice starting from a given index using a custom comparison function.
+//
+// If the subslice is not found, the function returns -1.
+//
+// Parameters:
+//
+//   - s: The byte slice to search in.
+//   - subS: The byte slice to search for.
+//   - at: The index to start searching from.
+//   - equals: The comparison function.
+//
+// Returns:
+//
+//   - int: The index of the first occurrence of the subslice.
+func FindSubsliceFromFunc[T util.Equaler[T]](s []T, subS []T, at int) int {
+	if len(subS) == 0 || len(s) == 0 || at+len(subS) > len(s) {
+		return -1
+	}
+
+	if at < 0 {
+		at = 0
+	}
+
+	possibleStarts := make([]int, 0)
+
+	// Find all possible starting points.
+	for i := at; i < len(s)-len(subS); i++ {
+		if s[i].Equals(subS[0]) {
+			possibleStarts = append(possibleStarts, i)
+		}
+	}
+
+	// Check only the possible starting points that have enough space
+	// to contain the subslice in full.
+	top := 0
+
+	for i := 0; i < len(possibleStarts)-1; i++ {
+		if possibleStarts[i+1]-possibleStarts[i] >= len(subS) {
+			possibleStarts[top] = possibleStarts[i]
+			top++
+		}
+	}
+
+	possibleStarts = possibleStarts[:top]
+
+	// Check if the subslice is present at any of the possible starting points
+	for _, start := range possibleStarts {
+		found := true
+
+		for j := 0; j < len(subS); j++ {
+			if !s[start+j].Equals(subS[j]) {
+				found = false
+				break
+			}
+		}
+
+		if found {
+			return start
 		}
 	}
 
