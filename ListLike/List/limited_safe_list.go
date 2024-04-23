@@ -1,4 +1,4 @@
-package ListLike
+package List
 
 import (
 	"fmt"
@@ -6,16 +6,17 @@ import (
 	"sync"
 
 	itf "github.com/PlayerR9/MyGoLib/CustomData/Iterators"
+	"github.com/PlayerR9/MyGoLib/ListLike/Common"
+	itff "github.com/PlayerR9/MyGoLib/Units/Interfaces"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
-	itff "github.com/PlayerR9/MyGoLibUnits/Interfaces"
 )
 
-// SafeList is a generic type that represents a thread-safe list data
+// LimitedSafeList is a generic type that represents a thread-safe list data
 // structure with or without a maximum capacity, implemented using a linked list.
-type SafeList[T any] struct {
+type LimitedSafeList[T any] struct {
 	// front and back are pointers to the first and last nodes in the safe list,
 	// respectively.
-	front, back *listLinkedNode[T]
+	front, back *Common.ListSafeNode[T]
 
 	// frontMutex and backMutex are sync.RWMutexes, which are used to ensure that
 	// concurrent reads and writes to the front and back nodes are thread-safe.
@@ -23,10 +24,13 @@ type SafeList[T any] struct {
 
 	// size is the current number of elements in the list.
 	size int
+
+	// capacity is the maximum number of elements that the list can hold.
+	capacity int
 }
 
-// NewSafeList is a function that creates and returns a new instance of a
-// SafeList.
+// NewLimitedSafeList is a function that creates and returns a new instance of a
+// LimitedSafeList.
 //
 // Parameters:
 //
@@ -35,9 +39,9 @@ type SafeList[T any] struct {
 //
 // Returns:
 //
-//   - *SafeList[T]: A pointer to the newly created SafeList.
-func NewSafeList[T any](values ...T) *SafeList[T] {
-	list := new(SafeList[T])
+//   - *LimitedSafeList[T]: A pointer to the newly created LimitedSafeList.
+func NewLimitedSafeList[T any](values ...T) *LimitedSafeList[T] {
+	list := new(LimitedSafeList[T])
 
 	if len(values) == 0 {
 		return list
@@ -46,28 +50,25 @@ func NewSafeList[T any](values ...T) *SafeList[T] {
 	list.size = len(values)
 
 	// First node
-	list_node := &listLinkedNode[T]{
-		value: values[0],
-	}
+	list_node := Common.NewListSafeNode(values[0])
 
 	list.front = list_node
 	list.back = list_node
 
 	// Subsequent nodes
 	for _, element := range values {
-		list_node := &listLinkedNode[T]{
-			value: element,
-			prev:  list.back,
-		}
+		list_node := Common.NewListSafeNode(element)
 
-		list.back.next = list_node
+		list_node.SetPrev(list.back)
+
+		list.back.SetNext(list_node)
 		list.back = list_node
 	}
 
 	return list
 }
 
-// Append is a method of the SafeList type. It is used to add an element to the
+// Append is a method of the LimitedSafeList type. It is used to add an element to the
 // end of the list.
 //
 // Panics with an error of type *ErrCallFailed if the list is fu
@@ -75,15 +76,19 @@ func NewSafeList[T any](values ...T) *SafeList[T] {
 // Parameters:
 //
 //   - value: The value of type T to be added to the list.
-func (list *SafeList[T]) Append(value T) {
+func (list *LimitedSafeList[T]) Append(value T) error {
 	list.backMutex.Lock()
 	defer list.backMutex.Unlock()
 
-	node := &listLinkedNode[T]{value: value}
+	if list.size >= list.capacity {
+		return Common.NewErrFullList(list)
+	}
+
+	node := Common.NewListSafeNode(value)
 
 	if list.back != nil {
-		list.back.next = node
-		node.prev = list.back
+		list.back.SetNext(node)
+		node.SetPrev(list.back)
 	} else {
 		// The list is empty
 		list.frontMutex.Lock()
@@ -94,9 +99,11 @@ func (list *SafeList[T]) Append(value T) {
 	list.back = node
 
 	list.size++
+
+	return nil
 }
 
-// DeleteFirst is a method of the SafeList type. It is used to remove and return
+// DeleteFirst is a method of the LimitedSafeList type. It is used to remove and return
 // the first element from the list.
 //
 // Panics with an error of type *ErrCallFailed if the list is empty.
@@ -104,36 +111,36 @@ func (list *SafeList[T]) Append(value T) {
 // Returns:
 //
 //   - T: The first element in the list.
-func (list *SafeList[T]) DeleteFirst() (T, error) {
+func (list *LimitedSafeList[T]) DeleteFirst() (T, error) {
 	list.frontMutex.Lock()
 	defer list.frontMutex.Unlock()
 
 	if list.front == nil {
-		return *new(T), NewErrEmptyList(list)
+		return *new(T), Common.NewErrEmptyList(list)
 	}
 
 	toRemove := list.front
 
 	list.backMutex.Lock()
 
-	list.front = list.front.next
+	list.front = list.front.Next()
 
 	if list.front == nil {
 		list.back = nil
 	} else {
-		list.front.prev = nil
+		list.front.SetPrev(nil)
 	}
 
 	list.backMutex.Unlock()
 
 	list.size--
 
-	toRemove.next = nil
+	toRemove.SetNext(nil)
 
-	return toRemove.value, nil
+	return toRemove.Value, nil
 }
 
-// PeekFirst is a method of the SafeList type. It is used to return the first
+// PeekFirst is a method of the LimitedSafeList type. It is used to return the first
 // element from the list without removing it.
 //
 // Panics with an error of type *ErrCallFailed if the list is empty.
@@ -141,36 +148,36 @@ func (list *SafeList[T]) DeleteFirst() (T, error) {
 // Returns:
 //
 //   - T: The first element in the list.
-func (list *SafeList[T]) PeekFirst() (T, error) {
+func (list *LimitedSafeList[T]) PeekFirst() (T, error) {
 	list.frontMutex.RLock()
 	defer list.frontMutex.RUnlock()
 
 	if list.front == nil {
-		return *new(T), NewErrEmptyList(list)
+		return *new(T), Common.NewErrEmptyList(list)
 	}
 
-	return list.front.value, nil
+	return list.front.Value, nil
 }
 
-// IsEmpty is a method of the SafeList type. It checks if the list is empty.
+// IsEmpty is a method of the LimitedSafeList type. It checks if the list is empty.
 //
 // Returns:
 //
 //   - bool: A boolean value that is true if the list is empty, and false otherwise.
-func (list *SafeList[T]) IsEmpty() bool {
+func (list *LimitedSafeList[T]) IsEmpty() bool {
 	list.frontMutex.RLock()
 	defer list.frontMutex.RUnlock()
 
 	return list.front == nil
 }
 
-// Size is a method of the SafeList type. It returns the number of elements in the
+// Size is a method of the LimitedSafeList type. It returns the number of elements in the
 // list.
 //
 // Returns:
 //
 //   - int: An integer that represents the number of elements in the list.
-func (list *SafeList[T]) Size() int {
+func (list *LimitedSafeList[T]) Size() int {
 	list.frontMutex.RLock()
 	defer list.frontMutex.RUnlock()
 
@@ -180,25 +187,25 @@ func (list *SafeList[T]) Size() int {
 	return list.size
 }
 
-// Capacity is a method of the SafeList type. It returns the maximum number of
+// Capacity is a method of the LimitedSafeList type. It returns the maximum number of
 // elements that the list can hold.
 //
 // Returns:
 //
 //   - optional.Int: An optional integer that represents the maximum number of
 //     elements the list can hold.
-func (list *SafeList[T]) Capacity() (int, bool) {
-	return 0, false
+func (list *LimitedSafeList[T]) Capacity() int {
+	return list.capacity
 }
 
-// Iterator is a method of the SafeList type. It is used to return an iterator
+// Iterator is a method of the LimitedSafeList type. It is used to return an iterator
 // for the list.
 // However, the iterator does not share the list's thread safety.
 //
 // Returns:
 //
 //   - itf.Iterater[T]: An iterator for the list.
-func (list *SafeList[T]) Iterator() itf.Iterater[T] {
+func (list *LimitedSafeList[T]) Iterator() itf.Iterater[T] {
 	list.frontMutex.RLock()
 	defer list.frontMutex.RUnlock()
 
@@ -207,16 +214,16 @@ func (list *SafeList[T]) Iterator() itf.Iterater[T] {
 
 	var builder itf.Builder[T]
 
-	for node := list.front; node != nil; node = node.next {
-		builder.Append(node.value)
+	for node := list.front; node != nil; node = node.Next() {
+		builder.Append(node.Value)
 	}
 
 	return builder.Build()
 }
 
-// Clear is a method of the SafeList type. It is used to remove all elements from
+// Clear is a method of the LimitedSafeList type. It is used to remove all elements from
 // the list.
-func (list *SafeList[T]) Clear() {
+func (list *LimitedSafeList[T]) Clear() {
 	list.frontMutex.Lock()
 	defer list.frontMutex.Unlock()
 
@@ -228,18 +235,18 @@ func (list *SafeList[T]) Clear() {
 	}
 
 	// 1. First node
-	list.front.prev = nil
+	list.front.SetPrev(nil)
 	prev := list.front
 
 	// 2. Subsequent nodes
-	for node := list.front.next; node != nil; node = node.next {
-		node.prev = nil
+	for node := list.front.Next(); node != nil; node = node.Next() {
+		node.SetPrev(nil)
 
 		prev = node
-		prev.next = nil
+		prev.SetNext(nil)
 	}
 
-	prev.next = nil
+	prev.SetNext(nil)
 
 	// 3. Reset list fields
 	list.front = nil
@@ -247,22 +254,22 @@ func (list *SafeList[T]) Clear() {
 	list.size = 0
 }
 
-// IsFull is a method of the SafeList type. It checks if the list is fu
+// IsFull is a method of the LimitedSafeList type. It checks if the list is fu
 //
 // Returns:
 //
 //   - isFull: A boolean value that is true if the list is full, and false otherwise.
-func (list *SafeList[T]) IsFull() bool {
-	return false
+func (list *LimitedSafeList[T]) IsFull() (isFull bool) {
+	return list.capacity <= list.size
 }
 
-// String is a method of the SafeList type. It returns a string representation of
+// String is a method of the LimitedSafeList type. It returns a string representation of
 // the list including information about its size, capacity, and elements.
 //
 // Returns:
 //
 //   - string: A string representation of the list.
-func (list *SafeList[T]) String() string {
+func (list *LimitedSafeList[T]) String() string {
 	list.frontMutex.RLock()
 	defer list.frontMutex.RUnlock()
 
@@ -271,7 +278,7 @@ func (list *SafeList[T]) String() string {
 
 	var builder strings.Builder
 
-	builder.WriteString("SafeList[")
+	fmt.Fprintf(&builder, "LimitedSafeList[capacity=%d, ", list.capacity)
 
 	if list.front == nil {
 		fmt.Fprintf(&builder, "size=0, values=[]]")
@@ -279,12 +286,12 @@ func (list *SafeList[T]) String() string {
 		return builder.String()
 	}
 
-	fmt.Fprintf(&builder, "size=%d, values=[%v", list.size, list.front.value)
+	fmt.Fprintf(&builder, "size=%d, values=[%v", list.size, list.front.Value)
 
-	fmt.Fprintf(&builder, "%v", list.front.value)
+	fmt.Fprintf(&builder, "%v", list.front.Value)
 
-	for node := list.front.next; node != nil; node = node.next {
-		fmt.Fprintf(&builder, ", %v", node.value)
+	for node := list.front.Next(); node != nil; node = node.Next() {
+		fmt.Fprintf(&builder, ", %v", node.Value)
 	}
 
 	fmt.Fprintf(&builder, "]]")
@@ -292,7 +299,7 @@ func (list *SafeList[T]) String() string {
 	return builder.String()
 }
 
-// Prepend is a method of the SafeList type. It is used to add an element to the
+// Prepend is a method of the LimitedSafeList type. It is used to add an element to the
 // front of the list.
 //
 // Panics with an error of type *ErrCallFailed if the list is fu
@@ -300,11 +307,15 @@ func (list *SafeList[T]) String() string {
 // Parameters:
 //
 //   - value: The value of type T to be added to the list.
-func (list *SafeList[T]) Prepend(value T) {
+func (list *LimitedSafeList[T]) Prepend(value T) error {
 	list.frontMutex.Lock()
 	defer list.frontMutex.Unlock()
 
-	node := &listLinkedNode[T]{value: value}
+	if list.size >= list.capacity {
+		return Common.NewErrFullList(list)
+	}
+
+	node := Common.NewListSafeNode(value)
 
 	if list.front == nil {
 		// The list is empty
@@ -312,16 +323,18 @@ func (list *SafeList[T]) Prepend(value T) {
 		list.back = node
 		list.backMutex.Unlock()
 	} else {
-		node.next = list.front
-		list.front.prev = node
+		node.SetNext(list.front)
+		list.front.SetPrev(node)
 	}
 
 	list.front = node
 
 	list.size++
+
+	return nil
 }
 
-// DeleteLast is a method of the SafeList type. It is used to remove and return the
+// DeleteLast is a method of the LimitedSafeList type. It is used to remove and return the
 // last element from the list.
 //
 // Panics with an error of type *ErrCallFailed if the list is empty.
@@ -329,36 +342,36 @@ func (list *SafeList[T]) Prepend(value T) {
 // Returns:
 //
 //   - T: The last element in the list.
-func (list *SafeList[T]) DeleteLast() (T, error) {
+func (list *LimitedSafeList[T]) DeleteLast() (T, error) {
 	list.backMutex.Lock()
 	defer list.backMutex.Unlock()
 
 	if list.back == nil {
-		return *new(T), NewErrEmptyList(list)
+		return *new(T), Common.NewErrEmptyList(list)
 	}
 
 	toRemove := list.back
 
 	list.frontMutex.Lock()
 
-	list.back = list.back.prev
+	list.back = list.back.Prev()
 
 	if list.back == nil {
 		list.front = nil
 	} else {
-		list.back.next = nil
+		list.back.SetNext(nil)
 	}
 
 	list.frontMutex.Unlock()
 
 	list.size--
 
-	toRemove.prev = nil
+	toRemove.SetPrev(nil)
 
-	return toRemove.value, nil
+	return toRemove.Value, nil
 }
 
-// PeekLast is a method of the SafeList type. It is used to return the last element
+// PeekLast is a method of the LimitedSafeList type. It is used to return the last element
 // from the list without removing it.
 //
 // Panics with an error of type *ErrCallFailed if the list is empty.
@@ -366,20 +379,20 @@ func (list *SafeList[T]) DeleteLast() (T, error) {
 // Returns:
 //
 //   - T: The last element in the list.
-func (list *SafeList[T]) PeekLast() (T, error) {
+func (list *LimitedSafeList[T]) PeekLast() (T, error) {
 	list.backMutex.RLock()
 	defer list.backMutex.RUnlock()
 
 	if list.back == nil {
-		return *new(T), NewErrEmptyList(list)
+		return *new(T), Common.NewErrEmptyList(list)
 	}
 
-	return list.back.value, nil
+	return list.back.Value, nil
 }
 
-// CutNilValues is a method of the SafeList type. It is used to remove all nil
+// CutNilValues is a method of the LimitedSafeList type. It is used to remove all nil
 // values from the list.
-func (list *SafeList[T]) CutNilValues() {
+func (list *LimitedSafeList[T]) CutNilValues() {
 	list.frontMutex.Lock()
 	defer list.frontMutex.Unlock()
 
@@ -390,7 +403,7 @@ func (list *SafeList[T]) CutNilValues() {
 		return // List is empty
 	}
 
-	if gen.IsNil(list.front.value) && list.front == list.back {
+	if gen.IsNil(list.front.Value) && list.front == list.back {
 		// Single node
 		list.front = nil
 		list.back = nil
@@ -399,32 +412,32 @@ func (list *SafeList[T]) CutNilValues() {
 		return
 	}
 
-	var toDelete *listLinkedNode[T] = nil
+	var toDelete *Common.ListSafeNode[T] = nil
 
 	// 1. First node
-	if gen.IsNil(list.front.value) {
+	if gen.IsNil(list.front.Value) {
 		toDelete = list.front
 
-		list.front = list.front.next
-		list.front.prev = nil
+		list.front = list.front.Next()
+		list.front.SetPrev(nil)
 
-		toDelete.next = nil
+		toDelete.SetNext(nil)
 		list.size--
 	}
 
 	prev := list.front
 
 	// 2. Subsequent nodes (except last)
-	for node := list.front.next; node.next != nil; node = node.next {
-		if !gen.IsNil(node.value) {
+	for node := list.front.Next(); node.Next() != nil; node = node.Next() {
+		if !gen.IsNil(node.Value) {
 			prev = node
 		} else {
-			prev.next = node.next
-			node.next.prev = prev
+			prev.SetNext(node.Next())
+			node.Next().SetPrev(prev)
 			list.size--
 
 			if toDelete != nil {
-				toDelete.next = nil
+				toDelete.SetNext(nil)
 			}
 
 			toDelete = node
@@ -432,24 +445,24 @@ func (list *SafeList[T]) CutNilValues() {
 	}
 
 	if toDelete != nil {
-		toDelete.next = nil
+		toDelete.SetNext(nil)
 	}
 
 	// 3. Last node
-	if gen.IsNil(list.back.value) {
+	if gen.IsNil(list.back.Value) {
 		list.back = prev
-		list.back.next = nil
+		list.back.SetNext(nil)
 		list.size--
 	}
 }
 
-// Slice is a method of the SafeList type. It is used to return a slice of the
+// Slice is a method of the LimitedSafeList type. It is used to return a slice of the
 // elements in the list.
 //
 // Returns:
 //
 //   - []T: A slice of type T containing the elements of the list.
-func (list *SafeList[T]) Slice() []T {
+func (list *LimitedSafeList[T]) Slice() []T {
 	list.frontMutex.RLock()
 	defer list.frontMutex.RUnlock()
 
@@ -458,28 +471,29 @@ func (list *SafeList[T]) Slice() []T {
 
 	slice := make([]T, 0, list.size)
 
-	for node := list.front; node != nil; node = node.next {
-		slice = append(slice, node.value)
+	for node := list.front; node != nil; node = node.Next() {
+		slice = append(slice, node.Value)
 	}
 
 	return slice
 }
 
-// Copy is a method of the SafeList type. It is used to create a shallow copy of
+// Copy is a method of the LimitedSafeList type. It is used to create a shallow copy of
 // the list.
 //
 // Returns:
 //
-//   - itf.Copier: A copy of the list.
-func (list *SafeList[T]) Copy() itff.Copier {
+//   - itff.Copier: A copy of the list.
+func (list *LimitedSafeList[T]) Copy() itff.Copier {
 	list.frontMutex.RLock()
 	defer list.frontMutex.RUnlock()
 
 	list.backMutex.RLock()
 	defer list.backMutex.RUnlock()
 
-	listCopy := &SafeList[T]{
-		size: list.size,
+	listCopy := &LimitedSafeList[T]{
+		size:     list.size,
+		capacity: list.capacity,
 	}
 
 	if list.front == nil {
@@ -487,25 +501,21 @@ func (list *SafeList[T]) Copy() itff.Copier {
 	}
 
 	// First node
-	listCopy.front = &listLinkedNode[T]{
-		value: list.front.value,
-	}
+	listCopy.front = Common.NewListSafeNode(list.front.Value)
 
 	prev := listCopy.front
 
 	// Subsequent nodes
-	for node := list.front.next; node != nil; node = node.next {
-		nodeCopy := &listLinkedNode[T]{
-			value: node.value,
-			prev:  prev,
-		}
+	for node := list.front.Next(); node != nil; node = node.Next() {
+		nodeCopy := Common.NewListSafeNode(node.Value)
+		nodeCopy.SetPrev(prev)
 
-		prev.next = nodeCopy
+		prev.SetNext(nodeCopy)
 		prev = nodeCopy
 	}
 
-	if listCopy.front.next != nil {
-		listCopy.front.next.prev = listCopy.front
+	if listCopy.front.Next() != nil {
+		listCopy.front.Next().SetPrev(listCopy.front)
 	}
 
 	listCopy.back = prev

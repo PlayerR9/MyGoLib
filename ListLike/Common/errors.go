@@ -1,4 +1,4 @@
-package ListLike
+package Common
 
 import (
 	"fmt"

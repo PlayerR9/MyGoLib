@@ -4,8 +4,8 @@ package Counters
 import (
 	"fmt"
 
-	ers "github.com/PlayerR9/MyGoLibUnits/Errors"
-	itf "github.com/PlayerR9/MyGoLibUnits/Interfaces"
+	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
+	itf "github.com/PlayerR9/MyGoLib/Units/Interfaces"
 )
 
 // UpCounter represents a counter that increments upwards until it reaches an upper

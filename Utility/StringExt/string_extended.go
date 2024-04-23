@@ -10,7 +10,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	ers "github.com/PlayerR9/MyGoLibUnits/Errors"
+	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
 	"github.com/markphelps/optional"
 )
 

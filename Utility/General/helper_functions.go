@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"reflect"
 
-	ers "github.com/PlayerR9/MyGoLibUnits/Errors"
-	itf "github.com/PlayerR9/MyGoLibUnits/Interfaces"
+	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
+	itf "github.com/PlayerR9/MyGoLib/Units/Interfaces"
 )
 
 // Min is a function that takes two parameters, a and b, of any type T that

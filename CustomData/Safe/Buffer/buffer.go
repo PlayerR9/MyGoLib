@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"sync"
 
-	sll "github.com/PlayerR9/MyGoLib/CustomData/Safe/ListLike"
+	sll "github.com/PlayerR9/MyGoLib/ListLike/Queue"
 
-	ers "github.com/PlayerR9/MyGoLibUnits/Errors"
+	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
 )
 
 // Buffer is a thread-safe, generic data structure that allows multiple

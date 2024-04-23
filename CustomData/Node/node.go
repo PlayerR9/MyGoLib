@@ -3,11 +3,11 @@ package Node
 // FIXME: Update Queue import when MyGoLists is updated
 
 import (
+	Queue "github.com/PlayerR9/MyGoLib/ListLike/Queue"
+	"github.com/PlayerR9/MyGoLib/ListLike/Stack"
 	slext "github.com/PlayerR9/MyGoLib/Utility/SliceExt"
-	Queue "github.com/PlayerR9/MyGoLists/Implementations/Queue"
-	"github.com/PlayerR9/MyGoLists/Implementations/Stack"
 
-	itff "github.com/PlayerR9/MyGoLibUnits/Functions"
+	itff "github.com/PlayerR9/MyGoLib/Units/Functions"
 )
 
 // Node is a generic data structure that represents a node in a tree.
@@ -151,7 +151,7 @@ func (n *Node[T]) GetLeaves() []*Node[T] {
 	Q := Queue.NewLinkedQueue(n)
 
 	for !Q.IsEmpty() {
-		node := Q.MustDequeue()
+		node := Q.Dequeue()
 
 		if node.firstChild == nil {
 			leaves = append(leaves, node)
@@ -183,7 +183,7 @@ func (n *Node[T]) BFSTraversal(observer itff.ObserverFunc[T]) error {
 	Q := Queue.NewLinkedQueue(n)
 
 	for !Q.IsEmpty() {
-		node := Q.MustDequeue()
+		node := Q.Dequeue()
 
 		if err := observer(node.Data); err != nil {
 			return err
@@ -211,7 +211,7 @@ func (n *Node[T]) DFSTraversal(observer itff.ObserverFunc[T]) error {
 	S := Stack.NewLinkedStack(n)
 
 	for !S.IsEmpty() {
-		node := S.MustPop()
+		node := S.Pop()
 
 		if err := observer(node.Data); err != nil {
 			return err

@@ -4,7 +4,7 @@ package Counters
 import (
 	"fmt"
 
-	itf "github.com/PlayerR9/MyGoLibUnits/Interfaces"
+	itf "github.com/PlayerR9/MyGoLib/Units/Interfaces"
 )
 
 // Counter interface defines the methods that a counter must implement.

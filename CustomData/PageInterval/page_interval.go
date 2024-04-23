@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	itf "github.com/PlayerR9/MyGoLib/CustomData/Iterators"
+	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
-	ers "github.com/PlayerR9/MyGoLibUnits/Errors"
 )
 
 // PageRange represents a pair of integers that represent the start and end

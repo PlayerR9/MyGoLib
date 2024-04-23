@@ -1,8 +1,8 @@
 package Iterators
 
 import (
-	ers "github.com/PlayerR9/MyGoLibUnits/Errors"
-	itf "github.com/PlayerR9/MyGoLibUnits/Interfaces"
+	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
+	itf "github.com/PlayerR9/MyGoLib/Units/Interfaces"
 )
 
 // Iterater is an interface that defines methods for an iterator over a collection of

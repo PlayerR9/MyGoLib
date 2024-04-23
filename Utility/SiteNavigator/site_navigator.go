@@ -3,8 +3,8 @@ package SiteNavigator
 import (
 	"golang.org/x/net/html"
 
-	Queue "github.com/PlayerR9/MyGoLists/Implementations/Queue"
-	"github.com/PlayerR9/MyGoLists/Implementations/Stack"
+	Queue "github.com/PlayerR9/MyGoLib/ListLike/Queue"
+	"github.com/PlayerR9/MyGoLib/ListLike/Stack"
 )
 
 var IsTextNodeSearch *SearchCriteria = NewSearchCriteria(html.TextNode)
@@ -71,7 +71,7 @@ func MatchNodes(section *html.Node, criteria *SearchCriteria) []*html.Node {
 	Q := Queue.NewLinkedQueue(section)
 
 	for !Q.IsEmpty() {
-		node, _ := Q.Dequeue()
+		node := Q.Dequeue()
 
 		if criteria.Match(node) {
 			solution = append(solution, node)
@@ -143,7 +143,7 @@ func ExtractContentFromDocument(doc *html.Node, criteria *SearchCriteria) *html.
 	S := Stack.NewLinkedStack(doc)
 
 	for !S.IsEmpty() {
-		node, _ := S.Pop()
+		node := S.Pop()
 
 		if criteria == nil || criteria.Match(node) {
 			return node

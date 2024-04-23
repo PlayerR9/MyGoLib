@@ -3,8 +3,8 @@ package SliceExt
 import (
 	"slices"
 
+	intf "github.com/PlayerR9/MyGoLib/Units/Interfaces"
 	util "github.com/PlayerR9/MyGoLib/util"
-	intf "github.com/PlayerR9/MyGoLibUnits/Interfaces"
 )
 
 // FilterByPositiveWeight is a function that iterates over the slice and applies
