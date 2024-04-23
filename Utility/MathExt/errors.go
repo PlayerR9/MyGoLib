@@ -7,8 +7,8 @@ type ErrInvalidBase struct{}
 //
 // Returns:
 //
-//   - error: A new ErrInvalidBase error.
-func NewErrInvalidBase() error {
+//   - *ErrInvalidBase: The new ErrInvalidBase error.
+func NewErrInvalidBase() *ErrInvalidBase {
 	return &ErrInvalidBase{}
 }
 

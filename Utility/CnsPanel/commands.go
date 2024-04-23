@@ -21,7 +21,7 @@ type ConsoleCommandInfo struct {
 
 	// Slice of ConsoleFlagInfo representing the flags accepted by
 	// the command.
-	flags []*ConsoleFlagInfo
+	flags []ConsoleFlagInfo
 
 	// Function invoked when the command is executed.
 	callback func(map[string]any) (any, error)
@@ -58,7 +58,7 @@ type CommandInfoOption func(*ConsoleCommandInfo) error
 //     ConsoleCommandInfo.
 func WithFlag(name string, callback func(...string) (any, error), options ...FlagInfoOption) CommandInfoOption {
 	return func(command *ConsoleCommandInfo) error {
-		newFlag := &ConsoleFlagInfo{
+		newFlag := ConsoleFlagInfo{
 			name:        name,
 			args:        make([]string, 0),
 			description: make([]string, 0),
@@ -79,7 +79,7 @@ func WithFlag(name string, callback func(...string) (any, error), options ...Fla
 		}
 
 		for _, option := range options {
-			option(newFlag)
+			option(&newFlag)
 		}
 
 		command.flags = append(command.flags, newFlag)
@@ -171,16 +171,25 @@ func (cci *ConsoleCommandInfo) FString(indentLevel int) []string {
 	var builder strings.Builder
 
 	for _, flag := range cci.flags {
-		fmt.Fprintf(&builder, "%sUsage: %s", indent, cci.name)
+		builder.WriteString(indent)
+		builder.WriteString("Usage: ")
+		builder.WriteString(cci.name)
+
+		builder.WriteRune(' ')
 
 		if flag.required {
-			fmt.Fprintf(&builder, " %s", flag.name)
+			builder.WriteString(flag.name)
 		} else {
-			fmt.Fprintf(&builder, " [%s]", flag.name)
+			builder.WriteRune('[')
+			builder.WriteString(flag.name)
+			builder.WriteRune(']')
 		}
 
 		for _, arg := range flag.args {
-			fmt.Fprintf(&builder, " <%s>", arg)
+			builder.WriteRune(' ')
+			builder.WriteRune('<')
+			builder.WriteString(arg)
+			builder.WriteRune('>')
 		}
 
 		results = append(results, builder.String())

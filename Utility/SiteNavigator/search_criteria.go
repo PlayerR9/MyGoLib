@@ -76,13 +76,13 @@ func WithAttr(key string, val func(string) bool) SearchCriteriaOption {
 // Returns:
 //
 //   - *SearchCriteria: The newly created SearchCriteria instance.
-func NewSearchCriteria(node_type html.NodeType, options ...SearchCriteriaOption) *SearchCriteria {
-	sc := &SearchCriteria{
+func NewSearchCriteria(node_type html.NodeType, options ...SearchCriteriaOption) SearchCriteria {
+	sc := SearchCriteria{
 		NodeType: node_type,
 	}
 
 	for _, option := range options {
-		option(sc)
+		option(&sc)
 	}
 
 	return sc

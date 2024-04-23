@@ -8,7 +8,7 @@ type ErrNoPagesInInterval struct{}
 // Returns:
 //
 //   - string: The error message.
-func (e ErrNoPagesInInterval) Error() string {
+func (e *ErrNoPagesInInterval) Error() string {
 	return "no pages in interval"
 }
 

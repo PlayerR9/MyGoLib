@@ -62,7 +62,9 @@ func (pi *PageInterval) String() string {
 	fmt.Fprintf(&builder, "PageInterval[%d : %d", pi.intervals[0][0], pi.intervals[0][1])
 
 	for _, interval := range pi.intervals[1:] {
-		fmt.Fprintf(&builder, ", %d : %d", interval[0], interval[1])
+		builder.WriteRune(',')
+		builder.WriteRune(' ')
+		fmt.Fprintf(&builder, "%d : %d", interval[0], interval[1])
 	}
 
 	builder.WriteRune(']')
@@ -126,9 +128,9 @@ func (pi *PageInterval) Intervals() []PageRange {
 //
 // Returns:
 //
-//   - *PageInterval: A pointer to the newly created PageInterval.
-func NewPageInterval() *PageInterval {
-	return &PageInterval{
+//   - PageInterval: The new PageInterval.
+func NewPageInterval() PageInterval {
+	return PageInterval{
 		intervals: make([]PageRange, 0),
 		pageCount: 0,
 	}

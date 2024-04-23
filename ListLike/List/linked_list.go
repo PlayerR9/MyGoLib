@@ -44,16 +44,16 @@ func NewLinkedList[T any](values ...T) *LinkedList[T] {
 	// First node
 	list_node := Common.NewListNode(values[0])
 
-	list.front = list_node
-	list.back = list_node
+	list.front = &list_node
+	list.back = &list_node
 
 	// Subsequent nodes
 	for _, element := range values {
 		list_node := Common.NewListNode(element)
 		list_node.SetPrev(list.back)
 
-		list.back.SetNext(list_node)
-		list.back = list_node
+		list.back.SetNext(&list_node)
+		list.back = &list_node
 	}
 
 	return list
@@ -71,13 +71,13 @@ func (list *LinkedList[T]) Append(value T) {
 	list_node := Common.NewListNode(value)
 
 	if list.back == nil {
-		list.front = list_node
+		list.front = &list_node
 	} else {
-		list.back.SetNext(list_node)
+		list.back.SetNext(&list_node)
 		list_node.SetPrev(list.back)
 	}
 
-	list.back = list_node
+	list.back = &list_node
 
 	list.size++
 }
@@ -250,13 +250,13 @@ func (list *LinkedList[T]) Prepend(value T) {
 	list_node := Common.NewListNode(value)
 
 	if list.front == nil {
-		list.back = list_node
+		list.back = &list_node
 	} else {
 		list_node.SetNext(list.front)
-		list.front.SetPrev(list_node)
+		list.front.SetPrev(&list_node)
 	}
 
-	list.front = list_node
+	list.front = &list_node
 
 	list.size++
 }
@@ -397,7 +397,8 @@ func (list *LinkedList[T]) Copy() itff.Copier {
 	}
 
 	// First node
-	listCopy.front = Common.NewListNode(list.front.Value)
+	node := Common.NewListNode(list.front.Value)
+	listCopy.front = &node
 
 	prev := listCopy.front
 
@@ -406,8 +407,8 @@ func (list *LinkedList[T]) Copy() itff.Copier {
 		list_node_copy := Common.NewListNode(list_node.Value)
 		list_node_copy.SetPrev(prev)
 
-		prev.SetNext(list_node_copy)
-		prev = list_node_copy
+		prev.SetNext(&list_node_copy)
+		prev = &list_node_copy
 	}
 
 	if listCopy.front.Next() != nil {

@@ -42,14 +42,14 @@ func NewLinkedStack[T any](values ...T) *LinkedStack[T] {
 	// First node
 	node := Common.NewStackNode(values[0])
 
-	stack.front = node
+	stack.front = &node
 
 	// Subsequent nodes
 	for _, element := range values[1:] {
 		node = Common.NewStackNode(element)
 		node.SetNext(stack.front)
 
-		stack.front = node
+		stack.front = &node
 	}
 
 	return stack
@@ -70,7 +70,7 @@ func (stack *LinkedStack[T]) Push(value T) {
 		node.SetNext(stack.front)
 	}
 
-	stack.front = node
+	stack.front = &node
 	stack.size++
 }
 
@@ -179,22 +179,21 @@ func (stack *LinkedStack[T]) Clear() {
 //
 //   - string: A string representation of the stack.
 func (stack *LinkedStack[T]) String() string {
+	if stack.size == 0 {
+		return "LinkedStack[size=0, values=[ →]]"
+	}
+
 	var builder strings.Builder
 
-	builder.WriteString("LinkedStack[")
-
-	if stack.size == 0 {
-		builder.WriteString("size=0, values=[ →]]")
-		return builder.String()
-	}
-
-	fmt.Fprintf(&builder, "size=%d, values=[%v", stack.size, stack.front.Value)
+	fmt.Fprintf(&builder, "LinkedStack[size=%d, values=[%v", stack.size, stack.front.Value)
 
 	for stack_node := stack.front.Next(); stack_node != nil; stack_node = stack_node.Next() {
-		fmt.Fprintf(&builder, ", %v", stack_node.Value)
+		builder.WriteRune(',')
+		builder.WriteRune(' ')
+		fmt.Fprintf(&builder, "%v", stack_node.Value)
 	}
 
-	fmt.Fprintf(&builder, " →]]")
+	builder.WriteString(" →]]")
 
 	return builder.String()
 }
@@ -280,6 +279,8 @@ func (stack *LinkedStack[T]) Slice() []T {
 //
 //   - itf.Copier: A copy of the stack.
 func (stack *LinkedStack[T]) Copy() itff.Copier {
+	// FIXME: This doesn't work: Node.SetNext(Node)!!!
+
 	stackCopy := &LinkedStack[T]{
 		size: stack.size,
 	}
@@ -290,12 +291,12 @@ func (stack *LinkedStack[T]) Copy() itff.Copier {
 
 	// First node
 	node := Common.NewStackNode(stack.front.Value)
-	stackCopy.front = node
+	stackCopy.front = &node
 
 	// Subsequent nodes
 	for stack_node := stack.front.Next(); stack_node != nil; stack_node = stack_node.Next() {
-		node.SetNext(Common.NewStackNode(stack_node.Value))
-		node = node.Next()
+		node := Common.NewStackNode(stack_node.Value)
+		node.SetNext(&node)
 	}
 
 	return stackCopy

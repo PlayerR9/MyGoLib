@@ -46,15 +46,15 @@ func NewLimitedLinkedQueue[T any](values ...T) *LimitedLinkedQueue[T] {
 	// First node
 	node := Common.NewQueueNode(values[0])
 
-	queue.front = node
-	queue.back = node
+	queue.front = &node
+	queue.back = &node
 
 	// Subsequent nodes
 	for _, element := range values[1:] {
 		node = Common.NewQueueNode(element)
 
-		queue.back.SetNext(node)
-		queue.back = node
+		queue.back.SetNext(&node)
+		queue.back = &node
 	}
 
 	return queue
@@ -77,12 +77,12 @@ func (queue *LimitedLinkedQueue[T]) Enqueue(value T) {
 	queue_node := Common.NewQueueNode(value)
 
 	if queue.back == nil {
-		queue.front = queue_node
+		queue.front = &queue_node
 	} else {
-		queue.back.SetNext(queue_node)
+		queue.back.SetNext(&queue_node)
 	}
 
-	queue.back = queue_node
+	queue.back = &queue_node
 
 	queue.size++
 }
@@ -324,15 +324,15 @@ func (queue *LimitedLinkedQueue[T]) Copy() itff.Copier {
 	// First node
 	node := Common.NewQueueNode(queue.front.Value)
 
-	queueCopy.front = node
-	queueCopy.back = node
+	queueCopy.front = &node
+	queueCopy.back = &node
 
 	// Subsequent nodes
 	for queue_node := queue.front.Next(); queue_node != nil; queue_node = queue_node.Next() {
 		node = Common.NewQueueNode(queue_node.Value)
 
-		queueCopy.back.SetNext(node)
-		queueCopy.back = node
+		queueCopy.back.SetNext(&node)
+		queueCopy.back = &node
 	}
 
 	return queueCopy

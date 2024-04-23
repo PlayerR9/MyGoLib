@@ -26,10 +26,16 @@ import (
 func RunInPowerShell(program string, args ...string) func() error {
 	var builder strings.Builder
 
-	fmt.Fprintf(&builder, "'-NoExit', '%s'", program)
+	builder.WriteString("'-NoExit', '")
+	builder.WriteString(program)
+	builder.WriteString("'")
 
 	for _, arg := range args {
-		fmt.Fprintf(&builder, ", '%s'", arg)
+		builder.WriteRune(',')
+		builder.WriteRune(' ')
+		builder.WriteRune('\'')
+		builder.WriteString(arg)
+		builder.WriteRune('\'')
 	}
 
 	cmd := exec.Command(

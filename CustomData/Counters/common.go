@@ -60,10 +60,10 @@ type Counter interface {
 	//   - int: The initial count.
 	GetInitialCount() int
 
+	// Reset resets the counter to its initial state.
+	Reset()
+
 	fmt.Stringer
 
 	itf.Copier
-
-	// Reset resets the counter to its initial state.
-	Reset()
 }

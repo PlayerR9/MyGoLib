@@ -313,10 +313,16 @@ func (e *ErrUnexpected) Error() string {
 		fmt.Fprintf(&builder, "%q", e.Expected[0])
 
 		for i := 1; i < len(e.Expected)-1; i++ {
-			fmt.Fprintf(&builder, ", %q", e.Expected[i])
+			builder.WriteRune(',')
+			builder.WriteRune(' ')
+			fmt.Fprintf(&builder, "%q", e.Expected[i])
 		}
 
-		fmt.Fprintf(&builder, ", or %q", e.Expected[len(e.Expected)-1])
+		builder.WriteRune(',')
+		builder.WriteRune(' ')
+		builder.WriteString("or ")
+
+		fmt.Fprintf(&builder, "%q", e.Expected[len(e.Expected)-1])
 
 		expected = builder.String()
 	}
@@ -392,9 +398,9 @@ func (e ErrIgnorable) Unwrap() error {
 //
 // Returns:
 //
-//   - ErrIgnorable: The newly created ErrIgnorable.
-func NewErrIgnorable(err error) ErrIgnorable {
-	return ErrIgnorable{
+//   - *ErrIgnorable: A pointer to the newly created ErrIgnorable.
+func NewErrIgnorable(err error) *ErrIgnorable {
+	return &ErrIgnorable{
 		Err: err,
 	}
 }

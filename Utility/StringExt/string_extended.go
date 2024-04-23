@@ -130,11 +130,11 @@ type SpltLine struct {
 // Returns:
 //
 //   - *SpltLine: A pointer to the created SpltLine instance.
-func NewSpltLine(word string) *SpltLine {
-	splt := new(SpltLine)
-
-	splt.Line = []string{word}
-	splt.Len = utf8.RuneCountInString(word)
+func NewSpltLine(word string) SpltLine {
+	splt := SpltLine{
+		Line: []string{word},
+		Len:  utf8.RuneCountInString(word),
+	}
 
 	return splt
 }
@@ -173,11 +173,11 @@ func (sl *SpltLine) InsertWord(word string) {
 // Returns:
 //
 //   - *SpltLine: A pointer to the created deep copy of the SpltLine.
-func (sl *SpltLine) deepCopy() *SpltLine {
+func (sl *SpltLine) deepCopy() SpltLine {
 	newLine := make([]string, len(sl.Line))
 	copy(newLine, sl.Line)
 
-	return &SpltLine{
+	return SpltLine{
 		Line: newLine,
 		Len:  sl.Len,
 	}
@@ -200,7 +200,7 @@ type TextSplitter struct {
 
 	// The Lines field is a slice of pointers to SpltLine structs, each representing
 	// a line of text.
-	Lines []*SpltLine
+	Lines []SpltLine
 }
 
 // GetFurthestRightEdge is a method of TextSplitter that returns the length of the
@@ -300,7 +300,7 @@ func (ts *TextSplitter) InsertWord(word string) bool {
 			return false
 		}
 
-		ts.Lines = append(ts.Lines, &SpltLine{
+		ts.Lines = append(ts.Lines, SpltLine{
 			Line: []string{word},
 			Len:  utf8.RuneCountInString(word),
 		})
@@ -333,10 +333,10 @@ func (ts *TextSplitter) InsertWord(word string) bool {
 // Returns:
 //
 //   - *TextSplitter: A pointer to the created deep copy of the TextSplitter.
-func (ts *TextSplitter) deepCopy() *TextSplitter {
-	newTs := &TextSplitter{
+func (ts *TextSplitter) deepCopy() TextSplitter {
+	newTs := TextSplitter{
 		Width: ts.Width,
-		Lines: make([]*SpltLine, 0, len(ts.Lines)),
+		Lines: make([]SpltLine, 0, len(ts.Lines)),
 	}
 
 	for _, line := range ts.Lines {
@@ -502,16 +502,18 @@ func CalculateNumberOfLines(text []string, width int) (int, error) {
 //
 // If maxHeight is not provided, the function calculates the number of lines needed to fit the text
 // within the width using the CalculateNumberOfLines function.
-func SplitTextInEqualSizedLines(text []string, width int, maxHeight optional.Int) (*TextSplitter, error) {
+func SplitTextInEqualSizedLines(text []string, width int, maxHeight optional.Int) (TextSplitter, error) {
+	var group TextSplitter
+
 	if len(text) == 0 {
-		return nil, ers.NewErrInvalidParameter(
+		return group, ers.NewErrInvalidParameter(
 			"text",
 			errors.New("text cannot be empty"),
 		)
 	}
 
 	if width <= 0 {
-		return nil, ers.NewErrInvalidParameter(
+		return group, ers.NewErrInvalidParameter(
 			"width",
 			fmt.Errorf("negative or zero width (%d) is not allowed", width),
 		)
@@ -524,14 +526,14 @@ func SplitTextInEqualSizedLines(text []string, width int, maxHeight optional.Int
 	} else {
 		res, err := CalculateNumberOfLines(text, width)
 		if err != nil {
-			return nil, err
+			return group, err
 		}
 
 		height = res
 	}
 
 	if height < 1 {
-		return nil, ers.NewErrInvalidParameter(
+		return group, ers.NewErrInvalidParameter(
 			"height",
 			fmt.Errorf("negative or zero height (%d) is not allowed", height),
 		)
@@ -562,14 +564,12 @@ func SplitTextInEqualSizedLines(text []string, width int, maxHeight optional.Int
 	//		*** World, this ***
 	//		 *** is a test ***
 
-	group := &TextSplitter{
-		Width: width,
-		Lines: make([]*SpltLine, 0, height),
-	}
+	group.Width = width
+	group.Lines = make([]SpltLine, 0, height)
 
 	for i, word := range text {
 		if !group.InsertWord(word) {
-			return nil, fmt.Errorf("word at index %d (%s) is too long", i, word)
+			return group, fmt.Errorf("word at index %d (%s) is too long", i, word)
 		}
 	}
 
@@ -608,7 +608,7 @@ func SplitTextInEqualSizedLines(text []string, width int, maxHeight optional.Int
 	// If yes, then it is a candidate for the optimal solution.
 
 	// 4.2. Calculate the SQM of each candidate and returns the ones with the lowest SQM.
-	calculateSQMOf := func(ts *TextSplitter) float64 {
+	calculateSQMOf := func(ts TextSplitter) float64 {
 		var average float64
 
 		for _, line := range ts.Lines {
@@ -626,20 +626,20 @@ func SplitTextInEqualSizedLines(text []string, width int, maxHeight optional.Int
 		return math.Sqrt(sqm / float64(len(ts.Lines)))
 	}
 
-	candidateList := make([]*TextSplitter, 0)
-	newCandidates := []*TextSplitter{group}
+	candidateList := make([]TextSplitter, 0)
+	newCandidates := []TextSplitter{group}
 	minSQM := math.MaxFloat64
 
 	for len(newCandidates) > 0 {
-		candidatesToCheck := make([]*TextSplitter, len(newCandidates))
+		candidatesToCheck := make([]TextSplitter, len(newCandidates))
 		copy(candidatesToCheck, newCandidates)
 
-		newCandidates = make([]*TextSplitter, 0) // Clear the slice as we don't need it anymore.
+		newCandidates = make([]TextSplitter, 0) // Clear the slice as we don't need it anymore.
 
 		for _, candidate := range candidatesToCheck {
 			if SQM := calculateSQMOf(candidate); SQM < minSQM {
 				minSQM = SQM
-				candidateList = []*TextSplitter{candidate}
+				candidateList = []TextSplitter{candidate}
 			} else if SQM == minSQM {
 				candidateList = append(candidateList, candidate)
 			}

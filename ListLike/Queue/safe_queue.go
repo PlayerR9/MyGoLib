@@ -48,15 +48,15 @@ func NewSafeQueue[T any](values ...T) *SafeQueue[T] {
 	// First node
 	node := Common.NewQueueSafeNode(values[0])
 
-	queue.front = node
-	queue.back = node
+	queue.front = &node
+	queue.back = &node
 
 	// Subsequent nodes
 	for _, element := range values[1:] {
 		node = Common.NewQueueSafeNode(element)
 
-		queue.back.SetNext(node)
-		queue.back = node
+		queue.back.SetNext(&node)
+		queue.back = &node
 	}
 
 	return queue
@@ -78,13 +78,13 @@ func (queue *SafeQueue[T]) Enqueue(value T) {
 
 	if queue.back == nil {
 		queue.frontMutex.Lock()
-		queue.front = node
+		queue.front = &node
 		queue.frontMutex.Unlock()
 	} else {
-		queue.back.SetNext(node)
+		queue.back.SetNext(&node)
 	}
 
-	queue.back = node
+	queue.back = &node
 	queue.size++
 }
 
@@ -364,15 +364,15 @@ func (queue *SafeQueue[T]) Copy() itff.Copier {
 	// First node
 	node := Common.NewQueueSafeNode(queue.front.Value)
 
-	queueCopy.front = node
-	queueCopy.back = node
+	queueCopy.front = &node
+	queueCopy.back = &node
 
 	// Subsequent nodes
 	for qNode := queue.front.Next(); qNode != nil; qNode = qNode.Next() {
 		node = Common.NewQueueSafeNode(qNode.Value)
 
-		queueCopy.back.SetNext(node)
-		queueCopy.back = node
+		queueCopy.back.SetNext(&node)
+		queueCopy.back = &node
 	}
 
 	return queueCopy

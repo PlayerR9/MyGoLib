@@ -52,9 +52,9 @@ type Context struct {
 //
 // Returns:
 //
-//   - *Context: A pointer to the newly created Context.
-func NewContext() *Context {
-	return &Context{
+//   - Context: A new Context with default values.
+func NewContext() Context {
+	return Context{
 		censorLabel: DefaultCensorLabel,
 		notCensored: false,
 	}
@@ -241,15 +241,15 @@ func WithValues(values ...any) BuilderOption {
 //
 // Returns:
 //
-//   - *Builder: A pointer to the newly created Builder.
+//   - Builder: The new Builder with the given options.
 //
 // Important:
 //
 // The BuilderOptions are applied in the order they are provided. By default, the
 // Builder's label is set to DefaultCensorLabel and separator is set to a space
 // character.
-func (ctx *Context) Make(options ...BuilderOption) *Builder {
-	builder := &Builder{
+func (ctx *Context) Make(options ...BuilderOption) Builder {
+	builder := Builder{
 		ctx:     ctx,
 		label:   DefaultCensorLabel,
 		filters: make([]FilterFunc, 0),
@@ -258,7 +258,7 @@ func (ctx *Context) Make(options ...BuilderOption) *Builder {
 	}
 
 	for _, option := range options {
-		option(builder)
+		option(&builder)
 	}
 
 	var fields []string

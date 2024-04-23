@@ -9,7 +9,7 @@ type ErrCurrentCountBelowZero struct{}
 // Returns:
 //
 //   - string: The error message.
-func (e ErrCurrentCountBelowZero) Error() string {
+func (e *ErrCurrentCountBelowZero) Error() string {
 	return "current count is already at or below zero"
 }
 
@@ -31,7 +31,7 @@ type ErrCurrentCountAboveUpperLimit struct{}
 // Returns:
 //
 //   - string: The error message.
-func (e ErrCurrentCountAboveUpperLimit) Error() string {
+func (e *ErrCurrentCountAboveUpperLimit) Error() string {
 	return "current count is already at or beyond the upper limit"
 }
 

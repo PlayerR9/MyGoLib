@@ -114,11 +114,11 @@ type Builder struct {
 //   - ==DelimiterConfig==
 //   - Value: ""
 //   - Inline: true
-func NewBuilder(options ...BuildOption) *Builder {
-	b := &Builder{}
+func NewBuilder(options ...BuildOption) Builder {
+	b := Builder{}
 
 	for _, option := range options {
-		option(b)
+		option(&b)
 	}
 
 	if b.indent == nil {
@@ -192,17 +192,21 @@ func (b *Builder) Build(values []string) string {
 
 		var builder strings.Builder
 
-		if b.indent.IgnoreFirst {
-			fmt.Fprintf(&builder, "%s\n", b.delimiterLeft)
-		} else {
-			fmt.Fprintf(&builder, "%s%s\n", indent, b.delimiterLeft)
+		if !b.indent.IgnoreFirst {
+			builder.WriteString(indent)
 		}
+		builder.WriteString(b.delimiterLeft.String())
+		builder.WriteRune('\n')
 
 		for _, value := range vals {
-			fmt.Fprintf(&builder, "%s%s%s\n", indent, b.indent.Indentation, value)
+			builder.WriteString(indent)
+			builder.WriteString(b.indent.Indentation)
+			builder.WriteString(value)
+			builder.WriteRune('\n')
 		}
 
-		fmt.Fprintf(&builder, "%s%s", indent, b.delimiterRight)
+		builder.WriteString(indent)
+		builder.WriteString(b.delimiterRight.String())
 
 		return builder.String()
 	} else {

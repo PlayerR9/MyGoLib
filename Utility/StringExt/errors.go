@@ -26,8 +26,8 @@ func (e *ErrOpeningTokenNotFound) Error() string {
 //
 // Returns:
 //
-//   - error: The new error.
-func NewErrOpeningTokenNotFound(token string) error {
+//   - *ErrOpeningTokenNotFound: A pointer to the newly created error.
+func NewErrOpeningTokenNotFound(token string) *ErrOpeningTokenNotFound {
 	return &ErrOpeningTokenNotFound{token: token}
 }
 
@@ -56,8 +56,8 @@ func (e *ErrClosingTokenNotFound) Error() string {
 //
 // Returns:
 //
-//   - error: The new error.
-func NewErrClosingTokenNotFound(token string) error {
+//   - *ErrClosingTokenNotFound: A pointer to the newly created error.
+func NewErrClosingTokenNotFound(token string) *ErrClosingTokenNotFound {
 	return &ErrClosingTokenNotFound{token: token}
 }
 
@@ -89,7 +89,7 @@ func (e *ErrNeverOpened) Error() string {
 //
 // Returns:
 //
-//   - error: The new error.
-func NewErrNeverOpened(openingToken, closingToken string) error {
+//   - *ErrNeverOpened: A pointer to the newly created error.
+func NewErrNeverOpened(openingToken, closingToken string) *ErrNeverOpened {
 	return &ErrNeverOpened{openingToken: openingToken, closingToken: closingToken}
 }

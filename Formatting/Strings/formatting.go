@@ -29,10 +29,16 @@ func AndString(vals ...string) string {
 		builder.WriteString(vals[0])
 
 		for i := 1; i < len(vals)-1; i++ {
-			fmt.Fprintf(&builder, ", %s", vals[i])
+			builder.WriteRune(',')
+			builder.WriteRune(' ')
+			builder.WriteString(vals[i])
 		}
 
-		fmt.Fprintf(&builder, ", and %s", vals[len(vals)-1])
+		builder.WriteRune(',')
+		builder.WriteRune(' ')
+		builder.WriteString("and")
+		builder.WriteRune(' ')
+		builder.WriteString(vals[len(vals)-1])
 
 		return builder.String()
 	}
@@ -61,10 +67,16 @@ func OrString(vals ...string) string {
 		builder.WriteString(vals[0])
 
 		for i := 1; i < len(vals)-1; i++ {
-			fmt.Fprintf(&builder, ", %s", vals[i])
+			builder.WriteRune(',')
+			builder.WriteRune(' ')
+			builder.WriteString(vals[i])
 		}
 
-		fmt.Fprintf(&builder, ", or %s", vals[len(vals)-1])
+		builder.WriteRune(',')
+		builder.WriteRune(' ')
+		builder.WriteString("or")
+		builder.WriteRune(' ')
+		builder.WriteString(vals[len(vals)-1])
 
 		return builder.String()
 	}

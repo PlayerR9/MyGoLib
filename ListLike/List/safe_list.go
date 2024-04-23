@@ -49,16 +49,16 @@ func NewSafeList[T any](values ...T) *SafeList[T] {
 	// First node
 	list_node := Common.NewListSafeNode(values[0])
 
-	list.front = list_node
-	list.back = list_node
+	list.front = &list_node
+	list.back = &list_node
 
 	// Subsequent nodes
 	for _, element := range values {
 		list_node := Common.NewListSafeNode(element)
 		list_node.SetPrev(list.back)
 
-		list.back.SetNext(list_node)
-		list.back = list_node
+		list.back.SetNext(&list_node)
+		list.back = &list_node
 	}
 
 	return list
@@ -79,16 +79,16 @@ func (list *SafeList[T]) Append(value T) {
 	node := Common.NewListSafeNode(value)
 
 	if list.back != nil {
-		list.back.SetNext(node)
+		list.back.SetNext(&node)
 		node.SetPrev(list.back)
 	} else {
 		// The list is empty
 		list.frontMutex.Lock()
-		list.front = node
+		list.front = &node
 		list.frontMutex.Unlock()
 	}
 
-	list.back = node
+	list.back = &node
 
 	list.size++
 }
@@ -306,14 +306,14 @@ func (list *SafeList[T]) Prepend(value T) {
 	if list.front == nil {
 		// The list is empty
 		list.backMutex.Lock()
-		list.back = node
+		list.back = &node
 		list.backMutex.Unlock()
 	} else {
 		node.SetNext(list.front)
-		list.front.SetPrev(node)
+		list.front.SetPrev(&node)
 	}
 
-	list.front = node
+	list.front = &node
 
 	list.size++
 }
@@ -484,7 +484,8 @@ func (list *SafeList[T]) Copy() itff.Copier {
 	}
 
 	// First node
-	listCopy.front = Common.NewListSafeNode(list.front.Value)
+	node := Common.NewListSafeNode(list.front.Value)
+	listCopy.front = &node
 
 	prev := listCopy.front
 
@@ -493,8 +494,8 @@ func (list *SafeList[T]) Copy() itff.Copier {
 		nodeCopy := Common.NewListSafeNode(node.Value)
 		nodeCopy.SetPrev(prev)
 
-		prev.SetNext(nodeCopy)
-		prev = nodeCopy
+		prev.SetNext(&nodeCopy)
+		prev = &nodeCopy
 	}
 
 	if listCopy.front.Next() != nil {

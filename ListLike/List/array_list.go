@@ -150,23 +150,22 @@ func (list *ArrayList[T]) IsFull() (isFull bool) {
 //
 //   - string: A string representation of the list.
 func (list *ArrayList[T]) String() string {
+	if len(list.values) == 0 {
+		return "ArrayList[size=0, values=[]]"
+	}
+
 	var builder strings.Builder
 
-	builder.WriteString("ArrayList[")
-
-	if len(list.values) == 0 {
-		builder.WriteString("size=0, values=[]]")
-
-		return builder.String()
-	}
-
-	fmt.Fprintf(&builder, "size=%d, values=[%v", len(list.values), list.values[0])
+	fmt.Fprintf(&builder, "ArrayList[size=%d, values=[%v", len(list.values), list.values[0])
 
 	for _, element := range list.values[1:] {
-		fmt.Fprintf(&builder, ", %v", element)
+		builder.WriteRune(',')
+		builder.WriteRune(' ')
+		fmt.Fprintf(&builder, "%v", element)
 	}
 
-	fmt.Fprintf(&builder, "]]")
+	builder.WriteRune(']')
+	builder.WriteRune(']')
 
 	return builder.String()
 }

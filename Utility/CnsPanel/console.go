@@ -19,7 +19,7 @@ type ConsoleBuilder struct {
 	description [][]string
 
 	// Map of commands accepted by the interface.
-	commands map[string]*ConsoleCommandInfo
+	commands map[string]ConsoleCommandInfo
 }
 
 // SetExecutableName is a method of ConsoleBuilder that sets the
@@ -59,20 +59,20 @@ func (b *ConsoleBuilder) AppendParagraph(contents ...string) {
 //   - error: An error if the command cannot be added.
 func (b *ConsoleBuilder) AddCommand(commandName string, options ...CommandInfoOption) error {
 	if b.commands == nil {
-		b.commands = make(map[string]*ConsoleCommandInfo)
+		b.commands = make(map[string]ConsoleCommandInfo)
 	} else if _, exists := b.commands[commandName]; exists {
 		return fmt.Errorf("command '%s' already exists", commandName)
 	}
 
-	newCommand := &ConsoleCommandInfo{
+	newCommand := ConsoleCommandInfo{
 		name:        commandName,
 		description: make([]string, 0),
-		flags:       make([]*ConsoleFlagInfo, 0),
+		flags:       make([]ConsoleFlagInfo, 0),
 		callback:    nil,
 	}
 
 	for i, option := range options {
-		err := option(newCommand)
+		err := option(&newCommand)
 		if err != nil {
 			return fmt.Errorf("invalid option %d for command %s: %v", i, commandName, err)
 		}
@@ -89,11 +89,11 @@ func (b *ConsoleBuilder) AddCommand(commandName string, options ...CommandInfoOp
 // Returns:
 //
 //   - *CMLine: A CMLine built from the ConsoleBuilder.
-func (b *ConsoleBuilder) Build() *ConsolePanel {
-	cm := &ConsolePanel{executableName: b.execName}
+func (b *ConsoleBuilder) Build() ConsolePanel {
+	cm := ConsolePanel{executableName: b.execName}
 
 	if b.commands == nil {
-		cm.commands = make(map[string]*ConsoleCommandInfo)
+		cm.commands = make(map[string]ConsoleCommandInfo)
 		cm.description = make([][]string, 0)
 	} else {
 		cm.commands = b.commands
@@ -133,7 +133,7 @@ type ConsolePanel struct {
 	description [][]string
 
 	// Map of commands accepted by the interface.
-	commands map[string]*ConsoleCommandInfo
+	commands map[string]ConsoleCommandInfo
 }
 
 // ParseArgs parses the provided command line arguments
@@ -152,10 +152,12 @@ type ConsolePanel struct {
 //
 //   - *parsedCommand: The parsed command.
 //   - error: An error, if any.
-func (cns *ConsolePanel) ParseArgs(args []string) (*parsedCommand, error) {
+func (cns *ConsolePanel) ParseArgs(args []string) (parsedCommand, error) {
+	var pc parsedCommand
+
 	// Check if any arguments were provided
 	if len(args) == 0 {
-		return nil, ers.NewErrInvalidParameter(
+		return pc, ers.NewErrInvalidParameter(
 			"args",
 			errors.New("no arguments provided"),
 		)
@@ -164,14 +166,12 @@ func (cns *ConsolePanel) ParseArgs(args []string) (*parsedCommand, error) {
 	// Get the command from the command map
 	command, exists := cns.commands[args[0]]
 	if !exists {
-		return nil, fmt.Errorf("command '%s' not found", args[0])
+		return pc, fmt.Errorf("command '%s' not found", args[0])
 	}
 
-	pc := &parsedCommand{
-		command:  command.name,
-		args:     make(map[string]any),
-		callback: command.callback,
-	}
+	pc.command = command.name
+	pc.args = make(map[string]any)
+	pc.callback = command.callback
 
 	// Create a map to store the flags
 	var err error
@@ -180,7 +180,7 @@ func (cns *ConsolePanel) ParseArgs(args []string) (*parsedCommand, error) {
 		// Parse the flags if provided
 		pc.args, err = parseConsoleFlags(args[1:], command.flags)
 		if err != nil {
-			return nil, err
+			return pc, err
 		}
 	}
 
@@ -198,9 +198,9 @@ func (cns *ConsolePanel) ParseArgs(args []string) (*parsedCommand, error) {
 //
 //   - map[string]any: A map of the parsed flags.
 //   - error: An error, if any.
-func parseConsoleFlags(args []string, flags []*ConsoleFlagInfo) (map[string]any, error) {
+func parseConsoleFlags(args []string, flags []ConsoleFlagInfo) (map[string]any, error) {
 	// Create a map to store the console flags for quick lookup
-	consoleFlagMap := make(map[string]*ConsoleFlagInfo)
+	consoleFlagMap := make(map[string]ConsoleFlagInfo)
 	for _, consoleFlag := range flags {
 		consoleFlagMap[consoleFlag.name] = consoleFlag
 	}

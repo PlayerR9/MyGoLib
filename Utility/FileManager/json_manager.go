@@ -35,9 +35,9 @@ type JSONManager[T JSONEncoder] struct {
 //
 // Returns:
 //
-//   - *JSONManager[T]: A pointer to a new JSONManager.
-func NewJSONManager[T JSONEncoder](path string) *JSONManager[T] {
-	return &JSONManager[T]{
+//   - JSONManager[T]: The new JSONManager.
+func NewJSONManager[T JSONEncoder](path string) JSONManager[T] {
+	return JSONManager[T]{
 		path: path,
 	}
 }

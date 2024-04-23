@@ -7,7 +7,7 @@ import (
 	"github.com/PlayerR9/MyGoLib/ListLike/Stack"
 )
 
-var IsTextNodeSearch *SearchCriteria = NewSearchCriteria(html.TextNode)
+var IsTextNodeSearch SearchCriteria = NewSearchCriteria(html.TextNode)
 
 // ExtractSpecificNode finds all nodes that match the given search criteria and
 // that are direct children of the provided node.
@@ -24,22 +24,22 @@ var IsTextNodeSearch *SearchCriteria = NewSearchCriteria(html.TextNode)
 //   - nodes: A slice containing all nodes that match the search criteria.
 //
 // If no criteria is provided, then any node will match.
-func ExtractSpecificNode(node *html.Node, criteria *SearchCriteria) []*html.Node {
+func ExtractSpecificNode(node *html.Node, criteria *SearchCriteria) []html.Node {
 	if node == nil {
 		return nil
 	}
 
-	nodes := make([]*html.Node, 0)
+	nodes := make([]html.Node, 0)
 
 	// If no criteria is provided, then any node will match
 	if criteria == nil {
 		for c := node.FirstChild; c != nil; c = c.NextSibling {
-			nodes = append(nodes, c)
+			nodes = append(nodes, *c)
 		}
 	} else {
 		for c := node.FirstChild; c != nil; c = c.NextSibling {
 			if criteria.Match(c) {
-				nodes = append(nodes, c)
+				nodes = append(nodes, *c)
 			}
 		}
 	}
@@ -60,21 +60,21 @@ func ExtractSpecificNode(node *html.Node, criteria *SearchCriteria) []*html.Node
 // Returns:
 //
 //   - []*html.Node: A slice containing all nodes that match the search criteria.
-func MatchNodes(section *html.Node, criteria *SearchCriteria) []*html.Node {
+func MatchNodes(section *html.Node, criteria *SearchCriteria) []html.Node {
 	if section == nil {
 		return nil // No nodes to extract
 	} else if criteria == nil {
-		return []*html.Node{section}
+		return []html.Node{*section}
 	}
 
-	solution := make([]*html.Node, 0)
+	solution := make([]html.Node, 0)
 	Q := Queue.NewLinkedQueue(section)
 
 	for !Q.IsEmpty() {
 		node := Q.Dequeue()
 
 		if criteria.Match(node) {
-			solution = append(solution, node)
+			solution = append(solution, *node)
 		} else {
 			// Search the children of the node
 			for c := node.FirstChild; c != nil; c = c.NextSibling {
@@ -99,18 +99,18 @@ func MatchNodes(section *html.Node, criteria *SearchCriteria) []*html.Node {
 //   - []*html.Node: A slice containing all nodes that match the search criteria.
 //
 // If no criteria is provided, then any node will match.
-func ExtractNodes(section *html.Node, criterias []*SearchCriteria) []*html.Node {
+func ExtractNodes(section *html.Node, criterias []SearchCriteria) []html.Node {
 	if section == nil {
 		return nil // No nodes to extract
 	}
 
-	solution := []*html.Node{section}
+	solution := []html.Node{*section}
 
 	for _, criteria := range criterias {
-		partialSol := make([]*html.Node, 0)
+		partialSol := make([]html.Node, 0)
 
 		for _, node := range solution {
-			partialSol = append(partialSol, MatchNodes(node, criteria)...)
+			partialSol = append(partialSol, MatchNodes(&node, &criteria)...)
 		}
 
 		if len(partialSol) == 0 {
@@ -166,14 +166,14 @@ func ExtractContentFromDocument(doc *html.Node, criteria *SearchCriteria) *html.
 // Returns:
 //
 //   - []*html.Node: A slice containing the direct children of the node.
-func GetDirectChildren(node *html.Node) []*html.Node {
+func GetDirectChildren(node *html.Node) []html.Node {
 	if node == nil {
 		return nil
 	}
 
-	children := make([]*html.Node, 0)
+	children := make([]html.Node, 0)
 	for c := node.FirstChild; c != nil; c = c.NextSibling {
-		children = append(children, c)
+		children = append(children, *c)
 	}
 	return children
 }

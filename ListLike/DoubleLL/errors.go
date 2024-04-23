@@ -8,7 +8,7 @@ type ErrNoElementsHaveBeenPopped struct{}
 // Returns:
 //
 //   - string: The error message.
-func (e ErrNoElementsHaveBeenPopped) Error() string {
+func (e *ErrNoElementsHaveBeenPopped) Error() string {
 	return "no elements have been popped"
 }
 
@@ -16,7 +16,7 @@ func (e ErrNoElementsHaveBeenPopped) Error() string {
 //
 // Returns:
 //
-//   - error: An error of type *ErrNoElementsHaveBeenPopped.
-func NewErrNoElementsHaveBeenPopped() error {
+//   - *ErrNoElementsHaveBeenPopped: A pointer to the newly created error.
+func NewErrNoElementsHaveBeenPopped() *ErrNoElementsHaveBeenPopped {
 	return &ErrNoElementsHaveBeenPopped{}
 }

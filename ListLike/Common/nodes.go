@@ -11,8 +11,8 @@ type ListNode[T any] struct {
 }
 
 // NewListNode creates a new LinkedNode with the given value.
-func NewListNode[T any](value T) *ListNode[T] {
-	return &ListNode[T]{Value: value}
+func NewListNode[T any](value T) ListNode[T] {
+	return ListNode[T]{Value: value}
 }
 
 func (node *ListNode[T]) SetNext(next *ListNode[T]) {
@@ -41,8 +41,8 @@ type QueueNode[T any] struct {
 }
 
 // NewQueueNode creates a new LinkedNode with the given value.
-func NewQueueNode[T any](value T) *QueueNode[T] {
-	return &QueueNode[T]{
+func NewQueueNode[T any](value T) QueueNode[T] {
+	return QueueNode[T]{
 		Value: value,
 	}
 }
@@ -64,8 +64,8 @@ type StackNode[T any] struct {
 	next *StackNode[T]
 }
 
-func NewStackNode[T any](value T) *StackNode[T] {
-	return &StackNode[T]{
+func NewStackNode[T any](value T) StackNode[T] {
+	return StackNode[T]{
 		Value: value,
 	}
 }
@@ -88,8 +88,8 @@ type QueueSafeNode[T any] struct {
 }
 
 // NewQueueSafeNode creates a new QueueSafeNode with the given value.
-func NewQueueSafeNode[T any](value T) *QueueSafeNode[T] {
-	return &QueueSafeNode[T]{Value: value}
+func NewQueueSafeNode[T any](value T) QueueSafeNode[T] {
+	return QueueSafeNode[T]{Value: value}
 }
 
 // SetNext sets the next node in the list.
@@ -113,8 +113,8 @@ type ListSafeNode[T any] struct {
 }
 
 // NewListSafeNode creates a new ListSafeNode with the given value.
-func NewListSafeNode[T any](value T) *ListSafeNode[T] {
-	return &ListSafeNode[T]{Value: value}
+func NewListSafeNode[T any](value T) ListSafeNode[T] {
+	return ListSafeNode[T]{Value: value}
 }
 
 // SetNext sets the next node in the list.

@@ -118,11 +118,15 @@ func (cfi *ConsoleFlagInfo) FString(indentLevel int) []string {
 
 	var builder strings.Builder
 
-	fmt.Fprintf(&builder, "%s%s", indent, cfi.name)
+	builder.WriteString(indent)
+	builder.WriteString(cfi.name)
 
 	// Add the arguments
 	for _, arg := range cfi.args {
-		fmt.Fprintf(&builder, " <%s>", arg)
+		builder.WriteRune(' ')
+		builder.WriteRune('<')
+		builder.WriteString(arg)
+		builder.WriteRune('>')
 	}
 
 	results = append(results, builder.String())

@@ -167,23 +167,23 @@ func (list *LimitedArrayList[T]) IsFull() bool {
 //
 //   - string: A string representation of the list.
 func (list *LimitedArrayList[T]) String() string {
+	if len(list.values) == 0 {
+		return fmt.Sprintf("LimitedArrayList[capacity=%d, size=0, values=[]]", list.capacity)
+	}
+
 	var builder strings.Builder
 
-	fmt.Fprintf(&builder, "LimitedArrayList[capacity=%d, ", list.capacity)
-
-	if len(list.values) == 0 {
-		builder.WriteString("size=0, values=[]]")
-
-		return builder.String()
-	}
-
-	fmt.Fprintf(&builder, "size=%d, values=[%v", len(list.values), list.values[0])
+	fmt.Fprintf(&builder, "LimitedArrayList[capacity=%d, size=%d, values=[%v",
+		list.capacity, len(list.values), list.values[0])
 
 	for _, element := range list.values[1:] {
-		fmt.Fprintf(&builder, ", %v", element)
+		builder.WriteRune(',')
+		builder.WriteRune(' ')
+		fmt.Fprintf(&builder, "%v", element)
 	}
 
-	fmt.Fprintf(&builder, "]]")
+	builder.WriteRune(']')
+	builder.WriteRune(']')
 
 	return builder.String()
 }
