@@ -110,13 +110,13 @@ func (n *Node[T]) AddChildren(children ...T) {
 // Returns:
 //
 //   - []*Node[T]: A slice of pointers to the children of the node.
-func (n *Node[T]) GetChildren() []Node[T] {
-	children := make([]Node[T], 0)
+func (n *Node[T]) GetChildren() []*Node[T] {
+	children := make([]*Node[T], 0)
 
 	current := n.firstChild
 
 	for current != nil {
-		children = append(children, *current)
+		children = append(children, current)
 		current = current.nextSibling
 	}
 
@@ -145,8 +145,8 @@ func (n *Node[T]) Cleanup() {
 // Returns:
 //
 //   - []*Node[T]: A slice of pointers to the leaves of the tree.
-func (n *Node[T]) GetLeaves() []Node[T] {
-	leaves := make([]Node[T], 0)
+func (n *Node[T]) GetLeaves() []*Node[T] {
+	leaves := make([]*Node[T], 0)
 
 	Q := Queue.NewLinkedQueue(n)
 
@@ -154,7 +154,7 @@ func (n *Node[T]) GetLeaves() []Node[T] {
 		node := Q.Dequeue()
 
 		if node.firstChild == nil {
-			leaves = append(leaves, *node)
+			leaves = append(leaves, node)
 		} else {
 			current := node.firstChild
 

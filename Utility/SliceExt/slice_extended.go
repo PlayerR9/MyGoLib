@@ -4,7 +4,6 @@ import (
 	"slices"
 
 	intf "github.com/PlayerR9/MyGoLib/Units/Interfaces"
-	util "github.com/PlayerR9/MyGoLib/util"
 )
 
 // FilterByPositiveWeight is a function that iterates over the slice and applies
@@ -450,7 +449,7 @@ func FindSubsliceFrom[T intf.Comparable](s []T, subS []T, at int) int {
 // Returns:
 //
 //   - int: The index of the first occurrence of the subslice.
-func FindSubsliceFromFunc[T util.Equaler[T]](s []T, subS []T, at int) int {
+func FindSubsliceFromFunc[T intf.Equaler[T]](s []T, subS []T, at int) int {
 	if len(subS) == 0 || len(s) == 0 || at+len(subS) > len(s) {
 		return -1
 	}
