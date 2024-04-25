@@ -5,11 +5,12 @@ import (
 )
 
 func TestInit(t *testing.T) {
-	buffer := new(Buffer[int])
-
-	if err := buffer.Init(1); err != nil {
-		t.Errorf("Expected no error, got %v", err)
+	buffer, err := NewBuffer[int](1)
+	if err != nil {
+		t.Errorf("Expected no error, got %s", err.Error())
 	}
+
+	buffer.Start()
 	defer buffer.Wait()
 
 	sendTo, receiveFrom := buffer.GetSendChannel(), buffer.GetReceiveChannel()
@@ -30,11 +31,12 @@ func TestInit(t *testing.T) {
 }
 
 func TestTrimFrom(t *testing.T) {
-	buffer := new(Buffer[int])
-
-	if err := buffer.Init(1); err != nil {
-		t.Errorf("Expected no error, got %v", err)
+	buffer, err := NewBuffer[int](1)
+	if err != nil {
+		t.Errorf("Expected no error, got %s", err.Error())
 	}
+
+	buffer.Start()
 	defer buffer.Wait()
 
 	sendTo, receiveFrom := buffer.GetSendChannel(), buffer.GetReceiveChannel()
