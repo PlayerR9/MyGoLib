@@ -37,18 +37,7 @@ type Buffer[T any] struct {
 	isClosed bool
 }
 
-// Init initializes a Buffer instance.
-// It ensures the initialization is done only once, even if called
-// multiple times.
-// It creates two channels and a condition variable, and starts two
-// goroutines:
-//
-//   - one that listens for incoming messages on the send channel and adds
-//     them to the Buffer.
-//   - another that sends messages from the Buffer
-//     to the receive channel.
-//
-// This method should be called before using the Buffer.
+// NewBuffer creates a new Buffer instance.
 //
 // Parameters:
 //   - bufferSize: The size of the buffer for the send and receive channels.
@@ -56,6 +45,7 @@ type Buffer[T any] struct {
 //     the method will panic with an *ers.InvalidParameterError.
 //
 // Returns:
+//   - *Buffer: A pointer to the newly created Buffer instance.
 //   - error: An error of type *ers.InvalidParameterError if
 //     the buffer size is negative.
 //
@@ -66,28 +56,38 @@ type Buffer[T any] struct {
 //   - The goroutine that sends messages from the Buffer to the receive
 //     channel will stop sending messages once the Buffer is empty, and then exit.
 //   - The Buffer will be cleaned up.
-func (b *Buffer[T]) Init(bufferSize int) error {
+//
+// Of course, a Close method is also provided to manually close the Buffer but
+// it is not necessary to call it if the send-only channel is closed.
+func NewBuffer[T any](bufferSize int) (*Buffer[T], error) {
 	if bufferSize < 0 {
-		return ers.NewErrInvalidParameter(
+		return nil, ers.NewErrInvalidParameter(
 			"bufferSize",
 			fmt.Errorf("value (%d) cannot be negative", bufferSize),
 		)
 	}
 
-	b.once.Do(func() {
-		b.q = sll.NewSafeQueue[T]()
-		b.sendTo = make(chan T, bufferSize)
-		b.receiveFrom = make(chan T, bufferSize)
-		b.isClosed = false
-		b.isNotEmptyOrClosed = sync.NewCond(new(sync.Mutex))
+	b := &Buffer[T]{
+		q:                  sll.NewSafeQueue[T](),
+		sendTo:             make(chan T, bufferSize),
+		receiveFrom:        make(chan T, bufferSize),
+		isClosed:           false,
+		isNotEmptyOrClosed: sync.NewCond(new(sync.Mutex)),
+	}
 
+	return b, nil
+}
+
+// Start is a method of the Buffer type that starts the Buffer by launching
+// the goroutines that listen for incoming messages and send messages from
+// the Buffer to the send channel.
+func (b *Buffer[T]) Start() {
+	b.once.Do(func() {
 		b.wg.Add(2)
 
 		go b.listenForIncomingMessages()
 		go b.sendMessagesFromBuffer()
 	})
-
-	return nil
 }
 
 // GetSendChannel returns the send-only channel of the Buffer.
@@ -146,16 +146,20 @@ func (b *Buffer[T]) sendMessagesFromBuffer() {
 		if b.isClosed {
 			isClosed = true
 		} else {
-			msg, _ := b.q.Dequeue()
-			b.sendTo <- msg
+			msg, err := b.q.Dequeue()
+			if err == nil {
+				b.sendTo <- msg
+			}
 		}
 
 		b.isNotEmptyOrClosed.L.Unlock()
 	}
 
 	for !b.q.IsEmpty() {
-		msg, _ := b.q.Dequeue()
-		b.sendTo <- msg
+		msg, err := b.q.Dequeue()
+		if err == nil {
+			b.sendTo <- msg
+		}
 	}
 
 	close(b.sendTo)
@@ -177,4 +181,9 @@ func (b *Buffer[T]) CleanBuffer() {
 // This method is thread-safe and can be called from multiple goroutines.
 func (b *Buffer[T]) Wait() {
 	b.wg.Wait()
+}
+
+// Close is a method of the Buffer type that closes the Buffer.
+func (b *Buffer[T]) Close() {
+	close(b.receiveFrom)
 }
