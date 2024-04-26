@@ -376,7 +376,7 @@ type ErrIgnorable struct {
 // Returns:
 //
 //   - string: The error message of the ignorable error (no mention of being ignorable).
-func (e ErrIgnorable) Error() string {
+func (e *ErrIgnorable) Error() string {
 	return e.Err.Error()
 }
 
@@ -386,7 +386,7 @@ func (e ErrIgnorable) Error() string {
 // Returns:
 //
 //   - error: The error that can be ignored.
-func (e ErrIgnorable) Unwrap() error {
+func (e *ErrIgnorable) Unwrap() error {
 	return e.Err
 }
 
@@ -444,4 +444,250 @@ func IsErrIgnorable(err error) bool {
 	var invalid *ErrInvalidParameter
 
 	return errors.As(err, &invalid)
+}
+
+// ErrGT represents an error when a value is less than or equal to a specified value.
+type ErrGT struct {
+	// Value is the value that caused the error.
+	Value int
+}
+
+// Error is a method of the error interface that returns the error message.
+//
+// Returns:
+//
+//   - string: The error message.
+func (e *ErrGT) Error() string {
+	if e.Value == 0 {
+		return "value must be positive"
+	} else {
+		return fmt.Sprintf("value must be greater than %d", e.Value)
+	}
+}
+
+// NewErrGT creates a new ErrGT error.
+//
+// Parameters:
+//
+//   - value: The value that caused the error.
+//
+// Returns:
+//
+//   - *ErrGT: A pointer to the newly created ErrGT.
+func NewErrGT(value int) *ErrGT {
+	return &ErrGT{Value: value}
+}
+
+// ErrLT represents an error when a value is greater than or equal to a specified value.
+type ErrLT struct {
+	// Value is the value that caused the error.
+	Value int
+}
+
+// Error is a method of the error interface that returns the error message.
+//
+// Returns:
+//
+//   - string: The error message.
+func (e *ErrLT) Error() string {
+	if e.Value == 0 {
+		return "value must be negative"
+	} else {
+		return fmt.Sprintf("value must be less than %d", e.Value)
+	}
+}
+
+// NewErrLT creates a new ErrLT error.
+//
+// Parameters:
+//
+//   - value: The value that caused the error.
+//
+// Returns:
+//
+//   - *ErrLT: A pointer to the newly created ErrLT.
+func NewErrLT(value int) *ErrLT {
+	return &ErrLT{Value: value}
+}
+
+// ErrGTE represents an error when a value is less than a specified value.
+type ErrGTE struct {
+	// Value is the value that caused the error.
+	Value int
+}
+
+// Error is a method of the error interface that returns the error message.
+//
+// Returns:
+//
+//   - string: The error message.
+func (e *ErrGTE) Error() string {
+	if e.Value == 0 {
+		return "value must be non-negative"
+	} else {
+		return fmt.Sprintf("value must be greater than %d", e.Value)
+	}
+}
+
+// NewErrGTE creates a new ErrGTE error.
+//
+// Parameters:
+//
+//   - value: The value that caused the error.
+//
+// Returns:
+//
+//   - *ErrGTE: A pointer to the newly created ErrGTE.
+func NewErrGTE(value int) *ErrGTE {
+	return &ErrGTE{Value: value}
+}
+
+// ErrLTE represents an error when a value is greater than a specified value.
+type ErrLTE struct {
+	// Value is the value that caused the error.
+	Value int
+}
+
+// Error is a method of the error interface that returns the error message.
+//
+// Returns:
+//
+//   - string: The error message.
+func (e *ErrLTE) Error() string {
+	if e.Value == 0 {
+		return "value must be non-positive"
+	} else {
+		return fmt.Sprintf("value must be less than or equal to %d", e.Value)
+	}
+}
+
+// NewErrLTE creates a new ErrLTE error.
+//
+// Parameters:
+//
+//   - value: The value that caused the error.
+//
+// Returns:
+//
+//   - *ErrLTE: A pointer to the newly created ErrLTE.
+func NewErrLTE(value int) *ErrLTE {
+	return &ErrLTE{Value: value}
+}
+
+// ErrInvalidValue represents an error when a value is invalid.
+type ErrInvalidValue struct {
+	// Values is the list of invalid values.
+	Values []int
+}
+
+// Error is a method of the error interface that returns the error message.
+//
+// Returns:
+//
+//   - string: The error message.
+func (e *ErrInvalidValue) Error() string {
+	if len(e.Values) == 0 {
+		return "value is invalid"
+	}
+
+	var builder strings.Builder
+
+	fmt.Fprintf(&builder, "value must not be %d", e.Values[0])
+
+	if len(e.Values) > 1 {
+		for i := 1; i < len(e.Values)-1; i++ {
+			builder.WriteRune(',')
+			builder.WriteRune(' ')
+			fmt.Fprintf(&builder, "%d", e.Values[i])
+		}
+
+		builder.WriteRune(',')
+		builder.WriteRune(' ')
+		builder.WriteString("or ")
+		fmt.Fprintf(&builder, "%d", e.Values[len(e.Values)-1])
+	}
+
+	return builder.String()
+}
+
+// NewErrInvalidValue creates a new ErrInvalidValue error.
+//
+// Parameters:
+//
+//   - values: The list of invalid values.
+//
+// Returns:
+//
+//   - *ErrInvalidValue: A pointer to the newly created ErrInvalidValue.
+func NewErrInvalidValue(values ...int) *ErrInvalidValue {
+	return &ErrInvalidValue{Values: values}
+}
+
+// ErrEmptyString represents an error when a string is empty.
+type ErrEmptyString struct{}
+
+// Error is a method of the error interface that returns the error message.
+//
+// Returns:
+//
+//   - string: The error message.
+func (e *ErrEmptyString) Error() string {
+	return "value must not be empty"
+}
+
+// NewErrEmptyString creates a new ErrEmptyString error.
+//
+// Returns:
+//
+//   - *ErrEmptyString: A pointer to the newly created ErrEmptyString.
+func NewErrEmptyString() *ErrEmptyString {
+	return &ErrEmptyString{}
+}
+
+// ErrInvalidRuneAt represents an error when an invalid rune is encountered at
+// a position.
+type ErrInvalidRuneAt struct {
+	// Position is the position of the invalid rune.
+	Position int
+
+	// Reason is the reason for the invalidity of the rune.
+	Reason error
+}
+
+// Error is a method of the error interface that returns the error message.
+//
+// If the reason is not provided (nil), no reason is included in the error message.
+//
+// Returns:
+//   - string: The error message.
+func (e *ErrInvalidRuneAt) Error() string {
+	if e.Reason == nil {
+		return fmt.Sprintf("invalid rune at position %d", e.Position)
+	} else {
+		return fmt.Sprintf("invalid rune at position %d: %s", e.Position, e.Reason.Error())
+	}
+}
+
+// Unwrap returns the reason for the invalidity of the rune.
+// It is used for error unwrapping.
+//
+// Returns:
+//   - error: The reason for the invalidity of the rune.
+func (e *ErrInvalidRuneAt) Unwrap() error {
+	return e.Reason
+}
+
+// NewErrInvalidRuneAt creates a new ErrInvalidRuneAt error.
+//
+// Parameters:
+//   - position: The position of the invalid rune.
+//   - reason: The reason for the invalidity of the rune.
+//
+// Returns:
+//   - *ErrInvalidRuneAt: A pointer to the newly created ErrInvalidRuneAt.
+func NewErrInvalidRuneAt(position int, reason error) *ErrInvalidRuneAt {
+	return &ErrInvalidRuneAt{
+		Position: position,
+		Reason:   reason,
+	}
 }

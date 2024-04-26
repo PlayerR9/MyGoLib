@@ -2,81 +2,72 @@ package Iterators
 
 import (
 	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
-	itf "github.com/PlayerR9/MyGoLib/Units/Interfaces"
+	intf "github.com/PlayerR9/MyGoLib/Units/Interfaces"
 )
 
-// Iterater is an interface that defines methods for an iterator over a collection of
-// elements of type T. It includes methods to get the next element, get the current
-// element, and restart the iterator.
+// Iterater is an interface that defines methods for an iterator over a
+// collection of elements of type T.
 type Iterater[T any] interface {
-	// The Next method advances the iterator to the next element in the collection.
-	// It returns true if there is a next element, otherwise false.
-	Next() bool
-
-	// The Value method returns the current element in the collection.
-	// It should be called after Next to get the current element.
+	// The Consume method advances the iterator to the next element in the
+	// collection and returns the current element.
 	//
-	// If the iterator is exhausted, it will panic.
-	Value() (T, error)
+	// Returns:
+	//  - T: The current element in the collection.
+	//  - error: An error if the iterator is exhausted.
+	Consume() (T, error)
 
-	// The Restart method resets the iterator to the beginning of the collection.
+	// The Restart method resets the iterator to the beginning of the
+	// collection.
 	Restart()
 }
 
-// Iterable is an interface that defines a method to get an iterator over a collection
-// of elements of type T. It is implemented by data structures that can be iterated over.
+// Iterable is an interface that defines a method to get an iterator over a
+// collection of elements of type T. It is implemented by data structures that
+// can be iterated over.
 type Iterable[T any] interface {
 	Iterator() Iterater[T]
 }
 
 // IteratorFromSlice creates a new iterator over a slice of elements of type T.
-// It creates a shallow copy of the input slice to minimize side effects.
 //
 // Parameters:
-//
 //   - values: The slice of elements to iterate over.
 //
 // Return:
-//
-//   - Iterater[T]: A pointer to a new iterator over the given slice of elements.
+//   - Iterater[T]: A new iterator over the given slice of elements.
 func IteratorFromSlice[T any](values []T) Iterater[T] {
 	return &GenericIterator[T]{
 		values: &values,
-		index:  -1,
+		index:  0,
 	}
 }
 
-// IteratorFromSlicer creates a new iterator over a data structure that implements the
-// Slicer interface. It uses the Slice method of the data structure to get the slice of
-// elements to iterate over.
+// IteratorFromSlicer creates a new iterator over a data structure that implements
+// the Slicer interface. It uses the Slice method of the data structure to get the
+// slice of elements to iterate over.
 //
 // Parameters:
-//
 //   - slicer: The data structure that implements the Slicer interface.
 //
 // Return:
-//
-//   - Iterater[T]: A pointer to a new iterator over the slice of elements returned by the
-//     Slice method of the input slicer.
-func IteratorFromSlicer[T any](slicer itf.Slicer[T]) Iterater[T] {
+//   - Iterater[T]: A new iterator over the slice of elements returned by the slicer.
+func IteratorFromSlicer[T any](slicer intf.Slicer[T]) Iterater[T] {
 	elements := slicer.Slice()
 
 	return &GenericIterator[T]{
 		values: &elements,
-		index:  -1,
+		index:  0,
 	}
 }
 
-// IteratorFromValues creates a new iterator over a variadic list of elements of type T.
-// It creates a shallow copy of the input variadic list to minimize side effects.
+// IteratorFromValues creates a new iterator over a variadic list of elements of
+// type T.
 //
 // Parameters:
-//
 //   - values: The variadic list of elements to iterate over.
 //
 // Return:
-//
-//   - Iterater[T]: A pointer to a new iterator over the given variadic list of elements.
+//   - Iterater[T]: The new iterator over the given elements.
 func IteratorFromValues[T any](values ...T) Iterater[T] {
 	// Create a copy of the values slice.
 	valuesCopy := make([]T, len(values))
@@ -84,23 +75,24 @@ func IteratorFromValues[T any](values ...T) Iterater[T] {
 
 	return &GenericIterator[T]{
 		values: &valuesCopy,
-		index:  -1,
+		index:  0,
 	}
 }
 
-// IteratorFromIterator creates a new iterator over a collection of iterators of type
-// Iterater[T].
-// It uses the input iterator to iterate over the collection of iterators and return
-// the elements from each iterator in turn.
+// IteratorFromIterator creates a new iterator over a collection of iterators
+// of type Iterater[T].
+// It uses the input iterator to iterate over the collection of iterators and
+// return the elements from each iterator in turn.
 //
 // Parameters:
-//
 //   - source: The iterator over the collection of iterators to iterate over.
-//   - f: The transition function that takes an element of type E and returns an iterator
+//   - f: The transition function that takes an element of type E and returns
+//     an iterator.
 //
 // Return:
-//
-//   - Iterater[T]: A pointer to a new iterator over the collection of iterators.
+//   - Iterater[T]: The new iterator over the collection of elements.
+//   - error: An error of type *ers.ErrInvalidParameter if the transition function
+//     is nil.
 func IteratorFromIterator[E, T any](source Iterater[E], f func(E) Iterater[T]) (Iterater[T], error) {
 	if f == nil {
 		return nil, ers.NewErrNilParameter("f")

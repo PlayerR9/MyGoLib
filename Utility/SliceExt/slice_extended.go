@@ -6,102 +6,6 @@ import (
 	intf "github.com/PlayerR9/MyGoLib/Units/Interfaces"
 )
 
-// FilterByPositiveWeight is a function that iterates over the slice and applies
-// the weight function to each element. The returned slice contains the elements
-// with the maximum weight. If multiple elements have the same maximum weight,
-// they are all returned.
-//
-// Parameters:
-//
-//   - S: slice of elements.
-//   - weightFunc: function that takes an element and returns an integer.
-//
-// Returns:
-//
-//   - []T: slice of elements with the maximum weight.
-func FilterByPositiveWeight[T any](S []T, weightFunc func(T) (int, bool)) []T {
-	if len(S) == 0 {
-		return []T{}
-	}
-
-	var solution []T
-	var maxWeight int
-
-	index := -1
-
-	for i, e := range S {
-		currentValue, ok := weightFunc(e)
-		if ok {
-			solution = []T{e}
-			maxWeight = currentValue
-			index = i
-			break
-		}
-	}
-
-	if index == -1 {
-		return []T{}
-	}
-
-	for _, e := range S[index+1:] {
-		currentValue, ok := weightFunc(e)
-		if !ok {
-			continue
-		}
-
-		if currentValue > maxWeight {
-			maxWeight = currentValue
-
-			// Clear the solution and add the new element
-			for i := range solution {
-				solution[i] = *new(T)
-			}
-
-			solution = []T{e}
-		} else if currentValue == maxWeight {
-			solution = append(solution, e)
-		}
-	}
-
-	return solution
-}
-
-// FilterByNegativeWeight is a function that iterates over the slice and applies
-// the weight function to each element. The returned slice contains the elements
-// with the minimum weight. If multiple elements have the same minimum weight,
-// they are all returned.
-//
-// Parameters:
-//
-//   - S: slice of elements.
-//   - weightFunc: function that takes an element and returns an integer.
-//
-// Returns:
-//
-//   - []T: slice of elements with the minimum weight.
-func FilterByNegativeWeight[T any](S []T, weightFunc func(T) int) []T {
-	if len(S) == 0 {
-		return []T{}
-	}
-
-	solution := []T{S[0]}
-
-	minWeight := weightFunc(S[0])
-
-	for _, e := range S[1:] {
-		currentValue := weightFunc(e)
-
-		if currentValue < minWeight {
-			minWeight = currentValue
-			solution = []T{e}
-		} else if currentValue == minWeight {
-			solution = append(solution, e)
-		}
-	}
-
-	return solution
-}
-
 // PredicateFilter is a type that defines a slice filter function.
 //
 // Parameters:
@@ -118,6 +22,9 @@ type PredicateFilter[T any] func(T) bool
 // It returns false as soon as it finds a function in funcs that the element
 // does not satisfy.
 //
+// If no filter functions are provided, then all elements are considered to satisfy
+// the filter function.
+//
 // Parameters:
 //
 //   - funcs: A slice of PredicateFilter functions.
@@ -128,6 +35,10 @@ type PredicateFilter[T any] func(T) bool
 //     all the PredicateFilter functions in funcs.
 func Intersect[T any](funcs ...PredicateFilter[T]) PredicateFilter[T] {
 	return func(e T) bool {
+		if len(funcs) == 0 {
+			return true
+		}
+
 		for _, f := range funcs {
 			if !f(e) {
 				return false
@@ -143,6 +54,9 @@ func Intersect[T any](funcs ...PredicateFilter[T]) PredicateFilter[T] {
 // It returns true as soon as it finds a function in funcs that the element
 // satisfies.
 //
+// If no filter functions are provided, then all elements are considered to satisfy
+// the filter function.
+//
 // Parameters:
 //
 //   - funcs: A slice of PredicateFilter functions.
@@ -153,6 +67,10 @@ func Intersect[T any](funcs ...PredicateFilter[T]) PredicateFilter[T] {
 //     at least one of the PredicateFilter functions in funcs.
 func Union[T any](funcs ...PredicateFilter[T]) PredicateFilter[T] {
 	return func(e T) bool {
+		if len(funcs) == 0 {
+			return true
+		}
+
 		for _, f := range funcs {
 			if f(e) {
 				return true
@@ -167,6 +85,8 @@ func Union[T any](funcs ...PredicateFilter[T]) PredicateFilter[T] {
 // function to each element. The returned slice contains the elements that
 // satisfy the filter function.
 //
+// If S is empty, the function returns an empty slice.
+//
 // Parameters:
 //
 //   - S: slice of elements.
@@ -176,6 +96,10 @@ func Union[T any](funcs ...PredicateFilter[T]) PredicateFilter[T] {
 //
 //   - []T: slice of elements that satisfy the filter function.
 func SliceFilter[T any](S []T, filter PredicateFilter[T]) []T {
+	if len(S) == 0 {
+		return []T{}
+	}
+
 	solution := make([]T, len(S))
 	copy(solution, S)
 
@@ -193,6 +117,8 @@ func SliceFilter[T any](S []T, filter PredicateFilter[T]) []T {
 // SFSeparate is a function that iterates over the slice and applies the filter
 // function to each element. The returned slices contain the elements that
 // satisfy and do not satisfy the filter function.
+//
+// If S is empty, the function returns two empty slices.
 //
 // Parameters:
 //
@@ -221,6 +147,8 @@ func SFSeparate[T any](S []T, filter PredicateFilter[T]) ([]T, []T) {
 // SFSeparateEarly is a variant of SFSeparate that returns all successful elements.
 // If there are none, it returns the original slice and false.
 //
+// If S is empty, the function returns an empty slice and true.
+//
 // Parameters:
 //
 //   - S: slice of elements.
@@ -231,6 +159,10 @@ func SFSeparate[T any](S []T, filter PredicateFilter[T]) ([]T, []T) {
 //   - []T: slice of elements that satisfy the filter function or the original slice.
 //   - bool: true if there are successful elements, otherwise false.
 func SFSeparateEarly[T any](S []T, filter PredicateFilter[T]) ([]T, bool) {
+	if len(S) == 0 {
+		return []T{}, true
+	}
+
 	index := slices.IndexFunc(S, filter)
 	if index == -1 {
 		return S, false
@@ -251,6 +183,9 @@ func SFSeparateEarly[T any](S []T, filter PredicateFilter[T]) ([]T, bool) {
 }
 
 // RemoveDuplicates removes duplicate elements from the slice.
+//
+// If there are less than two elements in the slice, the function
+// returns the original slice.
 //
 // Parameters:
 //
@@ -280,6 +215,9 @@ func RemoveDuplicates[T intf.Comparable](S []T) []T {
 
 // RemoveDuplicatesFunc removes duplicate elements from the slice.
 //
+// If there are less than two elements in the slice, the function
+// returns the original slice.
+//
 // Parameters:
 //
 //   - S: slice of elements.
@@ -288,9 +226,7 @@ func RemoveDuplicates[T intf.Comparable](S []T) []T {
 // Returns:
 //
 //   - []T: slice of elements with duplicates removed.
-func RemoveDuplicatesFunc[T interface {
-	Equals(T) bool
-}](S []T) []T {
+func RemoveDuplicatesFunc[T intf.Equaler[T]](S []T) []T {
 	if len(S) < 2 {
 		return S
 	}
@@ -317,6 +253,8 @@ func RemoveDuplicatesFunc[T interface {
 
 // IndexOfDuplicate returns the index of the first duplicate element in the slice.
 // If there are no duplicates, it returns -1.
+//
+// If there are less than two elements in the slice, the function returns -1.
 //
 // Parameters:
 //
@@ -346,6 +284,8 @@ func IndexOfDuplicate[T intf.Comparable](S []T) int {
 // IndexOfDuplicateFunc returns the index of the first duplicate element in the slice.
 // If there are no duplicates, it returns -1.
 //
+// If there are less than two elements in the slice, the function returns -1.
+//
 // Parameters:
 //
 //   - S: slice of elements.
@@ -373,19 +313,20 @@ func IndexOfDuplicateFunc[T any](S []T, equals func(T, T) bool) int {
 // FindSubBytesFrom finds the first occurrence of a subslice in a byte
 // slice starting from a given index.
 //
+// If S or subS is empty, the function returns -1.
 // If the subslice is not found, the function returns -1.
 //
 // Parameters:
 //
-//   - s: The byte slice to search in.
+//   - S: The byte slice to search in.
 //   - subS: The byte slice to search for.
 //   - at: The index to start searching from.
 //
 // Returns:
 //
 //   - int: The index of the first occurrence of the subslice.
-func FindSubsliceFrom[T intf.Comparable](s []T, subS []T, at int) int {
-	if len(subS) == 0 || len(s) == 0 || at+len(subS) > len(s) {
+func FindSubsliceFrom[T intf.Comparable](S []T, subS []T, at int) int {
+	if len(subS) == 0 || len(S) == 0 || at+len(subS) > len(S) {
 		return -1
 	}
 
@@ -396,8 +337,8 @@ func FindSubsliceFrom[T intf.Comparable](s []T, subS []T, at int) int {
 	possibleStarts := make([]int, 0)
 
 	// Find all possible starting points.
-	for i := at; i < len(s)-len(subS); i++ {
-		if s[i] == subS[0] {
+	for i := at; i < len(S)-len(subS); i++ {
+		if S[i] == subS[0] {
 			possibleStarts = append(possibleStarts, i)
 		}
 	}
@@ -420,7 +361,7 @@ func FindSubsliceFrom[T intf.Comparable](s []T, subS []T, at int) int {
 		found := true
 
 		for j := 0; j < len(subS); j++ {
-			if s[start+j] != subS[j] {
+			if S[start+j] != subS[j] {
 				found = false
 				break
 			}
@@ -437,11 +378,12 @@ func FindSubsliceFrom[T intf.Comparable](s []T, subS []T, at int) int {
 // FindSubsliceFromFunc finds the first occurrence of a subslice in a byte
 // slice starting from a given index using a custom comparison function.
 //
+// If S or subS is empty, the function returns -1.
 // If the subslice is not found, the function returns -1.
 //
 // Parameters:
 //
-//   - s: The byte slice to search in.
+//   - S: The byte slice to search in.
 //   - subS: The byte slice to search for.
 //   - at: The index to start searching from.
 //   - equals: The comparison function.
@@ -449,8 +391,8 @@ func FindSubsliceFrom[T intf.Comparable](s []T, subS []T, at int) int {
 // Returns:
 //
 //   - int: The index of the first occurrence of the subslice.
-func FindSubsliceFromFunc[T intf.Equaler[T]](s []T, subS []T, at int) int {
-	if len(subS) == 0 || len(s) == 0 || at+len(subS) > len(s) {
+func FindSubsliceFromFunc[T intf.Equaler[T]](S []T, subS []T, at int) int {
+	if len(subS) == 0 || len(S) == 0 || at+len(subS) > len(S) {
 		return -1
 	}
 
@@ -461,8 +403,8 @@ func FindSubsliceFromFunc[T intf.Equaler[T]](s []T, subS []T, at int) int {
 	possibleStarts := make([]int, 0)
 
 	// Find all possible starting points.
-	for i := at; i < len(s)-len(subS); i++ {
-		if s[i].Equals(subS[0]) {
+	for i := at; i < len(S)-len(subS); i++ {
+		if S[i].Equals(subS[0]) {
 			possibleStarts = append(possibleStarts, i)
 		}
 	}
@@ -485,7 +427,7 @@ func FindSubsliceFromFunc[T intf.Equaler[T]](s []T, subS []T, at int) int {
 		found := true
 
 		for j := 0; j < len(subS); j++ {
-			if !s[start+j].Equals(subS[j]) {
+			if !S[start+j].Equals(subS[j]) {
 				found = false
 				break
 			}

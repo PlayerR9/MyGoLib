@@ -1,15 +1,14 @@
-// Package Counters provides a set of interfaces and methods for managing counters.
 package Counters
 
 import (
 	"fmt"
 
 	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
-	itf "github.com/PlayerR9/MyGoLib/Units/Interfaces"
+	intf "github.com/PlayerR9/MyGoLib/Units/Interfaces"
 )
 
-// UpCounter represents a counter that increments upwards until it reaches an upper
-// limit.
+// UpCounter represents a counter that increments upwards until it
+// reaches an upper limit.
 type UpCounter struct {
 	// upperLimit is the maximum limit that the counter can reach.
 	upperLimit int
@@ -21,33 +20,11 @@ type UpCounter struct {
 	retreatCount int
 }
 
-// NewUpCounter creates a new UpCounter with the specified upper limit.
-//
-// Parameters:
-//
-//   - upperLimit: The maximum limit that the counter can reach.
-//
-// Returns:
-//
-//   - *UpCounter: A pointer to the newly created UpCounter.
-//   - error: An error of type *ers.ErrInvalidParameter if the upper limit
-//     is less than 0.
-func NewUpCounter(upperLimit int) (*UpCounter, error) {
-	if upperLimit < 0 {
-		return nil, ers.NewErrInvalidParameter(
-			"upperLimit",
-			fmt.Errorf("value (%d) must be positive", upperLimit),
-		)
-	}
-
-	return &UpCounter{upperLimit, 0, 0}, nil
-}
-
 // IsDone checks if the UpCounter has reached its upper limit.
 //
 // Returns:
-//
-//   - bool: true if the counter has reached its upper limit, false otherwise.
+//   - bool: true if the counter has reached its upper limit, false
+//     otherwise.
 func (c *UpCounter) IsDone() bool {
 	return c.currentCount >= c.upperLimit-c.retreatCount
 }
@@ -55,9 +32,8 @@ func (c *UpCounter) IsDone() bool {
 // Advance increments the current count of the UpCounter by one.
 //
 // Returns:
-//
-//   - error: An error of type *ErrCurrentCountAboveUpperLimit if the current count
-//     is already at or beyond the upper limit.
+//   - error: An error of type *ErrCurrentCountAboveUpperLimit if the current
+//     count is already at or beyond the upper limit.
 func (c *UpCounter) Advance() error {
 	if c.currentCount >= c.upperLimit-c.retreatCount {
 		return NewErrCurrentCountAboveUpperLimit()
@@ -72,9 +48,8 @@ func (c *UpCounter) Advance() error {
 // upper limit of the UpCounter by one.
 //
 // Returns:
-//
-//   - error: An error of type *ErrCurrentCountAboveUpperLimit if the current count
-//     is already at or beyond the upper limit.
+//   - error: An error of type *ErrCurrentCountAboveUpperLimit if the current
+//     count is already at or beyond the upper limit.
 func (c *UpCounter) Retreat() error {
 	if c.currentCount >= c.upperLimit-c.retreatCount {
 		return NewErrCurrentCountAboveUpperLimit()
@@ -89,7 +64,6 @@ func (c *UpCounter) Retreat() error {
 // been retreated.
 //
 // Returns:
-//
 //   - int: The number of times the counter has been retreated.
 func (c *UpCounter) GetRetreatCount() int {
 	return c.retreatCount
@@ -100,7 +74,6 @@ func (c *UpCounter) GetRetreatCount() int {
 // counter can still be advanced before reaching the upper limit.
 //
 // Returns:
-//
 //   - int: The distance between the current count and the upper limit.
 func (c *UpCounter) GetDistance() int {
 	return c.upperLimit - c.retreatCount - c.currentCount
@@ -109,7 +82,6 @@ func (c *UpCounter) GetDistance() int {
 // GetCurrentCount returns the current count of the UpCounter.
 //
 // Returns:
-//
 //   - int: The current count of the UpCounter.
 func (c *UpCounter) GetCurrentCount() int {
 	return c.currentCount
@@ -119,7 +91,6 @@ func (c *UpCounter) GetCurrentCount() int {
 // which is the initial count.
 //
 // Returns:
-//
 //   - int: The upper limit of the UpCounter.
 func (c *UpCounter) GetInitialCount() int {
 	return c.upperLimit
@@ -132,11 +103,12 @@ func (c *UpCounter) GetInitialCount() int {
 // This should be used for debugging and logging purposes.
 //
 // Returns:
-//
-//   - A string representing the UpCounter.
+//   - string: A string representation of the UpCounter.
 func (c *UpCounter) String() string {
-	return fmt.Sprintf("UpCounter[upperLimit=%d, currentCount=%d, retreatCount=%d, isDone=%t]",
-		c.upperLimit, c.currentCount, c.retreatCount, c.IsDone())
+	return fmt.Sprintf(
+		"UpCounter[upperLimit=%d, currentCount=%d, retreatCount=%d, isDone=%t]",
+		c.upperLimit, c.currentCount, c.retreatCount, c.IsDone(),
+	)
 }
 
 // Reset resets the UpCounter to its initial state.
@@ -148,12 +120,31 @@ func (c *UpCounter) Reset() {
 // Copy creates a shallow copy of the UpCounter.
 //
 // Returns:
-//
-//   - itf.Copier: A shallow copy of the UpCounter.
-func (c *UpCounter) Copy() itf.Copier {
+//   - intf.Copier: A shallow copy of the UpCounter.
+func (c *UpCounter) Copy() intf.Copier {
 	return &UpCounter{
 		upperLimit:   c.upperLimit,
 		currentCount: c.currentCount,
 		retreatCount: c.retreatCount,
 	}
+}
+
+// NewUpCounter creates a new UpCounter with the specified upper limit.
+//
+// Parameters:
+//   - upperLimit: The maximum limit that the counter can reach.
+//
+// Returns:
+//   - *UpCounter: A pointer to the newly created UpCounter.
+//   - error: An error of type *ers.ErrInvalidParameter if the upper limit is
+//     less than zero.
+func NewUpCounter(upperLimit int) (*UpCounter, error) {
+	if upperLimit < 0 {
+		return nil, ers.NewErrInvalidParameter(
+			"upperLimit",
+			ers.NewErrGTE(0),
+		)
+	}
+
+	return &UpCounter{upperLimit, 0, 0}, nil
 }
