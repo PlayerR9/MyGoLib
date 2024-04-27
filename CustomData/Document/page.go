@@ -1,6 +1,8 @@
 package Document
 
 import (
+	"strings"
+
 	Tr "github.com/PlayerR9/MyGoLib/CustomData/Tray"
 )
 
@@ -77,7 +79,9 @@ func (b *Builder) dealWithBackspace(tray *Tr.Tray[rune]) {
 	removeTrailingChar(tray, '\b')
 
 	tray.ArrowStart()
-	tray.MoveRight(1)
+	if !tray.MoveRight(1) {
+		return
+	}
 
 	for {
 		c, err := tray.Read()
@@ -86,11 +90,16 @@ func (b *Builder) dealWithBackspace(tray *Tr.Tray[rune]) {
 		}
 
 		if c == '\b' {
-			tray.MoveLeft(1)
+			if !tray.MoveLeft(1) {
+				return
+			}
+
 			tray.ShiftRightOfArrow(1)
 			tray.ShiftRightOfArrow(1)
 		} else {
-			tray.MoveRight(1)
+			if !tray.MoveRight(1) {
+				return
+			}
 		}
 	}
 }
@@ -120,6 +129,8 @@ func (b *Builder) dealWithLineFeed() [][]rune {
 func (b *Builder) Build(char rune) string {
 	// Backspace : Replace the previous character with the next one in the sequence.
 	// However, if there is no previous or next character, do nothing.
+
+	var builder strings.Builder
 
 	for i := 0; i < len(b.allChars); {
 		switch char {
