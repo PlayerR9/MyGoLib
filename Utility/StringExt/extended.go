@@ -22,6 +22,21 @@ import (
 //   - string: The resulting string after replacing the end with the suffix.
 //   - error: An error of type *ErrLongerSuffix if the suffix is longer than
 //     the string.
+//
+// Examples:
+//
+//	const (
+//		str    string = "hello world"
+//		suffix string = "Bob"
+//	)
+//
+//	result, err := ReplaceSuffix(str, suffix)
+//
+//	if err != nil {
+//		fmt.Println(err)
+//	} else {
+//		fmt.Println(result) // Output: hello woBob
+//	}
 func ReplaceSuffix(str, suffix string) (string, error) {
 	countStr := utf8.RuneCountInString(str)
 	countSuffix := utf8.RuneCountInString(suffix)
@@ -44,14 +59,6 @@ func ReplaceSuffix(str, suffix string) (string, error) {
 // FindContentIndexes searches for the positions of opening and closing
 // tokens in a slice of strings.
 //
-// Errors:
-//   - *ers.ErrInvalidParameter: If the openingToken or closingToken is an
-//     empty string.
-//   - *ErrTokenNotFound: If the opening or closing token is not found in the
-//     content.
-//   - *ErrNeverOpened: If the closing token is found without any
-//     corresponding opening token.
-//
 // Parameters:
 //   - openingToken: The string that marks the beginning of the content.
 //   - closingToken: The string that marks the end of the content.
@@ -61,6 +68,14 @@ func ReplaceSuffix(str, suffix string) (string, error) {
 //   - int: The start index of the content (inclusive).
 //   - int: The end index of the content (exclusive).
 //   - error: Any error that occurred while searching for the tokens.
+//
+// Errors:
+//   - *ers.ErrInvalidParameter: If the openingToken or closingToken is an
+//     empty string.
+//   - *ErrTokenNotFound: If the opening or closing token is not found in the
+//     content.
+//   - *ErrNeverOpened: If the closing token is found without any
+//     corresponding opening token.
 func FindContentIndexes(openingToken, closingToken string, contentTokens []string) (int, int, error) {
 	if openingToken == "" {
 		return 0, 0, ers.NewErrInvalidParameter(
@@ -112,8 +127,6 @@ func FindContentIndexes(openingToken, closingToken string, contentTokens []strin
 // The function also handles special characters such as tabs, vertical tabs,
 // carriage returns, line feeds, and form feeds.
 //
-// If indentLevel is negative, it is converted to a positive value.
-//
 // Parameters:
 //   - sentence: The string to split into fields.
 //   - indentLevel: The number of spaces that a tab character is replaced with.
@@ -123,6 +136,10 @@ func FindContentIndexes(openingToken, closingToken string, contentTokens []strin
 //     represents the fields of a line from the input string.
 //   - error: An error of type *ers.ErrInvalidRuneAt if an invalid rune is found in
 //     the sentence.
+//
+// Notes:
+//   - Negative indentLevel values are converted to positive values.
+//   - Empty sentences return an empty slice with no errors.
 func SplitSentenceIntoFields(sentence string, indentLevel int) ([][]string, error) {
 	if sentence == "" {
 		return [][]string{}, nil
