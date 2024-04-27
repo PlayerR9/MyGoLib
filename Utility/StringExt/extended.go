@@ -140,7 +140,7 @@ func FindContentIndexes(openingToken, closingToken string, contentTokens []strin
 // Notes:
 //   - Negative indentLevel values are converted to positive values.
 //   - Empty sentences return an empty slice with no errors.
-func SplitSentenceIntoFields(sentence string, indentLevel int) ([][]string, error) {
+func AdvancedFieldsSplitter(sentence string, indentLevel int) ([][]string, error) {
 	if sentence == "" {
 		return [][]string{}, nil
 	}
@@ -164,6 +164,7 @@ func SplitSentenceIntoFields(sentence string, indentLevel int) ([][]string, erro
 
 		switch char {
 		case '\t':
+			// Replace tabs with N spaces
 			builder.WriteString(strings.Repeat(" ", indentLevel)) // 3 spaces
 		case '\v':
 			// Do nothing
