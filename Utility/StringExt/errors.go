@@ -2,6 +2,27 @@ package StringExt
 
 import "fmt"
 
+// ErrInvalidUTF8Encoding is an error type for invalid UTF-8 encoding.
+type ErrInvalidUTF8Encoding struct{}
+
+// Error is a method of the error interface that returns the error message.
+//
+// Returns:
+//   - string: The error message.
+func (e *ErrInvalidUTF8Encoding) Error() string {
+	return "invalid UTF-8 encoding"
+}
+
+// NewErrInvalidUTF8Encoding creates a new ErrInvalidUTF8Encoding error.
+//
+// Returns:
+//   - *ErrInvalidUTF8Encoding: A pointer to the newly created error.
+func NewErrInvalidUTF8Encoding() *ErrInvalidUTF8Encoding {
+	return &ErrInvalidUTF8Encoding{}
+}
+
+// ErrLongerSuffix is a struct that represents an error when the suffix is
+// longer than the string.
 type ErrLongerSuffix struct {
 	// Str is the string that is shorter than the suffix.
 	Str string

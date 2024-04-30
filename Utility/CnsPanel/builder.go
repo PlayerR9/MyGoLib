@@ -11,7 +11,7 @@ type ConsoleBuilder struct {
 	description [][]string
 
 	// List of commands accepted by the console.
-	commands []ConsoleCommandInfo
+	commands []*CommandInfo
 }
 
 // SetExecutableName is a method of ConsoleBuilder that sets the
@@ -43,31 +43,31 @@ func (b *ConsoleBuilder) AppendParagraph(contents ...string) {
 //
 // Parameters:
 //   - command: The command to add.
-func (b *ConsoleBuilder) AddCommand(command ConsoleCommandInfo) {
+func (b *ConsoleBuilder) AddCommand(command *CommandInfo) {
 	if b.commands == nil {
-		b.commands = []ConsoleCommandInfo{command}
+		b.commands = []*CommandInfo{command}
 	} else {
 		b.commands = append(b.commands, command)
 	}
 }
 
-// Build is a method of ConsoleBuilder that builds a CMLine from a
+// Build is a method of ConsoleBuilder that builds a ConsolePanel from a
 // ConsoleBuilder.
 //
 // Returns:
 //
-//   - *CMLine: A CMLine built from the ConsoleBuilder.
+//   - *ConsolePanel: A ConsolePanel built from the ConsoleBuilder.
 func (b *ConsoleBuilder) Build() ConsolePanel {
 	cm := ConsolePanel{
 		executableName: b.execName,
-		commands:       make([]ConsoleCommandInfo, 0),
+		commands:       make([]*CommandInfo, 0),
 	}
 
 	if b.commands == nil {
 		cm.description = make([][]string, 0)
 	} else {
 		// Remove duplicate commands prioritizing the last one added.
-		seen := make(map[string]ConsoleCommandInfo)
+		seen := make(map[string]*CommandInfo)
 
 		for _, command := range b.commands {
 			seen[command.name] = command

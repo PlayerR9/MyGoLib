@@ -12,6 +12,31 @@ import (
 	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
 )
 
+// ToUTF8Runes converts a string to a slice of runes.
+//
+// Parameters:
+//   - s: The string to convert.
+//
+// Returns:
+//   - []rune: The slice of runes
+//   - error: An error of type *ErrAtIndex if the string contains
+//     invalid UTF-8 encoding.
+func ToUTF8Runes(s string) ([]rune, error) {
+	solution := make([]rune, 0)
+
+	for i := 0; len(s) > 0; i++ {
+		r, size := utf8.DecodeRuneInString(s)
+		if r == utf8.RuneError {
+			return solution, ers.NewErrAt(i, NewErrInvalidUTF8Encoding())
+		}
+
+		solution = append(solution, r)
+		s = s[size:]
+	}
+
+	return solution, nil
+}
+
 // ReplaceSuffix replaces the end of the given string with the provided suffix.
 //
 // Parameters:

@@ -2,8 +2,8 @@
 // console command flags.
 package CnsPanel
 
-// parsedCommand represents a parsed console command.
-type parsedCommand struct {
+// ParsedCommand represents a parsed console command.
+type ParsedCommand struct {
 	// command is the name of the command.
 	command string
 
@@ -18,7 +18,7 @@ type parsedCommand struct {
 //
 // Returns:
 //   - string: The name of the command.
-func (pc *parsedCommand) Command() string {
+func (pc *ParsedCommand) Command() string {
 	return pc.command
 }
 
@@ -26,7 +26,7 @@ func (pc *parsedCommand) Command() string {
 //
 // Returns:
 //   - error: An error, if any.
-func (pc *parsedCommand) Run() error {
+func (pc *ParsedCommand) Run() error {
 	if pc.callback == nil {
 		return nil
 	}

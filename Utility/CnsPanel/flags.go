@@ -3,18 +3,19 @@
 package CnsPanel
 
 import (
+	"slices"
 	"strings"
 
 	fs "github.com/PlayerR9/MyGoLib/Formatting/FString"
 )
 
-// ConsoleFlagInfo represents a flag for a console command.
-type ConsoleFlagInfo struct {
+// FlagInfo represents a flag for a console command.
+type FlagInfo struct {
 	// Name of the flag.
 	name string
 
 	// Slice of strings representing the arguments accepted by
-	// the flag.
+	// the flag. Order doesn't matter.
 	args []string
 
 	// Brief explanation of what the flag does.
@@ -27,87 +28,48 @@ type ConsoleFlagInfo struct {
 	callback FlagCallbackFunc
 }
 
-// FlagInfoOption is a function type that modifies ConsoleFlagInfo.
+// Equals compares two FlagInfo objects to determine if they are
+// equal. Two FlagInfo objects are considered equal if they have
+// the same name and arguments. The latter of which can be in any order.
 //
 // Parameters:
-//
-//   - ConsoleFlagInfo: The ConsoleFlagInfo to modify.
-type FlagInfoOption func(*ConsoleFlagInfo)
-
-// WithArgs is a FlagInfoOption that sets the arguments for a
-// ConsoleFlagInfo.
-// It trims the space from each argument and ignores empty
-// arguments.
-//
-// Parameters:
-//
-//   - args: The arguments to set.
+//   - other: The other FlagInfo to compare.
 //
 // Returns:
-//
-//   - FlagInfoOption: A FlagInfoOption that sets the arguments for a
-//     ConsoleFlagInfo.
-func WithArgs(args ...string) FlagInfoOption {
-	return func(flag *ConsoleFlagInfo) {
-		flag.args = make([]string, 0, len(args))
-		for _, arg := range args {
-			arg = strings.TrimSpace(arg)
-			if arg != "" {
-				flag.args = append(flag.args, arg)
-			}
-		}
-		flag.args = flag.args[:len(flag.args)]
+//   - bool: A boolean indicating whether the two FlagInfo objects
+//     are equal.
+func (fi *FlagInfo) Equals(other *FlagInfo) bool {
+	if fi == nil || other == nil {
+		return false
 	}
-}
 
-// WithFlagDescription is a FlagInfoOption that sets the description
-// for a ConsoleFlagInfo.
-// It splits each line of the description by newline characters.
-//
-// Parameters:
-//
-//   - description: The description to set.
-//
-// Returns:
-//
-//   - FlagInfoOption: A FlagInfoOption that sets the description for a
-//     ConsoleFlagInfo.
-func WithFlagDescription(description ...string) FlagInfoOption {
-	return func(flag *ConsoleFlagInfo) {
-		for _, line := range description {
-			fields := strings.Split(line, "\n")
-			flag.description = append(flag.description, fields...)
+	if fi.name != other.name {
+		return false
+	}
+
+	if len(fi.args) != len(other.args) {
+		return false
+	}
+
+	for _, arg := range fi.args {
+		if !slices.Contains(other.args, arg) {
+			return false
 		}
 	}
-}
 
-// WithRequired is a FlagInfoOption that sets whether a
-// ConsoleFlagInfo is required.
-//
-// Parameters:
-//
-//   - required: Whether the flag is required.
-//
-// Returns:
-//
-//   - FlagInfoOption: A FlagInfoOption that sets whether a
-//     ConsoleFlagInfo is required.
-func WithRequired(required bool) FlagInfoOption {
-	return func(flag *ConsoleFlagInfo) {
-		flag.required = required
-	}
+	return true
 }
 
 // FString generates a formatted string representation of a
-// ConsoleFlagInfo, including the flag name, arguments, description,
+// FlagInfo, including the flag name, arguments, description,
 // and whether it is required.
 //
 // Parameters:
 //   - indentLevel: The level of indentation to use. Sign is ignored.
 //
 // Returns:
-//   - []string: A slice of strings representing the ConsoleFlagInfo.
-func (cfi *ConsoleFlagInfo) FString(indentLevel int) []string {
+//   - []string: A slice of strings representing the FlagInfo.
+func (cfi *FlagInfo) FString(indentLevel int) []string {
 	indentCfig := fs.NewIndentConfig(fs.DefaultIndentation, 0, true, false)
 	indent := indentCfig.String()
 
@@ -161,4 +123,47 @@ func (cfi *ConsoleFlagInfo) FString(indentLevel int) []string {
 	}
 
 	return results
+}
+
+// NewFlagInfo creates a new FlagInfo with the given name and
+// arguments.
+//
+// Parameters:
+//   - name: The name of the flag.
+//   - isRequired: A boolean indicating whether the flag is required.
+//   - args: A slice of strings representing the arguments accepted by
+//     the flag.
+//
+// Returns:
+//   - *FlagInfo: A pointer to the new FlagInfo.
+func NewFlagInfo(name string, isRequired bool, callback FlagCallbackFunc, args ...string) *FlagInfo {
+	flag := &FlagInfo{
+		name:        name,
+		args:        make([]string, 0),
+		description: make([]string, 0),
+		required:    isRequired,
+		callback:    callback,
+	}
+
+	flag.args = make([]string, 0, len(args))
+	for _, arg := range args {
+		arg = strings.TrimSpace(arg)
+		if arg != "" {
+			flag.args = append(flag.args, arg)
+		}
+	}
+	flag.args = flag.args[:len(flag.args)]
+
+	return flag
+}
+
+// SetDescription sets the description of a FlagInfo.
+//
+// Parameters:
+//   - description: The description of the FlagInfo.
+func (cfi *FlagInfo) SetDescription(description ...string) {
+	for _, line := range description {
+		fields := strings.Split(line, "\n")
+		cfi.description = append(cfi.description, fields...)
+	}
 }
