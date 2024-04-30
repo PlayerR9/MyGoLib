@@ -19,7 +19,7 @@ type FlagInfo struct {
 	args []string
 
 	// Brief explanation of what the flag does.
-	description []string
+	description *Description
 
 	// Boolean indicating whether the flag is required.
 	required bool
@@ -93,18 +93,17 @@ func (cfi *FlagInfo) FString(indentLevel int) []string {
 	// Add the description
 	builder.Reset()
 	builder.WriteString(indent)
-	builder.WriteString("Description:")
 
-	results = append(results, builder.String())
-
-	for _, line := range cfi.description {
-		builder.Reset()
-
-		builder.WriteString(indent)
-		builder.WriteString(indent)
-		builder.WriteString(line)
+	if cfi.description == nil {
+		builder.WriteString("Description: [No description provided]")
 
 		results = append(results, builder.String())
+	} else {
+		builder.WriteString("Description:")
+		results = append(results, builder.String())
+
+		lines := cfi.description.FString(indentLevel + 1)
+		results = append(results, lines...)
 	}
 
 	// Add the required information
@@ -140,9 +139,8 @@ func NewFlagInfo(name string, isRequired bool, callback FlagCallbackFunc, args .
 	flag := &FlagInfo{
 		name:        name,
 		args:        make([]string, 0),
-		description: make([]string, 0),
+		description: nil,
 		required:    isRequired,
-		callback:    callback,
 	}
 
 	flag.args = make([]string, 0, len(args))
@@ -154,6 +152,14 @@ func NewFlagInfo(name string, isRequired bool, callback FlagCallbackFunc, args .
 	}
 	flag.args = flag.args[:len(flag.args)]
 
+	if callback == nil {
+		flag.callback = func(...string) (any, error) {
+			return nil, nil
+		}
+	} else {
+		flag.callback = callback
+	}
+
 	return flag
 }
 
@@ -161,9 +167,6 @@ func NewFlagInfo(name string, isRequired bool, callback FlagCallbackFunc, args .
 //
 // Parameters:
 //   - description: The description of the FlagInfo.
-func (cfi *FlagInfo) SetDescription(description ...string) {
-	for _, line := range description {
-		fields := strings.Split(line, "\n")
-		cfi.description = append(cfi.description, fields...)
-	}
+func (cfi *FlagInfo) SetDescription(description *Description) {
+	cfi.description = description
 }

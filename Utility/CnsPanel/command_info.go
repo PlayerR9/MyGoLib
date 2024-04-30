@@ -16,7 +16,7 @@ type CommandInfo struct {
 	name string
 
 	// Brief explanation of what the command does.
-	description []string
+	description *Description
 
 	// Slice of FlagInfo representing the flags accepted by
 	// the command.
@@ -53,23 +53,16 @@ func (cci *CommandInfo) FString(indentLevel int) []string {
 	builder.Reset()
 
 	builder.WriteString(indent)
-	builder.WriteString("Description:")
 
-	if len(cci.description) == 0 {
-		builder.WriteString(" [No description provided]")
+	if cci.description == nil {
+		builder.WriteString("Description: [No description provided]")
 		results = append(results, builder.String())
 	} else {
+		builder.WriteString("Description:")
 		results = append(results, builder.String())
 
-		for _, line := range cci.description {
-			builder.Reset()
-
-			builder.WriteString(indent)
-			builder.WriteString(indent)
-			builder.WriteString(line)
-
-			results = append(results, builder.String())
-		}
+		lines := cci.description.FString(indentLevel + 1)
+		results = append(results, lines...)
 	}
 
 	// Add the usage information for each flag
@@ -132,7 +125,7 @@ func (cci *CommandInfo) FString(indentLevel int) []string {
 func NewCommandInfo(commandName string, callback CommandCallbackFunc) *CommandInfo {
 	return &CommandInfo{
 		name:        commandName,
-		description: make([]string, 0),
+		description: nil,
 		flags:       make([]*FlagInfo, 0),
 		callback:    callback,
 	}
@@ -169,10 +162,6 @@ func (ci *CommandInfo) AddFlag(flag *FlagInfo) error {
 //
 // Parameters:
 //   - description: The description to set.
-func (ci *CommandInfo) SetDescription(description ...string) {
-	for _, line := range description {
-		fields := strings.Split(line, "\n")
-
-		ci.description = append(ci.description, fields...)
-	}
+func (ci *CommandInfo) SetDescription(description *Description) {
+	ci.description = description
 }

@@ -16,7 +16,7 @@ type ConsolePanel struct {
 	executableName string
 
 	// Description of the executable.
-	description [][]string
+	description *Description
 
 	// Map of commands accepted by the console.
 	commands []*CommandInfo
@@ -52,26 +52,16 @@ func (cns *ConsolePanel) FString(indentLevel int) []string {
 	builder.Reset()
 
 	builder.WriteString(indent)
-	builder.WriteString("Description:")
 
-	if len(cns.description) == 0 {
-		builder.WriteString(" [No description provided]")
-
+	if cns.description == nil {
+		builder.WriteString("Description: [No description provided]")
 		results = append(results, builder.String())
 	} else {
+		builder.WriteString("Description:")
 		results = append(results, builder.String())
 
-		for _, line := range cns.description {
-			builder.Reset()
-
-			// FIXME: Pretty print the description
-			builder.WriteString(indent)
-			builder.WriteString(indent)
-
-			builder.WriteString(strings.Join(line, " "))
-
-			results = append(results, builder.String())
-		}
+		lines := cns.description.FString(indentLevel + 1)
+		results = append(results, lines...)
 	}
 
 	// Add the list of commands
@@ -93,6 +83,40 @@ func (cns *ConsolePanel) FString(indentLevel int) []string {
 	}
 
 	return results
+}
+
+func NewConsolePanel(execName string) *ConsolePanel {
+	cp := &ConsolePanel{
+		executableName: execName,
+		description:    nil,
+		commands:       make([]*CommandInfo, 0),
+	}
+
+	return cp
+}
+
+func (cp *ConsolePanel) AddCommand(command *CommandInfo) {
+	if command == nil {
+		return
+	}
+
+	index := slices.IndexFunc(cp.commands, func(c *CommandInfo) bool {
+		return c.name == command.name
+	})
+	if index == -1 {
+		cp.commands = append(cp.commands, command)
+	} else {
+		cp.commands[index] = command
+	}
+}
+
+// AppendParagraph is a method of ConsoleBuilder that appends a
+// paragraph to the description of a ConsoleBuilder.
+//
+// Parameters:
+//   - contents: The contents of the paragraph to append.
+func (b *ConsolePanel) SetDescription(description *Description) {
+	b.description = description
 }
 
 // parseConsoleFlags parses the provided arguments into console flags.
