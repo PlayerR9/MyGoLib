@@ -36,7 +36,7 @@ type CommandInfo struct {
 // Returns:
 //   - []string: A slice of strings representing the CommandInfo.
 func (cci *CommandInfo) FString(indentLevel int) []string {
-	indentCfig := fs.NewIndentConfig(fs.DefaultIndentation, 0, true, false)
+	indentCfig := fs.NewIndentConfig(fs.DefaultIndentation, indentLevel, true, false)
 	indent := indentCfig.String()
 
 	results := make([]string, 0)
