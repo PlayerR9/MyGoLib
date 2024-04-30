@@ -644,12 +644,8 @@ func NewErrEmptyString() *ErrEmptyString {
 	return &ErrEmptyString{}
 }
 
-// ErrInvalidRuneAt represents an error when an invalid rune is encountered at
-// a position.
-type ErrInvalidRuneAt struct {
-	// Position is the position of the invalid rune.
-	Position int
-
+// ErrInvalidRune represents an error when an invalid rune is encountered.
+type ErrInvalidRune struct {
 	// Reason is the reason for the invalidity of the rune.
 	Reason error
 }
@@ -660,11 +656,11 @@ type ErrInvalidRuneAt struct {
 //
 // Returns:
 //   - string: The error message.
-func (e *ErrInvalidRuneAt) Error() string {
+func (e *ErrInvalidRune) Error() string {
 	if e.Reason == nil {
-		return fmt.Sprintf("invalid rune at position %d", e.Position)
+		return "rune is invalid"
 	} else {
-		return fmt.Sprintf("invalid rune at position %d: %s", e.Position, e.Reason.Error())
+		return fmt.Sprintf("invalid rune: %s", e.Reason.Error())
 	}
 }
 
@@ -673,21 +669,86 @@ func (e *ErrInvalidRuneAt) Error() string {
 //
 // Returns:
 //   - error: The reason for the invalidity of the rune.
-func (e *ErrInvalidRuneAt) Unwrap() error {
+func (e *ErrInvalidRune) Unwrap() error {
 	return e.Reason
 }
 
-// NewErrInvalidRuneAt creates a new ErrInvalidRuneAt error.
+// NewErrInvalidRune creates a new ErrInvalidRuneAt error.
 //
 // Parameters:
-//   - position: The position of the invalid rune.
 //   - reason: The reason for the invalidity of the rune.
 //
 // Returns:
-//   - *ErrInvalidRuneAt: A pointer to the newly created ErrInvalidRuneAt.
-func NewErrInvalidRuneAt(position int, reason error) *ErrInvalidRuneAt {
-	return &ErrInvalidRuneAt{
-		Position: position,
-		Reason:   reason,
+//   - *ErrInvalidRune: A pointer to the newly created ErrInvalidRune.
+func NewErrInvalidRune(reason error) *ErrInvalidRune {
+	return &ErrInvalidRune{
+		Reason: reason,
 	}
+}
+
+// ErrAt represents an error that occurs at a specific index.
+type ErrAt struct {
+	// Index is the index where the error occurred.
+	Index int
+
+	// Reason is the reason for the error.
+	Reason error
+}
+
+// Error is a method of the error interface that returns the error message.
+//
+// If the reason is not provided (nil), the error message is
+// "at index %d: something went wrong".
+//
+// Returns:
+//   - string: The error message.
+func (e *ErrAt) Error() string {
+	if e.Reason == nil {
+		return fmt.Sprintf("at index %d: something went wrong", e.Index)
+	} else {
+		return fmt.Sprintf("at index %d: %s", e.Index, e.Reason.Error())
+	}
+}
+
+// Unwrap returns the reason for the error.
+// It is used for error unwrapping.
+//
+// Returns:
+//   - error: The reason for the error.
+func (e *ErrAt) Unwrap() error {
+	return e.Reason
+}
+
+// NewErrAt creates a new ErrAt error.
+//
+// Parameters:
+//   - index: The index where the error occurred.
+//   - reason: The reason for the error.
+//
+// Returns:
+//   - *ErrAt: A pointer to the newly created ErrAt.
+func NewErrAt(index int, reason error) *ErrAt {
+	return &ErrAt{
+		Index:  index,
+		Reason: reason,
+	}
+}
+
+// ErrEmptySlice represents an error when a slice is empty.
+type ErrEmptySlice struct{}
+
+// Error is a method of the error interface that returns the error message.
+//
+// Returns:
+//   - string: The error message.
+func (e *ErrEmptySlice) Error() string {
+	return "slice must not be empty"
+}
+
+// NewErrEmptySlice creates a new ErrEmptySlice error.
+//
+// Returns:
+//   - *ErrEmptySlice: A pointer to the newly created ErrEmptySlice.
+func NewErrEmptySlice() *ErrEmptySlice {
+	return &ErrEmptySlice{}
 }

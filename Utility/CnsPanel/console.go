@@ -3,128 +3,14 @@
 package CnsPanel
 
 import (
-	"errors"
-	"fmt"
+	"slices"
+	"strings"
 
 	fs "github.com/PlayerR9/MyGoLib/Formatting/FString"
 	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
 )
 
-// ConsoleBuilder represents a builder for a command line interface.
-type ConsoleBuilder struct {
-	// Name of the executable.
-	execName string
-
-	// Description of the executable.
-	description [][]string
-
-	// Map of commands accepted by the interface.
-	commands map[string]ConsoleCommandInfo
-}
-
-// SetExecutableName is a method of ConsoleBuilder that sets the
-// executable name for a ConsoleBuilder.
-//
-// Parameters:
-//
-//   - name: The name of the executable.
-func (b *ConsoleBuilder) SetExecutableName(name string) {
-	b.execName = name
-}
-
-// AppendParagraph is a method of ConsoleBuilder that appends a
-// paragraph to the description of a ConsoleBuilder.
-//
-// Parameters:
-//
-//   - contents: The contents of the paragraph to append.
-func (b *ConsoleBuilder) AppendParagraph(contents ...string) {
-	if b.description == nil {
-		b.description = [][]string{contents}
-	} else {
-		b.description = append(b.description, contents)
-	}
-}
-
-// AddCommand is a method of ConsoleBuilder that adds a new command
-// to a ConsoleBuilder.
-//
-// Parameters:
-//
-//   - commandName: The name of the command.
-//   - options: The options to apply to the command.
-//
-// Returns:
-//
-//   - error: An error if the command cannot be added.
-func (b *ConsoleBuilder) AddCommand(commandName string, options ...CommandInfoOption) error {
-	if b.commands == nil {
-		b.commands = make(map[string]ConsoleCommandInfo)
-	} else if _, exists := b.commands[commandName]; exists {
-		return fmt.Errorf("command '%s' already exists", commandName)
-	}
-
-	newCommand := ConsoleCommandInfo{
-		name:        commandName,
-		description: make([]string, 0),
-		flags:       make([]ConsoleFlagInfo, 0),
-		callback:    nil,
-	}
-
-	for i, option := range options {
-		err := option(&newCommand)
-		if err != nil {
-			return fmt.Errorf("invalid option %d for command %s: %v", i, commandName, err)
-		}
-	}
-
-	b.commands[commandName] = newCommand
-
-	return nil
-}
-
-// Build is a method of ConsoleBuilder that builds a CMLine from a
-// ConsoleBuilder.
-//
-// Returns:
-//
-//   - *CMLine: A CMLine built from the ConsoleBuilder.
-func (b *ConsoleBuilder) Build() ConsolePanel {
-	cm := ConsolePanel{executableName: b.execName}
-
-	if b.commands == nil {
-		cm.commands = make(map[string]ConsoleCommandInfo)
-		cm.description = make([][]string, 0)
-	} else {
-		cm.commands = b.commands
-		cm.description = b.description
-	}
-
-	// Clear the ConsoleBuilder
-	for i := range b.description {
-		b.description[i] = nil
-	}
-
-	b.description = nil
-
-	b.commands = nil
-
-	return cm
-}
-
-// Reset is a method of ConsoleBuilder that resets a ConsoleBuilder.
-func (b *ConsoleBuilder) Reset() {
-	b.execName = ""
-
-	for i := range b.description {
-		b.description[i] = nil
-	}
-
-	b.description = nil
-	b.commands = nil
-}
-
-// ConsolePanel represents a command line interface.
+// ConsolePanel represents a command line console.
 type ConsolePanel struct {
 	// Name of the executable.
 	executableName string
@@ -132,8 +18,8 @@ type ConsolePanel struct {
 	// Description of the executable.
 	description [][]string
 
-	// Map of commands accepted by the interface.
-	commands map[string]ConsoleCommandInfo
+	// Map of commands accepted by the console.
+	commands []ConsoleCommandInfo
 }
 
 // ParseArgs parses the provided command line arguments
@@ -144,13 +30,11 @@ type ConsolePanel struct {
 // if the ParseArgs function fails.
 //
 // Parameters:
-//
 //   - args: The command line arguments to parse. Without the
 //     executable name.
 //
 // Returns:
-//
-//   - *parsedCommand: The parsed command.
+//   - parsedCommand: The parsed command.
 //   - error: An error, if any.
 func (cns *ConsolePanel) ParseArgs(args []string) (parsedCommand, error) {
 	var pc parsedCommand
@@ -159,29 +43,35 @@ func (cns *ConsolePanel) ParseArgs(args []string) (parsedCommand, error) {
 	if len(args) == 0 {
 		return pc, ers.NewErrInvalidParameter(
 			"args",
-			errors.New("no arguments provided"),
+			ers.NewErrEmptySlice(),
 		)
 	}
 
 	// Get the command from the command map
-	command, exists := cns.commands[args[0]]
-	if !exists {
-		return pc, fmt.Errorf("command '%s' not found", args[0])
+	index := slices.IndexFunc(cns.commands, func(command ConsoleCommandInfo) bool {
+		return command.name == args[0]
+	})
+	if index == -1 {
+		return pc, NewErrCommandNotFound(args[0])
 	}
 
+	command := cns.commands[index]
+
 	pc.command = command.name
-	pc.args = make(map[string]any)
+	pc.args = make(Arguments)
 	pc.callback = command.callback
+
+	if len(args) == 0 {
+		return pc, nil
+	}
 
 	// Create a map to store the flags
 	var err error
 
-	if len(args) > 1 {
-		// Parse the flags if provided
-		pc.args, err = parseConsoleFlags(args[1:], command.flags)
-		if err != nil {
-			return pc, err
-		}
+	// Parse the flags if provided
+	pc.args, err = parseConsoleFlags(args[1:], command.flags)
+	if err != nil {
+		return pc, NewErrParsingFlags(command.name, err)
 	}
 
 	return pc, nil
@@ -190,15 +80,13 @@ func (cns *ConsolePanel) ParseArgs(args []string) (parsedCommand, error) {
 // parseConsoleFlags parses the provided arguments into console flags.
 //
 // Parameters:
-//
 //   - args: The arguments to parse.
 //   - flags: The console flags to parse the arguments into.
 //
 // Returns:
-//
-//   - map[string]any: A map of the parsed flags.
+//   - Arguments: A map of the parsed console flags.
 //   - error: An error, if any.
-func parseConsoleFlags(args []string, flags []ConsoleFlagInfo) (map[string]any, error) {
+func parseConsoleFlags(args []string, flags []ConsoleFlagInfo) (Arguments, error) {
 	// Create a map to store the console flags for quick lookup
 	consoleFlagMap := make(map[string]ConsoleFlagInfo)
 	for _, consoleFlag := range flags {
@@ -206,7 +94,7 @@ func parseConsoleFlags(args []string, flags []ConsoleFlagInfo) (map[string]any, 
 	}
 
 	// Create a map to store the parsed results
-	parsedResults := make(map[string]any)
+	parsedResults := make(Arguments)
 	currentArgIndex := 0
 
 	for currentArgIndex < len(args) {
@@ -216,12 +104,12 @@ func parseConsoleFlags(args []string, flags []ConsoleFlagInfo) (map[string]any, 
 		// Check if the console flag exists in the map
 		consoleFlag, exists := consoleFlagMap[consoleFlagName]
 		if !exists {
-			return nil, fmt.Errorf("unknown flag '%s' provided", consoleFlagName)
+			return nil, NewErrUnknownFlag()
 		}
 
 		// Check if there are enough arguments for the console flag
 		if len(consoleFlag.args)+currentArgIndex >= len(args) {
-			return nil, fmt.Errorf("flag '%s' requires more arguments", consoleFlag.name)
+			return nil, NewErrFewArguments()
 		}
 
 		// Move to the next argument
@@ -234,7 +122,7 @@ func parseConsoleFlags(args []string, flags []ConsoleFlagInfo) (map[string]any, 
 		// Call the callback function for the console flag with the arguments
 		parsedFlag, err := consoleFlag.callback(tempArgs...)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse flag '%s': reason=%v", consoleFlag.name, err)
+			return nil, err
 		}
 
 		// Store the result of the callback function in the parsed results map
@@ -250,8 +138,10 @@ func parseConsoleFlags(args []string, flags []ConsoleFlagInfo) (map[string]any, 
 // It includes the usage information, and the list of commands and
 // their details.
 //
-// Returns:
+// Parameters:
+//   - indentLevel: The level of indentation to use for the CMLine.
 //
+// Returns:
 //   - []string: A slice of strings representing the CMLine.
 func (cns *ConsolePanel) FString(indentLevel int) []string {
 	indentCfig := fs.NewIndentConfig(fs.DefaultIndentation, 0, true, false)
@@ -259,23 +149,55 @@ func (cns *ConsolePanel) FString(indentLevel int) []string {
 
 	results := make([]string, 0)
 
-	results = append(results, fmt.Sprintf("%sUsage: %s <command> [flags]", indent, cns.executableName))
+	var builder strings.Builder
+
+	// Print the usage information
+
+	builder.WriteString(indent)
+	builder.WriteString("Usage: ")
+	builder.WriteString(cns.executableName)
+	builder.WriteString(" <command> [flags]")
+
+	results = append(results, builder.String())
+
+	// Add the description
+	builder.Reset()
+
+	builder.WriteString(indent)
+	builder.WriteString("Description:")
 
 	if len(cns.description) == 0 {
-		results = append(results, fmt.Sprintf("%sDescription: [No description provided]", indent))
+		builder.WriteString(" [No description provided]")
+
+		results = append(results, builder.String())
 	} else {
-		results = append(results, fmt.Sprintf("%sDescription:", indent))
+		results = append(results, builder.String())
 
 		for _, line := range cns.description {
+			builder.Reset()
+
 			// FIXME: Pretty print the description
-			results = append(results, fmt.Sprintf("%s\t%s", indent, line))
+			builder.WriteString(indent)
+			builder.WriteString(indent)
+
+			builder.WriteString(strings.Join(line, " "))
+
+			results = append(results, builder.String())
 		}
 	}
 
+	// Add the list of commands
+	builder.Reset()
+
+	builder.WriteString(indent)
+	builder.WriteString("Commands:")
+
 	if len(cns.commands) == 0 {
-		results = append(results, fmt.Sprintf("%sCommands: None", indent))
+		builder.WriteString(" None")
+
+		results = append(results, builder.String())
 	} else {
-		results = append(results, fmt.Sprintf("%sCommands:", indent))
+		results = append(results, builder.String())
 
 		for _, command := range cns.commands {
 			results = append(results, command.FString(indentLevel+1)...)

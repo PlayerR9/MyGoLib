@@ -159,7 +159,7 @@ func AdvancedFieldsSplitter(sentence string, indentLevel int) ([][]string, error
 		sentence = sentence[size:]
 
 		if char == utf8.RuneError {
-			return nil, ers.NewErrInvalidRuneAt(j, nil)
+			return nil, ers.NewErrAt(j, ers.NewErrInvalidRune(nil))
 		}
 
 		switch char {

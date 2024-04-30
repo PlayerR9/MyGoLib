@@ -3,7 +3,6 @@
 package CnsPanel
 
 import (
-	"fmt"
 	"strings"
 
 	fs "github.com/PlayerR9/MyGoLib/Formatting/FString"
@@ -25,7 +24,7 @@ type ConsoleFlagInfo struct {
 	required bool
 
 	// Function invoked when the flag is used.
-	callback func(...string) (any, error)
+	callback FlagCallbackFunc
 }
 
 // FlagInfoOption is a function type that modifies ConsoleFlagInfo.
@@ -104,11 +103,9 @@ func WithRequired(required bool) FlagInfoOption {
 // and whether it is required.
 //
 // Parameters:
-//
 //   - indentLevel: The level of indentation to use. Sign is ignored.
 //
 // Returns:
-//
 //   - []string: A slice of strings representing the ConsoleFlagInfo.
 func (cfi *ConsoleFlagInfo) FString(indentLevel int) []string {
 	indentCfig := fs.NewIndentConfig(fs.DefaultIndentation, 0, true, false)
@@ -130,21 +127,37 @@ func (cfi *ConsoleFlagInfo) FString(indentLevel int) []string {
 	}
 
 	results = append(results, builder.String())
-	builder.Reset()
 
 	// Add the description
-	results = append(results,
-		fmt.Sprintf("%sDescription:", indent),
-		fmt.Sprintf("%s\t%s", indent, cfi.description),
-	)
+	builder.Reset()
+	builder.WriteString(indent)
+	builder.WriteString("Description:")
+
+	results = append(results, builder.String())
+
+	for _, line := range cfi.description {
+		builder.Reset()
+
+		builder.WriteString(indent)
+		builder.WriteString(indent)
+		builder.WriteString(line)
+
+		results = append(results, builder.String())
+	}
 
 	// Add the required information
 	if len(cfi.args) != 0 {
+		builder.Reset()
+		builder.WriteString(indent)
+		builder.WriteString("Required:")
+
 		if cfi.required {
-			results = append(results, fmt.Sprintf("%sRequired: Yes", indent))
+			builder.WriteString(" Yes")
 		} else {
-			results = append(results, fmt.Sprintf("%sRequired: No", indent))
+			builder.WriteString(" No")
 		}
+
+		results = append(results, builder.String())
 	}
 
 	return results
