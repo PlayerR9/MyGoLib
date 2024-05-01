@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	fs "github.com/PlayerR9/MyGoLib/Formatting/FString"
-	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
 )
 
 // CommandInfo represents a console command.
@@ -131,30 +130,32 @@ func NewCommandInfo(commandName string, callback CommandCallbackFunc) *CommandIn
 	}
 }
 
-// AddFlag is a method of CommandInfo that adds a new flag to a
+// AddFlags is a method of CommandInfo that adds a new flag to a
 // CommandInfo.
 //
-// Parameters:
-//   - flag: The flag to add.
+// Nil flags are ignored.
 //
-// Returns:
-//   - error: An error of type *ers.ErrInvalidParameter if the flag name is
-//     empty, the callback is nil, or the flag is nil.
-func (ci *CommandInfo) AddFlag(flag *FlagInfo) error {
-	if flag == nil {
-		return ers.NewErrNilParameter("flag")
+// Parameters:
+//   - flags: The flags to add.
+func (ci *CommandInfo) AddFlags(flags ...*FlagInfo) {
+	if len(flags) == 0 {
+		return
 	}
 
-	index := slices.IndexFunc(ci.flags, func(f *FlagInfo) bool {
-		return f.Equals(flag)
-	})
-	if index != -1 {
-		ci.flags[index] = flag
-	} else {
-		ci.flags = append(ci.flags, flag)
-	}
+	for _, flag := range flags {
+		if flag == nil {
+			continue
+		}
 
-	return nil
+		index := slices.IndexFunc(ci.flags, func(f *FlagInfo) bool {
+			return f.Equals(flag)
+		})
+		if index != -1 {
+			ci.flags[index] = flag
+		} else {
+			ci.flags = append(ci.flags, flag)
+		}
+	}
 }
 
 // SetDescription sets the description for a CommandInfo.

@@ -85,6 +85,13 @@ func (cns *ConsolePanel) FString(indentLevel int) []string {
 	return results
 }
 
+// NewConsolePanel creates a new ConsolePanel with the provided executable name.
+//
+// Parameters:
+//   - execName: The name of the executable.
+//
+// Returns:
+//   - *ConsolePanel: A pointer to the created ConsolePanel.
 func NewConsolePanel(execName string) *ConsolePanel {
 	cp := &ConsolePanel{
 		executableName: execName,
@@ -95,18 +102,29 @@ func NewConsolePanel(execName string) *ConsolePanel {
 	return cp
 }
 
-func (cp *ConsolePanel) AddCommand(command *CommandInfo) {
-	if command == nil {
+// AddCommands adds the provided commands to the ConsolePanel.
+// Nil commands are ignored and the existing commands are replaced.
+//
+// Parameters:
+//   - commands: The commands to add to the ConsolePanel.
+func (cp *ConsolePanel) AddCommands(commands ...*CommandInfo) {
+	if len(commands) == 0 {
 		return
 	}
 
-	index := slices.IndexFunc(cp.commands, func(c *CommandInfo) bool {
-		return c.name == command.name
-	})
-	if index == -1 {
-		cp.commands = append(cp.commands, command)
-	} else {
-		cp.commands[index] = command
+	for _, c := range commands {
+		if c == nil {
+			continue
+		}
+
+		index := slices.IndexFunc(cp.commands, func(command *CommandInfo) bool {
+			return command.name == c.name
+		})
+		if index == -1 {
+			cp.commands = append(cp.commands, c)
+		} else {
+			cp.commands[index] = c
+		}
 	}
 }
 
