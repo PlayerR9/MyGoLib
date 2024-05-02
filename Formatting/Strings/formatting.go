@@ -132,7 +132,7 @@ func GetOrdinalSuffix(number int) string {
 //
 //   - string: The date in the format "1st January, 2006".
 func DateStringer(date time.Time) string {
-	return fmt.Sprintf("%v %v, %v",
+	return fmt.Sprintf("%s %s, %d",
 		GetOrdinalSuffix(date.Day()),
 		date.Month().String(),
 		date.Year(),

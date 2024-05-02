@@ -4,6 +4,9 @@ import (
 	"sync"
 )
 
+// RoutineFunc is a type that represents a Go routine function.
+type RoutineFunc func() error
+
 // GRHandler is a struct that represents a Go routine handler.
 // It is used to handle the result of a Go routine.
 type GRHandler struct {
@@ -21,16 +24,14 @@ type GRHandler struct {
 // to handle the result of the Go routine.
 //
 // Parameters:
-//
 //   - id: The identifier of the Go routine.
 //   - routine: The Go routine to run.
 //
 // Returns:
-//
 //   - *GRHandler: A pointer to the GRHandler that handles the result of the Go routine.
 //
 // The Go routine is automatically run when this function is called.
-func GoRun(id string, routine func() error) *GRHandler {
+func GoRun(id string, routine RoutineFunc) *GRHandler {
 	h := &GRHandler{
 		id:        id,
 		errStatus: nil,
@@ -57,7 +58,6 @@ func GoRun(id string, routine func() error) *GRHandler {
 // and returns the error status of the Go routine.
 //
 // Returns:
-//
 //   - error: The error status of the Go routine.
 func (h *GRHandler) Wait() error {
 	h.wg.Wait()
@@ -68,7 +68,6 @@ func (h *GRHandler) Wait() error {
 // Identifier is a method of GRHandler that returns the identifier of the Go routine.
 //
 // Returns:
-//
 //   - string: The identifier of the Go routine.
 func (h *GRHandler) Identifier() string {
 	return h.id
@@ -87,7 +86,6 @@ type BatchBuilder struct {
 // Add is a method of BatchBuilder that adds a Go routine to the batch.
 //
 // Parameters:
-//
 //   - identifier: The identifier of the Go routine.
 //   - routine: The Go routine to add to the batch.
 func (b *BatchBuilder) Add(identifier string, routine func() error) {
@@ -99,7 +97,6 @@ func (b *BatchBuilder) Add(identifier string, routine func() error) {
 // and their handlers.
 //
 // Returns:
-//
 //   - []*GRHandler: A slice of pointers to the GRHandler instances that handle the Go routines.
 //
 // All Go routines are automatically run when this method is called.
@@ -131,11 +128,9 @@ func (b *BatchBuilder) Clear() {
 // and returns a slice of errors that represent the error statuses of the Go routines.
 //
 // Parameters:
-//
 //   - batch: A slice of pointers to the GRHandler instances that handle the Go routines.
 //
 // Returns:
-//
 //   - []error: A slice of errors that represent the error statuses of the Go routines.
 func WaitAll(batch []*GRHandler) []error {
 	errs := make([]error, 0, len(batch))

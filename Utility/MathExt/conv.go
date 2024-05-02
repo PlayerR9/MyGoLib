@@ -232,7 +232,9 @@ func BaseToDec(n []int, base int) (int, error) {
 
 	for i, digit := range n {
 		if digit < 0 || digit >= base {
-			return 0, fmt.Errorf("invalid digit at %d: %v", i, ers.NewErrOutOfBounds(digit, 0, base))
+			return 0, fmt.Errorf("invalid digit at %d: %s",
+				i, ers.NewErrOutOfBounds(digit, 0, base).Error(),
+			)
 		}
 
 		result += digit * int(math.Pow(float64(base), float64(i)))

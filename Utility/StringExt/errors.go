@@ -66,7 +66,7 @@ type ErrTokenNotFound struct {
 // Returns:
 //   - string: The error message.
 func (e *ErrTokenNotFound) Error() string {
-	return fmt.Sprintf("%v token (%q) is not in the content", e.Type, e.Token)
+	return fmt.Sprintf("%s token (%q) is not in the content", e.Type.String(), e.Token)
 }
 
 // NewErrTokenNotFound is a constructor of ErrTokenNotFound.

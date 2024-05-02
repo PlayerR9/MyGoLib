@@ -162,7 +162,7 @@ func FindContentIndexes(openingToken, closingToken string, contentTokens []strin
 //   - error: An error of type *ers.ErrInvalidRuneAt if an invalid rune is found in
 //     the sentence.
 //
-// Notes:
+// Behavior:
 //   - Negative indentLevel values are converted to positive values.
 //   - Empty sentences return an empty slice with no errors.
 func AdvancedFieldsSplitter(sentence string, indentLevel int) ([][]string, error) {
@@ -247,11 +247,7 @@ func AdvancedFieldsSplitter(sentence string, indentLevel int) ([][]string, error
 // GenerateID generates a random ID of the specified size (in bytes).
 //
 // The function uses the crypto/rand package to generate a random ID of
-// the specified size.
-//
-// Errors:
-//   - *ers.ErrInvalidParameter: If the size is less than 1.
-//   - Any error returned by the rand.Read function.
+// the specified size. The ID is returned as a hexadecimal string.
 //
 // Parameters:
 //   - size: The size of the ID to generate (in bytes).
@@ -259,6 +255,10 @@ func AdvancedFieldsSplitter(sentence string, indentLevel int) ([][]string, error
 // Returns:
 //   - string: The generated ID.
 //   - error: An error if the ID cannot be generated.
+//
+// Errors:
+//   - *ers.ErrInvalidParameter: If the size is less than 1.
+//   - Any error returned by the rand.Read function.
 func GenerateID(size int) (string, error) {
 	if size < 1 {
 		return "", ers.NewErrInvalidParameter(
@@ -282,14 +282,15 @@ func GenerateID(size int) (string, error) {
 // ByteSplitter splits a byte slice into multiple slices based on a separator byte.
 // The separator byte is not included in the resulting slices.
 //
-// If the input slice is empty, the function returns nil.
-//
 // Parameters:
 //   - data: The byte slice to split.
 //   - sep: The separator byte.
 //
 // Returns:
 //   - [][]byte: A slice of byte slices.
+//
+// Behavior:
+//   - If the input slice is empty, the function returns an empty slice.
 func ByteSplitter(data []byte, sep byte) [][]byte {
 	if len(data) == 0 {
 		return [][]byte{}
@@ -313,14 +314,15 @@ func ByteSplitter(data []byte, sep byte) [][]byte {
 
 // JoinBytes joins multiple byte slices into a single string using a separator byte.
 //
-// If the input slice is empty, the function returns an empty string.
-//
 // Parameters:
 //   - slices: A slice of byte slices to join.
 //   - sep: The separator byte.
 //
 // Returns:
 //   - string: The joined string.
+//
+// Behavior:
+//   - If the input slice is empty, the function returns an empty string.
 func JoinBytes(slices [][]byte, sep byte) string {
 	if len(slices) == 0 {
 		return ""

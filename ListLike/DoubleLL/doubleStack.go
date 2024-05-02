@@ -167,7 +167,8 @@ func (ds *DoubleStack[T]) String() string {
 		return "DoubleStack[nil]"
 	}
 
-	return fmt.Sprintf("DoubleStack[mainStack:%v, auxStack:%v]", ds.mainStack, ds.auxStack)
+	return fmt.Sprintf("DoubleStack[mainStack:%s, auxStack:%s]",
+		ds.mainStack.String(), ds.auxStack.String())
 }
 
 // CutNilValues is a method that removes aCommon nil values from the double stack.

@@ -7,23 +7,22 @@ import (
 	"github.com/PlayerR9/MyGoLib/ListLike/Stack"
 )
 
+// IsTextNodeSearch is a search criteria that matches text nodes.
 var IsTextNodeSearch SearchCriteria = NewSearchCriteria(html.TextNode)
 
 // ExtractSpecificNode finds all nodes that match the given search criteria and
 // that are direct children of the provided node.
 //
-// Panics with an error of type *ers.InvalidParameterError if the node is nil.
-//
 // Parameters:
-//
 //   - node: The HTML node to search within.
 //   - criteria: The search criteria to apply to each node.
 //
 // Returns:
-//
 //   - nodes: A slice containing all nodes that match the search criteria.
 //
-// If no criteria is provided, then any node will match.
+// Behavior:
+//   - If no criteria is provided, then any node will match.
+//   - If the node is nil, then a nil slice is returned.
 func ExtractSpecificNode(node *html.Node, criteria *SearchCriteria) []html.Node {
 	if node == nil {
 		return nil
@@ -49,17 +48,17 @@ func ExtractSpecificNode(node *html.Node, criteria *SearchCriteria) []html.Node 
 
 // MatchNodes performs a breadth-first search on an HTML section returning a
 // slice of nodes that match the provided search criteria.
-// It does not search the children of the nodes that match the criteria.
-// If no criteria is provided, then the first node will match.
 //
 // Parameters:
-//
 //   - section: The HTML section to search within.
 //   - criteria: The search criteria to apply to each node.
 //
 // Returns:
-//
 //   - []*html.Node: A slice containing all nodes that match the search criteria.
+//
+// Behavior:
+//   - It does not search the children of the nodes that match the criteria.
+//   - If no criteria is provided, then the first node will match.
 func MatchNodes(section *html.Node, criteria *SearchCriteria) []html.Node {
 	if section == nil {
 		return nil // No nodes to extract
@@ -90,15 +89,14 @@ func MatchNodes(section *html.Node, criteria *SearchCriteria) []html.Node {
 // slice of nodes that match the provided search criteria.
 //
 // Parameters:
-//
 //   - section: The HTML section to search within.
 //   - criterias: A list of search criteria to apply to each node.
 //
 // Returns:
-//
 //   - []*html.Node: A slice containing all nodes that match the search criteria.
 //
-// If no criteria is provided, then any node will match.
+// Behavior:
+//   - If no criteria is provided, then any node will match.
 func ExtractNodes(section *html.Node, criterias []SearchCriteria) []html.Node {
 	if section == nil {
 		return nil // No nodes to extract
@@ -127,12 +125,10 @@ func ExtractNodes(section *html.Node, criterias []SearchCriteria) []html.Node {
 // finding the first node that matches the provided search criteria.
 //
 // Parameters:
-//
 //   - doc: The HTML document to search within.
 //   - criteria: The search criteria to apply to each node.
 //
 // Returns:
-//
 //   - *html.Node: The first node that matches the search criteria, nil if no
 //     matching node is found.
 func ExtractContentFromDocument(doc *html.Node, criteria *SearchCriteria) *html.Node {
@@ -160,11 +156,9 @@ func ExtractContentFromDocument(doc *html.Node, criteria *SearchCriteria) *html.
 // GetDirectChildren returns a slice of the direct children of the provided node.
 //
 // Parameters:
-//
 //   - node: The HTML node to extract the children from.
 //
 // Returns:
-//
 //   - []*html.Node: A slice containing the direct children of the node.
 func GetDirectChildren(node *html.Node) []html.Node {
 	if node == nil {

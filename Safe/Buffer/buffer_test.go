@@ -25,7 +25,7 @@ func TestInit(t *testing.T) {
 		x := <-receiveFrom
 
 		if x != i {
-			t.Errorf("Expected %v, got %v", i, x)
+			t.Errorf("Expected %d, got %d", i, x)
 		}
 	}
 }
@@ -52,16 +52,16 @@ func TestTrimFrom(t *testing.T) {
 	x, ok := <-receiveFrom
 
 	if !ok {
-		t.Errorf("Expected %v, got %v", true, ok)
+		t.Errorf("Expected true, got %t", ok)
 	}
 
 	if x != 1 {
-		t.Errorf("Expected %v, got %v", 1, x)
+		t.Errorf("Expected 1, got %d", x)
 	}
 
 	_, ok = <-receiveFrom
 
 	if ok {
-		t.Errorf("Expected %v, got %v", false, ok)
+		t.Errorf("Expected false, got %t", ok)
 	}
 }

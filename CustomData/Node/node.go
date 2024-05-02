@@ -1,9 +1,7 @@
 package Node
 
-// FIXME: Update Queue import when MyGoLists is updated
-
 import (
-	Queue "github.com/PlayerR9/MyGoLib/ListLike/Queue"
+	"github.com/PlayerR9/MyGoLib/ListLike/Queue"
 	"github.com/PlayerR9/MyGoLib/ListLike/Stack"
 	slext "github.com/PlayerR9/MyGoLib/Utility/SliceExt"
 
@@ -28,14 +26,12 @@ type Node[T any] struct {
 // NewNode creates a new node with the given data.
 //
 // Parameters:
-//
 //   - data: The value of the node.
 //
 // Returns:
-//
 //   - *Node[T]: A pointer to the newly created node.
-func NewNode[T any](data T) Node[T] {
-	return Node[T]{
+func NewNode[T any](data T) *Node[T] {
+	return &Node[T]{
 		Data: data,
 	}
 }
@@ -43,7 +39,6 @@ func NewNode[T any](data T) Node[T] {
 // AddChild adds a new child to the node with the given data.
 //
 // Parameters:
-//
 //   - data: The value of the new child.
 func (n *Node[T]) AddChild(data T) {
 	node := &Node[T]{
@@ -67,7 +62,6 @@ func (n *Node[T]) AddChild(data T) {
 // AddChildren adds zero or more children to the node with the given data.
 //
 // Parameters:
-//
 //   - children: The values of the new children.
 func (n *Node[T]) AddChildren(children ...T) {
 	if len(children) == 0 {
@@ -108,7 +102,6 @@ func (n *Node[T]) AddChildren(children ...T) {
 // If the node has no children, it returns nil.
 //
 // Returns:
-//
 //   - []*Node[T]: A slice of pointers to the children of the node.
 func (n *Node[T]) GetChildren() []*Node[T] {
 	children := make([]*Node[T], 0)
@@ -143,7 +136,6 @@ func (n *Node[T]) Cleanup() {
 // The leaves are returned in the order of a breadth-first traversal.
 //
 // Returns:
-//
 //   - []*Node[T]: A slice of pointers to the leaves of the tree.
 func (n *Node[T]) GetLeaves() []*Node[T] {
 	leaves := make([]*Node[T], 0)
@@ -173,11 +165,9 @@ func (n *Node[T]) GetLeaves() []*Node[T] {
 // The traversal stops when the observer returns an error.
 //
 // Parameters:
-//
 //   - observer: A function that takes the value of a node and returns an error.
 //
 // Returns:
-//
 //   - error: An error returned by the observer.
 func (n *Node[T]) BFSTraversal(observer itff.ObserverFunc[T]) error {
 	Q := Queue.NewLinkedQueue(n)
@@ -201,11 +191,9 @@ func (n *Node[T]) BFSTraversal(observer itff.ObserverFunc[T]) error {
 // The traversal stops when the observer returns an error.
 //
 // Parameters:
-//
 //   - observer: A function that takes the value of a node and returns an error.
 //
 // Returns:
-//
 //   - error: An error returned by the observer.
 func (n *Node[T]) DFSTraversal(observer itff.ObserverFunc[T]) error {
 	S := Stack.NewLinkedStack(n)
@@ -229,7 +217,6 @@ func (n *Node[T]) DFSTraversal(observer itff.ObserverFunc[T]) error {
 // The paths are returned in the order of a breadth-first traversal.
 //
 // Returns:
-//
 //   - [][]T: A slice of slices of the values of the nodes in the paths.
 func (n *Node[T]) SnakeTraversal() [][]T {
 	if n.firstChild == nil {
@@ -254,7 +241,6 @@ func (n *Node[T]) SnakeTraversal() [][]T {
 // If no such node is found, it returns nil.
 //
 // Returns:
-//
 //   - *Node[T]: A pointer to the branching point.
 func (n *Node[T]) FindBranchingPoint() *Node[T] {
 	for node := n; node.parent != nil; node = node.parent {
@@ -269,11 +255,9 @@ func (n *Node[T]) FindBranchingPoint() *Node[T] {
 // HasChild returns true if the node has the given child.
 //
 // Parameters:
-//
 //   - child: The child to check for.
 //
 // Returns:
-//
 //   - bool: True if the node has the child, false otherwise.
 func (n *Node[T]) HasChild(child *Node[T]) bool {
 	if child == nil {
@@ -293,11 +277,9 @@ func (n *Node[T]) HasChild(child *Node[T]) bool {
 // No op if the child is nil or not a child of the node.
 //
 // Parameters:
-//
 //   - child: The child to remove.
 //
 // Returns:
-//
 //   - []*Node[T]: A slice of pointers to the children of the node.
 func (n *Node[T]) DeleteChild(child *Node[T]) {
 	if child == nil {
@@ -323,7 +305,6 @@ func (n *Node[T]) DeleteChild(child *Node[T]) {
 // If the node has no parent, it returns nil.
 //
 // Returns:
-//
 //   - *Node[T]: A pointer to the parent of the node.
 func (n *Node[T]) Parent() *Node[T] {
 	return n.parent
@@ -334,11 +315,9 @@ func (n *Node[T]) Parent() *Node[T] {
 // If the filter returns true for a child, the child is removed.
 //
 // Parameters:
-//
 //   - filter: The filter to apply.
 //
 // Returns:
-//
 //   - bool: True if the node satisfies the filter, false otherwise.
 func (n *Node[T]) PruneFunc(filter slext.PredicateFilter[T]) bool {
 	if filter(n.Data) {

@@ -66,14 +66,14 @@ func MediaDownloader(dest, url string) (string, error) {
 
 	exists, err := FileExists(filePath)
 	if err != nil {
-		return "", fmt.Errorf("could not check if file exists: %v", err)
+		return "", fmt.Errorf("could not check if file exists: %s", err.Error())
 	} else if exists {
 		return filePath, nil // Do nothing
 	}
 
 	resp, err := http.Get(url)
 	if err != nil {
-		return "", fmt.Errorf("could not send GET request: %v", err)
+		return "", fmt.Errorf("could not send GET request: %s", err.Error())
 	}
 	defer resp.Body.Close()
 
@@ -83,13 +83,13 @@ func MediaDownloader(dest, url string) (string, error) {
 
 	file, err := os.Create(filePath)
 	if err != nil {
-		return "", fmt.Errorf("could not create file: %v", err)
+		return "", fmt.Errorf("could not create file: %s", err.Error())
 	}
 	defer file.Close()
 
 	_, err = io.Copy(file, resp.Body)
 	if err != nil {
-		return "", fmt.Errorf("could not copy file: %v", err)
+		return "", fmt.Errorf("could not copy file: %s", err.Error())
 	}
 
 	return filePath, nil
@@ -138,13 +138,13 @@ func ReadWholeFileLineByLine(path string) ([]string, error) {
 func AppendToFile(filePath string, contents ...string) error {
 	file, err := os.OpenFile(filePath, os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
-		return fmt.Errorf("could not open file: %v", err)
+		return fmt.Errorf("could not open file: %s", err.Error())
 	}
 	defer file.Close()
 
 	_, err = file.WriteString(strings.Join(contents, "\n"))
 	if err != nil {
-		return fmt.Errorf("could not write to file: %v", err)
+		return fmt.Errorf("could not write to file: %s", err.Error())
 	}
 
 	return nil
@@ -176,7 +176,7 @@ func GetAllFileNamesInDirectory(directoryPath string) (map[string]string, error)
 	})
 
 	if walkError != nil {
-		return nil, fmt.Errorf("could not read directory: %v", walkError)
+		return nil, fmt.Errorf("could not read directory: %s", walkError.Error())
 	}
 
 	return fileExtensionMap, nil
@@ -201,7 +201,7 @@ func GetFilesEndingIn(directoryPath string, extensions ...string) ([]string, err
 
 	entries, readError := os.ReadDir(directoryPath)
 	if readError != nil {
-		return nil, fmt.Errorf("could not read directory: %v", readError)
+		return nil, fmt.Errorf("could not read directory: %s", readError.Error())
 	}
 
 	for _, entry := range entries {

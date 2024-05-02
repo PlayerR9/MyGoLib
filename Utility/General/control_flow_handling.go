@@ -60,11 +60,11 @@ func RunInPowerShell(program string, args ...string) func() error {
 func RecoverFromPanic(logger *log.Logger) {
 	if r := recover(); r != nil {
 		if logger != nil {
-			logger.Printf("%v: %v\n", Panic, r)
+			logger.Printf("%s: %v\n", Panic.String(), r)
 
 			fmt.Println("An unexpected error occurred. For more information, see the log")
 		} else {
-			fmt.Printf("%v: %v\n", Panic, r)
+			fmt.Printf("%s: %v\n", Panic.String(), r)
 		}
 		fmt.Println()
 
@@ -126,7 +126,7 @@ func FinalizeResult(logger *log.Logger, result error, isSetup bool) int {
 
 	if result != nil {
 		if logger != nil {
-			logger.Printf("%v: %v\n", errType, result)
+			logger.Printf("%s: %s\n", errType.String(), result.Error())
 
 			if isSetup {
 				fmt.Print("Could not set up the program.")
@@ -136,10 +136,10 @@ func FinalizeResult(logger *log.Logger, result error, isSetup bool) int {
 
 			fmt.Println(" For more information, see the log")
 		} else {
-			fmt.Printf("%v: %v\n", errType, result)
+			fmt.Printf("%s: %s\n", errType.String(), result.Error())
 		}
 	} else {
-		fmt.Printf("%v\n", Success)
+		fmt.Printf("%s\n", Success.String())
 	}
 
 	fmt.Println()

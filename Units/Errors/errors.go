@@ -17,159 +17,41 @@ type ErrNoError struct {
 // Error is a method of the error interface.
 //
 // Returns:
-//
 //   - string: The error message of the no error error
 //     (no mention of being a no error error).
 func (e *ErrNoError) Error() string {
-	return e.Err.Error()
+	if e.Err == nil {
+		return "no error"
+	} else {
+		return e.Err.Error()
+	}
 }
 
 // Unwrap is a method of the errors interface.
 //
 // Returns:
-//
 //   - error: The reason for the no error error.
 func (e *ErrNoError) Unwrap() error {
 	return e.Err
 }
 
+// ChangeReason changes the reason of the no error error.
+//
+// Parameters:
+//   - reason: The new reason for the no error error.
+func (e *ErrNoError) ChangeReason(reason error) {
+	e.Err = reason
+}
+
 // NewErrNoError creates a new ErrNoError error.
 //
 // Parameters:
-//
 //   - err: The reason for the no error error.
 //
 // Returns:
-//
 //   - *ErrNoError: A pointer to the newly created ErrNoError.
 func NewErrNoError(err error) *ErrNoError {
 	return &ErrNoError{Err: err}
-}
-
-// ErrPanic represents an error when a panic occurs.
-type ErrPanic struct {
-	// Value is the value that caused the panic.
-	Value any
-}
-
-// Error is a method of the error interface.
-//
-// Returns:
-//
-//   - string: The error message of the panic error.
-func (e *ErrPanic) Error() string {
-	return fmt.Sprintf("panic: %v", e.Value)
-}
-
-// NewErrPanic creates a new ErrPanic error.
-//
-// Parameters:
-//
-//   - value: The value that caused the panic.
-//
-// Returns:
-//
-//   - *ErrPanic: A pointer to the newly created ErrPanic.
-func NewErrPanic(value any) *ErrPanic {
-	return &ErrPanic{Value: value}
-}
-
-// ErrOutOfBounds represents an error when a value is out of a specified range.
-type ErrOutOfBounds struct {
-	// LowerBound and UpperBound are the lower and upper bounds of the range,
-	// respectively.
-	LowerBound, UpperBound int
-
-	// LowerInclusive and UpperInclusive are flags indicating whether the lower
-	// and upper bounds are inclusive, respectively.
-	LowerInclusive, UpperInclusive bool
-
-	// Value is the value that caused the error.
-	Value int
-}
-
-// Error is a method of the error interface.
-//
-// The format of the error message is as follows:
-//
-//	value (value) not in range [lowerBound, upperBound]
-//
-// The square brackets indicate that the lower bound is inclusive, while the
-// parentheses indicate that the upper bound is exclusive.
-//
-// Returns:
-//
-//   - string: The error message of the out-of-bound error.
-func (e *ErrOutOfBounds) Error() string {
-	var builder strings.Builder
-
-	fmt.Fprintf(&builder, "value (%v) not in range ", e.Value)
-	if e.LowerInclusive {
-		builder.WriteRune('[')
-	} else {
-		builder.WriteRune('(')
-	}
-
-	fmt.Fprintf(&builder, "%d, %d", e.LowerBound, e.UpperBound)
-	if e.UpperInclusive {
-		builder.WriteRune(']')
-	} else {
-		builder.WriteRune(')')
-	}
-
-	return builder.String()
-}
-
-// WithLowerBound sets the inclusivity of the lower bound.
-//
-// Parameters:
-//
-//   - isInclusive: A boolean indicating whether the lower bound is inclusive.
-//
-// Returns:
-//
-//   - *ErrOutOfBound: The error instance for chaining.
-func (e *ErrOutOfBounds) WithLowerBound(isInclusive bool) *ErrOutOfBounds {
-	e.LowerInclusive = isInclusive
-
-	return e
-}
-
-// WithUpperBound sets the inclusivity of the upper bound.
-//
-// Parameters:
-//
-//   - isInclusive: A boolean indicating whether the upper bound is inclusive.
-//
-// Returns:
-//
-//   - *ErrOutOfBound: The error instance for chaining.
-func (e *ErrOutOfBounds) WithUpperBound(isInclusive bool) *ErrOutOfBounds {
-	e.UpperInclusive = isInclusive
-
-	return e
-}
-
-// NewOutOfBounds creates a new ErrOutOfBound error. If no inclusivity flags are
-// provided, the lower bound is inclusive and the upper bound is exclusive.
-//
-// Parameters:
-//
-//   - lowerBound, upperbound: The lower and upper bounds of the range,
-//     respectively.
-//   - value: The value that caused the error.
-//
-// Returns:
-//
-//   - *ErrOutOfBounds: A pointer to the newly created ErrOutOfBound.
-func NewErrOutOfBounds(value int, lowerBound, upperBound int) *ErrOutOfBounds {
-	return &ErrOutOfBounds{
-		LowerBound:     lowerBound,
-		UpperBound:     upperBound,
-		LowerInclusive: true,
-		UpperInclusive: false,
-		Value:          value,
-	}
 }
 
 // ErrInvalidParameter represents an error when a parameter is invalid.
@@ -186,24 +68,30 @@ type ErrInvalidParameter struct {
 // If the reason is not provided (nil), no reason is included in the error message.
 //
 // Returns:
-//
 //   - string: The error message.
 func (e *ErrInvalidParameter) Error() string {
 	if e.Reason == nil {
 		return fmt.Sprintf("parameter (%s) is invalid", e.Parameter)
+	} else {
+		return fmt.Sprintf("parameter (%s) is invalid: %s", e.Parameter, e.Reason.Error())
 	}
-
-	return fmt.Sprintf("parameter (%s) is invalid: %v", e.Parameter, e.Reason)
 }
 
 // Unwrap returns the reason for the invalidity of the parameter.
 // It is used for error unwrapping.
 //
 // Returns:
-//
 //   - error: The reason for the invalidity of the parameter.
 func (e *ErrInvalidParameter) Unwrap() error {
 	return e.Reason
+}
+
+// ChangeReason changes the reason for the invalidity of the parameter.
+//
+// Parameters:
+//   - reason: The new reason for the invalidity of the parameter.
+func (e *ErrInvalidParameter) ChangeReason(reason error) {
+	e.Reason = reason
 }
 
 // NewErrInvalidParameter creates a new ErrInvalidParameter error.
@@ -211,17 +99,30 @@ func (e *ErrInvalidParameter) Unwrap() error {
 // "parameter is invalid" by default.
 //
 // Parameters:
-//
 //   - parameter: The name of the parameter.
 //   - reason: The reason for the invalidity.
 //
 // Returns:
-//
 //   - error: A pointer to the newly created ErrInvalidParameter.
 func NewErrInvalidParameter(parameter string, reason error) *ErrInvalidParameter {
 	return &ErrInvalidParameter{
 		Parameter: parameter,
 		Reason:    reason,
+	}
+}
+
+// ErrNilParameter represents an error when a parameter is nil.
+// This is a shorthand for NewErrInvalidParameter(parameter, errors.New("value is nil")).
+//
+// Parameters:
+//   - parameter: The name of the parameter.
+//
+// Returns:
+//   - *ErrInvalidParameter: A pointer to the newly created ErrInvalidParameter.
+func NewErrNilParameter(parameter string) *ErrInvalidParameter {
+	return &ErrInvalidParameter{
+		Parameter: parameter,
+		Reason:    errors.New("value is nil"),
 	}
 }
 
@@ -244,35 +145,52 @@ type ErrInvalidCall struct {
 //
 //   - string: The error message.
 func (e *ErrInvalidCall) Error() string {
-	if e.Reason == nil {
-		return fmt.Sprintf("call to %s%v failed", e.FnName, e.Signature)
+	var builder strings.Builder
+
+	builder.WriteString("call")
+	builder.WriteRune(' ')
+	builder.WriteString("to")
+	builder.WriteRune(' ')
+	builder.WriteString(e.FnName)
+	builder.WriteString(e.Signature.String())
+	builder.WriteRune(' ')
+	builder.WriteString("failed")
+
+	if e.Reason != nil {
+		builder.WriteRune(':')
+		builder.WriteRune(' ')
+		builder.WriteString(e.Reason.Error())
 	}
 
-	return fmt.Sprintf("call to %s%v failed: %v",
-		e.FnName, e.Signature, e.Reason)
+	return builder.String()
 }
 
 // Unwrap returns the underlying error that caused the ErrInvalidCall.
 // It is used for error unwrapping.
 //
 // Returns:
-//
 //   - error: The reason for the failure.
 func (e *ErrInvalidCall) Unwrap() error {
 	return e.Reason
+}
+
+// ChangeReason changes the reason for the failure of the function call.
+//
+// Parameters:
+//   - reason: The new reason for the failure.
+func (e *ErrInvalidCall) ChangeReason(reason error) {
+	e.Reason = reason
 }
 
 // NewErrInvalidCall creates a new ErrInvalidCall. If the reason is not provided (nil),
 // the reason is set to "an error occurred while calling the function" by default.
 //
 // Parameters:
-//
 //   - functionName: The name of the function.
 //   - function: The function that failed.
 //   - reason: The reason for the failure.
 //
 // Returns:
-//
 //   - *ErrInvalidCall: A pointer to the new ErrInvalidCall.
 func NewErrInvalidCall(functionName string, function any, reason error) *ErrInvalidCall {
 	return &ErrInvalidCall{
@@ -280,88 +198,6 @@ func NewErrInvalidCall(functionName string, function any, reason error) *ErrInva
 		Signature: reflect.ValueOf(function).Type(),
 		Reason:    reason,
 	}
-}
-
-// ErrUnexpected represents an error that occurs when an unexpected value is
-// encountered.
-type ErrUnexpected struct {
-	// Expected is the list of expected values.
-	Expected []string
-
-	// Actual is the actual value encountered.
-	Actual fmt.Stringer
-}
-
-// Error is a method of the error interface.
-//
-// Returns:
-//
-//   - string: The error message.
-func (e *ErrUnexpected) Error() string {
-	var expected, got string
-
-	switch len(e.Expected) {
-	case 0:
-		expected = "nothing"
-	case 1:
-		expected = fmt.Sprintf("%q", e.Expected[0])
-	case 2:
-		expected = fmt.Sprintf("%q or %q", e.Expected[0], e.Expected[1])
-	default:
-		var builder strings.Builder
-
-		fmt.Fprintf(&builder, "%q", e.Expected[0])
-
-		for i := 1; i < len(e.Expected)-1; i++ {
-			builder.WriteRune(',')
-			builder.WriteRune(' ')
-			fmt.Fprintf(&builder, "%q", e.Expected[i])
-		}
-
-		builder.WriteRune(',')
-		builder.WriteRune(' ')
-		builder.WriteString("or ")
-
-		fmt.Fprintf(&builder, "%q", e.Expected[len(e.Expected)-1])
-
-		expected = builder.String()
-	}
-
-	if e.Actual == nil {
-		got = "nothing"
-	} else {
-		got = fmt.Sprintf("%v", e.Actual)
-	}
-
-	return fmt.Sprintf("expected %s, got %s instead", expected, got)
-}
-
-// NewErrUnexpected creates a new ErrUnexpected error.
-//
-// Parameters:
-//
-//   - got: The actual value encountered.
-//   - expected: The list of expected values.
-//
-// Returns:
-//
-//   - *ErrUnexpected: A pointer to the newly created ErrUnexpected.
-func NewErrUnexpected(got fmt.Stringer, expected ...string) *ErrUnexpected {
-	return &ErrUnexpected{Expected: expected, Actual: got}
-}
-
-// ErrNilParameter represents an error when a parameter is nil.
-// This is a shorthand for NewErrInvalidParameter(parameter, errors.New("value is nil")).
-//
-// Parameters:
-//
-//   - parameter: The name of the parameter.
-//
-// Returns:
-//
-//   - *ErrInvalidParameter: A pointer to the newly created ErrInvalidParameter.
-func NewErrNilParameter(parameter string) *ErrInvalidParameter {
-	return &ErrInvalidParameter{Parameter: parameter, Reason: errors.New("value is nil")}
 }
 
 // ErrIgnorable represents an error that can be ignored. Useful for indicating
@@ -372,276 +208,47 @@ type ErrIgnorable struct {
 }
 
 // Error is a method of the error interface.
+// It does not mention that the error is ignorable.
 //
 // Returns:
 //
 //   - string: The error message of the ignorable error (no mention of being ignorable).
 func (e *ErrIgnorable) Error() string {
-	return e.Err.Error()
+	if e.Err == nil {
+		return "ignorable error"
+	} else {
+		return e.Err.Error()
+	}
 }
 
 // Unwrap returns the error that can be ignored.
 // It is used for error unwrapping.
 //
 // Returns:
-//
 //   - error: The error that can be ignored.
 func (e *ErrIgnorable) Unwrap() error {
 	return e.Err
 }
 
+// ChangeReason changes the reason for the ignorable error.
+//
+// Parameters:
+//   - reason: The new reason for the ignorable error.
+func (e *ErrIgnorable) ChangeReason(reason error) {
+	e.Err = reason
+}
+
 // NewErrIgnorable creates a new ErrIgnorable error.
 //
 // Parameters:
-//
 //   - err: The error that can be ignored.
 //
 // Returns:
-//
 //   - *ErrIgnorable: A pointer to the newly created ErrIgnorable.
 func NewErrIgnorable(err error) *ErrIgnorable {
 	return &ErrIgnorable{
 		Err: err,
 	}
-}
-
-// IsNoError checks if an error is a no error error or if it is nil.
-//
-// Parameters:
-//
-//   - err: The error to check.
-//
-// Returns:
-//
-//   - bool: True if the error is a no error error or if it is nil, otherwise false.
-func IsNoError(err error) bool {
-	if err == nil {
-		return true
-	}
-
-	var errNoError *ErrNoError
-
-	return errors.As(err, &errNoError)
-}
-
-// IsErrIgnorable checks if an error is an ErrIgnorable or ErrInvalidParameter error.
-//
-// Parameters:
-//
-//   - err: The error to check.
-//
-// Returns:
-//
-//   - bool: True if the error is an ErrIgnorable or ErrInvalidParameter error,
-//     otherwise false.
-func IsErrIgnorable(err error) bool {
-	var ignorable *ErrIgnorable
-
-	if errors.As(err, &ignorable) {
-		return true
-	}
-
-	var invalid *ErrInvalidParameter
-
-	return errors.As(err, &invalid)
-}
-
-// ErrGT represents an error when a value is less than or equal to a specified value.
-type ErrGT struct {
-	// Value is the value that caused the error.
-	Value int
-}
-
-// Error is a method of the error interface that returns the error message.
-//
-// Returns:
-//
-//   - string: The error message.
-func (e *ErrGT) Error() string {
-	if e.Value == 0 {
-		return "value must be positive"
-	} else {
-		return fmt.Sprintf("value must be greater than %d", e.Value)
-	}
-}
-
-// NewErrGT creates a new ErrGT error.
-//
-// Parameters:
-//
-//   - value: The value that caused the error.
-//
-// Returns:
-//
-//   - *ErrGT: A pointer to the newly created ErrGT.
-func NewErrGT(value int) *ErrGT {
-	return &ErrGT{Value: value}
-}
-
-// ErrLT represents an error when a value is greater than or equal to a specified value.
-type ErrLT struct {
-	// Value is the value that caused the error.
-	Value int
-}
-
-// Error is a method of the error interface that returns the error message.
-//
-// Returns:
-//
-//   - string: The error message.
-func (e *ErrLT) Error() string {
-	if e.Value == 0 {
-		return "value must be negative"
-	} else {
-		return fmt.Sprintf("value must be less than %d", e.Value)
-	}
-}
-
-// NewErrLT creates a new ErrLT error.
-//
-// Parameters:
-//
-//   - value: The value that caused the error.
-//
-// Returns:
-//
-//   - *ErrLT: A pointer to the newly created ErrLT.
-func NewErrLT(value int) *ErrLT {
-	return &ErrLT{Value: value}
-}
-
-// ErrGTE represents an error when a value is less than a specified value.
-type ErrGTE struct {
-	// Value is the value that caused the error.
-	Value int
-}
-
-// Error is a method of the error interface that returns the error message.
-//
-// Returns:
-//
-//   - string: The error message.
-func (e *ErrGTE) Error() string {
-	if e.Value == 0 {
-		return "value must be non-negative"
-	} else {
-		return fmt.Sprintf("value must be greater than %d", e.Value)
-	}
-}
-
-// NewErrGTE creates a new ErrGTE error.
-//
-// Parameters:
-//
-//   - value: The value that caused the error.
-//
-// Returns:
-//
-//   - *ErrGTE: A pointer to the newly created ErrGTE.
-func NewErrGTE(value int) *ErrGTE {
-	return &ErrGTE{Value: value}
-}
-
-// ErrLTE represents an error when a value is greater than a specified value.
-type ErrLTE struct {
-	// Value is the value that caused the error.
-	Value int
-}
-
-// Error is a method of the error interface that returns the error message.
-//
-// Returns:
-//
-//   - string: The error message.
-func (e *ErrLTE) Error() string {
-	if e.Value == 0 {
-		return "value must be non-positive"
-	} else {
-		return fmt.Sprintf("value must be less than or equal to %d", e.Value)
-	}
-}
-
-// NewErrLTE creates a new ErrLTE error.
-//
-// Parameters:
-//
-//   - value: The value that caused the error.
-//
-// Returns:
-//
-//   - *ErrLTE: A pointer to the newly created ErrLTE.
-func NewErrLTE(value int) *ErrLTE {
-	return &ErrLTE{Value: value}
-}
-
-// ErrInvalidValue represents an error when a value is invalid.
-type ErrInvalidValue struct {
-	// Values is the list of invalid values.
-	Values []int
-}
-
-// Error is a method of the error interface that returns the error message.
-//
-// Returns:
-//
-//   - string: The error message.
-func (e *ErrInvalidValue) Error() string {
-	if len(e.Values) == 0 {
-		return "value is invalid"
-	}
-
-	var builder strings.Builder
-
-	fmt.Fprintf(&builder, "value must not be %d", e.Values[0])
-
-	if len(e.Values) > 1 {
-		for i := 1; i < len(e.Values)-1; i++ {
-			builder.WriteRune(',')
-			builder.WriteRune(' ')
-			fmt.Fprintf(&builder, "%d", e.Values[i])
-		}
-
-		builder.WriteRune(',')
-		builder.WriteRune(' ')
-		builder.WriteString("or ")
-		fmt.Fprintf(&builder, "%d", e.Values[len(e.Values)-1])
-	}
-
-	return builder.String()
-}
-
-// NewErrInvalidValue creates a new ErrInvalidValue error.
-//
-// Parameters:
-//
-//   - values: The list of invalid values.
-//
-// Returns:
-//
-//   - *ErrInvalidValue: A pointer to the newly created ErrInvalidValue.
-func NewErrInvalidValue(values ...int) *ErrInvalidValue {
-	return &ErrInvalidValue{Values: values}
-}
-
-// ErrEmptyString represents an error when a string is empty.
-type ErrEmptyString struct{}
-
-// Error is a method of the error interface that returns the error message.
-//
-// Returns:
-//
-//   - string: The error message.
-func (e *ErrEmptyString) Error() string {
-	return "value must not be empty"
-}
-
-// NewErrEmptyString creates a new ErrEmptyString error.
-//
-// Returns:
-//
-//   - *ErrEmptyString: A pointer to the newly created ErrEmptyString.
-func NewErrEmptyString() *ErrEmptyString {
-	return &ErrEmptyString{}
 }
 
 // ErrInvalidRune represents an error when an invalid rune is encountered.
@@ -671,6 +278,14 @@ func (e *ErrInvalidRune) Error() string {
 //   - error: The reason for the invalidity of the rune.
 func (e *ErrInvalidRune) Unwrap() error {
 	return e.Reason
+}
+
+// ChangeReason changes the reason for the invalidity of the rune.
+//
+// Parameters:
+//   - reason: The new reason for the invalidity of the rune.
+func (e *ErrInvalidRune) ChangeReason(reason error) {
+	e.Reason = reason
 }
 
 // NewErrInvalidRune creates a new ErrInvalidRuneAt error.
@@ -704,7 +319,7 @@ type ErrAt struct {
 //   - string: The error message.
 func (e *ErrAt) Error() string {
 	if e.Reason == nil {
-		return fmt.Sprintf("at index %d: something went wrong", e.Index)
+		return fmt.Sprintf("something went wrong at index %d", e.Index)
 	} else {
 		return fmt.Sprintf("at index %d: %s", e.Index, e.Reason.Error())
 	}
@@ -717,6 +332,14 @@ func (e *ErrAt) Error() string {
 //   - error: The reason for the error.
 func (e *ErrAt) Unwrap() error {
 	return e.Reason
+}
+
+// ChangeReason changes the reason for the error.
+//
+// Parameters:
+//   - reason: The new reason for the error.
+func (e *ErrAt) ChangeReason(reason error) {
+	e.Reason = reason
 }
 
 // NewErrAt creates a new ErrAt error.
@@ -734,21 +357,171 @@ func NewErrAt(index int, reason error) *ErrAt {
 	}
 }
 
-// ErrEmptySlice represents an error when a slice is empty.
-type ErrEmptySlice struct{}
+// ErrAfter is an error that is returned when something goes wrong after a certain
+// element in a stream of data.
+type ErrAfter struct {
+	// After is the element that was processed before the error occurred.
+	After string
 
-// Error is a method of the error interface that returns the error message.
+	// Reason is the reason for the error.
+	Reason error
+}
+
+// Error is a method of the error interface.
 //
 // Returns:
 //   - string: The error message.
-func (e *ErrEmptySlice) Error() string {
-	return "slice must not be empty"
+func (e *ErrAfter) Error() string {
+	if e.Reason == nil {
+		return fmt.Sprintf("something went wrong after %s", e.After)
+	} else {
+		return fmt.Sprintf("after %s: %s", e.After, e.Reason.Error())
+	}
 }
 
-// NewErrEmptySlice creates a new ErrEmptySlice error.
+// Unwrap returns the reason for the error.
+// It is used for error unwrapping.
 //
 // Returns:
-//   - *ErrEmptySlice: A pointer to the newly created ErrEmptySlice.
-func NewErrEmptySlice() *ErrEmptySlice {
-	return &ErrEmptySlice{}
+//   - error: The reason for the error.
+func (e *ErrAfter) Unwrap() error {
+	return e.Reason
+}
+
+// ChangeReason changes the reason for the error.
+//
+// Parameters:
+//   - reason: The new reason for the error.
+func (e *ErrAfter) ChangeReason(reason error) {
+	e.Reason = reason
+}
+
+// NewErrAfter creates a new ErrAfter error.
+//
+// Parameters:
+//   - after: The element that was processed before the error occurred.
+//   - reason: The reason for the error.
+//
+// Returns:
+//   - *ErrAfter: A pointer to the new ErrAfter error.
+func NewErrAfter(after string, reason error) *ErrAfter {
+	return &ErrAfter{
+		After:  after,
+		Reason: reason,
+	}
+}
+
+// ErrBefore is an error that is returned when something goes wrong before
+// a certain element in a stream of data.
+type ErrBefore struct {
+	// Before is the element that was processed before the error occurred.
+	Before string
+
+	// Reason is the reason for the error.
+	Reason error
+}
+
+// Error is a method of the error interface.
+//
+// Returns:
+//   - string: The error message.
+func (e *ErrBefore) Error() string {
+	if e.Reason == nil {
+		return fmt.Sprintf("something went wrong before %s", e.Before)
+	} else {
+		return fmt.Sprintf("before %s: %s", e.Before, e.Reason.Error())
+	}
+}
+
+// Unwrap returns the reason for the error.
+// It is used for error unwrapping.
+//
+// Returns:
+//   - error: The reason for the error.
+func (e *ErrBefore) Unwrap() error {
+	return e.Reason
+}
+
+// ChangeReason changes the reason for the error.
+//
+// Parameters:
+//   - reason: The new reason for the error.
+func (e *ErrBefore) ChangeReason(reason error) {
+	e.Reason = reason
+}
+
+// NewErrBefore creates a new ErrBefore error.
+//
+// Parameters:
+//   - before: The element that was processed before the error occurred.
+//   - reason: The reason for the error.
+//
+// Returns:
+//   - *ErrBefore: A pointer to the new ErrBefore error.
+func NewErrBefore(before string, reason error) *ErrBefore {
+	return &ErrBefore{
+		Before: before,
+		Reason: reason,
+	}
+}
+
+// ErrInvalidUsage represents an error that occurs when a function is used incorrectly.
+type ErrInvalidUsage struct {
+	// Reason is the reason for the invalid usage.
+	Reason error
+
+	// Usage is the usage of the function.
+	Usage string
+}
+
+// Error is a method of the error interface.
+//
+// Returns:
+//   - string: The error message.
+func (e *ErrInvalidUsage) Error() string {
+	var reason string
+
+	if e.Reason == nil {
+		reason = "invalid usage"
+	} else {
+		reason = e.Reason.Error()
+	}
+
+	if e.Usage == "" {
+		return reason
+	}
+
+	return fmt.Sprintf("%s. %s", reason, e.Usage)
+}
+
+// Unwrap returns the reason for the invalid usage.
+// It is used for error unwrapping.
+//
+// Returns:
+//   - error: The reason for the invalid usage.
+func (e *ErrInvalidUsage) Unwrap() error {
+	return e.Reason
+}
+
+// ChangeReason changes the reason for the invalid usage.
+//
+// Parameters:
+//   - reason: The new reason for the invalid usage.
+func (e *ErrInvalidUsage) ChangeReason(reason error) {
+	e.Reason = reason
+}
+
+// NewErrInvalidUsage creates a new ErrInvalidUsage error.
+//
+// Parameters:
+//   - reason: The reason for the invalid usage.
+//   - usage: The usage of the function.
+//
+// Returns:
+//   - *ErrInvalidUsage: A pointer to the new ErrInvalidUsage error.
+func NewErrInvalidUsage(reason error, usage string) *ErrInvalidUsage {
+	return &ErrInvalidUsage{
+		Reason: reason,
+		Usage:  usage,
+	}
 }

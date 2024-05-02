@@ -7,6 +7,16 @@ import (
 	"golang.org/x/net/html"
 )
 
+// AttributeMatchFunc is a function type that takes a string and returns a boolean.
+// It is used to match an attribute value in an HTML node.
+//
+// Parameters:
+//   - attr: The attribute value to match.
+//
+// Returns:
+//   - bool: True if the attribute value matches, otherwise false.
+type AttributeMatchFunc func(attr string) bool
+
 // SearchCriteria is a struct that encapsulates the parameters for searching
 // within an HTML node.
 type SearchCriteria struct {
@@ -16,16 +26,16 @@ type SearchCriteria struct {
 	// Data represents the data contained within the node.
 	Data optional.String
 
-	// AttrKey and AttrVal define the attribute key-value pair to match in the
-	// node.
+	// AttrKey is a slice of attribute keys to match.
 	AttrKey []string
-	AttrVal []func(string) bool
+
+	// AttrVal is a slice of functions that match the attribute value.
+	AttrVal []AttributeMatchFunc
 }
 
 // SearchCriteriaOption is a functional option type for the SearchCriteria struct.
 //
 // Parameters:
-//
 //   - *SearchCriteria: The SearchCriteria instance to apply the option to.
 type SearchCriteriaOption func(*SearchCriteria)
 
@@ -33,11 +43,9 @@ type SearchCriteriaOption func(*SearchCriteria)
 // instance to the provided string.
 //
 // Parameters:
-//
 //   - data: The data to set in the SearchCriteria instance.
 //
 // Returns:
-//
 //   - SearchCriteriaOption: A functional option that sets the data field of the
 func WithData(data string) SearchCriteriaOption {
 	return func(sc *SearchCriteria) {
@@ -49,15 +57,13 @@ func WithData(data string) SearchCriteriaOption {
 // in the SearchCriteria instance.
 //
 // Parameters:
-//
 //   - key: The attribute key to match.
 //   - val: The attribute value to match.
 //
 // Returns:
-//
 //   - SearchCriteriaOption: A functional option that sets the attribute key-value
 //     pair to match in the SearchCriteria instance.
-func WithAttr(key string, val func(string) bool) SearchCriteriaOption {
+func WithAttr(key string, val AttributeMatchFunc) SearchCriteriaOption {
 	return func(sc *SearchCriteria) {
 		sc.AttrKey = append(sc.AttrKey, key)
 		sc.AttrVal = append(sc.AttrVal, val)
@@ -68,14 +74,12 @@ func WithAttr(key string, val func(string) bool) SearchCriteriaOption {
 // parameters.
 //
 // Parameters:
-//
 //   - node_type: The type of the HTML node to search for.
 //   - options: A variadic list of functional options to apply to the SearchCriteria
 //     instance.
 //
 // Returns:
-//
-//   - *SearchCriteria: The newly created SearchCriteria instance.
+//   - SearchCriteria: SearchCriteria instance with the specified parameters.
 func NewSearchCriteria(node_type html.NodeType, options ...SearchCriteriaOption) SearchCriteria {
 	sc := SearchCriteria{
 		NodeType: node_type,
@@ -92,11 +96,9 @@ func NewSearchCriteria(node_type html.NodeType, options ...SearchCriteriaOption)
 // node matches the search criteria encapsulated by the SearchCriteria instance.
 //
 // Parameters:
-//
 //   - node: The HTML node to match against the search criteria.
 //
 // Returns:
-//
 //   - bool: True if the node matches the search criteria, otherwise false.
 func (sc *SearchCriteria) Match(node *html.Node) bool {
 	if node == nil || node.Type != sc.NodeType {
