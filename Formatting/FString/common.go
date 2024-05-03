@@ -15,6 +15,7 @@ type Options []BuildOption
 
 var (
 	// ArrayDefault is the default options for an array.
+	// [1, 2, 3]
 	ArrayDefault Options = Options{
 		WithIndentation(NewIndentConfig(DefaultIndentation, 0, false, true)),
 		WithDelimiterLeft(NewDelimiterConfig("[", false)),
