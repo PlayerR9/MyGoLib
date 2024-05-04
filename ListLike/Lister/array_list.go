@@ -1,13 +1,14 @@
-package List
+package Lister
 
 import (
 	"fmt"
 	"strings"
 
-	itf "github.com/PlayerR9/MyGoLib/CustomData/Iterators"
-	"github.com/PlayerR9/MyGoLib/ListLike/Common"
+	itf "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
 	itff "github.com/PlayerR9/MyGoLib/Units/Interfaces"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
+
+	fs "github.com/PlayerR9/MyGoLib/Formatting/Strings"
 )
 
 // ArrayList is a generic type that represents a list data structure with
@@ -45,8 +46,10 @@ func NewArrayList[T any](values ...T) *ArrayList[T] {
 // Parameters:
 //
 //   - value: A pointer to an element of type T to be added to the list.
-func (list *ArrayList[T]) Append(value T) {
+func (list *ArrayList[T]) Append(value T) error {
 	list.values = append(list.values, value)
+
+	return nil
 }
 
 // DeleteFirst is a method of the ArrayList type. It is used to remove and return
@@ -57,14 +60,14 @@ func (list *ArrayList[T]) Append(value T) {
 // Returns:
 //
 //   - T: The first element in the list.
-func (list *ArrayList[T]) DeleteFirst() T {
+func (list *ArrayList[T]) DeleteFirst() (T, error) {
 	if len(list.values) <= 0 {
-		panic(Common.NewErrEmptyList(list))
+		return *new(T), NewErrEmptyList(list)
 	}
 
 	toRemove := list.values[0]
 	list.values = list.values[1:]
-	return toRemove
+	return toRemove, nil
 }
 
 // PeekFirst is a method of the ArrayList type. It is used to return the first
@@ -75,12 +78,12 @@ func (list *ArrayList[T]) DeleteFirst() T {
 // Returns:
 //
 //   - T: A pointer to the first element in the list.
-func (list *ArrayList[T]) PeekFirst() T {
+func (list *ArrayList[T]) PeekFirst() (T, error) {
 	if len(list.values) == 0 {
-		panic(Common.NewErrEmptyList(list))
+		return *new(T), NewErrEmptyList(list)
 	}
 
-	return list.values[0]
+	return list.values[0], nil
 }
 
 // IsEmpty is a method of the ArrayList type. It checks if the list is empty.
@@ -150,24 +153,16 @@ func (list *ArrayList[T]) IsFull() (isFull bool) {
 //
 //   - string: A string representation of the list.
 func (list *ArrayList[T]) String() string {
-	if len(list.values) == 0 {
-		return "ArrayList[size=0, values=[]]"
+	values := make([]string, 0, len(list.values))
+	for _, element := range list.values {
+		values = append(values, fs.StringOf(element))
 	}
 
-	var builder strings.Builder
-
-	fmt.Fprintf(&builder, "ArrayList[size=%d, values=[%v", len(list.values), list.values[0])
-
-	for _, element := range list.values[1:] {
-		builder.WriteRune(',')
-		builder.WriteRune(' ')
-		fmt.Fprintf(&builder, "%v", element)
-	}
-
-	builder.WriteRune(']')
-	builder.WriteRune(']')
-
-	return builder.String()
+	return fmt.Sprintf(
+		"ArrayList[size=%d, values=[%s]]",
+		len(list.values),
+		strings.Join(values, ", "),
+	)
 }
 
 // Prepend is a method of the ArrayList type. It is used to add an element to the
@@ -178,8 +173,10 @@ func (list *ArrayList[T]) String() string {
 // Parameters:
 //
 //   - value: A pointer to an element of type T to be added to the list.
-func (list *ArrayList[T]) Prepend(value T) {
+func (list *ArrayList[T]) Prepend(value T) error {
 	list.values = append([]T{value}, list.values...)
+
+	return nil
 }
 
 // DeleteLast is a method of the ArrayList type. It is used to remove and return
@@ -190,14 +187,14 @@ func (list *ArrayList[T]) Prepend(value T) {
 // Returns:
 //
 //   - T: The last element in the list.
-func (list *ArrayList[T]) DeleteLast() T {
+func (list *ArrayList[T]) DeleteLast() (T, error) {
 	if len(list.values) == 0 {
-		panic(Common.NewErrEmptyList(list))
+		return *new(T), NewErrEmptyList(list)
 	}
 
 	toRemove := list.values[len(list.values)-1]
 	list.values = list.values[:len(list.values)-1]
-	return toRemove
+	return toRemove, nil
 }
 
 // PeekLast is a method of the ArrayList type. It is used to return the last
@@ -208,12 +205,12 @@ func (list *ArrayList[T]) DeleteLast() T {
 // Returns:
 //
 //   - T: The last element in the list.
-func (list *ArrayList[T]) PeekLast() T {
+func (list *ArrayList[T]) PeekLast() (T, error) {
 	if len(list.values) == 0 {
-		panic(Common.NewErrEmptyList(list))
+		return *new(T), NewErrEmptyList(list)
 	}
 
-	return list.values[len(list.values)-1]
+	return list.values[len(list.values)-1], nil
 }
 
 // CutNilValues is a method of the ArrayList type. It is used to remove all nil

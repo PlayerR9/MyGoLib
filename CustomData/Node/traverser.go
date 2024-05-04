@@ -1,10 +1,11 @@
 package Node
 
 import (
+	"errors"
 	"slices"
 
-	Queue "github.com/PlayerR9/MyGoLib/ListLike/Queue"
-	Stack "github.com/PlayerR9/MyGoLib/ListLike/Stack"
+	"github.com/PlayerR9/MyGoLib/ListLike/Queuer"
+	"github.com/PlayerR9/MyGoLib/ListLike/Stacker"
 )
 
 // ObserverFunc is a function that observes a node.
@@ -62,13 +63,15 @@ func NewTraverser[T any](observer ObserverFunc[T], nexts NextsFunc[T]) Traverser
 //
 //   - error: An error if the traversal fails.
 func (t *Traverser[T]) DFS(node T) error {
-	S := Stack.NewLinkedStack(node)
+	S := Stacker.NewLinkedStack(node)
 
-	var err error
 	var children []T
 
-	for !S.IsEmpty() {
-		node := S.Pop()
+	for {
+		node, err := S.Pop()
+		if err != nil {
+			break
+		}
 
 		err = t.observer(node)
 		if err != nil {
@@ -83,7 +86,10 @@ func (t *Traverser[T]) DFS(node T) error {
 		slices.Reverse(children)
 
 		for _, child := range children {
-			S.Push(child)
+			err := S.Push(child)
+			if err != nil {
+				return errors.New("failed to push child onto stack")
+			}
 		}
 	}
 
@@ -100,13 +106,15 @@ func (t *Traverser[T]) DFS(node T) error {
 //
 //   - error: An error if the traversal fails.
 func (t *Traverser[T]) BFS(node T) error {
-	Q := Queue.NewLinkedQueue(node)
+	Q := Queuer.NewLinkedQueue(node)
 
-	var err error
 	var children []T
 
-	for !Q.IsEmpty() {
-		node := Q.Dequeue()
+	for {
+		node, err := Q.Dequeue()
+		if err != nil {
+			break
+		}
 
 		err = t.observer(node)
 		if err != nil {
@@ -119,7 +127,10 @@ func (t *Traverser[T]) BFS(node T) error {
 		}
 
 		for _, child := range children {
-			Q.Enqueue(child)
+			err := Q.Enqueue(child)
+			if err != nil {
+				return err
+			}
 		}
 	}
 

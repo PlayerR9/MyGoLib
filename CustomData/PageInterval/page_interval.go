@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 
-	itf "github.com/PlayerR9/MyGoLib/CustomData/Iterators"
+	itf "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
 	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )

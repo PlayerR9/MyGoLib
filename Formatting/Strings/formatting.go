@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	ffs "github.com/PlayerR9/MyGoLib/Formatting/FString"
 )
 
 // AndString concatenates a list of strings using commas and the word "and" before the last string.
@@ -26,13 +28,7 @@ func AndString(vals ...string) string {
 	default:
 		var builder strings.Builder
 
-		builder.WriteString(vals[0])
-
-		for i := 1; i < len(vals)-1; i++ {
-			builder.WriteRune(',')
-			builder.WriteRune(' ')
-			builder.WriteString(vals[i])
-		}
+		builder.WriteString(strings.Join(vals[0:len(vals)-1], ", "))
 
 		builder.WriteRune(',')
 		builder.WriteRune(' ')
@@ -64,13 +60,7 @@ func OrString(vals ...string) string {
 	default:
 		var builder strings.Builder
 
-		builder.WriteString(vals[0])
-
-		for i := 1; i < len(vals)-1; i++ {
-			builder.WriteRune(',')
-			builder.WriteRune(' ')
-			builder.WriteString(vals[i])
-		}
+		builder.WriteString(strings.Join(vals[0:len(vals)-1], ", "))
 
 		builder.WriteRune(',')
 		builder.WriteRune(' ')
@@ -150,4 +140,106 @@ func DateStringer(date time.Time) string {
 //   - string: The time in the format "3:04 PM".
 func TimeStringer(time time.Time) string {
 	return time.Format("3:04 PM")
+}
+
+// StringOf converts any type to a string.
+//
+// The function converts the input element to a string using the following rules:
+//   - If the element is a string, it is returned as is.
+//   - If the element implements the fmt.Stringer interface, the String method is called.
+//   - If the element is an error, the Error method is called.
+//   - If the element is a byte slice, it is converted to a string.
+//   - If the element is a rune slice, it is converted to a string.
+//   - If the element implements the ffs.FStringer interface, the FString function is called.
+//   - Otherwise, the element is converted to a string using the fmt.Sprintf function.
+//
+// Parameters:
+//   - elem: The element to convert to a string.
+//
+// Returns:
+//   - string: The string representation of the element.
+func StringOf(elem any) string {
+	if elem == nil {
+		return ""
+	}
+
+	switch elem := elem.(type) {
+	case string:
+		return elem
+	case fmt.Stringer:
+		return elem.String()
+	case error:
+		return elem.Error()
+	case []byte:
+		return string(elem)
+	case []rune:
+		return string(elem)
+	case ffs.FStringer:
+		return ffs.FString(elem)
+	default:
+		return fmt.Sprintf("%v", elem)
+	}
+}
+
+// StringOfFunc is a function type that converts a value of type T to a string.
+//
+// Parameters:
+//   - elem: The element to convert to a string.
+//
+// Returns:
+//   - string: The string representation of the element.
+type StringOfFunc[T any] func(elem T) string
+
+var (
+	// StringOfStringer converts a value of type fmt.Stringer to a string.
+	StringOfStringer StringOfFunc[fmt.Stringer] = func(elem fmt.Stringer) string {
+		return elem.String()
+	}
+
+	// StringOfError converts a value of type error to a string.
+	StringOfError StringOfFunc[error] = func(elem error) string {
+		return elem.Error()
+	}
+
+	// StringOfString converts a value of type string to a string.
+	StringOfByteSlice StringOfFunc[[]byte] = func(elem []byte) string {
+		return string(elem)
+	}
+
+	// StringOfString converts a value of type string to a string.
+	StringOfRuneSlice StringOfFunc[[]rune] = func(elem []rune) string {
+		return string(elem)
+	}
+
+	// StringOfFStringer converts a value of type ffs.FStringer to a string.
+	StringOfFStringer StringOfFunc[ffs.FStringer] = func(elem ffs.FStringer) string {
+		return ffs.FString(elem)
+	}
+
+	// StringOfAny converts a value of any type to a string.
+	StringOfAny StringOfFunc[any] = func(elem any) string {
+		return fmt.Sprintf("%v", elem)
+	}
+)
+
+// StringsOf converts a list of elements to a string using a separator.
+//
+// The function converts the input elements to strings using the StringOf function.
+// The strings are then joined using the separator.
+//
+// Parameters:
+//   - sep: The separator to use when joining the strings.
+//   - f: A function that converts an element to a string.
+//   - elems: The elements to convert to strings.
+//
+// Returns:
+//   - string: The string representation of the elements.
+func StringsOf[T any](sep string, f StringOfFunc[T], elems ...T) string {
+	values := make([]string, 0, len(elems))
+
+	for _, elem := range elems {
+		values = append(values, f(elem))
+	}
+
+	return strings.Join(values, sep)
 }

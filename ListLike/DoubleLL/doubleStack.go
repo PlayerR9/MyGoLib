@@ -3,9 +3,8 @@ package DoubleLL
 import (
 	"fmt"
 
-	itf "github.com/PlayerR9/MyGoLib/CustomData/Iterators"
-	"github.com/PlayerR9/MyGoLib/ListLike/Common"
-	impl "github.com/PlayerR9/MyGoLib/ListLike/Stack"
+	itf "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
+	"github.com/PlayerR9/MyGoLib/ListLike/Stacker"
 	itff "github.com/PlayerR9/MyGoLib/Units/Interfaces"
 )
 
@@ -17,11 +16,11 @@ import (
 // If the elements are refused, they are pushed back onto the stack as they were.
 type DoubleStack[T any] struct {
 	// mainStack represents the main stack.
-	mainStack Common.Stacker[T]
+	mainStack Stacker.Stacker[T]
 
 	// auxStack represents the auxiliary stack that is used to store the elements
 	// that are popped from the main stack.
-	auxStack *impl.ArrayStack[T]
+	auxStack *Stacker.ArrayStack[T]
 }
 
 // NewDoubleLinkedStack creates a new double stack that uses a linked stack as
@@ -36,8 +35,8 @@ type DoubleStack[T any] struct {
 //   - *DoubleStack: A pointer to the new double stack.
 func NewDoubleLinkedStack[T any](values ...T) *DoubleStack[T] {
 	ds := &DoubleStack[T]{
-		mainStack: impl.NewLinkedStack[T](values...),
-		auxStack:  impl.NewArrayStack[T](),
+		mainStack: Stacker.NewLinkedStack(values...),
+		auxStack:  Stacker.NewArrayStack[T](),
 	}
 
 	return ds
@@ -55,8 +54,8 @@ func NewDoubleLinkedStack[T any](values ...T) *DoubleStack[T] {
 //   - *DoubleStack: A pointer to the new double stack.
 func NewDoubleArrayStack[T any](values ...T) *DoubleStack[T] {
 	ds := &DoubleStack[T]{
-		mainStack: impl.NewArrayStack[T](values...),
-		auxStack:  impl.NewArrayStack[T](),
+		mainStack: Stacker.NewArrayStack(values...),
+		auxStack:  Stacker.NewArrayStack[T](),
 	}
 
 	return ds
@@ -85,10 +84,20 @@ func (ds *DoubleStack[T]) GetExtracted() []T {
 // Refuse refuses the elements that have been popped from the stack.
 // The elements are pushed back onto the stack in the same order that they were
 // popped.
-func (ds *DoubleStack[T]) Refuse() {
-	for !ds.auxStack.IsEmpty() {
-		ds.mainStack.Push(ds.auxStack.Pop())
+func (ds *DoubleStack[T]) Refuse() error {
+	for {
+		top, err := ds.auxStack.Pop()
+		if err != nil {
+			break
+		}
+
+		err = ds.mainStack.Push(top)
+		if err != nil {
+			return err
+		}
 	}
+
+	return nil
 }
 
 // IsEmpty returns whether the double stack is empty.
@@ -108,8 +117,8 @@ func (ds *DoubleStack[T]) IsEmpty() bool {
 // Parameters:
 //
 //   - value (T): The value to push onto the double stack.
-func (ds *DoubleStack[T]) Push(value T) {
-	ds.mainStack.Push(value)
+func (ds *DoubleStack[T]) Push(value T) error {
+	return ds.mainStack.Push(value)
 }
 
 // MustPop pops a value from the double stack.
@@ -120,15 +129,18 @@ func (ds *DoubleStack[T]) Push(value T) {
 // Returns:
 //
 //   - T: The value that was popped from the double stack.
-func (ds *DoubleStack[T]) Pop() T {
-	if ds.mainStack.IsEmpty() {
-		panic(Common.NewErrEmptyList(ds))
+func (ds *DoubleStack[T]) Pop() (T, error) {
+	top, err := ds.mainStack.Pop()
+	if err != nil {
+		return *new(T), err
 	}
 
-	top := ds.mainStack.Pop()
-	ds.auxStack.Push(top)
+	err = ds.auxStack.Push(top)
+	if err != nil {
+		return *new(T), err
+	}
 
-	return top
+	return top, nil
 }
 
 // MustPeek returns the value at the top of the double stack without removing it.
@@ -138,11 +150,7 @@ func (ds *DoubleStack[T]) Pop() T {
 // Returns:
 //
 //   - T: The value at the top of the double stack.
-func (ds *DoubleStack[T]) Peek() T {
-	if ds.mainStack.IsEmpty() {
-		panic(Common.NewErrEmptyList(ds))
-	}
-
+func (ds *DoubleStack[T]) Peek() (T, error) {
 	return ds.mainStack.Peek()
 }
 
@@ -163,10 +171,6 @@ func (ds *DoubleStack[T]) Size() int {
 //
 //   - string: A string representation of the double stack.
 func (ds *DoubleStack[T]) String() string {
-	if ds == nil {
-		return "DoubleStack[nil]"
-	}
-
 	return fmt.Sprintf("DoubleStack[mainStack:%s, auxStack:%s]",
 		ds.mainStack.String(), ds.auxStack.String())
 }
@@ -204,8 +208,8 @@ func (ds *DoubleStack[T]) Slice() []T {
 //   - *DoubleStack: A pointer to a new double stack that is a copy of the original.
 func (ds *DoubleStack[T]) Copy() itff.Copier {
 	return &DoubleStack[T]{
-		mainStack: ds.mainStack.Copy().(Common.Stacker[T]),
-		auxStack:  ds.auxStack.Copy().(*impl.ArrayStack[T]),
+		mainStack: ds.mainStack.Copy().(Stacker.Stacker[T]),
+		auxStack:  ds.auxStack.Copy().(*Stacker.ArrayStack[T]),
 	}
 }
 
@@ -216,11 +220,15 @@ func (ds *DoubleStack[T]) Copy() itff.Copier {
 //
 //   - error: An error of type *ErrNoElementsHaveBeenPopped if the auxiliary stack is empty.
 func (ds *DoubleStack[T]) RefuseOne() error {
-	if ds.auxStack.IsEmpty() {
+	top, err := ds.auxStack.Pop()
+	if err != nil {
 		return NewErrNoElementsHaveBeenPopped()
 	}
 
-	ds.mainStack.Push(ds.auxStack.Pop())
+	err = ds.mainStack.Push(top)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

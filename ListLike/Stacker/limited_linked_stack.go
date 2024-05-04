@@ -1,11 +1,11 @@
-package Stack
+package Stacker
 
 import (
 	"fmt"
 	"strings"
 
-	itf "github.com/PlayerR9/MyGoLib/CustomData/Iterators"
-	"github.com/PlayerR9/MyGoLib/ListLike/Common"
+	fs "github.com/PlayerR9/MyGoLib/Formatting/Strings"
+	itf "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
 	itff "github.com/PlayerR9/MyGoLib/Units/Interfaces"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
@@ -14,7 +14,7 @@ import (
 // or without a limited capacity, implemented using a linked list.
 type LimitedLinkedStack[T any] struct {
 	// front is a pointer to the first node in the linked stack.
-	front *Common.StackNode[T]
+	front *StackNode[T]
 
 	// size is the current number of elements in the stack.
 	size int
@@ -43,16 +43,16 @@ func NewLimitedLinkedStack[T any](values ...T) *LimitedLinkedStack[T] {
 	}
 
 	// First node
-	node := Common.NewStackNode(values[0])
+	node := NewStackNode(values[0])
 
-	stack.front = &node
+	stack.front = node
 
 	// Subsequent nodes
 	for _, element := range values[1:] {
-		node = Common.NewStackNode(element)
+		node = NewStackNode(element)
 		node.SetNext(stack.front)
 
-		stack.front = &node
+		stack.front = node
 	}
 
 	return stack
@@ -66,19 +66,21 @@ func NewLimitedLinkedStack[T any](values ...T) *LimitedLinkedStack[T] {
 // Parameters:
 //
 //   - value: The value to be added to the stack.
-func (stack *LimitedLinkedStack[T]) Push(value T) {
+func (stack *LimitedLinkedStack[T]) Push(value T) error {
 	if stack.size >= stack.capacity {
-		panic(Common.NewErrFullList(stack))
+		return NewErrFullList(stack)
 	}
 
-	node := Common.NewStackNode(value)
+	node := NewStackNode(value)
 
 	if stack.front != nil {
 		node.SetNext(stack.front)
 	}
 
-	stack.front = &node
+	stack.front = node
 	stack.size++
+
+	return nil
 }
 
 // Pop is a method of the LimitedLinkedStack type. It is used to remove and return the
@@ -89,9 +91,9 @@ func (stack *LimitedLinkedStack[T]) Push(value T) {
 // Returns:
 //
 //   - T: The value of the last element in the stack.
-func (stack *LimitedLinkedStack[T]) Pop() T {
+func (stack *LimitedLinkedStack[T]) Pop() (T, error) {
 	if stack.front == nil {
-		panic(Common.NewErrEmptyList(stack))
+		return *new(T), NewErrEmptyStack(stack)
 	}
 
 	toRemove := stack.front
@@ -100,7 +102,7 @@ func (stack *LimitedLinkedStack[T]) Pop() T {
 	stack.size--
 	toRemove.SetNext(nil)
 
-	return toRemove.Value
+	return toRemove.Value, nil
 }
 
 // Peek is a method of the LimitedLinkedStack type. It is used to return the last element
@@ -111,12 +113,12 @@ func (stack *LimitedLinkedStack[T]) Pop() T {
 // Returns:
 //
 //   - T: The value of the last element in the stack.
-func (stack *LimitedLinkedStack[T]) Peek() T {
+func (stack *LimitedLinkedStack[T]) Peek() (T, error) {
 	if stack.front == nil {
-		panic(Common.NewErrEmptyList(stack))
+		return *new(T), NewErrEmptyStack(stack)
 	}
 
-	return stack.front.Value
+	return stack.front.Value, nil
 }
 
 // IsEmpty is a method of the LimitedLinkedStack type. It is used to check if the stack
@@ -206,24 +208,17 @@ func (stack *LimitedLinkedStack[T]) IsFull() bool {
 //
 //   - string: A string representation of the stack.
 func (stack *LimitedLinkedStack[T]) String() string {
-	var builder strings.Builder
-
-	fmt.Fprintf(&builder, "LimitedLinkedStack[capacity=%d, ", stack.capacity)
-
-	if stack.size == 0 {
-		builder.WriteString("size=0, values=[ →]]")
-		return builder.String()
+	values := make([]string, 0, stack.size)
+	for stack_node := stack.front; stack_node != nil; stack_node = stack_node.Next() {
+		values = append(values, fs.StringOf(stack_node.Value))
 	}
 
-	fmt.Fprintf(&builder, "size=%d, values=[%v", stack.size, stack.front.Value)
-
-	for stack_node := stack.front.Next(); stack_node != nil; stack_node = stack_node.Next() {
-		fmt.Fprintf(&builder, ", %v", stack_node.Value)
-	}
-
-	fmt.Fprintf(&builder, " →]]")
-
-	return builder.String()
+	return fmt.Sprintf(
+		"LimitedLinkedStack[capacity=%d, size=%d, values=[%s →]]",
+		stack.capacity,
+		stack.size,
+		strings.Join(values, ", "),
+	)
 }
 
 // CutNilValues is a method of the LimitedLinkedStack type. It is used to remove all nil
@@ -241,7 +236,7 @@ func (stack *LimitedLinkedStack[T]) CutNilValues() {
 		return
 	}
 
-	var toDelete *Common.StackNode[T] = nil
+	var toDelete *StackNode[T] = nil
 
 	// 1. First node
 	if gen.IsNil(stack.front.Value) {
@@ -319,14 +314,14 @@ func (stack *LimitedLinkedStack[T]) Copy() itff.Copier {
 	}
 
 	// First node
-	node := Common.NewStackNode(stack.front.Value)
+	node := NewStackNode(stack.front.Value)
 
-	stackCopy.front = &node
+	stackCopy.front = node
 
 	// Subsequent nodes
 	for stack_node := stack.front.Next(); stack_node != nil; stack_node = stack_node.Next() {
-		node := Common.NewStackNode(stack_node.Value)
-		node.SetNext(&node)
+		node := NewStackNode(stack_node.Value)
+		node.SetNext(node)
 	}
 
 	return stackCopy

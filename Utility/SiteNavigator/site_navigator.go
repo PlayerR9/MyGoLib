@@ -1,10 +1,12 @@
 package SiteNavigator
 
 import (
+	"errors"
+
 	"golang.org/x/net/html"
 
-	Queue "github.com/PlayerR9/MyGoLib/ListLike/Queue"
-	"github.com/PlayerR9/MyGoLib/ListLike/Stack"
+	"github.com/PlayerR9/MyGoLib/ListLike/Queuer"
+	"github.com/PlayerR9/MyGoLib/ListLike/Stacker"
 )
 
 // IsTextNodeSearch is a search criteria that matches text nodes.
@@ -59,30 +61,36 @@ func ExtractSpecificNode(node *html.Node, criteria *SearchCriteria) []html.Node 
 // Behavior:
 //   - It does not search the children of the nodes that match the criteria.
 //   - If no criteria is provided, then the first node will match.
-func MatchNodes(section *html.Node, criteria *SearchCriteria) []html.Node {
+func MatchNodes(section *html.Node, criteria *SearchCriteria) ([]html.Node, error) {
 	if section == nil {
-		return nil // No nodes to extract
+		return nil, nil // No nodes to extract
 	} else if criteria == nil {
-		return []html.Node{*section}
+		return []html.Node{*section}, nil
 	}
 
 	solution := make([]html.Node, 0)
-	Q := Queue.NewLinkedQueue(section)
+	Q := Queuer.NewLinkedQueue(section)
 
-	for !Q.IsEmpty() {
-		node := Q.Dequeue()
+	for {
+		node, err := Q.Dequeue()
+		if err != nil {
+			break
+		}
 
 		if criteria.Match(node) {
 			solution = append(solution, *node)
 		} else {
 			// Search the children of the node
 			for c := node.FirstChild; c != nil; c = c.NextSibling {
-				Q.Enqueue(c)
+				err := Q.Enqueue(c)
+				if err != nil {
+					return solution, errors.New("failed to enqueue node onto queue")
+				}
 			}
 		}
 	}
 
-	return solution
+	return solution, nil
 }
 
 // ExtractNodes performs a breadth-first search on an HTML section returning a
@@ -108,7 +116,12 @@ func ExtractNodes(section *html.Node, criterias []SearchCriteria) []html.Node {
 		partialSol := make([]html.Node, 0)
 
 		for _, node := range solution {
-			partialSol = append(partialSol, MatchNodes(&node, &criteria)...)
+			sols, err := MatchNodes(&node, &criteria)
+			if err != nil {
+				return nil
+			}
+
+			partialSol = append(partialSol, sols...)
 		}
 
 		if len(partialSol) == 0 {
@@ -131,26 +144,32 @@ func ExtractNodes(section *html.Node, criterias []SearchCriteria) []html.Node {
 // Returns:
 //   - *html.Node: The first node that matches the search criteria, nil if no
 //     matching node is found.
-func ExtractContentFromDocument(doc *html.Node, criteria *SearchCriteria) *html.Node {
+func ExtractContentFromDocument(doc *html.Node, criteria *SearchCriteria) (*html.Node, error) {
 	if doc == nil {
-		return nil
+		return nil, nil
 	}
 
-	S := Stack.NewLinkedStack(doc)
+	S := Stacker.NewLinkedStack(doc)
 
-	for !S.IsEmpty() {
-		node := S.Pop()
+	for {
+		node, err := S.Pop()
+		if err != nil {
+			break
+		}
 
 		if criteria == nil || criteria.Match(node) {
-			return node
+			return node, nil
 		}
 
 		for c := node.FirstChild; c != nil; c = c.NextSibling {
-			S.Push(c)
+			err := S.Push(c)
+			if err != nil {
+				return nil, errors.New("failed to push node onto stack")
+			}
 		}
 	}
 
-	return nil
+	return nil, nil
 }
 
 // GetDirectChildren returns a slice of the direct children of the provided node.

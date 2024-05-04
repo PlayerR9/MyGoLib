@@ -1,13 +1,14 @@
-package Queue
+package Queuer
 
 import (
 	"fmt"
 	"strings"
 
-	itf "github.com/PlayerR9/MyGoLib/CustomData/Iterators"
-	"github.com/PlayerR9/MyGoLib/ListLike/Common"
+	itf "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
 	itff "github.com/PlayerR9/MyGoLib/Units/Interfaces"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
+
+	fs "github.com/PlayerR9/MyGoLib/Formatting/Strings"
 )
 
 // ArrayQueue is a generic type that represents a queue data structure with
@@ -45,42 +46,44 @@ func NewArrayQueue[T any](values ...T) *ArrayQueue[T] {
 // Parameters:
 //
 //   - value: The value of type T to be added to the queue.
-func (queue *ArrayQueue[T]) Enqueue(value T) {
+func (queue *ArrayQueue[T]) Enqueue(value T) error {
 	queue.values = append(queue.values, value)
+
+	return nil
 }
 
 // Dequeue is a method of the ArrayQueue type. It is used to remove and return the
 // element at the front of the queue.
 //
-// Panics with an error of type *Common.ErrEmptyList if the queue is empty.
+// Panics with an error of type *ErrEmptyList if the queue is empty.
 //
 // Returns:
 //
 //   - T: The element at the front of the queue.
-func (queue *ArrayQueue[T]) Dequeue() T {
+func (queue *ArrayQueue[T]) Dequeue() (T, error) {
 	if len(queue.values) == 0 {
-		panic(Common.NewErrEmptyList(queue))
+		return *new(T), NewErrEmptyList(queue)
 	}
 
 	toRemove := queue.values[0]
 	queue.values = queue.values[1:]
-	return toRemove
+	return toRemove, nil
 }
 
 // Peek is a method of the ArrayQueue type. It is used to return the element
 // at the front of the queue without removing it.
 //
-// Panics with an error of type *Common.ErrEmptyList if the queue is empty.
+// Panics with an error of type *ErrEmptyList if the queue is empty.
 //
 // Returns:
 //
 //   - T: The element at the front of the queue.
-func (queue *ArrayQueue[T]) Peek() T {
+func (queue *ArrayQueue[T]) Peek() (T, error) {
 	if len(queue.values) == 0 {
-		panic(Common.NewErrEmptyList(queue))
+		return *new(T), NewErrEmptyList(queue)
 	}
 
-	return queue.values[0]
+	return queue.values[0], nil
 }
 
 // IsEmpty is a method of the ArrayQueue type. It is used to check if the queue is
@@ -133,24 +136,16 @@ func (queue *ArrayQueue[T]) Clear() {
 //
 //   - string: A string representation of the queue.
 func (queue *ArrayQueue[T]) String() string {
-	var builder strings.Builder
-
-	builder.WriteString("ArrayQueue[")
-
-	if len(queue.values) == 0 {
-		builder.WriteString("size=0, values=[← ]]")
-		return builder.String()
+	values := make([]string, 0, len(queue.values))
+	for _, value := range queue.values {
+		values = append(values, fs.StringOf(value))
 	}
 
-	fmt.Fprintf(&builder, "size=%d, values=[← %v", len(queue.values), queue.values[0])
-
-	for _, element := range queue.values[1:] {
-		fmt.Fprintf(&builder, ", %v", element)
-	}
-
-	builder.WriteString("]]")
-
-	return builder.String()
+	return fmt.Sprintf(
+		"ArrayQueue{size=%d, values=[← %s]}",
+		len(queue.values),
+		strings.Join(values, ", "),
+	)
 }
 
 // CutNilValues is a method of the ArrayQueue type. It is used to remove aCommon nil

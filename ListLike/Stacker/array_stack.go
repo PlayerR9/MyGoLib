@@ -1,14 +1,15 @@
-package Stack
+package Stacker
 
 import (
 	"fmt"
 	"slices"
 	"strings"
 
-	itf "github.com/PlayerR9/MyGoLib/CustomData/Iterators"
-	"github.com/PlayerR9/MyGoLib/ListLike/Common"
+	itf "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
 	itff "github.com/PlayerR9/MyGoLib/Units/Interfaces"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
+
+	fs "github.com/PlayerR9/MyGoLib/Formatting/Strings"
 )
 
 // ArrayStack is a generic type that represents a stack data structure with
@@ -48,43 +49,45 @@ func NewArrayStack[T any](values ...T) *ArrayStack[T] {
 // Parameters:
 //
 //   - value: The value of type T to be added to the stack.
-func (stack *ArrayStack[T]) Push(value T) {
+func (stack *ArrayStack[T]) Push(value T) error {
 	stack.values = append(stack.values, value)
+
+	return nil
 }
 
 // Pop is a method of the ArrayStack type. It is used to remove and return the
 // element at the end of the stack.
 //
-// Panics with an error of type *Common.ErrEmptyList if the stack is empty.
+// Panics with an error of type *ErrEmptyList if the stack is empty.
 //
 // Returns:
 //
 //   - T: The element at the end of the stack.
-func (stack *ArrayStack[T]) Pop() T {
+func (stack *ArrayStack[T]) Pop() (T, error) {
 	if len(stack.values) == 0 {
-		panic(Common.NewErrEmptyList(stack))
+		return *new(T), NewErrEmptyStack(stack)
 	}
 
 	toRemove := stack.values[len(stack.values)-1]
 	stack.values = stack.values[:len(stack.values)-1]
 
-	return toRemove
+	return toRemove, nil
 }
 
 // Peek is a method of the ArrayStack type. It is used to return the element at the
 // end of the stack without removing it.
 //
-// Panics with an error of type *Common.ErrEmptyList if the stack is empty.
+// Panics with an error of type *ErrEmptyList if the stack is empty.
 //
 // Returns:
 //
 //   - T: The element at the end of the stack.
-func (stack *ArrayStack[T]) Peek() T {
+func (stack *ArrayStack[T]) Peek() (T, error) {
 	if len(stack.values) == 0 {
-		panic(Common.NewErrEmptyList(stack))
+		return *new(T), NewErrEmptyStack(stack)
 	}
 
-	return stack.values[len(stack.values)-1]
+	return stack.values[len(stack.values)-1], nil
 }
 
 // IsEmpty is a method of the ArrayStack type. It is used to check if the stack is
@@ -136,24 +139,16 @@ func (stack *ArrayStack[T]) Clear() {
 //
 //   - string: A string representation of the stack.
 func (stack *ArrayStack[T]) String() string {
-	var builder strings.Builder
-
-	builder.WriteString("ArrayStack[")
-
-	if len(stack.values) == 0 {
-		builder.WriteString("size=0, values=[ →]]")
-		return builder.String()
+	values := make([]string, 0, len(stack.values))
+	for _, value := range stack.values {
+		values = append(values, fs.StringOf(value))
 	}
 
-	fmt.Fprintf(&builder, "size=%d, values=[%v", len(stack.values), stack.values[0])
-
-	for _, element := range stack.values[1:] {
-		fmt.Fprintf(&builder, ", %v", element)
-	}
-
-	fmt.Fprintf(&builder, " →]]")
-
-	return builder.String()
+	return fmt.Sprintf(
+		"ArrayStack{size=%d, values=[%s →]}",
+		len(stack.values),
+		strings.Join(values, ", "),
+	)
 }
 
 // CutNilValues is a method of the ArrayStack type. It is used to remove aCommon nil

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sync"
 
-	sll "github.com/PlayerR9/MyGoLib/ListLike/Queue"
+	"github.com/PlayerR9/MyGoLib/ListLike/Queuer"
 
 	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
 )
@@ -16,7 +16,7 @@ import (
 // The Buffer should be initialized with the Init method before use.
 type Buffer[T any] struct {
 	// A pointer to the RWSafeQueue that stores the elements of the Buffer.
-	q *sll.SafeQueue[T]
+	q *Queuer.SafeQueue[T]
 
 	// A send-only channel of type T. Messages from the Buffer are sent to this channel.
 	sendTo chan T
@@ -68,7 +68,7 @@ func NewBuffer[T any](bufferSize int) (*Buffer[T], error) {
 	}
 
 	b := &Buffer[T]{
-		q:                  sll.NewSafeQueue[T](),
+		q:                  Queuer.NewSafeQueue[T](),
 		sendTo:             make(chan T, bufferSize),
 		receiveFrom:        make(chan T, bufferSize),
 		isClosed:           false,

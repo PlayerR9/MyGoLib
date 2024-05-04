@@ -1,11 +1,11 @@
-package List
+package Lister
 
 import (
 	"fmt"
 	"strings"
 
-	itf "github.com/PlayerR9/MyGoLib/CustomData/Iterators"
-	"github.com/PlayerR9/MyGoLib/ListLike/Common"
+	fs "github.com/PlayerR9/MyGoLib/Formatting/Strings"
+	itf "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
 	itff "github.com/PlayerR9/MyGoLib/Units/Interfaces"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
@@ -15,7 +15,7 @@ import (
 type LinkedList[T any] struct {
 	// front and back are pointers to the first and last nodes in the linked list,
 	// respectively.
-	front, back *Common.ListNode[T]
+	front, back *ListNode[T]
 
 	// size is the current number of elements in the list.
 	size int
@@ -42,18 +42,18 @@ func NewLinkedList[T any](values ...T) *LinkedList[T] {
 	list.size = len(values)
 
 	// First node
-	list_node := Common.NewListNode(values[0])
+	list_node := NewListNode(values[0])
 
-	list.front = &list_node
-	list.back = &list_node
+	list.front = list_node
+	list.back = list_node
 
 	// Subsequent nodes
 	for _, element := range values {
-		list_node := Common.NewListNode(element)
+		list_node := NewListNode(element)
 		list_node.SetPrev(list.back)
 
-		list.back.SetNext(&list_node)
-		list.back = &list_node
+		list.back.SetNext(list_node)
+		list.back = list_node
 	}
 
 	return list
@@ -67,19 +67,21 @@ func NewLinkedList[T any](values ...T) *LinkedList[T] {
 // Parameters:
 //
 //   - value: An element of type T to be added to the list.
-func (list *LinkedList[T]) Append(value T) {
-	list_node := Common.NewListNode(value)
+func (list *LinkedList[T]) Append(value T) error {
+	list_node := NewListNode(value)
 
 	if list.back == nil {
-		list.front = &list_node
+		list.front = list_node
 	} else {
-		list.back.SetNext(&list_node)
+		list.back.SetNext(list_node)
 		list_node.SetPrev(list.back)
 	}
 
-	list.back = &list_node
+	list.back = list_node
 
 	list.size++
+
+	return nil
 }
 
 // DeleteFirst is a method of the LinkedList type. It is used to remove and return
@@ -90,9 +92,9 @@ func (list *LinkedList[T]) Append(value T) {
 // Returns:
 //
 //   - T: The first element in the list.
-func (list *LinkedList[T]) DeleteFirst() T {
+func (list *LinkedList[T]) DeleteFirst() (T, error) {
 	if list.front == nil {
-		panic(Common.NewErrEmptyList(list))
+		return *new(T), NewErrEmptyList(list)
 	}
 
 	toRemove := list.front
@@ -108,7 +110,7 @@ func (list *LinkedList[T]) DeleteFirst() T {
 
 	toRemove.SetNext(nil)
 
-	return toRemove.Value
+	return toRemove.Value, nil
 }
 
 // PeekFirst is a method of the LinkedList type. It is used to return the first
@@ -119,12 +121,12 @@ func (list *LinkedList[T]) DeleteFirst() T {
 // Returns:
 //
 //   - value: The first element in the list.
-func (list *LinkedList[T]) PeekFirst() T {
+func (list *LinkedList[T]) PeekFirst() (T, error) {
 	if list.front == nil {
-		panic(Common.NewErrEmptyList(list))
+		return *new(T), NewErrEmptyList(list)
 	}
 
-	return list.front.Value
+	return list.front.Value, nil
 }
 
 // IsEmpty is a method of the LinkedList type. It is used to check if the list is
@@ -217,25 +219,17 @@ func (list *LinkedList[T]) IsFull() bool {
 //
 //   - string: A string representation of the list.
 func (list *LinkedList[T]) String() string {
-	var builder strings.Builder
-
-	builder.WriteString("LinkedList[")
-
-	if list.front == nil {
-		builder.WriteString("size=0, values=[]]")
-
-		return builder.String()
+	values := make([]string, 0, list.size)
+	for list_node := list.front; list_node != nil; list_node = list_node.Next() {
+		values = append(values, fs.StringOf(list_node.Value))
 	}
 
-	fmt.Fprintf(&builder, "size=%d, values=[%v", list.size, list.front.Value)
-
-	for list_node := list.front.Next(); list_node != nil; list_node = list_node.Next() {
-		fmt.Fprintf(&builder, ", %v", list_node.Value)
-	}
-
-	fmt.Fprintf(&builder, "]]")
-
-	return builder.String()
+	return fmt.Sprintf(
+		"LinkedList[size=%d, capacity=%d, values=[%s]]",
+		list.size,
+		list.Capacity(),
+		strings.Join(values, ", "),
+	)
 }
 
 // Prepend is a method of the LinkedList type. It is used to add an element to
@@ -246,19 +240,21 @@ func (list *LinkedList[T]) String() string {
 // Parameters:
 //
 //   - value: An element of type T to be added to the list.
-func (list *LinkedList[T]) Prepend(value T) {
-	list_node := Common.NewListNode(value)
+func (list *LinkedList[T]) Prepend(value T) error {
+	list_node := NewListNode(value)
 
 	if list.front == nil {
-		list.back = &list_node
+		list.back = list_node
 	} else {
 		list_node.SetNext(list.front)
-		list.front.SetPrev(&list_node)
+		list.front.SetPrev(list_node)
 	}
 
-	list.front = &list_node
+	list.front = list_node
 
 	list.size++
+
+	return nil
 }
 
 // DeleteLast is a method of the LinkedList type. It is used to remove and return
@@ -269,9 +265,9 @@ func (list *LinkedList[T]) Prepend(value T) {
 // Returns:
 //
 //   - T: The last element in the list.
-func (list *LinkedList[T]) DeleteLast() T {
+func (list *LinkedList[T]) DeleteLast() (T, error) {
 	if list.front == nil {
-		panic(Common.NewErrEmptyList(list))
+		return *new(T), NewErrEmptyList(list)
 	}
 
 	toRemove := list.back
@@ -287,7 +283,7 @@ func (list *LinkedList[T]) DeleteLast() T {
 
 	toRemove.SetPrev(nil)
 
-	return toRemove.Value
+	return toRemove.Value, nil
 }
 
 // PeekLast is a method of the LinkedList type. It is used to return the last
@@ -298,12 +294,12 @@ func (list *LinkedList[T]) DeleteLast() T {
 // Returns:
 //
 //   - value: The last element in the list.
-func (list *LinkedList[T]) PeekLast() T {
+func (list *LinkedList[T]) PeekLast() (T, error) {
 	if list.front == nil {
-		panic(Common.NewErrEmptyList(list))
+		return *new(T), NewErrEmptyList(list)
 	}
 
-	return list.back.Value
+	return list.back.Value, nil
 }
 
 // CutNilValues is a method of the LinkedList type. It is used to remove all nil
@@ -322,7 +318,7 @@ func (list *LinkedList[T]) CutNilValues() {
 		return
 	}
 
-	var toDelete *Common.ListNode[T] = nil
+	var toDelete *ListNode[T] = nil
 
 	// 1. First node
 	if gen.IsNil(list.front.Value) {
@@ -397,18 +393,18 @@ func (list *LinkedList[T]) Copy() itff.Copier {
 	}
 
 	// First node
-	node := Common.NewListNode(list.front.Value)
-	listCopy.front = &node
+	node := NewListNode(list.front.Value)
+	listCopy.front = node
 
 	prev := listCopy.front
 
 	// Subsequent nodes
 	for list_node := list.front.Next(); list_node != nil; list_node = list_node.Next() {
-		list_node_copy := Common.NewListNode(list_node.Value)
+		list_node_copy := NewListNode(list_node.Value)
 		list_node_copy.SetPrev(prev)
 
-		prev.SetNext(&list_node_copy)
-		prev = &list_node_copy
+		prev.SetNext(list_node_copy)
+		prev = list_node_copy
 	}
 
 	if listCopy.front.Next() != nil {

@@ -1,12 +1,12 @@
-package Stack
+package Stacker
 
 import (
 	"fmt"
 	"slices"
 	"strings"
 
-	itf "github.com/PlayerR9/MyGoLib/CustomData/Iterators"
-	"github.com/PlayerR9/MyGoLib/ListLike/Common"
+	fs "github.com/PlayerR9/MyGoLib/Formatting/Strings"
+	itf "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
 	itff "github.com/PlayerR9/MyGoLib/Units/Interfaces"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
@@ -51,12 +51,14 @@ func NewLimitedArrayStack[T any](values ...T) *LimitedArrayStack[T] {
 // Parameters:
 //
 //   - value: The value of type T to be added to the stack.
-func (stack *LimitedArrayStack[T]) Push(value T) {
+func (stack *LimitedArrayStack[T]) Push(value T) error {
 	if len(stack.values) == stack.capacity {
-		panic(Common.NewErrFullList(stack))
+		return NewErrFullList(stack)
 	}
 
 	stack.values = append(stack.values, value)
+
+	return nil
 }
 
 // Pop is a method of the LimitedArrayStack type. It is used to remove and return the
@@ -67,15 +69,15 @@ func (stack *LimitedArrayStack[T]) Push(value T) {
 // Returns:
 //
 //   - T: The element at the end of the stack.
-func (stack *LimitedArrayStack[T]) Pop() T {
+func (stack *LimitedArrayStack[T]) Pop() (T, error) {
 	if len(stack.values) == 0 {
-		panic(Common.NewErrEmptyList(stack))
+		return *new(T), NewErrEmptyStack(stack)
 	}
 
 	toRemove := stack.values[len(stack.values)-1]
 	stack.values = stack.values[:len(stack.values)-1]
 
-	return toRemove
+	return toRemove, nil
 }
 
 // Peek is a method of the LimitedArrayStack type. It is used to return the element at the
@@ -86,12 +88,12 @@ func (stack *LimitedArrayStack[T]) Pop() T {
 // Returns:
 //
 //   - T: The element at the end of the stack.
-func (stack *LimitedArrayStack[T]) Peek() T {
+func (stack *LimitedArrayStack[T]) Peek() (T, error) {
 	if len(stack.values) == 0 {
-		panic(Common.NewErrEmptyList(stack))
+		return *new(T), NewErrEmptyStack(stack)
 	}
 
-	return stack.values[len(stack.values)-1]
+	return stack.values[len(stack.values)-1], nil
 }
 
 // IsEmpty is a method of the LimitedArrayStack type. It is used to check if the stack is
@@ -164,24 +166,17 @@ func (stack *LimitedArrayStack[T]) IsFull() (isFull bool) {
 //
 //   - string: A string representation of the stack.
 func (stack *LimitedArrayStack[T]) String() string {
-	var builder strings.Builder
-
-	fmt.Fprintf(&builder, "LimitedArrayStack[capacity=%d, ", stack.capacity)
-
-	if len(stack.values) == 0 {
-		builder.WriteString("size=0, values=[ →]]")
-		return builder.String()
+	values := make([]string, 0, len(stack.values))
+	for _, value := range stack.values {
+		values = append(values, fs.StringOf(value))
 	}
 
-	fmt.Fprintf(&builder, "size=%d, values=[%v", len(stack.values), stack.values[0])
-
-	for _, element := range stack.values[1:] {
-		fmt.Fprintf(&builder, ", %v", element)
-	}
-
-	fmt.Fprintf(&builder, " →]]")
-
-	return builder.String()
+	return fmt.Sprintf(
+		"LimitedArrayStack[capacity=%d, size=%d, values=[%s →]]",
+		stack.capacity,
+		len(stack.values),
+		strings.Join(values, ", "),
+	)
 }
 
 // CutNilValues is a method of the LimitedArrayStack type. It is used to remove all nil

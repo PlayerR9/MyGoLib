@@ -525,3 +525,50 @@ func NewErrInvalidUsage(reason error, usage string) *ErrInvalidUsage {
 		Usage:  usage,
 	}
 }
+
+type ErrUnexpectedError struct {
+	// Reason is the reason for the unexpected error.
+	Reason error
+}
+
+// Error is a method of the error interface.
+//
+// Returns:
+//   - string: The error message.
+func (e *ErrUnexpectedError) Error() string {
+	if e.Reason == nil {
+		return "unexpected error"
+	} else {
+		return fmt.Sprintf("unexpected error: %s", e.Reason.Error())
+	}
+}
+
+// Unwrap returns the reason for the unexpected error.
+// It is used for error unwrapping.
+//
+// Returns:
+//   - error: The reason for the unexpected error.
+func (e *ErrUnexpectedError) Unwrap() error {
+	return e.Reason
+}
+
+// ChangeReason changes the reason for the unexpected error.
+//
+// Parameters:
+//   - reason: The new reason for the unexpected error.
+func (e *ErrUnexpectedError) ChangeReason(reason error) {
+	e.Reason = reason
+}
+
+// NewErrUnexpectedError creates a new ErrUnexpectedError error.
+//
+// Parameters:
+//   - reason: The reason for the unexpected error.
+//
+// Returns:
+//   - *ErrUnexpectedError: A pointer to the new ErrUnexpectedError error.
+func NewErrUnexpectedError(reason error) *ErrUnexpectedError {
+	return &ErrUnexpectedError{
+		Reason: reason,
+	}
+}

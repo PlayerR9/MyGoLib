@@ -1,11 +1,11 @@
-package List
+package Lister
 
 import (
 	"fmt"
 	"strings"
 
-	itf "github.com/PlayerR9/MyGoLib/CustomData/Iterators"
-	"github.com/PlayerR9/MyGoLib/ListLike/Common"
+	fs "github.com/PlayerR9/MyGoLib/Formatting/Strings"
+	itf "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
 	itff "github.com/PlayerR9/MyGoLib/Units/Interfaces"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
@@ -15,7 +15,7 @@ import (
 type LimitedLinkedList[T any] struct {
 	// front and back are pointers to the first and last nodes in the linked list,
 	// respectively.
-	front, back *Common.ListNode[T]
+	front, back *ListNode[T]
 
 	// size is the current number of elements in the list.
 	size int
@@ -45,19 +45,19 @@ func NewLimitedLinkedList[T any](values ...T) *LimitedLinkedList[T] {
 	list.size = len(values)
 
 	// First node
-	list_node := Common.NewListNode(values[0])
+	list_node := NewListNode(values[0])
 
-	list.front = &list_node
-	list.back = &list_node
+	list.front = list_node
+	list.back = list_node
 
 	// Subsequent nodes
 	for _, element := range values {
-		list_node := Common.NewListNode(element)
+		list_node := NewListNode(element)
 		list_node.SetPrev(list.back)
 
-		list.back.SetNext(&list_node)
+		list.back.SetNext(list_node)
 
-		list.back = &list_node
+		list.back = list_node
 	}
 
 	return list
@@ -75,19 +75,19 @@ func NewLimitedLinkedList[T any](values ...T) *LimitedLinkedList[T] {
 //   - error: An error if the list is full.
 func (list *LimitedLinkedList[T]) Append(value T) error {
 	if list.size >= list.capacity {
-		return Common.NewErrFullList(list)
+		return NewErrFullList(list)
 	}
 
-	list_node := Common.NewListNode(value)
+	list_node := NewListNode(value)
 
 	if list.back == nil {
-		list.front = &list_node
+		list.front = list_node
 	} else {
-		list.back.SetNext(&list_node)
+		list.back.SetNext(list_node)
 		list_node.SetPrev(list.back)
 	}
 
-	list.back = &list_node
+	list.back = list_node
 
 	list.size++
 
@@ -101,9 +101,9 @@ func (list *LimitedLinkedList[T]) Append(value T) error {
 // Returns:
 //
 //   - T: The first element in the list.
-func (list *LimitedLinkedList[T]) DeleteFirst() T {
+func (list *LimitedLinkedList[T]) DeleteFirst() (T, error) {
 	if list.front == nil {
-		panic(Common.NewErrEmptyList(list))
+		return *new(T), NewErrEmptyList(list)
 	}
 
 	toRemove := list.front
@@ -119,7 +119,7 @@ func (list *LimitedLinkedList[T]) DeleteFirst() T {
 
 	toRemove.SetNext(nil)
 
-	return toRemove.Value
+	return toRemove.Value, nil
 }
 
 // PeekFirst is a method of the LimitedLinkedList type. It is used to return the first
@@ -128,12 +128,12 @@ func (list *LimitedLinkedList[T]) DeleteFirst() T {
 // Returns:
 //
 //   - value: The first element in the list.
-func (list *LimitedLinkedList[T]) PeekFirst() T {
+func (list *LimitedLinkedList[T]) PeekFirst() (T, error) {
 	if list.front == nil {
-		panic(Common.NewErrEmptyList(list))
+		return *new(T), NewErrEmptyList(list)
 	}
 
-	return list.front.Value
+	return list.front.Value, nil
 }
 
 // IsEmpty is a method of the LimitedLinkedList type. It is used to check if the list is
@@ -226,25 +226,16 @@ func (list *LimitedLinkedList[T]) IsFull() bool {
 //
 //   - string: A string representation of the list.
 func (list *LimitedLinkedList[T]) String() string {
-	var builder strings.Builder
+	values := make([]string, 0, list.size)
 
-	fmt.Fprintf(&builder, "LimitedLinkedList[capacity=%d, ", list.capacity)
-
-	if list.front == nil {
-		builder.WriteString("size=0, values=[]]")
-
-		return builder.String()
+	for list_node := list.front; list_node != nil; list_node = list_node.Next() {
+		values = append(values, fs.StringOf(list_node.Value))
 	}
 
-	fmt.Fprintf(&builder, "size=%d, values=[%v", list.size, list.front.Value)
-
-	for list_node := list.front.Next(); list_node != nil; list_node = list_node.Next() {
-		fmt.Fprintf(&builder, ", %v", list_node.Value)
-	}
-
-	fmt.Fprintf(&builder, "]]")
-
-	return builder.String()
+	return fmt.Sprintf(
+		"LimitedLinkedList[capacity=%d, size=%d, values=[%s]]",
+		list.capacity, list.size, strings.Join(values, ", "),
+	)
 }
 
 // Prepend is a method of the LimitedLinkedList type. It is used to add an element to
@@ -257,19 +248,19 @@ func (list *LimitedLinkedList[T]) String() string {
 //   - value: An element of type T to be added to the list.
 func (list *LimitedLinkedList[T]) Prepend(value T) error {
 	if list.size >= list.capacity {
-		return Common.NewErrFullList(list)
+		return NewErrFullList(list)
 	}
 
-	list_node := Common.NewListNode(value)
+	list_node := NewListNode(value)
 
 	if list.front == nil {
-		list.back = &list_node
+		list.back = list_node
 	} else {
 		list_node.SetNext(list.front)
-		list.front.SetPrev(&list_node)
+		list.front.SetPrev(list_node)
 	}
 
-	list.front = &list_node
+	list.front = list_node
 
 	list.size++
 
@@ -284,9 +275,9 @@ func (list *LimitedLinkedList[T]) Prepend(value T) error {
 // Returns:
 //
 //   - T: The last element in the list.
-func (list *LimitedLinkedList[T]) DeleteLast() T {
+func (list *LimitedLinkedList[T]) DeleteLast() (T, error) {
 	if list.front == nil {
-		panic(Common.NewErrEmptyList(list))
+		return *new(T), NewErrEmptyList(list)
 	}
 
 	toRemove := list.back
@@ -302,7 +293,7 @@ func (list *LimitedLinkedList[T]) DeleteLast() T {
 
 	toRemove.SetPrev(nil)
 
-	return toRemove.Value
+	return toRemove.Value, nil
 }
 
 // PeekLast is a method of the LimitedLinkedList type. It is used to return the last
@@ -313,12 +304,12 @@ func (list *LimitedLinkedList[T]) DeleteLast() T {
 // Returns:
 //
 //   - value: The last element in the list.
-func (list *LimitedLinkedList[T]) PeekLast() T {
+func (list *LimitedLinkedList[T]) PeekLast() (T, error) {
 	if list.front == nil {
-		panic(Common.NewErrEmptyList(list))
+		return *new(T), NewErrEmptyList(list)
 	}
 
-	return list.back.Value
+	return list.back.Value, nil
 }
 
 // CutNilValues is a method of the LimitedLinkedList type. It is used to remove all nil
@@ -337,7 +328,7 @@ func (list *LimitedLinkedList[T]) CutNilValues() {
 		return
 	}
 
-	var toDelete *Common.ListNode[T] = nil
+	var toDelete *ListNode[T] = nil
 
 	// 1. First node
 	if gen.IsNil(list.front.Value) {
@@ -413,19 +404,19 @@ func (list *LimitedLinkedList[T]) Copy() itff.Copier {
 	}
 
 	// First node
-	node := Common.NewListNode(list.front.Value)
+	node := NewListNode(list.front.Value)
 
-	listCopy.front = &node
+	listCopy.front = node
 
 	prev := listCopy.front
 
 	// Subsequent nodes
 	for list_node := list.front.Next(); list_node != nil; list_node = list_node.Next() {
-		list_node_copy := Common.NewListNode(list_node.Value)
+		list_node_copy := NewListNode(list_node.Value)
 		list_node_copy.SetPrev(prev)
 
-		prev.SetNext(&list_node_copy)
-		prev = &list_node_copy
+		prev.SetNext(list_node_copy)
+		prev = list_node_copy
 	}
 
 	if listCopy.front.Next() != nil {

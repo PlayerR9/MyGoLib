@@ -1,11 +1,11 @@
-package Queue
+package Queuer
 
 import (
 	"fmt"
 	"strings"
 
-	itf "github.com/PlayerR9/MyGoLib/CustomData/Iterators"
-	"github.com/PlayerR9/MyGoLib/ListLike/Common"
+	fs "github.com/PlayerR9/MyGoLib/Formatting/Strings"
+	itf "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
 	itff "github.com/PlayerR9/MyGoLib/Units/Interfaces"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
@@ -48,12 +48,14 @@ func NewLimitedArrayQueue[T any](values ...T) *LimitedArrayQueue[T] {
 // Parameters:
 //
 //   - value: The value of type T to be added to the queue.
-func (queue *LimitedArrayQueue[T]) Enqueue(value T) {
+func (queue *LimitedArrayQueue[T]) Enqueue(value T) error {
 	if len(queue.values) >= queue.capacity {
-		panic(Common.NewErrFullList(queue))
+		return NewErrFullList(queue)
 	}
 
 	queue.values = append(queue.values, value)
+
+	return nil
 }
 
 // Dequeue is a method of the LimitedArrayQueue type. It is used to remove and return the
@@ -64,14 +66,14 @@ func (queue *LimitedArrayQueue[T]) Enqueue(value T) {
 // Returns:
 //
 //   - T: The element at the front of the queue.
-func (queue *LimitedArrayQueue[T]) Dequeue() T {
+func (queue *LimitedArrayQueue[T]) Dequeue() (T, error) {
 	if len(queue.values) == 0 {
-		panic(Common.NewErrEmptyList(queue))
+		return *new(T), NewErrEmptyList(queue)
 	}
 
 	toRemove := queue.values[0]
 	queue.values = queue.values[1:]
-	return toRemove
+	return toRemove, nil
 }
 
 // Peek is a method of the LimitedArrayQueue type. It is used to return the element at the
@@ -82,12 +84,12 @@ func (queue *LimitedArrayQueue[T]) Dequeue() T {
 // Returns:
 //
 //   - T: The element at the front of the queue.
-func (queue *LimitedArrayQueue[T]) Peek() T {
+func (queue *LimitedArrayQueue[T]) Peek() (T, error) {
 	if len(queue.values) == 0 {
-		panic(Common.NewErrEmptyList(queue))
+		return *new(T), NewErrEmptyList(queue)
 	}
 
-	return queue.values[0]
+	return queue.values[0], nil
 }
 
 // IsEmpty is a method of the LimitedArrayQueue type. It is used to check if the queue is
@@ -161,24 +163,17 @@ func (queue *LimitedArrayQueue[T]) IsFull() bool {
 //
 //   - string: A string representation of the queue.
 func (queue *LimitedArrayQueue[T]) String() string {
-	var builder strings.Builder
-
-	fmt.Fprintf(&builder, "LimitedArrayQueue[capacity=%d, ", queue.capacity)
-
-	if len(queue.values) == 0 {
-		builder.WriteString("size=0, values=[← ]]")
-		return builder.String()
+	values := make([]string, 0, len(queue.values))
+	for _, value := range queue.values {
+		values = append(values, fs.StringOf(value))
 	}
 
-	fmt.Fprintf(&builder, "size=%d, values=[← %v", len(queue.values), queue.values[0])
-
-	for _, element := range queue.values[1:] {
-		fmt.Fprintf(&builder, ", %v", element)
-	}
-
-	builder.WriteString("]]")
-
-	return builder.String()
+	return fmt.Sprintf(
+		"LimitedArrayQueue[capacity=%d, size=%d, values=[← %s]]",
+		queue.capacity,
+		len(queue.values),
+		strings.Join(values, ", "),
+	)
 }
 
 // CutNilValues is a method of the LimitedArrayQueue type. It is used to remove all nil

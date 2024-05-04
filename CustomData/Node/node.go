@@ -1,8 +1,10 @@
 package Node
 
 import (
-	"github.com/PlayerR9/MyGoLib/ListLike/Queue"
-	"github.com/PlayerR9/MyGoLib/ListLike/Stack"
+	"errors"
+
+	"github.com/PlayerR9/MyGoLib/ListLike/Queuer"
+	"github.com/PlayerR9/MyGoLib/ListLike/Stacker"
 	slext "github.com/PlayerR9/MyGoLib/Utility/SliceExt"
 
 	itff "github.com/PlayerR9/MyGoLib/Units/Functions"
@@ -137,13 +139,16 @@ func (n *Node[T]) Cleanup() {
 //
 // Returns:
 //   - []*Node[T]: A slice of pointers to the leaves of the tree.
-func (n *Node[T]) GetLeaves() []*Node[T] {
+func (n *Node[T]) GetLeaves() ([]*Node[T], error) {
 	leaves := make([]*Node[T], 0)
 
-	Q := Queue.NewLinkedQueue(n)
+	Q := Queuer.NewLinkedQueue(n)
 
-	for !Q.IsEmpty() {
-		node := Q.Dequeue()
+	for {
+		node, err := Q.Dequeue()
+		if err != nil {
+			break
+		}
 
 		if node.firstChild == nil {
 			leaves = append(leaves, node)
@@ -151,14 +156,17 @@ func (n *Node[T]) GetLeaves() []*Node[T] {
 			current := node.firstChild
 
 			for current != nil {
-				Q.Enqueue(current)
+				err := Q.Enqueue(current)
+				if err != nil {
+					return leaves, errors.New("failed to enqueue the node")
+				}
 
 				current = current.nextSibling
 			}
 		}
 	}
 
-	return leaves
+	return leaves, nil
 }
 
 // BFSTraversal traverses the tree rooted at n in a breadth-first manner.
@@ -170,17 +178,23 @@ func (n *Node[T]) GetLeaves() []*Node[T] {
 // Returns:
 //   - error: An error returned by the observer.
 func (n *Node[T]) BFSTraversal(observer itff.ObserverFunc[T]) error {
-	Q := Queue.NewLinkedQueue(n)
+	Q := Queuer.NewLinkedQueue(n)
 
-	for !Q.IsEmpty() {
-		node := Q.Dequeue()
+	for {
+		node, err := Q.Dequeue()
+		if err != nil {
+			break
+		}
 
 		if err := observer(node.Data); err != nil {
 			return err
 		}
 
 		for child := node.firstChild; child != nil; child = child.nextSibling {
-			Q.Enqueue(child)
+			err := Q.Enqueue(child)
+			if err != nil {
+				return errors.New("failed to enqueue the node")
+			}
 		}
 	}
 
@@ -196,17 +210,23 @@ func (n *Node[T]) BFSTraversal(observer itff.ObserverFunc[T]) error {
 // Returns:
 //   - error: An error returned by the observer.
 func (n *Node[T]) DFSTraversal(observer itff.ObserverFunc[T]) error {
-	S := Stack.NewLinkedStack(n)
+	S := Stacker.NewLinkedStack(n)
 
-	for !S.IsEmpty() {
-		node := S.Pop()
+	for {
+		node, err := S.Pop()
+		if err != nil {
+			break
+		}
 
 		if err := observer(node.Data); err != nil {
 			return err
 		}
 
 		for child := node.firstChild; child != nil; child = child.nextSibling {
-			S.Push(child)
+			err := S.Push(child)
+			if err != nil {
+				return errors.New("failed to push the node")
+			}
 		}
 	}
 
