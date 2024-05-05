@@ -185,7 +185,7 @@ func (t *Traverser[T]) MakeTree(elem T) (*Tree[T], error) {
 		}
 
 		node := NewNode(se.Elem)
-		se.Prev.AddChild(node)
+		se.Prev.AddChildren(node)
 
 		nexts, err := t.nexts(elem)
 		if err != nil {

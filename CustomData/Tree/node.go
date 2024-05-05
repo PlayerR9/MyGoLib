@@ -3,7 +3,9 @@ package Tree
 import (
 	"slices"
 
-	slext "github.com/PlayerR9/MyGoLib/Utility/SliceExt"
+	"github.com/PlayerR9/MyGoLib/ListLike/Stacker"
+
+	intf "github.com/PlayerR9/MyGoLib/Units/Interfaces"
 )
 
 // Node is a generic data structure that represents a node in a tree.
@@ -16,6 +18,29 @@ type Node[T any] struct {
 
 	// children is the children of the node.
 	children []*Node[T]
+}
+
+// Copy returns a deep copy of the node.
+//
+// Returns:
+//   - *Node[T]: A pointer to the deep copy of the node.
+//
+// Behaviors:
+//   - This function is recursive.
+//   - The parent is not copied.
+//   - The data is shallow copied.
+func (n *Node[T]) Copy() intf.Copier {
+	node := &Node[T]{
+		Data:     n.Data,
+		parent:   nil,
+		children: make([]*Node[T], 0, len(n.children)),
+	}
+
+	for _, child := range n.children {
+		node.children = append(node.children, child.Copy().(*Node[T]))
+	}
+
+	return node
 }
 
 // NewNode creates a new node with the given data.
@@ -32,18 +57,83 @@ func NewNode[T any](data T) *Node[T] {
 	}
 }
 
-// AddChild adds a new child to the node with the given data.
+// IsLeaf returns true if the node is a leaf.
+//
+// Returns:
+//   - bool: True if the node is a leaf, false otherwise.
+func (n *Node[T]) IsLeaf() bool {
+	return len(n.children) == 0
+}
+
+// IsRoot returns true if the node does not have a parent.
+//
+// Returns:
+//   - bool: True if the node is the root, false otherwise.
+func (n *Node[T]) IsRoot() bool {
+	return n.parent == nil
+}
+
+// Leaves returns all the leaves of the tree rooted at n.
+//
+// Returns:
+//   - []*Node[T]: A slice of pointers to the leaves of the tree.
+//
+// Behaviors:
+//   - The leaves are returned in the order of a DFS traversal.
+func (n *Node[T]) Leaves() []*Node[T] {
+	leaves := make([]*Node[T], 0)
+
+	S := Stacker.NewLinkedStack(n)
+
+	for {
+		top, err := S.Pop()
+		if err != nil {
+			break
+		}
+
+		if top.IsLeaf() {
+			leaves = append(leaves, top)
+		} else {
+			for _, child := range top.children {
+				err := S.Push(child)
+				if err != nil {
+					panic(err)
+				}
+			}
+		}
+	}
+
+	return leaves
+}
+
+// ToTree converts the node to a tree.
+//
+// Returns:
+//   - *Tree[T]: A pointer to the tree.
+func (n *Node[T]) ToTree() *Tree[T] {
+	return &Tree[T]{
+		root: n,
+	}
+}
+
+// AddChildren adds a new child to the node with the given data.
 //
 // Parameters:
-//   - data: The value of the new child.
-func (n *Node[T]) AddChild(child *Node[T]) {
-	if child == nil {
+//   - children: The children to add.
+func (n *Node[T]) AddChildren(children ...*Node[T]) {
+	if len(children) == 0 {
 		return
 	}
 
-	child.parent = n
+	for _, child := range children {
+		if child == nil {
+			continue
+		}
 
-	n.children = append(n.children, child)
+		child.parent = n
+
+		n.children = append(n.children, child)
+	}
 }
 
 // MakeChildren adds zero or more children to the node with the given data.
@@ -75,53 +165,6 @@ func (n *Node[T]) GetChildren() []*Node[T] {
 	copy(children, n.children)
 
 	return children
-}
-
-// cleanup is a helper function that removes every node in the tree rooted at n.
-//
-// Behaviors:
-//   - This function is recursive.
-func (n *Node[T]) cleanup() {
-	n.parent = nil
-
-	for _, child := range n.children {
-		child.cleanup()
-	}
-
-	for i := range n.children {
-		n.children[i] = nil
-	}
-
-	n.children = nil
-}
-
-// snakeTraversal is an helper function that returns all the paths
-// from n to the leaves of the tree rooted at n.
-//
-// Returns:
-//   - [][]T: A slice of slices of the values of the nodes in the paths.
-//
-// Behaviors:
-//   - The paths are returned in the order of a BFS traversal.
-//   - It is a recursive function.
-func (n *Node[T]) snakeTraversal() [][]T {
-	if len(n.children) == 0 {
-		return [][]T{
-			{n.Data},
-		}
-	}
-
-	result := make([][]T, 0)
-
-	for _, child := range n.children {
-		subResults := child.snakeTraversal()
-
-		for _, tmp := range subResults {
-			result = append(result, append([]T{n.Data}, tmp...))
-		}
-	}
-
-	return result
 }
 
 // FindBranchingPoint returns the first node in the path from n to the root
@@ -210,77 +253,76 @@ func (n *Node[T]) Parent() *Node[T] {
 	return n.parent
 }
 
-// pruneFunc is an helper function that removes all the children of the
-// node that satisfy the given filter including all of their children.
-//
-// Parameters:
-//   - filter: The filter to apply.
+// Size returns the number of nodes in the tree rooted at n.
 //
 // Returns:
-//   - bool: True if the node satisfies the filter, false otherwise.
+//   - int: The number of nodes in the tree.
 //
 // Behaviors:
-//   - This function is recursive.
-func (n *Node[T]) pruneFunc(filter slext.PredicateFilter[T]) bool {
-	if filter(n.Data) {
-		// Delete all children
-		n.cleanup()
+//   - This function is expensive since size is not stored.
+func (n *Node[T]) Size() int {
+	size := 0
 
-		return true
-	}
+	S := Stacker.NewLinkedStack(n)
 
-	top := 0
+	for {
+		top, err := S.Pop()
+		if err != nil {
+			break
+		}
 
-	for i := 0; i < len(n.children); i++ {
-		if n.children[i].pruneFunc(filter) {
-			n.children[i] = nil
-		} else {
-			n.children[top] = n.children[i]
-			top++
+		size++
+
+		for _, child := range top.children {
+			err := S.Push(child)
+			if err != nil {
+				panic(err)
+			}
 		}
 	}
 
-	n.children = n.children[:top]
-
-	return false
+	return size
 }
 
-// skipFunc is an helper function that removes all the children of the
-// node that satisfy the given filter without removing their children.
-//
-// Parameters:
-//   - filter: The filter to apply.
+// GetAncestors returns all the ancestors of the node.
 //
 // Returns:
-//   - []*Node[T]: A slice of pointers to the children of the node.
-//   - bool: True if the node satisfies the filter, false otherwise.
-func (n *Node[T]) skipFunc(filter slext.PredicateFilter[T]) ([]*Node[T], bool) {
-	if filter(n.Data) {
-		n.parent = nil
+//   - []*Node[T]: A slice of pointers to the ancestors of the node.
+//
+// Behaviors:
+//   - The ancestors are returned in the opposite order of a DFS traversal.
+//     Therefore, the first element is the parent of the node.
+func (n *Node[T]) GetAncestors() []*Node[T] {
+	ancestors := make([]*Node[T], 0)
 
-		return n.children, true
+	for node := n; node.parent != nil; node = node.parent {
+		ancestors = append(ancestors, node.parent)
 	}
 
-	newChildren := make([]*Node[T], 0)
+	slices.Reverse(ancestors)
 
-	for _, child := range n.children {
-		subChildren, ok := child.skipFunc(filter)
-		if !ok {
-			newChildren = append(newChildren, child)
-			continue
+	return ancestors
+}
+
+// IsChildOf returns true if the node is a child of the parent.
+//
+// Parameters:
+//   - target: The target parent to check for.
+//
+// Returns:
+//   - bool: True if the node is a child of the parent, false otherwise.
+func (n *Node[T]) IsChildOf(target *Node[T]) bool {
+	if target == nil {
+		return false
+	}
+
+	parents := target.GetAncestors()
+
+	for node := n; node.parent != nil; node = node.parent {
+		if slices.Contains(parents, node.parent) {
+			return true
 		}
-
-		if len(subChildren) > 0 {
-			newChildren = append(newChildren, subChildren...)
-		}
 	}
 
-	n.children = newChildren
-
-	// Update the parent of the children
-	for i := 0; i < len(n.children); i++ {
-		n.children[i].parent = n
-	}
-
-	return nil, false
+	return false
 }
