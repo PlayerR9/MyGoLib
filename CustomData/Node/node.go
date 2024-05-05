@@ -42,14 +42,13 @@ func NewNode[T any](data T) *Node[T] {
 //
 // Parameters:
 //   - data: The value of the new child.
-func (n *Node[T]) AddChild(data T) {
-	node := &Node[T]{
-		Data:   data,
-		parent: n,
+func (n *Node[T]) AddChild(child *Node[T]) {
+	if child == nil {
+		return
 	}
 
 	if n.firstChild == nil {
-		n.firstChild = node
+		n.firstChild = child
 	} else {
 		current := n.firstChild
 
@@ -57,15 +56,15 @@ func (n *Node[T]) AddChild(data T) {
 			current = current.nextSibling
 		}
 
-		current.nextSibling = node
+		current.nextSibling = child
 	}
 }
 
-// AddChildren adds zero or more children to the node with the given data.
+// MakeChildren adds zero or more children to the node with the given data.
 //
 // Parameters:
 //   - children: The values of the new children.
-func (n *Node[T]) AddChildren(children ...T) {
+func (n *Node[T]) MakeChildren(children ...T) {
 	if len(children) == 0 {
 		return
 	}
