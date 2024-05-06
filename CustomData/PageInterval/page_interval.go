@@ -33,7 +33,6 @@ type PageInterval struct {
 //   - string: A formatted string representation of the PageInterval.
 func (pi *PageInterval) String() string {
 	return fmt.Sprintf("PageInterval[%s]", fs.StringsJoiner(pi.intervals, ", "))
-
 }
 
 // Iterator is a method of the PageInterval type that returns an iterator for
@@ -122,7 +121,7 @@ func (pi *PageInterval) GetFirstPage() (int, error) {
 		return 0, NewErrNoPagesInInterval()
 	}
 
-	return pi.intervals[0].Start, nil
+	return pi.intervals[0].First, nil
 }
 
 // GetLastPage is a method of the PageInterval type that returns the last
@@ -136,7 +135,7 @@ func (pi *PageInterval) GetLastPage() (int, error) {
 		return 0, NewErrNoPagesInInterval()
 	}
 
-	return pi.intervals[len(pi.intervals)-1].End, nil
+	return pi.intervals[len(pi.intervals)-1].Second, nil
 }
 
 // AddPage is a method of the PageInterval type that adds a page to the
@@ -167,7 +166,7 @@ func (pi *PageInterval) AddPage(page int) error {
 	}
 
 	criteriaPageGTE := func(i int) bool {
-		return pi.intervals[i].Start >= page
+		return pi.intervals[i].First >= page
 	}
 
 	if len(pi.intervals) == 0 {
@@ -175,11 +174,11 @@ func (pi *PageInterval) AddPage(page int) error {
 	} else {
 		insertPos := sort.Search(len(pi.intervals), criteriaPageGTE)
 
-		if insertPos > 0 && pi.intervals[insertPos-1].End >= page-1 {
+		if insertPos > 0 && pi.intervals[insertPos-1].Second >= page-1 {
 			insertPos--
-			pi.intervals[insertPos].End = gen.Max(pi.intervals[insertPos].End, page)
-		} else if insertPos < len(pi.intervals) && pi.intervals[insertPos].Start <= page+1 {
-			pi.intervals[insertPos].Start = gen.Min(pi.intervals[insertPos].Start, page)
+			pi.intervals[insertPos].Second = gen.Max(pi.intervals[insertPos].Second, page)
+		} else if insertPos < len(pi.intervals) && pi.intervals[insertPos].First <= page+1 {
+			pi.intervals[insertPos].First = gen.Min(pi.intervals[insertPos].First, page)
 		} else {
 			pi.intervals = append(pi.intervals[:insertPos],
 				append([]*PageRange{newPageRange(page, page)}, pi.intervals[insertPos:]...)...,
@@ -221,12 +220,12 @@ func (pi *PageInterval) RemovePage(page int) {
 		return
 	}
 
-	if pi.intervals[index].Start == pi.intervals[index].End {
+	if pi.intervals[index].First == pi.intervals[index].Second {
 		pi.intervals = append(pi.intervals[:index], pi.intervals[index+1:]...)
-	} else if pi.intervals[index].Start == page {
-		pi.intervals[index].Start++
-	} else if pi.intervals[index].End == page {
-		pi.intervals[index].End--
+	} else if pi.intervals[index].First == page {
+		pi.intervals[index].First++
+	} else if pi.intervals[index].Second == page {
+		pi.intervals[index].Second--
 	} else {
 		newIntervals := make([]*PageRange, len(pi.intervals)+1)
 
@@ -234,10 +233,10 @@ func (pi *PageInterval) RemovePage(page int) {
 		copy(newIntervals, pi.intervals[:index+1])
 
 		// Modify the interval at the split index
-		newIntervals[index] = newPageRange(pi.intervals[index].Start, page-1)
+		newIntervals[index] = newPageRange(pi.intervals[index].First, page-1)
 
 		// Add the new interval
-		newIntervals[index+1] = newPageRange(page+1, pi.intervals[index].End)
+		newIntervals[index+1] = newPageRange(page+1, pi.intervals[index].Second)
 
 		// Copy the intervals after the split
 		copy(newIntervals[index+2:], pi.intervals[index+1:])
@@ -373,7 +372,7 @@ func (pi *PageInterval) ReverseIterator() itf.Iterater[int] {
 		func(pr *PageRange) itf.Iterater[int] {
 			var builder itf.Builder[int]
 
-			for page := pr.End; page >= pr.Start; page-- {
+			for page := pr.Second; page >= pr.First; page-- {
 				builder.Append(page)
 			}
 
@@ -402,7 +401,7 @@ func reduce(pi *PageInterval) {
 	}
 
 	criteriaSort := func(i, j int) bool {
-		return pi.intervals[i].Start < pi.intervals[j].Start
+		return pi.intervals[i].First < pi.intervals[j].First
 	}
 
 	sort.Slice(pi.intervals, criteriaSort)
@@ -412,9 +411,9 @@ func reduce(pi *PageInterval) {
 
 	for i := 1; i < len(pi.intervals); i++ {
 		nextInterval := pi.intervals[i]
-		if currentInterval.End >= nextInterval.Start-1 {
-			if nextInterval.End > currentInterval.End {
-				currentInterval.End = nextInterval.End
+		if currentInterval.Second >= nextInterval.First-1 {
+			if nextInterval.Second > currentInterval.Second {
+				currentInterval.Second = nextInterval.Second
 			}
 		} else {
 			mergedIntervals = append(mergedIntervals, currentInterval)

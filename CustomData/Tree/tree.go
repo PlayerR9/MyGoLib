@@ -3,8 +3,8 @@ package Tree
 import (
 	"github.com/PlayerR9/MyGoLib/ListLike/Queuer"
 	"github.com/PlayerR9/MyGoLib/ListLike/Stacker"
+	itff "github.com/PlayerR9/MyGoLib/Units/Common"
 	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
-	itff "github.com/PlayerR9/MyGoLib/Units/Functions"
 	slext "github.com/PlayerR9/MyGoLib/Utility/SliceExt"
 )
 

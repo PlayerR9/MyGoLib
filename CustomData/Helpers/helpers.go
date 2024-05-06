@@ -6,19 +6,14 @@
 package Helpers
 
 import (
-	uf "github.com/PlayerR9/MyGoLib/Units/Functions"
+	cdp "github.com/PlayerR9/MyGoLib/CustomData/Pair"
+	uf "github.com/PlayerR9/MyGoLib/Units/Common"
 	slext "github.com/PlayerR9/MyGoLib/Utility/SliceExt"
 )
 
 // HResult is a generic type that represents the result of a function
 // evaluation.
-type HResult[T any] struct {
-	// Result is the result of the function evaluation.
-	Result T
-
-	// Reason is the error that occurred during the function evaluation.
-	Reason error
-}
+type HResult[T any] cdp.Pair[T, error]
 
 // NewHResult creates a new HResult with the given result and reason.
 //
@@ -30,8 +25,8 @@ type HResult[T any] struct {
 //   - HResult: The new HResult.
 func NewHResult[T any](result T, reason error) HResult[T] {
 	return HResult[T]{
-		Result: result,
-		Reason: reason,
+		First:  result,
+		Second: reason,
 	}
 }
 
@@ -40,7 +35,7 @@ func NewHResult[T any](result T, reason error) HResult[T] {
 // Returns:
 //   - bool: True if the HResult is successful, false otherwise.
 func (hr HResult[T]) IsSuccess() bool {
-	return hr.Reason == nil
+	return hr.Second == nil
 }
 
 // DoIfSuccess executes a function if the HResult is successful.
@@ -48,11 +43,11 @@ func (hr HResult[T]) IsSuccess() bool {
 // Parameters:
 //   - f: The function to execute.
 func (hr HResult[T]) DoIfSuccess(f uf.DoFunc[T]) {
-	if hr.Reason != nil {
+	if hr.Second != nil {
 		return
 	}
 
-	f(hr.Result)
+	f(hr.First)
 }
 
 // DoIfFailure executes a function if the HResult is a failure.
@@ -60,11 +55,11 @@ func (hr HResult[T]) DoIfSuccess(f uf.DoFunc[T]) {
 // Parameters:
 //   - f: The function to execute.
 func (hr HResult[T]) DoIfFailure(f uf.DualDoFunc[T, error]) {
-	if hr.Reason == nil {
+	if hr.Second == nil {
 		return
 	}
 
-	f(hr.Result, hr.Reason)
+	f(hr.First, hr.Second)
 }
 
 // EvaluateFunc evaluates a function and returns the result as an HResult.
@@ -78,8 +73,8 @@ func EvaluateFunc[T any](f EvalFunc[T]) HResult[T] {
 	res, err := f()
 
 	return HResult[T]{
-		Result: res,
-		Reason: err,
+		First:  res,
+		Second: err,
 	}
 }
 

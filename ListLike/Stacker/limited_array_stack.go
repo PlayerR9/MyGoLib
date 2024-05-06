@@ -5,9 +5,8 @@ import (
 	"slices"
 	"strings"
 
-	fs "github.com/PlayerR9/MyGoLib/Formatting/Strings"
 	itf "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
-	itff "github.com/PlayerR9/MyGoLib/Units/Interfaces"
+	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
@@ -168,7 +167,7 @@ func (stack *LimitedArrayStack[T]) IsFull() (isFull bool) {
 func (stack *LimitedArrayStack[T]) String() string {
 	values := make([]string, 0, len(stack.values))
 	for _, value := range stack.values {
-		values = append(values, fs.StringOf(value))
+		values = append(values, uc.StringOf(value))
 	}
 
 	return fmt.Sprintf(
@@ -212,7 +211,7 @@ func (stack *LimitedArrayStack[T]) Slice() []T {
 // Returns:
 //
 //   - itf.Copier: A copy of the stack.
-func (stack *LimitedArrayStack[T]) Copy() itff.Copier {
+func (stack *LimitedArrayStack[T]) Copy() uc.Copier {
 	stackCopy := &LimitedArrayStack[T]{
 		values:   make([]T, len(stack.values)),
 		capacity: stack.capacity,

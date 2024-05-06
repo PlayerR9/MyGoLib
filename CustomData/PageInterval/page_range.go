@@ -5,6 +5,8 @@ import (
 	"slices"
 
 	itf "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
+
+	cdp "github.com/PlayerR9/MyGoLib/CustomData/Pair"
 )
 
 // PageRange represents a pair of integers that represent the start and end
@@ -14,20 +16,14 @@ import (
 //
 // For instance, the PageRange [1, 5] represents the interval from page 1 to
 // page 5.
-type PageRange struct {
-	// Start is the start page number of the interval.
-	Start int
-
-	// End is the end page number of the interval.
-	End int
-}
+type PageRange cdp.Pair[int, int]
 
 // String returns the string representation of the PageRange.
 //
 // Returns:
 //   - string: The string representation of the PageRange.
 func (pr *PageRange) String() string {
-	return fmt.Sprintf("[%d : %d]", pr.Start, pr.End)
+	return fmt.Sprintf("[%d : %d]", pr.First, pr.Second)
 }
 
 // Iterator returns an iterator that iterates over the pages in the interval.
@@ -37,7 +33,7 @@ func (pr *PageRange) String() string {
 func (pr *PageRange) Iterator() itf.Iterater[int] {
 	var builder itf.Builder[int]
 
-	for page := pr.Start; page <= pr.End; page++ {
+	for page := pr.First; page <= pr.Second; page++ {
 		builder.Append(page)
 	}
 
@@ -74,7 +70,7 @@ func (pi *PageInterval) findPageInterval(page int) int {
 	}
 
 	isPageBetween := func(interval *PageRange) bool {
-		return interval.Start <= page && page <= interval.End
+		return interval.First <= page && page <= interval.Second
 	}
 
 	return slices.IndexFunc(pi.intervals, isPageBetween)

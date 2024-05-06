@@ -1,87 +1,73 @@
 package Tree
 
 import (
-	"slices"
-
+	up "github.com/PlayerR9/MyGoLib/CustomData/Pair"
 	"github.com/PlayerR9/MyGoLib/ListLike/Queuer"
 	"github.com/PlayerR9/MyGoLib/ListLike/Stacker"
+	intf "github.com/PlayerR9/MyGoLib/Units/Common"
 )
 
 // ObserverFunc is a function that observes a node.
 //
 // Parameters:
-//   - node: The node to observe.
+//   - data: The data of the node.
+//   - info: The info of the node.
 //
 // Returns:
 //   - error: An error if the observation fails.
-type ObserverFunc[T any] func(node T) error
+type ObserverFunc[T any, I intf.Copier] func(data T, info I) error
 
-// NextsFunc is a function that returns the children of a node.
+// helper is a helper struct for traversing the tree.
+type helper[T any, I intf.Copier] up.Pair[*Node[T], I]
+
+// newHelper creates a new helper.
 //
 // Parameters:
-//   - node: The node to compute the children of.
+//   - node: The current node.
+//   - info: The info of the current node.
 //
 // Returns:
-//   - []T: The children of the node.
-//   - error: An error if children cannot be computed.
-type NextsFunc[T any] func(node T) ([]T, error)
-
-// Traverser is a struct that traverses a tree.
-type Traverser[T any] struct {
-	// The function that observes a node.
-	observer ObserverFunc[T]
-
-	// The function that computes the children of a node.
-	nexts NextsFunc[T]
+//   - *helper[T, I]: A pointer to the helper.
+func newHelper[T any, I intf.Copier](node *Node[T], info I) *helper[T, I] {
+	return &helper[T, I]{
+		First:  node,
+		Second: info.Copy().(I),
+	}
 }
 
-// NewTraverser creates a new traverser with the given observer and nexts functions.
-//
-// Parameters:
-//   - observer: The function that observes a node.
-//   - nexts: The function that computes the children of a node.
-//
-// Returns:
-//   - Traverser[T]: The newly created traverser.
-func NewTraverser[T any](observer ObserverFunc[T], nexts NextsFunc[T]) Traverser[T] {
-	return Traverser[T]{
-		observer: observer,
-		nexts:    nexts,
-	}
+// Traversor is a struct that traverses a tree.
+type Traversor[T any, I intf.Copier] struct {
+	// The helper struct.
+	h *helper[T, I]
+
+	// The observer function.
+	observe ObserverFunc[T, I]
 }
 
 // DFS traverses the tree in depth-first order.
 //
-// Parameters:
-//   - node: The root node of the tree.
-//
 // Returns:
 //   - error: An error if the traversal fails.
-func (t *Traverser[T]) DFS(node T) error {
-	S := Stacker.NewLinkedStack(node)
+func (t *Traversor[T, I]) DFS() error {
+	if t.h.First == nil || t.observe == nil {
+		return nil
+	}
 
-	var children []T
+	S := Stacker.NewLinkedStack(newHelper(t.h.First, t.h.Second))
 
 	for {
-		node, err := S.Pop()
+		top, err := S.Pop()
 		if err != nil {
 			break
 		}
 
-		err = t.observer(node)
+		err = t.observe(top.First.Data, top.Second)
 		if err != nil {
 			return err
 		}
 
-		children, err = t.nexts(node)
-		if err != nil {
-			return err
-		}
-
-		slices.Reverse(children)
-
-		for _, child := range children {
-			err := S.Push(child)
+		for _, child := range top.First.children {
+			err := S.Push(newHelper(child, top.Second))
 			if err != nil {
 				panic(err)
 			}
@@ -93,34 +79,28 @@ func (t *Traverser[T]) DFS(node T) error {
 
 // BFS traverses the tree in breadth-first order.
 //
-// Parameters:
-//   - node: The root node of the tree.
-//
 // Returns:
 //   - error: An error if the traversal fails.
-func (t *Traverser[T]) BFS(node T) error {
-	Q := Queuer.NewLinkedQueue(node)
+func (t *Traversor[T, I]) BFS() error {
+	if t.h.First == nil || t.observe == nil {
+		return nil
+	}
 
-	var children []T
+	Q := Queuer.NewLinkedQueue(newHelper(t.h.First, t.h.Second))
 
 	for {
-		node, err := Q.Dequeue()
+		first, err := Q.Dequeue()
 		if err != nil {
 			break
 		}
 
-		err = t.observer(node)
+		err = t.observe(first.First.Data, first.Second)
 		if err != nil {
 			return err
 		}
 
-		children, err = t.nexts(node)
-		if err != nil {
-			return err
-		}
-
-		for _, child := range children {
-			err := Q.Enqueue(child)
+		for _, child := range first.First.children {
+			err := Q.Enqueue(newHelper(child, first.Second))
 			if err != nil {
 				panic(err)
 			}
@@ -130,6 +110,35 @@ func (t *Traverser[T]) BFS(node T) error {
 	return nil
 }
 
+// Traverse creates a new traversor for the tree.
+//
+// Parameters:
+//   - tree: The tree to traverse.
+//   - init: The initial info.
+//   - f: The observer function.
+//
+// Returns:
+//   - Traversor[T, I]: The traversor.
+func Traverse[T any, I intf.Copier](tree *Tree[T], init I, f ObserverFunc[T, I]) *Traversor[T, I] {
+	var root *Node[T]
+
+	if tree == nil {
+		root = nil
+	} else {
+		root = tree.root
+	}
+
+	return &Traversor[T, I]{
+		h: &helper[T, I]{
+			First:  root,
+			Second: init,
+		},
+		observe: f,
+	}
+}
+
+type NextsFunc[T any, I intf.Copier] func(elem T, info I) ([]T, error)
+
 // MakeTree creates a tree from the given element.
 //
 // Parameters:
@@ -138,20 +147,17 @@ func (t *Traverser[T]) BFS(node T) error {
 // Returns:
 //   - *Tree[T]: The tree created from the element.
 //   - error: An error if the tree cannot be created.
-func (t *Traverser[T]) MakeTree(elem T) (*Tree[T], error) {
+func MakeTree[T any, I intf.Copier](elem T, info I, f NextsFunc[T, I]) (*Tree[T], error) {
 	// 1. Handle the first element
-	err := t.observer(elem)
+	h := newHelper(NewNode(elem), info)
+
+	nexts, err := f(h.First.Data, h.Second)
 	if err != nil {
 		return nil, err
 	}
 
 	tree := &Tree[T]{
-		root: NewNode(elem),
-	}
-
-	nexts, err := t.nexts(elem)
-	if err != nil {
-		return nil, err
+		root: h.First,
 	}
 
 	if len(nexts) == 0 {
@@ -161,39 +167,33 @@ func (t *Traverser[T]) MakeTree(elem T) (*Tree[T], error) {
 	// 2. Create a stack and push the first element
 	type StackElement struct {
 		Prev *Node[T]
-		Elem T
+		Elem *helper[T, I]
 	}
 
 	S := Stacker.NewLinkedStack[StackElement]()
 
 	for _, next := range nexts {
-		err := S.Push(StackElement{Prev: tree.root, Elem: next})
+		err := S.Push(StackElement{Prev: tree.root, Elem: newHelper(NewNode(next), h.Second)})
 		if err != nil {
 			panic(err)
 		}
 	}
 
 	for {
-		se, err := S.Pop()
+		top, err := S.Pop()
 		if err != nil {
 			break
 		}
 
-		err = t.observer(se.Elem)
+		nexts, err := f(top.Elem.First.Data, top.Elem.Second)
 		if err != nil {
 			return nil, err
 		}
 
-		node := NewNode(se.Elem)
-		se.Prev.AddChildren(node)
-
-		nexts, err := t.nexts(elem)
-		if err != nil {
-			return nil, err
-		}
+		top.Prev.AddChildren(top.Elem.First)
 
 		for _, next := range nexts {
-			err := S.Push(StackElement{Prev: node, Elem: next})
+			err := S.Push(StackElement{Prev: top.Elem.First, Elem: newHelper(NewNode(next), top.Elem.Second)})
 			if err != nil {
 				panic(err)
 			}

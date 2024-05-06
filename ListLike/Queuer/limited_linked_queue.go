@@ -4,9 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	fs "github.com/PlayerR9/MyGoLib/Formatting/Strings"
 	itf "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
-	itff "github.com/PlayerR9/MyGoLib/Units/Interfaces"
+	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
@@ -214,7 +213,7 @@ func (queue *LimitedLinkedQueue[T]) IsFull() bool {
 func (queue *LimitedLinkedQueue[T]) String() string {
 	values := make([]string, 0, queue.size)
 	for queue_node := queue.front; queue_node != nil; queue_node = queue_node.Next() {
-		values = append(values, fs.StringOf(queue_node.Value))
+		values = append(values, uc.StringOf(queue_node.Value))
 	}
 
 	return fmt.Sprintf(
@@ -305,7 +304,7 @@ func (queue *LimitedLinkedQueue[T]) Slice() []T {
 // Returns:
 //
 //   - itf.Copier: A copy of the queue.
-func (queue *LimitedLinkedQueue[T]) Copy() itff.Copier {
+func (queue *LimitedLinkedQueue[T]) Copy() uc.Copier {
 	queueCopy := &LimitedLinkedQueue[T]{
 		size:     queue.size,
 		capacity: queue.capacity,

@@ -5,9 +5,8 @@ import (
 	"strings"
 	"sync"
 
-	fs "github.com/PlayerR9/MyGoLib/Formatting/Strings"
 	itf "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
-	itff "github.com/PlayerR9/MyGoLib/Units/Interfaces"
+	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
@@ -278,7 +277,7 @@ func (list *LimitedSafeList[T]) String() string {
 
 	values := make([]string, 0, list.size)
 	for node := list.front; node != nil; node = node.Next() {
-		values = append(values, fs.StringOf(node.Value))
+		values = append(values, uc.StringOf(node.Value))
 	}
 
 	return fmt.Sprintf(
@@ -471,8 +470,8 @@ func (list *LimitedSafeList[T]) Slice() []T {
 //
 // Returns:
 //
-//   - itff.Copier: A copy of the list.
-func (list *LimitedSafeList[T]) Copy() itff.Copier {
+//   - uc.Copier: A copy of the list.
+func (list *LimitedSafeList[T]) Copy() uc.Copier {
 	list.frontMutex.RLock()
 	defer list.frontMutex.RUnlock()
 

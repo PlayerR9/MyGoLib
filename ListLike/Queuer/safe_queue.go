@@ -5,9 +5,8 @@ import (
 	"strings"
 	"sync"
 
-	fs "github.com/PlayerR9/MyGoLib/Formatting/Strings"
 	itf "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
-	itff "github.com/PlayerR9/MyGoLib/Units/Interfaces"
+	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
@@ -237,7 +236,7 @@ func (queue *SafeQueue[T]) String() string {
 
 	values := make([]string, 0, queue.size)
 	for node := queue.front; node != nil; node = node.Next() {
-		values = append(values, fs.StringOf(node.Value))
+		values = append(values, uc.StringOf(node.Value))
 	}
 
 	return fmt.Sprintf(
@@ -339,7 +338,7 @@ func (queue *SafeQueue[T]) Slice() []T {
 // Returns:
 //
 //   - itf.Copier: A copy of the queue.
-func (queue *SafeQueue[T]) Copy() itff.Copier {
+func (queue *SafeQueue[T]) Copy() uc.Copier {
 	queue.frontMutex.RLock()
 	defer queue.frontMutex.RUnlock()
 

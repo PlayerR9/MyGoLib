@@ -5,10 +5,8 @@ import (
 	"strings"
 
 	itf "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
-	itff "github.com/PlayerR9/MyGoLib/Units/Interfaces"
+	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
-
-	fs "github.com/PlayerR9/MyGoLib/Formatting/Strings"
 )
 
 // ArrayList is a generic type that represents a list data structure with
@@ -155,7 +153,7 @@ func (list *ArrayList[T]) IsFull() (isFull bool) {
 func (list *ArrayList[T]) String() string {
 	values := make([]string, 0, len(list.values))
 	for _, element := range list.values {
-		values = append(values, fs.StringOf(element))
+		values = append(values, uc.StringOf(element))
 	}
 
 	return fmt.Sprintf(
@@ -244,7 +242,7 @@ func (list *ArrayList[T]) Slice() []T {
 // Returns:
 //
 //   - itf.Copier: A copy of the list.
-func (list *ArrayList[T]) Copy() itff.Copier {
+func (list *ArrayList[T]) Copy() uc.Copier {
 	listCopy := &ArrayList[T]{
 		values: make([]T, len(list.values)),
 	}

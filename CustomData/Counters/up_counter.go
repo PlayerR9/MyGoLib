@@ -3,8 +3,8 @@ package Counters
 import (
 	"fmt"
 
+	intf "github.com/PlayerR9/MyGoLib/Units/Common"
 	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
-	intf "github.com/PlayerR9/MyGoLib/Units/Interfaces"
 )
 
 // UpCounter represents a counter that increments upwards until it

@@ -2,16 +2,12 @@ package DtTable
 
 import (
 	"github.com/gdamore/tcell"
+
+	cdp "github.com/PlayerR9/MyGoLib/CustomData/Pair"
 )
 
 // DtCell represents a cell in a data table.
-type DtCell struct {
-	// Content is the content of the cell.
-	Content rune
-
-	// Style is the style of the cell.
-	Style tcell.Style
-}
+type DtCell cdp.Pair[rune, tcell.Style]
 
 // NewDtCell creates a new DtCell with the given content and style.
 //
@@ -23,7 +19,7 @@ type DtCell struct {
 //   - *DtCell: A pointer to the new DtCell.
 func NewDtCell(content rune, style tcell.Style) *DtCell {
 	return &DtCell{
-		Content: content,
-		Style:   style,
+		First:  content,
+		Second: style,
 	}
 }

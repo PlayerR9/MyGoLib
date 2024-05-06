@@ -1,5 +1,9 @@
 package SliceExt
 
+import (
+	cdp "github.com/PlayerR9/MyGoLib/CustomData/Pair"
+)
+
 // WeightFunc is a type that defines a function that assigns a weight to an element.
 //
 // Parameters:
@@ -11,13 +15,7 @@ package SliceExt
 type WeightFunc[T any] func(elem T) (float64, bool)
 
 // WeightResult is a type that represents an element with its corresponding weight.
-type WeightResult[T any] struct {
-	// Elem is the element.
-	Elem T
-
-	// Weight is the weight of the element.
-	Weight float64
-}
+type WeightResult[T any] cdp.Pair[T, float64]
 
 // NewWeightResult creates a new WeightResult with the given weight and element.
 //
@@ -29,8 +27,8 @@ type WeightResult[T any] struct {
 //   - WeightResult[T]: The new WeightResult.
 func NewWeightResult[T any](elem T, weight float64) WeightResult[T] {
 	return WeightResult[T]{
-		Weight: weight,
-		Elem:   elem,
+		Second: weight,
+		First:  elem,
 	}
 }
 
@@ -60,8 +58,8 @@ func ApplyWeightFunc[T any](S []T, f WeightFunc[T]) []WeightResult[T] {
 		}
 
 		trimmed = append(trimmed, WeightResult[T]{
-			Elem:   e,
-			Weight: weight,
+			First:  e,
+			Second: weight,
 		})
 	}
 
@@ -75,7 +73,7 @@ func ApplyWeightFunc[T any](S []T, f WeightFunc[T]) []WeightResult[T] {
 // If S is empty, the function returns an empty slice.
 //
 // Parameters:
-// 	 - S: slice of weight results.
+//   - S: slice of weight results.
 //
 // Returns:
 //   - []T: slice of elements with the maximum weight.
@@ -84,15 +82,15 @@ func FilterByPositiveWeight[T any](S []WeightResult[T]) []T {
 		return []T{}
 	}
 
-	solution := []T{S[0].Elem}
-	maxWeight := S[0].Weight
+	solution := []T{S[0].First}
+	maxWeight := S[0].Second
 
 	for _, e := range S[1:] {
-		if e.Weight > maxWeight {
-			maxWeight = e.Weight
-			solution = []T{e.Elem}
-		} else if e.Weight == maxWeight {
-			solution = append(solution, e.Elem)
+		if e.Second > maxWeight {
+			maxWeight = e.Second
+			solution = []T{e.First}
+		} else if e.Second == maxWeight {
+			solution = append(solution, e.First)
 		}
 	}
 
@@ -106,7 +104,7 @@ func FilterByPositiveWeight[T any](S []WeightResult[T]) []T {
 // If S is empty, the function returns an empty slice.
 //
 // Parameters:
-// 	 - S: slice of weight results.
+//   - S: slice of weight results.
 //
 // Returns:
 //   - []T: slice of elements with the minimum weight.
@@ -115,15 +113,15 @@ func FilterByNegativeWeight[T any](S []WeightResult[T]) []T {
 		return []T{}
 	}
 
-	solution := []T{S[0].Elem}
-	minWeight := S[0].Weight
+	solution := []T{S[0].First}
+	minWeight := S[0].Second
 
 	for _, e := range S[1:] {
-		if e.Weight < minWeight {
-			minWeight = e.Weight
-			solution = []T{e.Elem}
-		} else if e.Weight == minWeight {
-			solution = append(solution, e.Elem)
+		if e.Second < minWeight {
+			minWeight = e.Second
+			solution = []T{e.First}
+		} else if e.Second == minWeight {
+			solution = append(solution, e.First)
 		}
 	}
 
