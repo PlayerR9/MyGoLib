@@ -3,11 +3,9 @@ package MapExt
 // PredicateFilter is a type that defines a slice filter function.
 //
 // Parameters:
-//
 //   - T: The type of the elements in the slice.
 //
 // Returns:
-//
 //   - bool: True if the element satisfies the filter function, otherwise false.
 type PredicateFilter[T comparable, E any] func(T, E) bool
 
@@ -17,11 +15,9 @@ type PredicateFilter[T comparable, E any] func(T, E) bool
 // does not satisfy.
 //
 // Parameters:
-//
 //   - funcs: A slice of PredicateFilter functions.
 //
 // Returns:
-//
 //   - PredicateFilter: A PredicateFilter function that checks if a element satisfies
 //     all the PredicateFilter functions in funcs.
 func Intersect[T comparable, E any](funcs ...PredicateFilter[T, E]) PredicateFilter[T, E] {
@@ -42,11 +38,9 @@ func Intersect[T comparable, E any](funcs ...PredicateFilter[T, E]) PredicateFil
 // satisfies.
 //
 // Parameters:
-//
 //   - funcs: A slice of PredicateFilter functions.
 //
 // Returns:
-//
 //   - PredicateFilter: A PredicateFilter function that checks if a element satisfies
 //     at least one of the PredicateFilter functions in funcs.
 func Union[T comparable, E any](funcs ...PredicateFilter[T, E]) PredicateFilter[T, E] {
@@ -66,12 +60,10 @@ func Union[T comparable, E any](funcs ...PredicateFilter[T, E]) PredicateFilter[
 // satisfy the filter function.
 //
 // Parameters:
-//
 //   - S: slice of elements.
 //   - filter: function that takes an element and returns a bool.
 //
 // Returns:
-//
 //   - []T: slice of elements that satisfy the filter function.
 func MapFilter[T comparable, E any](S map[T]E, filter PredicateFilter[T, E]) map[T]E {
 	result := make(map[T]E)

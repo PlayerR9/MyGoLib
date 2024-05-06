@@ -1,5 +1,6 @@
 package Document
 
+/*
 import (
 	"strings"
 
@@ -159,3 +160,4 @@ func (b *Builder) Build(char rune) string {
 
 	return builder.String()
 }
+*/

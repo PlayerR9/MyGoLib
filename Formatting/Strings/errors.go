@@ -2,6 +2,8 @@ package Strings
 
 import "fmt"
 
+// ErrLinesGreaterThanWords is an error type that is returned when the
+// number of lines in a text is greater than the number of words.
 type ErrLinesGreaterThanWords struct {
 	// NumberOfLines is the number of lines in the text.
 	NumberOfLines int
@@ -33,6 +35,7 @@ func NewErrLinesGreaterThanWords(numberOfLines, numberOfWords int) *ErrLinesGrea
 	return &ErrLinesGreaterThanWords{NumberOfLines: numberOfLines, NumberOfWords: numberOfWords}
 }
 
+// ErrNoCandidateFound is an error type that is returned when no candidate is found.
 type ErrNoCandidateFound struct{}
 
 // Error is a method of the error interface that returns the error message.

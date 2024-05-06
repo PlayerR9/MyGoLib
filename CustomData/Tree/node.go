@@ -4,6 +4,7 @@ import (
 	"slices"
 
 	"github.com/PlayerR9/MyGoLib/ListLike/Stacker"
+	slext "github.com/PlayerR9/MyGoLib/Utility/SliceExt"
 
 	intf "github.com/PlayerR9/MyGoLib/Units/Interfaces"
 )
@@ -116,39 +117,37 @@ func (n *Node[T]) ToTree() *Tree[T] {
 	}
 }
 
-// AddChildren adds a new child to the node with the given data.
+// AddChild adds a new child to the node with the given data.
+//
+// Parameters:
+//   - child: The child to add.
+func (n *Node[T]) AddChild(child *Node[T]) {
+	if child == nil {
+		return
+	}
+
+	child.parent = n
+	n.children = append(n.children, child)
+}
+
+// AddChildren adds zero or more children to the node.
 //
 // Parameters:
 //   - children: The children to add.
+//
+// Behaviors:
+//   - This is just a more efficient way to add multiple children.
 func (n *Node[T]) AddChildren(children ...*Node[T]) {
+	children = slext.SliceFilter(children, FilterNilNode)
 	if len(children) == 0 {
 		return
 	}
 
 	for _, child := range children {
-		if child == nil {
-			continue
-		}
-
 		child.parent = n
-
-		n.children = append(n.children, child)
 	}
-}
 
-// MakeChildren adds zero or more children to the node with the given data.
-//
-// Parameters:
-//   - children: The values of the new children.
-func (n *Node[T]) MakeChildren(children ...T) {
-	for _, data := range children {
-		child := &Node[T]{
-			Data:   data,
-			parent: n,
-		}
-
-		n.children = append(n.children, child)
-	}
+	n.children = append(n.children, children...)
 }
 
 // GetChildren returns all the children of the node.
@@ -157,14 +156,7 @@ func (n *Node[T]) MakeChildren(children ...T) {
 // Returns:
 //   - []*Node[T]: A slice of pointers to the children of the node.
 func (n *Node[T]) GetChildren() []*Node[T] {
-	if len(n.children) == 0 {
-		return nil
-	}
-
-	children := make([]*Node[T], 0, len(n.children))
-	copy(children, n.children)
-
-	return children
+	return n.children
 }
 
 // FindBranchingPoint returns the first node in the path from n to the root

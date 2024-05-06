@@ -1,8 +1,6 @@
 package General
 
 import (
-	"errors"
-	"fmt"
 	"reflect"
 
 	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
@@ -13,11 +11,9 @@ import (
 // implements the Comparable interface and returns the smaller of the two values.
 //
 // Parameters:
-//
 //   - a, b: The two values to compare.
 //
 // Return:
-//
 //   - T: The smaller of the two values.
 func Min[T itf.Comparable](a, b T) T {
 	if a < b {
@@ -31,11 +27,9 @@ func Min[T itf.Comparable](a, b T) T {
 // implements the Comparable interface and returns the larger of the two values.
 //
 // Parameters:
-//
 //   - a, b: The two values to compare.
 //
 // Return:
-//
 //   - T: The larger of the two values.
 func Max[T itf.Comparable](a, b T) T {
 	if a < b {
@@ -48,11 +42,9 @@ func Max[T itf.Comparable](a, b T) T {
 // DeepCopy is a function that performs a deep copy of a given value.
 //
 // Parameters:
-//
 //   - value: The value to copy.
 //
 // Return:
-//
 //   - any: A deep copy of the input value.
 func DeepCopy(value any) any {
 	typ := reflect.TypeOf(value)
@@ -74,17 +66,13 @@ func DeepCopy(value any) any {
 // SplitIntoGroups splits the slice into n groups and returns a 2D slice where
 // each inner slice represents a group.
 //
-// Panics with error of type *ers.ErrInvalidParameter if the number of groups
-// is less than or equal to 0.
-//
 // Parameters:
-//
 //   - slice: The slice to split.
 //   - n: The number of groups to split the slice into.
 //
 // Return:
-//
 //   - [][]T: A 2D slice where each inner slice represents a group.
+//   - error: An error of type *ers.ErrInvalidParameter if n is less than or equal to 0.
 //
 // Example:
 //
@@ -102,12 +90,12 @@ func SplitIntoGroups[T any](slice []T, n int) ([][]T, error) {
 	if n < 0 {
 		return nil, ers.NewErrInvalidParameter(
 			"n",
-			fmt.Errorf("negative group number (%d) are not allowed", n),
+			ers.NewErrGTE(0),
 		)
 	} else if n == 0 {
 		return nil, ers.NewErrInvalidParameter(
 			"n",
-			errors.New("cannot split into 0 groups"),
+			ers.NewErrInvalidValue(0),
 		)
 	}
 
@@ -125,11 +113,9 @@ func SplitIntoGroups[T any](slice []T, n int) ([][]T, error) {
 // IsNil is a function that checks if a value is nil.
 //
 // Parameters:
-//
 //   - value: The value to check.
 //
 // Return:
-//
 //   - bool: True if the value is nil, false otherwise.
 func IsNil[T any](value T) bool {
 	switch reflect.ValueOf(value).Kind() {

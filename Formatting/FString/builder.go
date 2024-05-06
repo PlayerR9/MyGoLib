@@ -8,7 +8,6 @@ import (
 // BuildOption is a type that represents a function that modifies the builder.
 //
 // Parameters:
-//
 //   - *Builder: The builder to modify.
 type BuildOption func(*Builder)
 
@@ -19,11 +18,9 @@ type BuildOption func(*Builder)
 // string.
 //
 // Parameters:
-//
 //   - config: The indentation configuration.
 //
 // Returns:
-//
 //   - BuildOption: A function that modifies the builder.
 func WithIndentation(config *IndentConfig) BuildOption {
 	return func(b *Builder) {
@@ -34,11 +31,9 @@ func WithIndentation(config *IndentConfig) BuildOption {
 // WithDelimiterLeft is a function that sets the left delimiter configuration of the builder.
 //
 // Parameters:
-//
 //   - delimiter: The left delimiter configuration.
 //
 // Returns:
-//
 //   - BuildOption: A function that modifies the builder.
 func WithDelimiterLeft(delimiter *DelimiterConfig) BuildOption {
 	return func(b *Builder) {
@@ -49,11 +44,9 @@ func WithDelimiterLeft(delimiter *DelimiterConfig) BuildOption {
 // WithDelimiterRight is a function that sets the right delimiter configuration of the builder.
 //
 // Parameters:
-//
 //   - delimiter: The right delimiter configuration.
 //
 // Returns:
-//
 //   - BuildOption: A function that modifies the builder.
 func WithDelimiterRight(delimiter *DelimiterConfig) BuildOption {
 	return func(b *Builder) {
@@ -64,11 +57,9 @@ func WithDelimiterRight(delimiter *DelimiterConfig) BuildOption {
 // WithSeparator is a function that sets the separator configuration of the builder.
 //
 // Parameters:
-//
 //   - config: The separator configuration.
 //
 // Returns:
-//
 //   - BuildOption: A function that modifies the builder.
 func WithSeparator(config *SeparatorConfig) BuildOption {
 	return func(b *Builder) {
@@ -94,15 +85,12 @@ type Builder struct {
 // NewBuilder is a function that creates a new builder with the given options.
 //
 // Parameters:
-//
 //   - options: The options to set on the builder.
 //
 // Returns:
-//
 //   - *Builder: A pointer to the new builder.
 //
 // Information:
-//
 //   - Options that are not specified will be set to their default values:
 //   - ==IndentConfig==
 //   - Indentation: DefaultIndentation
@@ -156,11 +144,9 @@ func NewBuilder(options ...BuildOption) Builder {
 // Build is a method of the Builder type that creates a formatted string from the given values.
 //
 // Parameters:
-//
 //   - values: The values to format.
 //
 // Returns:
-//
 //   - string: The formatted string.
 func (b *Builder) Build(values []string) string {
 	// 1. Add the separator between each value.
@@ -244,11 +230,9 @@ func (b *Builder) Build(values []string) string {
 // Format is a method of the Builder type that creates a formatted string from the given values.
 //
 // Parameters:
-//
 //   - values: The values to format.
 //
 // Returns:
-//
 //   - []string: The formatted string.
 func (b *Builder) Format(values []string) []string {
 	// 1. Add the separator between each value.

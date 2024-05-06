@@ -20,7 +20,6 @@ const (
 // String is a method of fmt.Stringer interface.
 //
 // Return:
-//
 //   - string: A string representation of the exit code.
 func (ec ExitCode) String() string {
 	return [...]string{

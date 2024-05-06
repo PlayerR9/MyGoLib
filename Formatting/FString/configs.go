@@ -20,7 +20,6 @@ type IndentConfig struct {
 // String is a method of fmt.Stringer interface.
 //
 // Returns:
-//
 //   - string: A string representation of the indentation configuration.
 func (c *IndentConfig) String() string {
 	return strings.Repeat(c.Indentation, c.InitialLevel)
@@ -29,14 +28,12 @@ func (c *IndentConfig) String() string {
 // NewIndentConfig is a function that creates a new indentation configuration.
 //
 // Parameters:
-//
 //   - indentation: The string that is used for indentation.
 //   - initialLevel: The initial indentation level.
 //   - allowVertical: Whether vertical indentation is allowed.
 //   - ignoreFirst: Whether the first line should be indented.
 //
 // Returns:
-//
 //   - *IndentConfig: A pointer to the new indentation configuration.
 func NewIndentConfig(indentation string, initialLevel int, allowVertical bool, ignoreFirst bool) *IndentConfig {
 	config := &IndentConfig{
@@ -66,7 +63,6 @@ type SeparatorConfig struct {
 // String is a method of fmt.Stringer interface.
 //
 // Returns:
-//
 //   - string: A string representation of the separator configuration.
 func (c *SeparatorConfig) String() string {
 	return c.Separator
@@ -75,12 +71,10 @@ func (c *SeparatorConfig) String() string {
 // NewSeparator is a function that creates a new separator configuration.
 //
 // Parameters:
-//
 //   - separator: The string that is used as a separator.
 //   - hasFinalSeparator: Whether the last element should have a separator.
 //
 // Returns:
-//
 //   - *SeparatorConfig: A pointer to the new separator configuration.
 func NewSeparator(separator string, hasFinalSeparator bool) *SeparatorConfig {
 	return &SeparatorConfig{
@@ -101,7 +95,6 @@ type DelimiterConfig struct {
 // String is a method of fmt.Stringer interface.
 //
 // Returns:
-//
 //   - string: A string representation of the delimiter configuration.
 func (c *DelimiterConfig) String() string {
 	return c.Value
@@ -110,12 +103,10 @@ func (c *DelimiterConfig) String() string {
 // NewDelimiterConfig is a function that creates a new delimiter configuration.
 //
 // Parameters:
-//
 //   - value: The string that is used as a delimiter.
 //   - inline: Whether the delimiter should be inline.
 //
 // Returns:
-//
 //   - *DelimiterConfig: A pointer to the new delimiter configuration.
 func NewDelimiterConfig(value string, inline bool) *DelimiterConfig {
 	return &DelimiterConfig{

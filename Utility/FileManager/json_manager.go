@@ -13,7 +13,6 @@ type JSONEncoder interface {
 	// Empty returns the default values of the data.
 	//
 	// Returns:
-	//
 	//   - JSONEncoder: The default values of the data.
 	Empty() JSONEncoder
 }
@@ -30,11 +29,9 @@ type JSONManager[T JSONEncoder] struct {
 // NewJSONManager creates a new JSONManager.
 //
 // Parameters:
-//
 //   - path: The path to the JSON file.
 //
 // Returns:
-//
 //   - JSONManager[T]: The new JSONManager.
 func NewJSONManager[T JSONEncoder](path string) JSONManager[T] {
 	return JSONManager[T]{
@@ -45,7 +42,6 @@ func NewJSONManager[T JSONEncoder](path string) JSONManager[T] {
 // ChangePath changes the path of the JSON file.
 //
 // Parameters:
-//
 //   - path: The new path to the JSON file.
 func (m *JSONManager[T]) ChangePath(path string) {
 	m.path = path
@@ -54,7 +50,6 @@ func (m *JSONManager[T]) ChangePath(path string) {
 // Load loads the data from the JSON file.
 //
 // Returns:
-//
 //   - error: An error if there was an issue loading the data.
 func (m *JSONManager[T]) Load() error {
 	data, err := os.ReadFile(m.path)
@@ -68,7 +63,6 @@ func (m *JSONManager[T]) Load() error {
 // Save saves the data to the JSON file. It will overwrite the file if it already exists.
 //
 // Returns:
-//
 //   - error: An error if there was an issue saving the data.
 func (m *JSONManager[T]) Save() error {
 	data, err := json.Marshal(m)
@@ -82,7 +76,6 @@ func (m *JSONManager[T]) Save() error {
 // Exists checks if the JSON file exists.
 //
 // Returns:
-//
 //   - bool: True if the file exists, false otherwise.
 //   - error: An error if there was an issue checking if the file exists.
 func (m *JSONManager[T]) Exists() (bool, error) {
@@ -102,7 +95,6 @@ func (m *JSONManager[T]) Exists() (bool, error) {
 // If the file already exists, it will overwrite the file.
 //
 // Returns:
-//
 //   - error: An error if there was an issue creating the empty file.
 func (m *JSONManager[T]) CreateEmpty() error {
 	data, err := json.Marshal(m.Data.Empty())
@@ -116,7 +108,6 @@ func (m *JSONManager[T]) CreateEmpty() error {
 // Delete deletes the JSON file. No operation is performed if the file does not exist.
 //
 // Returns:
-//
 //   - error: An error if there was an issue deleting the file.
 func (m *JSONManager[T]) Delete() error {
 	return os.Remove(m.path)

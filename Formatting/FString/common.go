@@ -30,11 +30,9 @@ type FStringer interface {
 	// FString returns a string representation of the object.
 	//
 	// Parameters:
-	//
 	//   - int: The current indentation level.
 	//
 	// Returns:
-	//
 	//   - []string: A slice of strings that represent the object.
 	FString(int) []string
 }
@@ -46,11 +44,9 @@ type FStringer interface {
 // character with no indentation at the beginning.
 //
 // Parameters:
-//
 //   - obj: The object that implements the FStringer interface.
 //
 // Returns:
-//
 //   - string: A string representation of the object.
 func FString(obj FStringer) string {
 	if obj == nil {

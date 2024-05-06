@@ -8,6 +8,12 @@ import (
 	"strings"
 )
 
+// MainFunc is a type for the main function of a program.
+//
+// Return:
+//   - error: An error if the program cannot be run.
+type MainFunc func() error
+
 // RunInPowerShell is a function that returns a function that runs a program in
 // a new PowerShell process.
 //
@@ -16,14 +22,12 @@ import (
 // process cannot be started.
 //
 // Parameters:
-//
 //   - program: The path to the program to run.
 //   - args: The arguments to pass to the program.
 //
 // Return:
-//
-//   - func() error: A function that runs the program in a new PowerShell process.
-func RunInPowerShell(program string, args ...string) func() error {
+//   - MainFunc: A function that runs the program in a new PowerShell process.
+func RunInPowerShell(program string, args ...string) MainFunc {
 	var builder strings.Builder
 
 	builder.WriteString("'-NoExit', '")
@@ -54,7 +58,6 @@ func RunInPowerShell(program string, args ...string) func() error {
 // exit the program with the Panic exit code.
 //
 // Parameters:
-//
 //   - logger: The logger to use for logging the error message. If nil, the
 //     error message is logged to the console.
 func RecoverFromPanic(logger *log.Logger) {
@@ -84,14 +87,12 @@ func RecoverFromPanic(logger *log.Logger) {
 // to the log file and exit the program with the Success exit code.
 //
 // Parameters:
-//
 //   - logger: The logger to use for logging the error message. If nil, the
 //     error message is logged to the console.
 //   - result: The result of the program. If nil, the program is considered to
 //     have finished successfully.
 //
 // Return:
-//
 //   - int: The exit code of the program.
 //
 // Example:

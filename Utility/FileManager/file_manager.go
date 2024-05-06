@@ -16,12 +16,11 @@ import (
 // FileExists checks if a file exists at the given path.
 //
 // Parameters:
-//
 //   - filePath: A string representing the path to the file.
 //
 // Returns:
-//
-//   - A boolean indicating whether the file exists.
+//   - bool: A boolean indicating whether the file exists.
+//   - error: An error if one occurred while checking the file.
 func FileExists(filePath string) (bool, error) {
 	_, err := os.Stat(filePath)
 	if err == nil {
@@ -42,13 +41,11 @@ func FileExists(filePath string) (bool, error) {
 // download the file if the name already exists in the destination.
 //
 // Parameters:
-//
 //   - dest: A string representing the path to the directory where the file
 //     will be saved.
 //   - url: A string representing the URL of the file to download.
 //
 // Returns:
-//
 //   - string: The path to the downloaded file.
 //   - error: An error if the download fails.
 //
@@ -101,11 +98,9 @@ func MediaDownloader(dest, url string) (string, error) {
 // returns the error and a nil slice.
 //
 // Parameters:
-//
 //   - path: The path to the file to be read.
 //
 // Returns:
-//
 //   - []string: A slice of strings where each string is a line from the file.
 //   - error: An error if one occurred while opening or scanning the file.
 func ReadWholeFileLineByLine(path string) ([]string, error) {
@@ -128,10 +123,7 @@ func ReadWholeFileLineByLine(path string) ([]string, error) {
 // AppendToFile is a function that appends content to a file, each content
 // on a new line.
 //
-// Panics if it fails to open the file or write to it.
-//
 // Parameters:
-//
 //   - filePath: A string representing the path to the file.
 //   - contents: A variadic parameter of strings representing the content
 //     to be appended.
@@ -154,11 +146,9 @@ func AppendToFile(filePath string, contents ...string) error {
 // in a given directory and their extensions.
 //
 // Parameters:
-//
 //   - directoryPath: A string representing the path to the directory.
 //
 // Returns:
-//
 //   - map[string]string: A map where the keys are the file paths and the
 //     values are the file extensions.
 //   - error: An error if it fails to read the directory or any of its files.
@@ -187,13 +177,11 @@ func GetAllFileNamesInDirectory(directoryPath string) (map[string]string, error)
 // This function does not search subdirectories.
 //
 // Parameters:
-//
 //   - directoryPath: A string representing the path to the directory.
 //   - extensions: A variadic parameter of strings representing the file extensions
 //     to match.
 //
 // Returns:
-//
 //   - []string: A slice of strings representing the paths to the matching files.
 //   - error: An error if it fails to read the directory.
 func GetFilesEndingIn(directoryPath string, extensions ...string) ([]string, error) {
@@ -217,11 +205,9 @@ func GetFilesEndingIn(directoryPath string, extensions ...string) ([]string, err
 // is a part of the file path.
 //
 // Parameters:
-//
 //   - filePath: A string representing the path to the file.
 //
 // Returns:
-//
 //   - []string: A slice of strings representing the parts of the file path.
 func SplitPath(filePath string) []string {
 	var parts []string

@@ -243,3 +243,21 @@ func StringsOf[T any](sep string, f StringOfFunc[T], elems ...T) string {
 
 	return strings.Join(values, sep)
 }
+
+// StringsJoiner joins a list of fmt.Stringer values using a separator.
+//
+// Parameters:
+//   - values: The list of fmt.Stringer values to join.
+//   - sep: The separator to use when joining the strings.
+//
+// Returns:
+//   - string: The string representation of the values.
+func StringsJoiner[T fmt.Stringer](values []T, sep string) string {
+	stringValues := make([]string, 0, len(values))
+
+	for _, value := range values {
+		stringValues = append(stringValues, value.String())
+	}
+
+	return strings.Join(stringValues, sep)
+}

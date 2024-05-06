@@ -1,5 +1,9 @@
 package Stream
 
+import (
+	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
+)
+
 // Streamer is an interface for streams of items.
 type Streamer[T any] interface {
 	// Size returns the number of items in the stream.
@@ -14,54 +18,49 @@ type Streamer[T any] interface {
 	//   - bool: True if the stream is empty.
 	IsEmpty() bool
 
-	// Peek returns the next item in the stream without consuming it.
-	// It panics if there are no more items in the stream.
+	// Get returns qty of items from the stream starting from the given index.
+	//
+	// Parameters:
+	//   - from: The index of the first item to get.
+	//   - qty: The number of items to get.
 	//
 	// Returns:
-	//   - T: The next item in the stream.
-	Peek() T
-
-	// Consume consumes the next item in the stream.
-	// It panics if there are no more items in the stream.
+	//   - []T: The items from the stream.
+	//   - error: An error of type *ers.ErrInvalidParameter if from or qty is negative.
 	//
-	// Returns:
-	//   - T: The consumed item.
-	Consume() T
+	// Behaviors:
+	//   - If there are not enough items in the stream, no error is returned
+	// 	but the number of items returned will be less than qty.
+	Get(from int, qty int) ([]T, error)
 
-	// Reset resets the stream to the beginning.
-	Reset()
-
-	// IsDone returns true if the stream has been fully consumed.
+	// IsDone returns true if from + qty is greater than the number of items in the stream.
+	//
+	// Parameters:
+	//   - from: The index of the first item to check.
+	//   - qty: The number of items to check.
 	//
 	// Returns:
 	//   - bool: True if the stream has been fully consumed.
-	IsDone() bool
+	IsDone(from int, qty int) bool
 
 	// GetItems returns the items in the stream.
 	//
 	// Returns:
 	//   - []T: The items in the stream.
 	GetItems() []T
-
-	// GetLeftoverItems returns the items that have not been consumed.
-	//
-	// Returns:
-	//   - []T: The leftover items in the stream.
-	GetLeftoverItems() []T
 }
 
 // Stream is a stream of items.
 //
 // Side effects:
-// 	- Modifications to the elements inserted and removed from the stream
-// 	can affect the stream's values. Especially if the elements are pointers.
+//   - Modifications to the elements inserted and removed from the stream
+//     can affect the stream's values. Especially if the elements are pointers.
 type Stream[T any] struct {
 	// items is the slice of items in the stream.
 	items []T
 
-	// currentIndex is the current index of the stream.
-	// It indicates the first non-consumed item.
-	currentIndex int
+	// size is the number of items in the stream.
+	size int
 }
 
 // Size returns the number of items in the stream.
@@ -69,7 +68,7 @@ type Stream[T any] struct {
 // Returns:
 //   - int: The number of items in the stream.
 func (s *Stream[T]) Size() int {
-	return len(s.items)
+	return s.size
 }
 
 // IsEmpty returns true if the stream is empty.
@@ -77,49 +76,53 @@ func (s *Stream[T]) Size() int {
 // Returns:
 //   - bool: True if the stream is empty.
 func (s *Stream[T]) IsEmpty() bool {
-	return len(s.items) == 0
+	return s.size == 0
 }
 
-// Peek returns the next item in the stream without consuming it.
-// It panics if there are no more items in the stream.
+// Get returns qty of items from the stream starting from the given index.
+//
+// Parameters:
+//   - from: The index of the first item to get.
+//   - qty: The number of items to get.
 //
 // Returns:
-//   - T: The next item in the stream.
-func (s *Stream[T]) Peek() T {
-	if s.currentIndex >= len(s.items) {
-		panic(NewErrNoMoreItems())
+//   - []T: The items from the stream.
+//   - error: An error if there are no more items in the stream or
+//     if the qty is negative.
+func (s *Stream[T]) Get(from int, qty int) ([]T, error) {
+	if from < 0 {
+		return nil, ers.NewErrInvalidParameter(
+			"from",
+			ers.NewErrGTE(0),
+		)
+	} else if qty < 0 {
+		return nil, ers.NewErrInvalidParameter(
+			"qty",
+			ers.NewErrGTE(0),
+		)
 	}
 
-	return s.items[s.currentIndex]
-}
-
-// Consume consumes the next item in the stream.
-// It panics if there are no more items in the stream.
-//
-// Returns:
-//   - T: The consumed item.
-func (s *Stream[T]) Consume() T {
-	if s.currentIndex >= len(s.items) {
-		panic(NewErrNoMoreItems())
+	if qty == 0 {
+		return nil, nil
 	}
 
-	item := s.items[s.currentIndex]
-	s.currentIndex++
-
-	return item
+	if from+qty >= s.size {
+		return s.items[from:], nil
+	} else {
+		return s.items[from : from+qty], nil
+	}
 }
 
-// Reset resets the stream to the beginning.
-func (s *Stream[T]) Reset() {
-	s.currentIndex = 0
-}
-
-// IsDone returns true if the stream has been fully consumed.
+// IsDone returns true if from + qty is greater than the number of items in the stream.
 //
 // Returns:
-//   - bool: True if the stream has been fully consumed.
-func (s *Stream[T]) IsDone() bool {
-	return s.currentIndex >= len(s.items)
+//   - bool: True if the stream has been fully consumed. False otherwise.
+func (s *Stream[T]) IsDone(from int, qty int) bool {
+	if from < 0 || qty <= 0 {
+		return false
+	}
+
+	return from+qty >= len(s.items)
 }
 
 // GetItems returns the items in the stream.
@@ -130,14 +133,6 @@ func (s *Stream[T]) GetItems() []T {
 	return s.items
 }
 
-// GetLeftoverItems returns the items that have not been consumed.
-//
-// Returns:
-//   - []T: The leftover items in the stream.
-func (s *Stream[T]) GetLeftoverItems() []T {
-	return s.items[s.currentIndex:]
-}
-
 // NewStream creates a new stream with the given items.
 //
 // Parameters:
@@ -146,8 +141,15 @@ func (s *Stream[T]) GetLeftoverItems() []T {
 // Returns:
 //   - Stream: The new stream.
 func NewStream[T any](items []T) *Stream[T] {
-	return &Stream[T]{
-		items:        items,
-		currentIndex: 0,
+	if items == nil {
+		return &Stream[T]{
+			items: []T{},
+			size:  0,
+		}
+	} else {
+		return &Stream[T]{
+			items: items,
+			size:  len(items),
+		}
 	}
 }
