@@ -20,6 +20,10 @@ func (d *Document) String() string {
 	return strings.Join(d.lines, "\n")
 }
 
+func (d *Document) Tmp() []string {
+	return d.lines
+}
+
 // FString returns the formatted string representation of the document.
 //
 // Parameters:
@@ -28,7 +32,7 @@ func (d *Document) String() string {
 // Returns:
 //   - []string: The formatted string representation of the document.
 func (d *Document) FString(indentLevel int) []string {
-	indentConfig := ffs.NewIndentConfig(ffs.DefaultIndentation, indentLevel, true, false)
+	indentConfig := ffs.NewIndentConfig(ffs.DefaultIndentation, indentLevel, false)
 	indent := indentConfig.String()
 
 	lines := make([]string, 0, len(d.lines))

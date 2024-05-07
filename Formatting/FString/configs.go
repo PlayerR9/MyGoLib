@@ -12,9 +12,6 @@ type IndentConfig struct {
 
 	// InitialLevel is the initial indentation level.
 	InitialLevel int
-
-	// AllowVertical specifies whether vertical indentation is allowed.
-	AllowVertical bool
 }
 
 // String is a method of fmt.Stringer interface.
@@ -35,11 +32,16 @@ func (c *IndentConfig) String() string {
 //
 // Returns:
 //   - *IndentConfig: A pointer to the new indentation configuration.
-func NewIndentConfig(indentation string, initialLevel int, allowVertical bool, ignoreFirst bool) *IndentConfig {
+//
+// Default values:
+// 	==IndentConfig==
+//   - Indentation: DefaultIndentation
+//   - InitialLevel: 0
+//   - IgnoreFirst: true
+func NewIndentConfig(indentation string, initialLevel int, ignoreFirst bool) *IndentConfig {
 	config := &IndentConfig{
-		Indentation:   indentation,
-		AllowVertical: allowVertical,
-		IgnoreFirst:   ignoreFirst,
+		Indentation: indentation,
+		IgnoreFirst: ignoreFirst,
 	}
 
 	if initialLevel < 0 {
@@ -49,6 +51,43 @@ func NewIndentConfig(indentation string, initialLevel int, allowVertical bool, i
 	}
 
 	return config
+}
+
+func (config *IndentConfig) apply(values []string) []string {
+	if len(values) == 0 {
+		if !config.IgnoreFirst {
+			return []string{config.Indentation}
+		}
+
+		return []string{""}
+	}
+
+	var builder strings.Builder
+
+	result := make([]string, len(values))
+	copy(result, values)
+
+	if !config.IgnoreFirst {
+		builder.WriteString(config.Indentation)
+		builder.WriteString(result[0])
+
+		result[0] = builder.String()
+	}
+
+	if len(result) == 1 {
+		return result
+	}
+
+	for i := 1; i < len(result); i++ {
+		builder.Reset()
+
+		builder.WriteString(config.Indentation)
+		builder.WriteString(result[i])
+
+		result[i] = builder.String()
+	}
+
+	return result
 }
 
 // SeparatorConfig is a type that represents the configuration for separators.
@@ -76,10 +115,64 @@ func (c *SeparatorConfig) String() string {
 //
 // Returns:
 //   - *SeparatorConfig: A pointer to the new separator configuration.
+//
+// Default values:
+// 	==SeparatorConfig==
+//   - Separator: DefaultSeparator
+//   - HasFinalSeparator: false
 func NewSeparator(separator string, hasFinalSeparator bool) *SeparatorConfig {
 	return &SeparatorConfig{
 		Separator:         separator,
 		HasFinalSeparator: hasFinalSeparator,
+	}
+}
+
+func (config *SeparatorConfig) apply(values []string) []string {
+	switch len(values) {
+	case 0:
+		if config.HasFinalSeparator {
+			return []string{config.Separator}
+		}
+
+		return []string{}
+	case 1:
+		var builder strings.Builder
+
+		builder.WriteString(values[0])
+
+		if config.HasFinalSeparator {
+			builder.WriteString(config.Separator)
+		}
+
+		return []string{builder.String()}
+	default:
+		result := make([]string, len(values))
+		copy(result, values)
+
+		var builder strings.Builder
+
+		builder.WriteString(result[0])
+		builder.WriteString(config.Separator)
+
+		result[0] = builder.String()
+
+		for i := 1; i < len(result)-1; i++ {
+			builder.Reset()
+
+			builder.WriteString(result[i])
+			builder.WriteString(config.Separator)
+			result[i] = builder.String()
+		}
+
+		if config.HasFinalSeparator {
+			builder.Reset()
+
+			builder.WriteString(result[len(result)-1])
+			builder.WriteString(config.Separator)
+			result[len(result)-1] = builder.String()
+		}
+
+		return result
 	}
 }
 
@@ -108,9 +201,58 @@ func (c *DelimiterConfig) String() string {
 //
 // Returns:
 //   - *DelimiterConfig: A pointer to the new delimiter configuration.
+//
+// Default values:
+//   - ==DelimiterConfig==
+//   - Value: ""
+//   - Inline: true
 func NewDelimiterConfig(value string, inline bool) *DelimiterConfig {
 	return &DelimiterConfig{
 		Value:  value,
 		Inline: inline,
 	}
+}
+
+func (config *DelimiterConfig) applyOnLeft(values []string) []string {
+	if len(values) == 0 {
+		return []string{config.Value}
+	}
+
+	result := make([]string, len(values))
+	copy(result, values)
+
+	if config.Inline {
+		var builder strings.Builder
+
+		builder.WriteString(config.Value)
+		builder.WriteString(values[0])
+
+		result[0] = builder.String()
+	} else {
+		result = append([]string{config.Value}, result...)
+	}
+
+	return result
+}
+
+func (config *DelimiterConfig) applyOnRight(values []string) []string {
+	if len(values) == 0 {
+		return []string{config.Value}
+	}
+
+	result := make([]string, len(values))
+	copy(result, values)
+
+	if config.Inline {
+		var builder strings.Builder
+
+		builder.WriteString(values[len(values)-1])
+		builder.WriteString(config.Value)
+
+		result[len(values)-1] = builder.String()
+	} else {
+		result = append(result, config.Value)
+	}
+
+	return result
 }

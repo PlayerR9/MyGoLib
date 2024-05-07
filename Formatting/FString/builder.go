@@ -1,72 +1,5 @@
 package FString
 
-import (
-	"fmt"
-	"strings"
-)
-
-// BuildOption is a type that represents a function that modifies the builder.
-//
-// Parameters:
-//   - *Builder: The builder to modify.
-type BuildOption func(*Builder)
-
-// WithIndentation is a function that sets the indentation configuration of the builder.
-//
-// Ignore this function if you don't want to indent at all. If you want the rules of
-// vertical indentation to be applied, without any indentation, use "" as the indentation
-// string.
-//
-// Parameters:
-//   - config: The indentation configuration.
-//
-// Returns:
-//   - BuildOption: A function that modifies the builder.
-func WithIndentation(config *IndentConfig) BuildOption {
-	return func(b *Builder) {
-		b.indent = config
-	}
-}
-
-// WithDelimiterLeft is a function that sets the left delimiter configuration of the builder.
-//
-// Parameters:
-//   - delimiter: The left delimiter configuration.
-//
-// Returns:
-//   - BuildOption: A function that modifies the builder.
-func WithDelimiterLeft(delimiter *DelimiterConfig) BuildOption {
-	return func(b *Builder) {
-		b.delimiterLeft = delimiter
-	}
-}
-
-// WithDelimiterRight is a function that sets the right delimiter configuration of the builder.
-//
-// Parameters:
-//   - delimiter: The right delimiter configuration.
-//
-// Returns:
-//   - BuildOption: A function that modifies the builder.
-func WithDelimiterRight(delimiter *DelimiterConfig) BuildOption {
-	return func(b *Builder) {
-		b.delimiterRight = delimiter
-	}
-}
-
-// WithSeparator is a function that sets the separator configuration of the builder.
-//
-// Parameters:
-//   - config: The separator configuration.
-//
-// Returns:
-//   - BuildOption: A function that modifies the builder.
-func WithSeparator(config *SeparatorConfig) BuildOption {
-	return func(b *Builder) {
-		b.separator = config
-	}
-}
-
 // Builder is a type that represents a builder for creating formatted strings.
 type Builder struct {
 	// The indentation configuration of the builder.
@@ -82,229 +15,70 @@ type Builder struct {
 	separator *SeparatorConfig
 }
 
-// NewBuilder is a function that creates a new builder with the given options.
+// SetIndentation is a function that sets the indentation configuration of the builder.
+//
+// Ignore this function if you don't want to indent at all. If you want the rules of
+// vertical indentation to be applied, without any indentation, use "" as the indentation
+// string.
 //
 // Parameters:
-//   - options: The options to set on the builder.
+//   - config: The indentation configuration.
+func (b *Builder) SetIndentation(config *IndentConfig) {
+	b.indent = config
+}
+
+// SetDelimiterLeft is a function that sets the left delimiter configuration of the builder.
+//
+// Parameters:
+//   - delimiter: The left delimiter configuration.
+func (b *Builder) SetDelimiterLeft(delimiter *DelimiterConfig) {
+	b.delimiterLeft = delimiter
+}
+
+// SetDelimiterRight is a function that sets the right delimiter configuration of the builder.
+//
+// Parameters:
+//   - delimiter: The right delimiter configuration.
+func (b *Builder) SetDelimiterRight(delimiter *DelimiterConfig) {
+	b.delimiterRight = delimiter
+}
+
+// SetSeparator is a function that sets the separator configuration of the builder.
+//
+// Parameters:
+//   - config: The separator configuration.
+func (b *Builder) SetSeparator(config *SeparatorConfig) {
+	b.separator = config
+}
+
+// Build is a method of the Builder type that creates a formatter with the
+// configuration of the builder.
 //
 // Returns:
-//   - *Builder: A pointer to the new builder.
+//   - *Formatter: A pointer to the newly created formatter.
 //
 // Information:
 //   - Options that are not specified will be set to their default values:
 //   - ==IndentConfig==
-//   - Indentation: DefaultIndentation
-//   - InitialLevel: 0
-//   - AllowVertical: false
+//   - Nil (no indentation is used by default)
 //   - ==SeparatorConfig==
 //   - Separator: DefaultSeparator
 //   - HasFinalSeparator: false
-//   - ==DelimiterConfig==
-//   - Value: ""
-//   - Inline: true
-func NewBuilder(options ...BuildOption) Builder {
-	b := Builder{}
-
-	for _, option := range options {
-		option(&b)
-	}
-
-	if b.indent == nil {
-		b.indent = &IndentConfig{
-			Indentation:   DefaultIndentation,
-			InitialLevel:  0,
-			AllowVertical: false,
-		}
-	}
+//   - ==DelimiterConfig (Left and Right)==
+//   - Nil (no delimiters are used by default)
+func (b *Builder) Build() *Formatter {
+	var separatorConfig *SeparatorConfig
 
 	if b.separator == nil {
-		b.separator = &SeparatorConfig{
-			Separator:         "",
-			HasFinalSeparator: false,
-		}
-	}
-
-	if b.delimiterLeft == nil {
-		b.delimiterLeft = &DelimiterConfig{
-			Value:  "",
-			Inline: true,
-		}
-	}
-
-	if b.delimiterRight == nil {
-		b.delimiterRight = &DelimiterConfig{
-			Value:  "",
-			Inline: true,
-		}
-	}
-
-	return b
-}
-
-// Build is a method of the Builder type that creates a formatted string from the given values.
-//
-// Parameters:
-//   - values: The values to format.
-//
-// Returns:
-//   - string: The formatted string.
-func (b *Builder) Build(values []string) string {
-	// 1. Add the separator between each value.
-	vals := make([]string, len(values))
-	copy(vals, values)
-
-	if b.separator.HasFinalSeparator {
-		for i := 0; i < len(vals); i++ {
-			vals[i] = fmt.Sprintf("%s%s", vals[i], b.separator.Separator)
-		}
+		separatorConfig = NewSeparator(DefaultSeparator, false)
 	} else {
-		if len(values) > 0 {
-			for i := 0; i < len(vals)-1; i++ {
-				vals[i] = fmt.Sprintf("%s%s", vals[i], b.separator.Separator)
-			}
-		}
+		separatorConfig = b.separator
 	}
 
-	if b.indent.AllowVertical {
-		indent := b.indent.String()
-
-		if len(vals) == 0 {
-			if b.indent.IgnoreFirst {
-				return fmt.Sprintf("%s%s", b.delimiterLeft, b.delimiterRight)
-			} else {
-				return fmt.Sprintf("%s%s%s", indent, b.delimiterLeft, b.delimiterRight)
-			}
-		}
-
-		var builder strings.Builder
-
-		if !b.indent.IgnoreFirst {
-			builder.WriteString(indent)
-		}
-		builder.WriteString(b.delimiterLeft.String())
-		builder.WriteRune('\n')
-
-		for _, value := range vals {
-			builder.WriteString(indent)
-			builder.WriteString(b.indent.Indentation)
-			builder.WriteString(value)
-			builder.WriteRune('\n')
-		}
-
-		builder.WriteString(indent)
-		builder.WriteString(b.delimiterRight.String())
-
-		return builder.String()
-	} else {
-		indent := b.indent.String()
-
-		if len(vals) == 0 {
-			if b.indent.IgnoreFirst {
-				return fmt.Sprintf("%s%s", b.delimiterLeft, b.delimiterRight)
-			} else {
-				return fmt.Sprintf("%s%s%s", indent, b.delimiterLeft, b.delimiterRight)
-			}
-		}
-
-		// Add the delimiter.
-		if b.delimiterLeft.Value != "" {
-			if !b.indent.IgnoreFirst {
-				vals = append(
-					[]string{
-						fmt.Sprintf("%s%s", indent, b.delimiterLeft.Value),
-					}, vals...,
-				)
-			} else {
-				vals = append([]string{b.delimiterLeft.Value}, vals...)
-			}
-		}
-
-		if b.delimiterRight.Value != "" {
-			vals = append(vals, b.delimiterRight.Value)
-		}
-
-		return strings.Join(vals, "")
-	}
-}
-
-// Format is a method of the Builder type that creates a formatted string from the given values.
-//
-// Parameters:
-//   - values: The values to format.
-//
-// Returns:
-//   - []string: The formatted string.
-func (b *Builder) Format(values []string) []string {
-	// 1. Add the separator between each value.
-	vals := make([]string, len(values))
-	copy(vals, values)
-
-	if b.separator.HasFinalSeparator {
-		for i := 0; i < len(vals); i++ {
-			vals[i] = fmt.Sprintf("%s%s", vals[i], b.separator.Separator)
-		}
-	} else {
-		if len(values) > 0 {
-			for i := 0; i < len(vals)-1; i++ {
-				vals[i] = fmt.Sprintf("%s%s", vals[i], b.separator.Separator)
-			}
-		}
-	}
-
-	if b.indent.AllowVertical {
-		indent := b.indent.String()
-
-		if len(vals) == 0 {
-			if b.indent.IgnoreFirst {
-				return []string{fmt.Sprintf("%s%s", b.delimiterLeft, b.delimiterRight)}
-			} else {
-				return []string{fmt.Sprintf("%s%s%s", indent, b.delimiterLeft, b.delimiterRight)}
-			}
-		}
-
-		result := make([]string, 0, len(vals))
-
-		if b.indent.IgnoreFirst {
-			result = append(result, b.delimiterLeft.String())
-		} else {
-			result = append(result, fmt.Sprintf("%s%s", indent, b.delimiterLeft))
-		}
-
-		for _, value := range vals {
-			result = append(result, fmt.Sprintf("%s%s%s", indent, b.indent.Indentation, value))
-		}
-
-		result = append(result, fmt.Sprintf("%s%s", indent, b.delimiterRight))
-
-		return result
-	} else {
-		indent := b.indent.String()
-
-		if len(vals) == 0 {
-			if b.indent.IgnoreFirst {
-				return []string{fmt.Sprintf("%s%s", b.delimiterLeft, b.delimiterRight)}
-			} else {
-				return []string{fmt.Sprintf("%s%s%s", indent, b.delimiterLeft, b.delimiterRight)}
-			}
-		}
-
-		// Add the delimiter.
-		if b.delimiterLeft.Value != "" {
-			if !b.indent.IgnoreFirst {
-				vals = append(
-					[]string{
-						fmt.Sprintf("%s%s", indent, b.delimiterLeft.Value),
-					}, vals...,
-				)
-			} else {
-				vals = append([]string{b.delimiterLeft.Value}, vals...)
-			}
-		}
-
-		if b.delimiterRight.Value != "" {
-			vals = append(vals, b.delimiterRight.Value)
-		}
-
-		return vals
+	return &Formatter{
+		indent:         b.indent,
+		delimiterLeft:  b.delimiterLeft,
+		delimiterRight: b.delimiterRight,
+		separator:      separatorConfig,
 	}
 }

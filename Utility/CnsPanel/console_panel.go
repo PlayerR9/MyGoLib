@@ -32,7 +32,7 @@ type ConsolePanel struct {
 // Returns:
 //   - []string: A slice of strings representing the ConsolePanel.
 func (cns *ConsolePanel) FString(indentLevel int) []string {
-	indentCfig := fs.NewIndentConfig(fs.DefaultIndentation, indentLevel, true, false)
+	indentCfig := fs.NewIndentConfig(fs.DefaultIndentation, indentLevel, false)
 	indent := indentCfig.String()
 
 	results := make([]string, 0)

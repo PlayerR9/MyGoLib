@@ -29,7 +29,7 @@ func (d *Description) String() string {
 // Returns:
 //   - []string: A slice of strings representing the Description.
 func (d *Description) FString(indentLevel int) []string {
-	indentCfig := fs.NewIndentConfig(fs.DefaultIndentation, indentLevel, true, false)
+	indentCfig := fs.NewIndentConfig(fs.DefaultIndentation, indentLevel, false)
 	indent := indentCfig.String()
 
 	var builder strings.Builder

@@ -70,7 +70,7 @@ func (fi *FlagInfo) Equals(other *FlagInfo) bool {
 // Returns:
 //   - []string: A slice of strings representing the FlagInfo.
 func (cfi *FlagInfo) FString(indentLevel int) []string {
-	indentCfig := fs.NewIndentConfig(fs.DefaultIndentation, indentLevel, true, false)
+	indentCfig := fs.NewIndentConfig(fs.DefaultIndentation, indentLevel, false)
 	indent := indentCfig.String()
 
 	results := make([]string, 0)

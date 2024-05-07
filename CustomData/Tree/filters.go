@@ -18,6 +18,6 @@ func FilterNilTree[T any](tree *Tree[T]) bool {
 //
 // Returns:
 //   - bool: True if the node is not nil, false otherwise.
-func FilterNilNode[T any](node *treeNode[T]) bool {
+func FilterNilNode[T any](node *TreeNode[T]) bool {
 	return node != nil
 }
