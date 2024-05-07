@@ -8,7 +8,7 @@ package Tree
 // Returns:
 //   - bool: True if the tree is not nil, false otherwise.
 func FilterNilTree[T any](tree *Tree[T]) bool {
-	return tree != nil
+	return tree != nil && tree.root != nil
 }
 
 // FilterNilNode is a filter that returns true if the node is not nil.
@@ -18,6 +18,6 @@ func FilterNilTree[T any](tree *Tree[T]) bool {
 //
 // Returns:
 //   - bool: True if the node is not nil, false otherwise.
-func FilterNilNode[T any](node *Node[T]) bool {
+func FilterNilNode[T any](node *treeNode[T]) bool {
 	return node != nil
 }

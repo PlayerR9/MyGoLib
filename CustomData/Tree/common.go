@@ -12,7 +12,7 @@ import (
 //
 // Returns:
 //   - *Node[T]: A pointer to the common ancestor. Nil if no such node is found.
-func FindCommonAncestor[T any](n1, n2 *Node[T]) *Node[T] {
+func FindCommonAncestor[T any](n1, n2 *treeNode[T]) *treeNode[T] {
 	if n1 == nil {
 		return n2
 	} else if n2 == nil {
@@ -44,7 +44,7 @@ func FindCommonAncestor[T any](n1, n2 *Node[T]) *Node[T] {
 //
 // Returns:
 //   - []T: A slice of the values of the nodes.
-func ExtractData[T any](nodes []*Node[T]) []T {
+func ExtractData[T any](nodes []*treeNode[T]) []T {
 	data := make([]T, 0, len(nodes))
 
 	for _, node := range nodes {
@@ -53,3 +53,13 @@ func ExtractData[T any](nodes []*Node[T]) []T {
 
 	return data
 }
+
+// LeafProcessor is a function that processes the data of a leaf node.
+//
+// Parameters:
+//   - data: The data of the leaf node.
+//
+// Returns:
+//   - []T: The data of the new nodes created by the processor.
+//   - error: An error that occurred during the processing.
+type LeafProcessor[T any] func(data T) ([]T, error)

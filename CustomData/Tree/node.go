@@ -9,16 +9,16 @@ import (
 	intf "github.com/PlayerR9/MyGoLib/Units/Common"
 )
 
-// Node is a generic data structure that represents a node in a tree.
-type Node[T any] struct {
+// treeNode is a generic data structure that represents a node in a tree.
+type treeNode[T any] struct {
 	// Data is the value of the node.
 	Data T
 
 	// parent is the parent of the node.
-	parent *Node[T]
+	parent *treeNode[T]
 
 	// children is the children of the node.
-	children []*Node[T]
+	children []*treeNode[T]
 }
 
 // Copy returns a deep copy of the node.
@@ -30,31 +30,31 @@ type Node[T any] struct {
 //   - This function is recursive.
 //   - The parent is not copied.
 //   - The data is shallow copied.
-func (n *Node[T]) Copy() intf.Copier {
-	node := &Node[T]{
+func (n *treeNode[T]) Copy() intf.Copier {
+	node := &treeNode[T]{
 		Data:     n.Data,
 		parent:   nil,
-		children: make([]*Node[T], 0, len(n.children)),
+		children: make([]*treeNode[T], 0, len(n.children)),
 	}
 
 	for _, child := range n.children {
-		node.children = append(node.children, child.Copy().(*Node[T]))
+		node.children = append(node.children, child.Copy().(*treeNode[T]))
 	}
 
 	return node
 }
 
-// NewNode creates a new node with the given data.
+// newTreeNode creates a new node with the given data.
 //
 // Parameters:
 //   - data: The value of the node.
 //
 // Returns:
 //   - *Node[T]: A pointer to the newly created node.
-func NewNode[T any](data T) *Node[T] {
-	return &Node[T]{
+func newTreeNode[T any](data T) *treeNode[T] {
+	return &treeNode[T]{
 		Data:     data,
-		children: make([]*Node[T], 0),
+		children: make([]*treeNode[T], 0),
 	}
 }
 
@@ -62,7 +62,7 @@ func NewNode[T any](data T) *Node[T] {
 //
 // Returns:
 //   - bool: True if the node is a leaf, false otherwise.
-func (n *Node[T]) IsLeaf() bool {
+func (n *treeNode[T]) IsLeaf() bool {
 	return len(n.children) == 0
 }
 
@@ -70,7 +70,7 @@ func (n *Node[T]) IsLeaf() bool {
 //
 // Returns:
 //   - bool: True if the node is the root, false otherwise.
-func (n *Node[T]) IsRoot() bool {
+func (n *treeNode[T]) IsRoot() bool {
 	return n.parent == nil
 }
 
@@ -81,8 +81,8 @@ func (n *Node[T]) IsRoot() bool {
 //
 // Behaviors:
 //   - The leaves are returned in the order of a DFS traversal.
-func (n *Node[T]) Leaves() []*Node[T] {
-	leaves := make([]*Node[T], 0)
+func (n *treeNode[T]) Leaves() []*treeNode[T] {
+	leaves := make([]*treeNode[T], 0)
 
 	S := Stacker.NewLinkedStack(n)
 
@@ -111,9 +111,11 @@ func (n *Node[T]) Leaves() []*Node[T] {
 //
 // Returns:
 //   - *Tree[T]: A pointer to the tree.
-func (n *Node[T]) ToTree() *Tree[T] {
+func (n *treeNode[T]) ToTree() *Tree[T] {
 	return &Tree[T]{
-		root: n,
+		root:   n,
+		leaves: n.Leaves(),
+		size:   n.Size(),
 	}
 }
 
@@ -121,7 +123,7 @@ func (n *Node[T]) ToTree() *Tree[T] {
 //
 // Parameters:
 //   - child: The child to add.
-func (n *Node[T]) AddChild(child *Node[T]) {
+func (n *treeNode[T]) AddChild(child *treeNode[T]) {
 	if child == nil {
 		return
 	}
@@ -137,7 +139,7 @@ func (n *Node[T]) AddChild(child *Node[T]) {
 //
 // Behaviors:
 //   - This is just a more efficient way to add multiple children.
-func (n *Node[T]) AddChildren(children ...*Node[T]) {
+func (n *treeNode[T]) AddChildren(children ...*treeNode[T]) {
 	children = slext.SliceFilter(children, FilterNilNode)
 	if len(children) == 0 {
 		return
@@ -155,7 +157,7 @@ func (n *Node[T]) AddChildren(children ...*Node[T]) {
 //
 // Returns:
 //   - []*Node[T]: A slice of pointers to the children of the node.
-func (n *Node[T]) GetChildren() []*Node[T] {
+func (n *treeNode[T]) GetChildren() []*treeNode[T] {
 	return n.children
 }
 
@@ -164,7 +166,7 @@ func (n *Node[T]) GetChildren() []*Node[T] {
 //
 // Returns:
 //   - *Node[T]: A pointer to the branching point. Nil if no such node is found.
-func (n *Node[T]) FindBranchingPoint() *Node[T] {
+func (n *treeNode[T]) FindBranchingPoint() *treeNode[T] {
 	for node := n; node.parent != nil; node = node.parent {
 		if len(node.parent.children) > 1 {
 			return node.parent
@@ -181,7 +183,7 @@ func (n *Node[T]) FindBranchingPoint() *Node[T] {
 //
 // Returns:
 //   - bool: True if the node has the child, false otherwise.
-func (n *Node[T]) HasChild(target *Node[T]) bool {
+func (n *treeNode[T]) HasChild(target *treeNode[T]) bool {
 	if target == nil {
 		return false
 	}
@@ -205,7 +207,7 @@ func (n *Node[T]) HasChild(target *Node[T]) bool {
 //
 // Behaviors:
 //   - If the node has no children, it returns nil.
-func (n *Node[T]) DeleteChild(target *Node[T]) []*Node[T] {
+func (n *treeNode[T]) DeleteChild(target *treeNode[T]) []*treeNode[T] {
 	if target == nil {
 		// No target to delete
 		return nil
@@ -241,7 +243,7 @@ func (n *Node[T]) DeleteChild(target *Node[T]) []*Node[T] {
 //
 // Returns:
 //   - *Node[T]: A pointer to the parent of the node. Nil if the node has no parent.
-func (n *Node[T]) Parent() *Node[T] {
+func (n *treeNode[T]) Parent() *treeNode[T] {
 	return n.parent
 }
 
@@ -252,7 +254,7 @@ func (n *Node[T]) Parent() *Node[T] {
 //
 // Behaviors:
 //   - This function is expensive since size is not stored.
-func (n *Node[T]) Size() int {
+func (n *treeNode[T]) Size() int {
 	size := 0
 
 	S := Stacker.NewLinkedStack(n)
@@ -284,8 +286,8 @@ func (n *Node[T]) Size() int {
 // Behaviors:
 //   - The ancestors are returned in the opposite order of a DFS traversal.
 //     Therefore, the first element is the parent of the node.
-func (n *Node[T]) GetAncestors() []*Node[T] {
-	ancestors := make([]*Node[T], 0)
+func (n *treeNode[T]) GetAncestors() []*treeNode[T] {
+	ancestors := make([]*treeNode[T], 0)
 
 	for node := n; node.parent != nil; node = node.parent {
 		ancestors = append(ancestors, node.parent)
@@ -303,7 +305,7 @@ func (n *Node[T]) GetAncestors() []*Node[T] {
 //
 // Returns:
 //   - bool: True if the node is a child of the parent, false otherwise.
-func (n *Node[T]) IsChildOf(target *Node[T]) bool {
+func (n *treeNode[T]) IsChildOf(target *treeNode[T]) bool {
 	if target == nil {
 		return false
 	}

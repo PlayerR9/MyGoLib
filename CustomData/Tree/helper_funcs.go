@@ -6,7 +6,7 @@ import slext "github.com/PlayerR9/MyGoLib/Utility/SliceExt"
 //
 // Behaviors:
 //   - This function is recursive.
-func recCleanup[T any](n *Node[T]) {
+func recCleanup[T any](n *treeNode[T]) {
 	n.parent = nil
 
 	for _, child := range n.children {
@@ -29,7 +29,7 @@ func recCleanup[T any](n *Node[T]) {
 // Behaviors:
 //   - The paths are returned in the order of a BFS traversal.
 //   - It is a recursive function.
-func recSnakeTraversal[T any](n *Node[T]) [][]T {
+func recSnakeTraversal[T any](n *treeNode[T]) [][]T {
 	if len(n.children) == 0 {
 		return [][]T{
 			{n.Data},
@@ -62,7 +62,7 @@ func recSnakeTraversal[T any](n *Node[T]) [][]T {
 //
 // Behaviors:
 //   - This function is recursive.
-func recPruneFunc[T any](filter slext.PredicateFilter[T], highest *Node[T], n *Node[T]) (*Node[T], bool) {
+func recPruneFunc[T any](filter slext.PredicateFilter[T], highest *treeNode[T], n *treeNode[T]) (*treeNode[T], bool) {
 	if filter(n.Data) {
 		// Delete all children
 		recCleanup(n)
@@ -99,9 +99,9 @@ func recPruneFunc[T any](filter slext.PredicateFilter[T], highest *Node[T], n *N
 //   - []*Node[T]: A slice of pointers to the children of the node.
 //   - int: The total number of nodes removed.
 //   - bool: True if the node satisfies the filter, false otherwise.
-func recSkipFunc[T any](filter slext.PredicateFilter[T], n *Node[T]) ([]*Node[T], int, bool) {
+func recSkipFunc[T any](filter slext.PredicateFilter[T], n *treeNode[T]) ([]*treeNode[T], int, bool) {
 	// 1. Check if the children satisfy the filter
-	newChildren := make([]*Node[T], 0)
+	newChildren := make([]*treeNode[T], 0)
 
 	total := 0
 

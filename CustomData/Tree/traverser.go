@@ -18,7 +18,7 @@ import (
 type ObserverFunc[T any, I intf.Copier] func(data T, info I) error
 
 // helper is a helper struct for traversing the tree.
-type helper[T any, I intf.Copier] up.Pair[*Node[T], I]
+type helper[T any, I intf.Copier] up.Pair[*treeNode[T], I]
 
 // newHelper creates a new helper.
 //
@@ -28,7 +28,7 @@ type helper[T any, I intf.Copier] up.Pair[*Node[T], I]
 //
 // Returns:
 //   - *helper[T, I]: A pointer to the helper.
-func newHelper[T any, I intf.Copier](node *Node[T], info I) *helper[T, I] {
+func newHelper[T any, I intf.Copier](node *treeNode[T], info I) *helper[T, I] {
 	return &helper[T, I]{
 		First:  node,
 		Second: info.Copy().(I),
@@ -120,7 +120,7 @@ func (t *Traversor[T, I]) BFS() error {
 // Returns:
 //   - Traversor[T, I]: The traversor.
 func Traverse[T any, I intf.Copier](tree *Tree[T], init I, f ObserverFunc[T, I]) *Traversor[T, I] {
-	var root *Node[T]
+	var root *treeNode[T]
 
 	if tree == nil {
 		root = nil
@@ -149,7 +149,7 @@ type NextsFunc[T any, I intf.Copier] func(elem T, info I) ([]T, error)
 //   - error: An error if the tree cannot be created.
 func MakeTree[T any, I intf.Copier](elem T, info I, f NextsFunc[T, I]) (*Tree[T], error) {
 	// 1. Handle the first element
-	h := newHelper(NewNode(elem), info)
+	h := newHelper(newTreeNode(elem), info)
 
 	nexts, err := f(h.First.Data, h.Second)
 	if err != nil {
@@ -166,14 +166,14 @@ func MakeTree[T any, I intf.Copier](elem T, info I, f NextsFunc[T, I]) (*Tree[T]
 
 	// 2. Create a stack and push the first element
 	type StackElement struct {
-		Prev *Node[T]
+		Prev *treeNode[T]
 		Elem *helper[T, I]
 	}
 
 	S := Stacker.NewLinkedStack[StackElement]()
 
 	for _, next := range nexts {
-		err := S.Push(StackElement{Prev: tree.root, Elem: newHelper(NewNode(next), h.Second)})
+		err := S.Push(StackElement{Prev: tree.root, Elem: newHelper(newTreeNode(next), h.Second)})
 		if err != nil {
 			panic(err)
 		}
@@ -193,7 +193,7 @@ func MakeTree[T any, I intf.Copier](elem T, info I, f NextsFunc[T, I]) (*Tree[T]
 		top.Prev.AddChildren(top.Elem.First)
 
 		for _, next := range nexts {
-			err := S.Push(StackElement{Prev: top.Elem.First, Elem: newHelper(NewNode(next), top.Elem.Second)})
+			err := S.Push(StackElement{Prev: top.Elem.First, Elem: newHelper(newTreeNode(next), top.Elem.Second)})
 			if err != nil {
 				panic(err)
 			}
