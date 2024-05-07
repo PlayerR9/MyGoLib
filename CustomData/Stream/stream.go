@@ -87,23 +87,27 @@ func (s *Stream[T]) IsEmpty() bool {
 //
 // Returns:
 //   - []T: The items from the stream.
-//   - error: An error if there are no more items in the stream or
-//     if the qty is negative.
+//   - error: An error if quantity or from is negative.
+//
+// Behaviors:
+//   - Use qty -1 to get all items from 'from' to the end of the stream.
 func (s *Stream[T]) Get(from int, qty int) ([]T, error) {
 	if from < 0 {
 		return nil, ers.NewErrInvalidParameter(
 			"from",
 			ers.NewErrGTE(0),
 		)
-	} else if qty < 0 {
-		return nil, ers.NewErrInvalidParameter(
-			"qty",
-			ers.NewErrGTE(0),
-		)
 	}
 
 	if qty == 0 {
 		return nil, nil
+	} else if qty == -1 {
+		qty = s.size - from
+	} else if qty < -1 {
+		return nil, ers.NewErrInvalidParameter(
+			"qty",
+			ers.NewErrGTE(-1),
+		)
 	}
 
 	if from+qty >= s.size {
