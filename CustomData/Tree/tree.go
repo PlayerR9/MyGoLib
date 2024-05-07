@@ -504,17 +504,20 @@ func (t *Tree[T]) PruneBranches(filter slext.PredicateFilter[T]) bool {
 // Parameters:
 //   - filter: The filter to apply.
 //
+// Returns:
+//   - int: The number of nodes removed.
+//
 // Behaviors:
 //   - This function is recursive.
-func (t *Tree[T]) SkipFilter(filter slext.PredicateFilter[T]) {
+func (t *Tree[T]) SkipFilter(filter slext.PredicateFilter[T]) int {
 	if filter == nil || t.root == nil {
-		return
+		return 0
 	}
 
 	newChildren, amount, ok := recSkipFunc(filter, t.root)
 	if ok {
 		t.root = nil
-		return
+		return amount
 	}
 
 	t.root.children = newChildren
@@ -527,4 +530,6 @@ func (t *Tree[T]) SkipFilter(filter slext.PredicateFilter[T]) {
 
 	// FIXME: Expensive operation. Find a better way to update the leaves.
 	t.RegenerateLeaves()
+
+	return amount
 }
