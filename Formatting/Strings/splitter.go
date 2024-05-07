@@ -5,8 +5,8 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	intf "github.com/PlayerR9/MyGoLib/Units/Common"
 	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
-	intf "github.com/PlayerR9/MyGoLib/Units/Interfaces"
 	mext "github.com/PlayerR9/MyGoLib/Utility/MathExt"
 	slext "github.com/PlayerR9/MyGoLib/Utility/SliceExt"
 )

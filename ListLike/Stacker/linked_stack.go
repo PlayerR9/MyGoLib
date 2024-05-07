@@ -4,9 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	fs "github.com/PlayerR9/MyGoLib/Formatting/Strings"
 	itf "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
-	itff "github.com/PlayerR9/MyGoLib/Units/Interfaces"
+	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
@@ -183,7 +182,7 @@ func (stack *LinkedStack[T]) Clear() {
 func (stack *LinkedStack[T]) String() string {
 	values := make([]string, 0, stack.size)
 	for stack_node := stack.front; stack_node != nil; stack_node = stack_node.Next() {
-		values = append(values, fs.StringOf(stack_node.Value))
+		values = append(values, uc.StringOf(stack_node.Value))
 	}
 
 	return fmt.Sprintf(
@@ -273,7 +272,7 @@ func (stack *LinkedStack[T]) Slice() []T {
 // Returns:
 //
 //   - itf.Copier: A copy of the stack.
-func (stack *LinkedStack[T]) Copy() itff.Copier {
+func (stack *LinkedStack[T]) Copy() uc.Copier {
 	// FIXME: This doesn't work: Node.SetNext(Node)!!!
 
 	stackCopy := &LinkedStack[T]{

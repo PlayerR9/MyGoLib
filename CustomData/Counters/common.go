@@ -5,7 +5,7 @@ package Counters
 import (
 	"fmt"
 
-	intf "github.com/PlayerR9/MyGoLib/Units/Interfaces"
+	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 )
 
 // Counter interface defines the methods that a counter must implement.
@@ -62,5 +62,5 @@ type Counter interface {
 
 	fmt.Stringer
 
-	intf.Copier
+	uc.Copier
 }

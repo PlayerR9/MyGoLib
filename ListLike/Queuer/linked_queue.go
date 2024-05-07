@@ -4,9 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	fs "github.com/PlayerR9/MyGoLib/Formatting/Strings"
 	itf "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
-	itff "github.com/PlayerR9/MyGoLib/Units/Interfaces"
+	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
@@ -193,7 +192,7 @@ func (queue *LinkedQueue[T]) Clear() {
 func (queue *LinkedQueue[T]) String() string {
 	values := make([]string, 0, queue.size)
 	for queue_node := queue.front; queue_node != nil; queue_node = queue_node.Next() {
-		values = append(values, fs.StringOf(queue_node.Value))
+		values = append(values, uc.StringOf(queue_node.Value))
 	}
 
 	return fmt.Sprintf(
@@ -283,7 +282,7 @@ func (queue *LinkedQueue[T]) Slice() []T {
 // Returns:
 //
 //   - itf.Copier: A copy of the queue.
-func (queue *LinkedQueue[T]) Copy() itff.Copier {
+func (queue *LinkedQueue[T]) Copy() uc.Copier {
 	queueCopy := &LinkedQueue[T]{
 		size: queue.size,
 	}

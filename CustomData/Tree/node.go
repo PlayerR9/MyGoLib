@@ -6,7 +6,7 @@ import (
 	"github.com/PlayerR9/MyGoLib/ListLike/Stacker"
 	slext "github.com/PlayerR9/MyGoLib/Utility/SliceExt"
 
-	intf "github.com/PlayerR9/MyGoLib/Units/Interfaces"
+	intf "github.com/PlayerR9/MyGoLib/Units/Common"
 )
 
 // Node is a generic data structure that represents a node in a tree.

@@ -1,6 +1,8 @@
 package Tree
 
-import "slices"
+import (
+	"slices"
+)
 
 // CommonAncestor returns the first common ancestor of the two nodes.
 //

@@ -4,9 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	fs "github.com/PlayerR9/MyGoLib/Formatting/Strings"
 	itf "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
-	itff "github.com/PlayerR9/MyGoLib/Units/Interfaces"
+	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
@@ -169,7 +168,7 @@ func (list *LimitedArrayList[T]) IsFull() bool {
 func (list *LimitedArrayList[T]) String() string {
 	values := make([]string, 0, len(list.values))
 	for _, v := range list.values {
-		values = append(values, fs.StringOf(v))
+		values = append(values, uc.StringOf(v))
 	}
 
 	return fmt.Sprintf(
@@ -258,7 +257,7 @@ func (list *LimitedArrayList[T]) Slice() []T {
 // Returns:
 //
 //   - itf.Copier: A copy of the list.
-func (list *LimitedArrayList[T]) Copy() itff.Copier {
+func (list *LimitedArrayList[T]) Copy() uc.Copier {
 	listCopy := &LimitedArrayList[T]{
 		values:   make([]T, len(list.values)),
 		capacity: list.capacity,

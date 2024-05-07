@@ -4,9 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	fs "github.com/PlayerR9/MyGoLib/Formatting/Strings"
 	itf "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
-	itff "github.com/PlayerR9/MyGoLib/Units/Interfaces"
+	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
@@ -165,7 +164,7 @@ func (queue *LimitedArrayQueue[T]) IsFull() bool {
 func (queue *LimitedArrayQueue[T]) String() string {
 	values := make([]string, 0, len(queue.values))
 	for _, value := range queue.values {
-		values = append(values, fs.StringOf(value))
+		values = append(values, uc.StringOf(value))
 	}
 
 	return fmt.Sprintf(
@@ -207,7 +206,7 @@ func (queue *LimitedArrayQueue[T]) Slice() []T {
 // Returns:
 //
 //   - itf.Copier: A copy of the queue.
-func (queue *LimitedArrayQueue[T]) Copy() itff.Copier {
+func (queue *LimitedArrayQueue[T]) Copy() uc.Copier {
 	queueCopy := &LimitedArrayQueue[T]{
 		values:   make([]T, len(queue.values)),
 		capacity: queue.capacity,

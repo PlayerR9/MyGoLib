@@ -8,5 +8,5 @@ package Helpers
 // Returns:
 //   - bool: True if the HResult is not nil, false otherwise.
 func FilterNilHResult[T any](hr HResult[T]) bool {
-	return hr.Reason != nil
+	return hr.Second != nil
 }

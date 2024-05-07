@@ -4,9 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	fs "github.com/PlayerR9/MyGoLib/Formatting/Strings"
 	itf "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
-	itff "github.com/PlayerR9/MyGoLib/Units/Interfaces"
+	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
@@ -229,7 +228,7 @@ func (list *LimitedLinkedList[T]) String() string {
 	values := make([]string, 0, list.size)
 
 	for list_node := list.front; list_node != nil; list_node = list_node.Next() {
-		values = append(values, fs.StringOf(list_node.Value))
+		values = append(values, uc.StringOf(list_node.Value))
 	}
 
 	return fmt.Sprintf(
@@ -393,7 +392,7 @@ func (list *LimitedLinkedList[T]) Slice() []T {
 // Returns:
 //
 //   - itf.Copier: A copy of the list.
-func (list *LimitedLinkedList[T]) Copy() itff.Copier {
+func (list *LimitedLinkedList[T]) Copy() uc.Copier {
 	listCopy := &LimitedLinkedList[T]{
 		size:     list.size,
 		capacity: list.capacity,

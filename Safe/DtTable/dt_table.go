@@ -160,7 +160,7 @@ func TransformIntoTable(highlights []DtCell) (*DtTable, error) {
 	}
 
 	for _, hl := range highlights {
-		switch hl.Content {
+		switch hl.First {
 		case '\n':
 			table.rows = append(table.rows, row)
 

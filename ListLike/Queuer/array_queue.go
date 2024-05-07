@@ -5,10 +5,8 @@ import (
 	"strings"
 
 	itf "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
-	itff "github.com/PlayerR9/MyGoLib/Units/Interfaces"
+	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
-
-	fs "github.com/PlayerR9/MyGoLib/Formatting/Strings"
 )
 
 // ArrayQueue is a generic type that represents a queue data structure with
@@ -138,7 +136,7 @@ func (queue *ArrayQueue[T]) Clear() {
 func (queue *ArrayQueue[T]) String() string {
 	values := make([]string, 0, len(queue.values))
 	for _, value := range queue.values {
-		values = append(values, fs.StringOf(value))
+		values = append(values, uc.StringOf(value))
 	}
 
 	return fmt.Sprintf(
@@ -179,7 +177,7 @@ func (queue *ArrayQueue[T]) Slice() []T {
 // Returns:
 //
 //   - itf.Copier: A copy of the queue.
-func (queue *ArrayQueue[T]) Copy() itff.Copier {
+func (queue *ArrayQueue[T]) Copy() uc.Copier {
 	queueCopy := &ArrayQueue[T]{
 		values: make([]T, len(queue.values)),
 	}

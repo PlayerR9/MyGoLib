@@ -3,7 +3,7 @@ package SliceExt
 import (
 	"slices"
 
-	intf "github.com/PlayerR9/MyGoLib/Units/Interfaces"
+	intf "github.com/PlayerR9/MyGoLib/Units/Common"
 )
 
 // PredicateFilter is a type that defines a slice filter function.

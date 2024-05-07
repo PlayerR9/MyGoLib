@@ -3,8 +3,8 @@ package Counters
 import (
 	"fmt"
 
+	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
-	uintf "github.com/PlayerR9/MyGoLib/Units/Interfaces"
 )
 
 // DownCounter represents a counter that decrements downwards until it
@@ -119,8 +119,8 @@ func (c *DownCounter) Reset() {
 // Copy creates a shallow copy of the DownCounter.
 //
 // Returns:
-//   - uintf.Copier: A shallow copy of the DownCounter.
-func (c *DownCounter) Copy() uintf.Copier {
+//   - uc.Copier: A shallow copy of the DownCounter.
+func (c *DownCounter) Copy() uc.Copier {
 	return &DownCounter{c.startingCount, c.currentCount, c.retreatCount}
 }
 
