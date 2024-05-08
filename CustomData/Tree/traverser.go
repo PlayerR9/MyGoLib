@@ -137,6 +137,15 @@ func Traverse[T any, I intf.Copier](tree *Tree[T], init I, f ObserverFunc[T, I])
 	}
 }
 
+// NextsFunc is a function that returns the next elements.
+//
+// Parameters:
+//   - elem: The current element.
+//   - info: The info of the current element.
+//
+// Returns:
+//   - []T: The next elements.
+//   - error: An error if the next elements cannot be found.
 type NextsFunc[T any, I intf.Copier] func(elem T, info I) ([]T, error)
 
 // MakeTree creates a tree from the given element.

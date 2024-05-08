@@ -1,33 +1,30 @@
 package MathExt
 
 import (
-	"errors"
-
 	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
 )
 
 // PrimeFactorization is a function that performs prime factorization on an
 // input number.
 //
-// Panics with an error of type *ErrInvalidParameter if the input number is 0.
-//
-// In the resulting map, no prime factor will have a value of 1, except for 1
-// and -1, which is represented as [1: 1]. Finally, negative numbers are
-// converted to positive numbers.
-//
 // Parameters:
-//
 //   - inputNumber: The number to factorize.
 //
 // Returns:
-//
 //   - map[int]int: A map where the keys are the prime factors and the values
 //     are their respective powers.
+//   - error: An error of type *ErrInvalidParameter if the input number is 0.
+//
+// Behaviors:
+//   - The input number is converted to a positive number.
+//   - The prime factors are sorted in ascending order.
+//   - -1 and 1 are represented as [1: 1].
+//   - The resulting map does not contain any prime factor with a value of 1.
 func PrimeFactorization(inputNumber int) (map[int]int, error) {
 	if inputNumber == 0 {
 		return nil, ers.NewErrInvalidParameter(
 			"inputNumber",
-			errors.New("value of 0 cannot be factorized"),
+			ers.NewErrInvalidValue(0),
 		)
 	}
 
@@ -84,11 +81,9 @@ func PrimeFactorization(inputNumber int) (map[int]int, error) {
 // (GCD) of two integers using the Euclidean algorithm.
 //
 // Parameters:
-//
 //   - a, b: The two integers to find the GCD of.
 //
 // Returns:
-//
 //   - int: The GCD of the two input numbers.
 func GreatestCommonDivisor(a, b int) int {
 	// If one of the numbers is 0, return the other number

@@ -3,7 +3,7 @@ package SliceExt
 import (
 	"slices"
 
-	intf "github.com/PlayerR9/MyGoLib/Units/Common"
+	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 )
 
 // PredicateFilter is a type that defines a slice filter function.
@@ -31,11 +31,11 @@ type PredicateFilter[T any] func(T) bool
 //   - It returns false as soon as it finds a function in funcs that the element
 //     does not satisfy.
 func Intersect[T any](funcs ...PredicateFilter[T]) PredicateFilter[T] {
-	return func(e T) bool {
-		if len(funcs) == 0 {
-			return true
-		}
+	if len(funcs) == 0 {
+		return func(e T) bool { return true }
+	}
 
+	return func(e T) bool {
 		for _, f := range funcs {
 			if !f(e) {
 				return false
@@ -57,16 +57,16 @@ func Intersect[T any](funcs ...PredicateFilter[T]) PredicateFilter[T] {
 //     at least one of the PredicateFilter functions in funcs.
 //
 // Behavior:
-//   - If no filter functions are provided, then all elements are considered to satisfy
+//   - If no filter functions are provided, then no elements are considered to satisfy
 //     the filter function.
 //   - It returns true as soon as it finds a function in funcs that the element
 //     satisfies.
 func Union[T any](funcs ...PredicateFilter[T]) PredicateFilter[T] {
-	return func(e T) bool {
-		if len(funcs) == 0 {
-			return true
-		}
+	if len(funcs) == 0 {
+		return func(e T) bool { return false }
+	}
 
+	return func(e T) bool {
 		for _, f := range funcs {
 			if f(e) {
 				return true
@@ -78,8 +78,7 @@ func Union[T any](funcs ...PredicateFilter[T]) PredicateFilter[T] {
 }
 
 // SliceFilter is a function that iterates over the slice and applies the filter
-// function to each element. The returned slice contains the elements that
-// satisfy the filter function.
+// function to each element.
 //
 // Parameters:
 //   - S: slice of elements.
@@ -89,24 +88,35 @@ func Union[T any](funcs ...PredicateFilter[T]) PredicateFilter[T] {
 //   - []T: slice of elements that satisfy the filter function.
 //
 // Behavior:
-//   - If S is empty, the function returns an empty slice.
-func SliceFilter[T any](S []T, filter PredicateFilter[T]) []T {
-	if len(S) == 0 {
-		return []T{}
-	}
-
-	solution := make([]T, len(S))
-	copy(solution, S)
-
-	pos := 0
-	for _, item := range S {
-		if filter(item) {
-			solution[pos] = item
-			pos++
+//   - If S is empty, the function returns a nil slice.
+//   - If S has only one element and it satisfies the filter function, the function
+//     returns a slice with that element. Otherwise, it returns a nil slice.
+//   - An element is said to satisfy the filter function if the function returns true
+//     when applied to the element.
+func SliceFilter[T any](S []T, filter PredicateFilter[T]) (solution []T) {
+	switch len(S) {
+	case 0:
+		// Do nothing
+	case 1:
+		if filter(S[0]) {
+			solution = []T{S[0]}
 		}
+	default:
+		solution = make([]T, len(S))
+		copy(solution, S)
+
+		pos := 0
+		for _, item := range S {
+			if filter(item) {
+				solution[pos] = item
+				pos++
+			}
+		}
+
+		solution = solution[:pos]
 	}
 
-	return solution[:pos]
+	return
 }
 
 // SFSeparate is a function that iterates over the slice and applies the filter
@@ -189,7 +199,7 @@ func SFSeparateEarly[T any](S []T, filter PredicateFilter[T]) ([]T, bool) {
 //     occurrence is kept.
 //   - If there are less than two elements in the slice, the function
 //     returns the original slice.
-func RemoveDuplicates[T intf.Comparable](S []T) []T {
+func RemoveDuplicates[T uc.Comparable](S []T) []T {
 	if len(S) < 2 {
 		return S
 	}
@@ -223,7 +233,7 @@ func RemoveDuplicates[T intf.Comparable](S []T) []T {
 //     occurrence is kept.
 //   - If there are less than two elements in the slice, the function
 //     returns the original slice.
-func RemoveDuplicatesFunc[T intf.Equaler[T]](S []T) []T {
+func RemoveDuplicatesFunc[T uc.Equaler[T]](S []T) []T {
 	if len(S) < 2 {
 		return S
 	}
@@ -259,7 +269,7 @@ func RemoveDuplicatesFunc[T intf.Equaler[T]](S []T) []T {
 //
 // Behavior:
 //   - If there are less than two elements in the slice, the function returns -1.
-func IndexOfDuplicate[T intf.Comparable](S []T) int {
+func IndexOfDuplicate[T uc.Comparable](S []T) int {
 	if len(S) < 2 {
 		return -1
 	}
@@ -289,7 +299,7 @@ func IndexOfDuplicate[T intf.Comparable](S []T) int {
 //
 // Behavior:
 //   - If there are less than two elements in the slice, the function returns -1.
-func IndexOfDuplicateFunc[T intf.Equaler[T]](S []T) int {
+func IndexOfDuplicateFunc[T uc.Equaler[T]](S []T) int {
 	if len(S) < 2 {
 		return -1
 	}
@@ -321,7 +331,7 @@ func IndexOfDuplicateFunc[T intf.Equaler[T]](S []T) int {
 //   - If S or subS is empty, the function returns -1.
 //   - If the subslice is not found, the function returns -1.
 //   - If at is negative, it is set to 0.
-func FindSubsliceFrom[T intf.Comparable](S []T, subS []T, at int) int {
+func FindSubsliceFrom[T uc.Comparable](S []T, subS []T, at int) int {
 	if len(subS) == 0 || len(S) == 0 || at+len(subS) > len(S) {
 		return -1
 	}
@@ -388,7 +398,7 @@ func FindSubsliceFrom[T intf.Comparable](S []T, subS []T, at int) int {
 //   - If S or subS is empty, the function returns -1.
 //   - If the subslice is not found, the function returns -1.
 //   - If at is negative, it is set to 0.
-func FindSubsliceFromFunc[T intf.Equaler[T]](S []T, subS []T, at int) int {
+func FindSubsliceFromFunc[T uc.Equaler[T]](S []T, subS []T, at int) int {
 	if len(subS) == 0 || len(S) == 0 || at+len(subS) > len(S) {
 		return -1
 	}

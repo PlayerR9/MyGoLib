@@ -1,8 +1,6 @@
 package Tree
 
 import (
-	"errors"
-
 	"github.com/PlayerR9/MyGoLib/ListLike/Queuer"
 	"github.com/PlayerR9/MyGoLib/ListLike/Stacker"
 	itff "github.com/PlayerR9/MyGoLib/Units/Common"
@@ -643,7 +641,7 @@ func (t *Tree[T]) DeleteBranchContaining(tn *TreeNode[T]) error {
 	child, parent, hasBranching := tn.FindBranchingPoint()
 	if !hasBranching {
 		if parent != t.root {
-			return errors.New("node is not a part of the tree")
+			return NewErrNodeNotPartOfTree()
 		}
 
 		t.Cleanup()

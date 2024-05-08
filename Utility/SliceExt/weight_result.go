@@ -33,10 +33,7 @@ func NewWeightResult[T any](elem T, weight float64) WeightResult[T] {
 }
 
 // ApplyWeightFunc is a function that iterates over the slice and applies the weight
-// function to each element. The returned slice contains the elements with their
-// corresponding weights but only if the weight is valid.
-//
-// If S is empty, the function returns an empty slice.
+// function to each element.
 //
 // Parameters:
 //   - S: slice of elements.
@@ -44,9 +41,13 @@ func NewWeightResult[T any](elem T, weight float64) WeightResult[T] {
 //
 // Returns:
 //   - []WeightResult[T]: slice of elements with their corresponding weights.
+//
+// Behaviors:
+//   - If S is empty or f is nil, the function returns nil.
+//   - If the weight function returns false, the element is not included in the result.
 func ApplyWeightFunc[T any](S []T, f WeightFunc[T]) []WeightResult[T] {
-	if len(S) == 0 {
-		return []WeightResult[T]{}
+	if len(S) == 0 || f == nil {
+		return nil
 	}
 
 	trimmed := make([]WeightResult[T], 0, len(S))
@@ -67,63 +68,73 @@ func ApplyWeightFunc[T any](S []T, f WeightFunc[T]) []WeightResult[T] {
 }
 
 // FilterByPositiveWeight is a function that iterates over weight results and
-// returns the elements with the maximum weight. If multiple elements have the
-// same maximum weight, they are all returned.
-//
-// If S is empty, the function returns an empty slice.
+// returns the elements with the maximum weight.
 //
 // Parameters:
 //   - S: slice of weight results.
 //
 // Returns:
-//   - []T: slice of elements with the maximum weight.
-func FilterByPositiveWeight[T any](S []WeightResult[T]) []T {
-	if len(S) == 0 {
-		return []T{}
-	}
+//   - solution: slice of elements with the maximum weight.
+//
+// Behaviors:
+//   - If S is empty, the function returns a nil slice.
+//   - If multiple elements have the same maximum weight, they are all returned.
+//   - If S contains only one element, that element is returned.
+func FilterByPositiveWeight[T any](S []WeightResult[T]) (solution []T) {
+	switch len(S) {
+	case 0:
+		// Do nothing
+	case 1:
+		solution = []T{S[0].First}
+	default:
+		solution = []T{S[0].First}
+		maxWeight := S[0].Second
 
-	solution := []T{S[0].First}
-	maxWeight := S[0].Second
-
-	for _, e := range S[1:] {
-		if e.Second > maxWeight {
-			maxWeight = e.Second
-			solution = []T{e.First}
-		} else if e.Second == maxWeight {
-			solution = append(solution, e.First)
+		for _, e := range S[1:] {
+			if e.Second > maxWeight {
+				maxWeight = e.Second
+				solution = []T{e.First}
+			} else if e.Second == maxWeight {
+				solution = append(solution, e.First)
+			}
 		}
 	}
 
-	return solution
+	return
 }
 
 // FilterByNegativeWeight is a function that iterates over weight results and
-// returns the elements with the minimum weight. If multiple elements have the
-// same minimum weight, they are all returned.
-//
-// If S is empty, the function returns an empty slice.
+// returns the elements with the minimum weight.
 //
 // Parameters:
 //   - S: slice of weight results.
 //
 // Returns:
-//   - []T: slice of elements with the minimum weight.
-func FilterByNegativeWeight[T any](S []WeightResult[T]) []T {
-	if len(S) == 0 {
-		return []T{}
-	}
+//   - solution: slice of elements with the minimum weight.
+//
+// Behaviors:
+//   - If S is empty, the function returns a nil slice.
+//   - If multiple elements have the same minimum weight, they are all returned.
+//   - If S contains only one element, that element is returned.
+func FilterByNegativeWeight[T any](S []WeightResult[T]) (solution []T) {
+	switch len(S) {
+	case 0:
+		// Do nothing
+	case 1:
+		solution = []T{S[0].First}
+	default:
+		solution = []T{S[0].First}
+		minWeight := S[0].Second
 
-	solution := []T{S[0].First}
-	minWeight := S[0].Second
-
-	for _, e := range S[1:] {
-		if e.Second < minWeight {
-			minWeight = e.Second
-			solution = []T{e.First}
-		} else if e.Second == minWeight {
-			solution = append(solution, e.First)
+		for _, e := range S[1:] {
+			if e.Second < minWeight {
+				minWeight = e.Second
+				solution = []T{e.First}
+			} else if e.Second == minWeight {
+				solution = append(solution, e.First)
+			}
 		}
 	}
 
-	return solution
+	return
 }

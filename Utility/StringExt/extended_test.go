@@ -32,17 +32,17 @@ func TestFindContentIndexes(t *testing.T) {
 		}
 	)
 
-	start, end, err := FindContentIndexes(OpToken, ClToken, ContentTokens)
+	indices, err := FindContentIndexes(OpToken, ClToken, ContentTokens)
 	if err != nil {
 		t.Errorf("expected no error, got %s instead", err.Error())
 	}
 
-	if start != 1 {
-		t.Errorf("expected 1, got %d instead", start)
+	if indices[0] != 1 {
+		t.Errorf("expected 1, got %d instead", indices[0])
 	}
 
-	if end != 9 {
-		t.Errorf("expected 9, got %d instead", end)
+	if indices[1] != 9 {
+		t.Errorf("expected 9, got %d instead", indices[1])
 	}
 }
 

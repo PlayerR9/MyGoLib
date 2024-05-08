@@ -9,7 +9,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
+	ue "github.com/PlayerR9/MyGoLib/Units/Errors"
 )
 
 // ToUTF8Runes converts a string to a slice of runes.
@@ -19,15 +19,24 @@ import (
 //
 // Returns:
 //   - []rune: The slice of runes
-//   - error: An error of type *ErrAtIndex if the string contains
+//   - error: An error of type *ue,ErrAtIndex if the string contains
 //     invalid UTF-8 encoding.
+//
+// Behaviors:
+//   - An empty string returns a nil slice with no errors.
+//   - The function stops at the first invalid UTF-8 encoding; returning an
+//     error and the runes found up to that point.
 func ToUTF8Runes(s string) ([]rune, error) {
+	if s == "" {
+		return nil, nil
+	}
+
 	solution := make([]rune, 0)
 
 	for i := 0; len(s) > 0; i++ {
 		r, size := utf8.DecodeRuneInString(s)
 		if r == utf8.RuneError {
-			return solution, ers.NewErrAt(i, NewErrInvalidUTF8Encoding())
+			return solution, ue.NewErrAt(i, NewErrInvalidUTF8Encoding())
 		}
 
 		solution = append(solution, r)
@@ -90,41 +99,54 @@ func ReplaceSuffix(str, suffix string) (string, error) {
 //   - contentTokens: The slice of strings in which to search for the tokens.
 //
 // Returns:
-//   - int: The start index of the content (inclusive).
-//   - int: The end index of the content (exclusive).
-//   - error: Any error that occurred while searching for the tokens.
+//   - result: An array of two integers representing the start and end indexes
+//     of the content.
+//   - err: Any error that occurred while searching for the tokens.
 //
 // Errors:
-//   - *ers.ErrInvalidParameter: If the openingToken or closingToken is an
+//   - *ue.ErrInvalidParameter: If the openingToken or closingToken is an
 //     empty string.
 //   - *ErrTokenNotFound: If the opening or closing token is not found in the
 //     content.
 //   - *ErrNeverOpened: If the closing token is found without any
 //     corresponding opening token.
-func FindContentIndexes(openingToken, closingToken string, contentTokens []string) (int, int, error) {
-	if openingToken == "" {
-		return 0, 0, ers.NewErrInvalidParameter(
-			"openingToken",
-			ers.NewErrEmptyString(),
-		)
-	}
+//
+// Behaviors:
+//   - The first index of the content is inclusive, while the second index is
+//     exclusive.
+//   - This function returns a partial result when errors occur. ([-1, -1] if
+//     errors occur before finding the opening token, [index, 0] if the opening
+//     token is found but the closing token is not found.
+func FindContentIndexes(openingToken, closingToken string, contentTokens []string) (result [2]int, err error) {
+	result[0] = -1
+	result[1] = -1
 
-	if closingToken == "" {
-		return 0, 0, ers.NewErrInvalidParameter(
-			"closingToken",
-			ers.NewErrEmptyString(),
+	if openingToken == "" {
+		err = ue.NewErrInvalidParameter(
+			"openingToken",
+			ue.NewErrEmptyString(),
 		)
+
+		return
+	} else if closingToken == "" {
+		err = ue.NewErrInvalidParameter(
+			"closingToken",
+			ue.NewErrEmptyString(),
+		)
+
+		return
 	}
 
 	openingTokenIndex := slices.Index(contentTokens, openingToken)
 	if openingTokenIndex < 0 {
-		return 0, 0, NewErrTokenNotFound(openingToken, OpToken)
+		err = NewErrTokenNotFound(openingToken, OpToken)
+		return
+	} else {
+		result[0] = openingTokenIndex + 1
 	}
 
-	tokenStartIndex := openingTokenIndex + 1
-
 	tokenBalance := 1
-	closingTokenIndex := slices.IndexFunc(contentTokens[tokenStartIndex:], func(token string) bool {
+	tokenBalanceFunc := func(token string) bool {
 		if token == closingToken {
 			tokenBalance--
 		} else if token == openingToken {
@@ -132,25 +154,27 @@ func FindContentIndexes(openingToken, closingToken string, contentTokens []strin
 		}
 
 		return tokenBalance == 0
-	})
+	}
 
-	if closingTokenIndex != -1 {
-		return tokenStartIndex, tokenStartIndex + closingTokenIndex + 1, nil
+	result[1] = slices.IndexFunc(contentTokens[result[0]:], tokenBalanceFunc) + 1
+	if result[1] != 0 {
+		return
 	}
 
 	if tokenBalance < 0 {
-		return 0, 0, NewErrNeverOpened(openingToken, closingToken)
-	} else if tokenBalance == 1 && closingToken == "\n" {
-		return tokenStartIndex, len(contentTokens), nil
+		err = NewErrNeverOpened(openingToken, closingToken)
+		return
+	} else if tokenBalance != 1 || closingToken != "\n" {
+		err = NewErrTokenNotFound(closingToken, ClToken)
+		return
 	}
 
-	return 0, 0, NewErrTokenNotFound(closingToken, ClToken)
+	result[1] = len(contentTokens)
+	return
 }
 
 // SplitSentenceIntoFields splits the string into fields, where each field is a
-// substring separated by one or more whitespace characters.
-// The function also handles special characters such as tabs, vertical tabs,
-// carriage returns, line feeds, and form feeds.
+// substring separated by one or more whitespace charactue.
 //
 // Parameters:
 //   - sentence: The string to split into fields.
@@ -159,15 +183,19 @@ func FindContentIndexes(openingToken, closingToken string, contentTokens []strin
 // Returns:
 //   - [][]string: A two-dimensional slice of strings, where each inner slice
 //     represents the fields of a line from the input string.
-//   - error: An error of type *ers.ErrInvalidRuneAt if an invalid rune is found in
+//   - error: An error of type *ue.ErrInvalidRuneAt if an invalid rune is found in
 //     the sentence.
 //
-// Behavior:
+// Behaviors:
 //   - Negative indentLevel values are converted to positive values.
-//   - Empty sentences return an empty slice with no errors.
+//   - Empty sentences return a nil slice with no errors.
+//   - The function handles the following whitespace characters: space, tab,
+//     vertical tab, carriage return, line feed, and form feed.
+//   - The function returns a partial result if an invalid rune is found where
+//     the result are the fields found up to that point.
 func AdvancedFieldsSplitter(sentence string, indentLevel int) ([][]string, error) {
 	if sentence == "" {
-		return [][]string{}, nil
+		return nil, nil
 	}
 
 	if indentLevel < 0 {
@@ -184,7 +212,15 @@ func AdvancedFieldsSplitter(sentence string, indentLevel int) ([][]string, error
 		sentence = sentence[size:]
 
 		if char == utf8.RuneError {
-			return nil, ers.NewErrAt(j, ers.NewErrInvalidRune(nil))
+			if builder.Len() != 0 {
+				words = append(words, builder.String())
+			}
+
+			if len(words) > 0 {
+				lines = append(lines, words)
+			}
+
+			return lines, ue.NewErrAt(j, ue.NewErrInvalidRune(nil))
 		}
 
 		switch char {
@@ -246,9 +282,6 @@ func AdvancedFieldsSplitter(sentence string, indentLevel int) ([][]string, error
 
 // GenerateID generates a random ID of the specified size (in bytes).
 //
-// The function uses the crypto/rand package to generate a random ID of
-// the specified size. The ID is returned as a hexadecimal string.
-//
 // Parameters:
 //   - size: The size of the ID to generate (in bytes).
 //
@@ -257,13 +290,18 @@ func AdvancedFieldsSplitter(sentence string, indentLevel int) ([][]string, error
 //   - error: An error if the ID cannot be generated.
 //
 // Errors:
-//   - *ers.ErrInvalidParameter: If the size is less than 1.
+//   - *ue.ErrInvalidParameter: If the size is less than 1.
 //   - Any error returned by the rand.Read function.
+//
+// Behaviors:
+//   - The function uses the crypto/rand package to generate a random ID of the
+//     specified size.
+//   - The ID is returned as a hexadecimal string.
 func GenerateID(size int) (string, error) {
 	if size < 1 {
-		return "", ers.NewErrInvalidParameter(
+		return "", ue.NewErrInvalidParameter(
 			"size",
-			ers.NewErrGT(0),
+			ue.NewErrGT(0),
 		)
 	}
 
@@ -274,68 +312,5 @@ func GenerateID(size int) (string, error) {
 		return "", err
 	}
 
-	id := hex.EncodeToString(b)
-
-	return id, nil
-}
-
-// ByteSplitter splits a byte slice into multiple slices based on a separator byte.
-// The separator byte is not included in the resulting slices.
-//
-// Parameters:
-//   - data: The byte slice to split.
-//   - sep: The separator byte.
-//
-// Returns:
-//   - [][]byte: A slice of byte slices.
-//
-// Behavior:
-//   - If the input slice is empty, the function returns an empty slice.
-func ByteSplitter(data []byte, sep byte) [][]byte {
-	if len(data) == 0 {
-		return [][]byte{}
-	}
-
-	slices := make([][]byte, 0)
-
-	start := 0
-
-	for i := 0; i < len(data); i++ {
-		if data[i] == sep {
-			slices = append(slices, data[start:i])
-			start = i + 1
-		}
-	}
-
-	slices = append(slices, data[start:])
-
-	return slices
-}
-
-// JoinBytes joins multiple byte slices into a single string using a separator byte.
-//
-// Parameters:
-//   - slices: A slice of byte slices to join.
-//   - sep: The separator byte.
-//
-// Returns:
-//   - string: The joined string.
-//
-// Behavior:
-//   - If the input slice is empty, the function returns an empty string.
-func JoinBytes(slices [][]byte, sep byte) string {
-	if len(slices) == 0 {
-		return ""
-	}
-
-	var builder strings.Builder
-
-	builder.Write(slices[0])
-
-	for _, slice := range slices[1:] {
-		builder.WriteByte(sep)
-		builder.Write(slice)
-	}
-
-	return builder.String()
+	return hex.EncodeToString(b), nil
 }

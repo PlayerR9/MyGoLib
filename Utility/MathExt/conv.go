@@ -1,7 +1,6 @@
 package MathExt
 
 import (
-	"fmt"
 	"math"
 
 	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
@@ -10,12 +9,10 @@ import (
 // IsValidNumber checks if the given number is valid for the given base.
 //
 // Parameters:
-//
 //   - n: The number to check.
 //   - base: The base of the number.
 //
 // Returns:
-//
 //   - bool: True if the number is valid for the given base, false otherwise.
 func IsValidNumber(n []int, base int) bool {
 	if base < 1 {
@@ -37,12 +34,10 @@ func IsValidNumber(n []int, base int) bool {
 // The number's Least Significant Digit (LSD) is at index 0.
 //
 // Parameters:
-//
 //   - n: The decimal number to convert.
 //   - base: The base of the result number.
 //
 // Returns:
-//
 //   - []int: The number in the given base.
 //   - error: An error if the base is invalid.
 func DecToBase(n, base int) ([]int, error) {
@@ -78,13 +73,11 @@ func DecToBase(n, base int) ([]int, error) {
 // Add adds two numbers of the same base. Both numbers are Least Significant Digit (LSD) first.
 //
 // Parameters:
-//
 //   - n1: The first number to add.
 //   - n2: The second number to add.
 //   - base: The base of the numbers.
 //
 // Returns:
-//
 //   - []int: The sum of the two numbers.
 //   - error: An error if the base is invalid.
 func Add(n1, n2 []int, base int) ([]int, error) {
@@ -138,13 +131,11 @@ func Add(n1, n2 []int, base int) ([]int, error) {
 // Subtract subtracts two numbers of the same base. Both numbers are Least Significant Digit (LSD) first.
 //
 // Parameters:
-//
 //   - n1: The number to subtract from.
 //   - n2: The number to subtract.
 //   - base: The base of the numbers.
 //
 // Returns:
-//
 //   - []int: The result of the subtraction.
 //   - error: An error if the base is invalid or the subtraction resulted in a negative number.
 func Subtract(n1, n2 []int, base int) ([]int, error) {
@@ -188,7 +179,7 @@ func Subtract(n1, n2 []int, base int) ([]int, error) {
 	}
 
 	if borrow > 0 {
-		return nil, fmt.Errorf("subtraction resulted in a negative number")
+		return nil, NewErrSubtractionUnderflow()
 	}
 
 	// Remove leading zeros
@@ -208,12 +199,10 @@ func Subtract(n1, n2 []int, base int) ([]int, error) {
 // The number's Least Significant Digit (LSD) is at index 0.
 //
 // Parameters:
-//
 //   - n: The number to convert.
 //   - base: The base of the number.
 //
 // Returns:
-//
 //   - int: The decimal number.
 //   - error: An error if the base is invalid or the number is invalid for the given base.
 func BaseToDec(n []int, base int) (int, error) {
@@ -232,9 +221,7 @@ func BaseToDec(n []int, base int) (int, error) {
 
 	for i, digit := range n {
 		if digit < 0 || digit >= base {
-			return 0, fmt.Errorf("invalid digit at %d: %s",
-				i, ers.NewErrOutOfBounds(digit, 0, base).Error(),
-			)
+			return 0, ers.NewErrAt(i, ers.NewErrOutOfBounds(digit, 0, base))
 		}
 
 		result += digit * int(math.Pow(float64(base), float64(i)))
