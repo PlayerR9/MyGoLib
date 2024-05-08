@@ -413,3 +413,32 @@ func (e *ErrEmptySlice) Error() string {
 func NewErrEmptySlice() *ErrEmptySlice {
 	return &ErrEmptySlice{}
 }
+
+// ErrInvalidType represents an error when a value has an invalid type.
+type ErrInvalidType[T any] struct {
+	// Elem is the element that caused the error.
+	Elem T
+
+	// Type is the name of the type that was expected.
+	Type string
+}
+
+// Error is a method of the error interface that returns the error message.
+//
+// Returns:
+//   - string: The error message.
+func (e *ErrInvalidType[T]) Error() string {
+	return fmt.Sprintf("invalid %s type: %T", e.Type, e.Elem)
+}
+
+// NewErrInvalidType creates a new ErrInvalidType error.
+//
+// Parameters:
+//   - typeName: The name of the type that was expected.
+//   - elem: The element that caused the error.
+//
+// Returns:
+//   - *ErrInvalidType: A pointer to the newly created ErrInvalidType.
+func NewErrInvalidType[T any](typeName string, elem T) *ErrInvalidType[T] {
+	return &ErrInvalidType[T]{Elem: elem, Type: typeName}
+}

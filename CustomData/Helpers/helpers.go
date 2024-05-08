@@ -7,7 +7,7 @@ package Helpers
 
 import (
 	cdp "github.com/PlayerR9/MyGoLib/CustomData/Pair"
-	uf "github.com/PlayerR9/MyGoLib/Units/Common"
+	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 	slext "github.com/PlayerR9/MyGoLib/Utility/SliceExt"
 )
 
@@ -42,7 +42,7 @@ func (hr HResult[T]) IsSuccess() bool {
 //
 // Parameters:
 //   - f: The function to execute.
-func (hr HResult[T]) DoIfSuccess(f uf.DoFunc[T]) {
+func (hr HResult[T]) DoIfSuccess(f uc.DoFunc[T]) {
 	if hr.Second != nil {
 		return
 	}
@@ -54,7 +54,7 @@ func (hr HResult[T]) DoIfSuccess(f uf.DoFunc[T]) {
 //
 // Parameters:
 //   - f: The function to execute.
-func (hr HResult[T]) DoIfFailure(f uf.DualDoFunc[T, error]) {
+func (hr HResult[T]) DoIfFailure(f uc.DualDoFunc[T, error]) {
 	if hr.Second == nil {
 		return
 	}
@@ -69,8 +69,8 @@ func (hr HResult[T]) DoIfFailure(f uf.DualDoFunc[T, error]) {
 //
 // Returns:
 //   - HResult: The result of the function evaluation.
-func EvaluateFunc[T any](f EvalFunc[T]) HResult[T] {
-	res, err := f()
+func EvaluateFunc[T any](elem T, f uc.EvalOneFunc[T]) HResult[T] {
+	res, err := f(elem)
 
 	return HResult[T]{
 		First:  res,
@@ -86,8 +86,8 @@ func EvaluateFunc[T any](f EvalFunc[T]) HResult[T] {
 //
 // Returns:
 //   - []HResult: The results of the function evaluation.
-func EvaluateMany[T any](f EvalManyFunc[T]) []HResult[T] {
-	res, err := f()
+func EvaluateMany[T any](elem T, f uc.EvalManyFunc[T]) []HResult[T] {
+	res, err := f(elem)
 
 	if len(res) == 0 {
 		return []HResult[T]{NewHResult(*new(T), err)}

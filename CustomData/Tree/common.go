@@ -4,6 +4,44 @@ import (
 	"slices"
 )
 
+// Treeer is an interface for types that can be converted to a tree.
+type Treeer[T any] interface {
+	// TreeOf converts the type to a tree.
+	//
+	// Returns:
+	//   - *Tree[T]: A pointer to the tree.
+	TreeOf() *Tree[T]
+}
+
+// TreeOf converts the element to a tree.
+//
+// Parameters:
+//   - elem: The element to convert.
+//
+// Returns:
+//   - *Tree[T]: A pointer to the tree.
+//
+// Behaviors:
+//   - If the element is nil, the function returns nil.
+//   - If the element implements the Treeer interface, the function calls the TreeOf method.
+//   - Otherwise, the function creates a new tree with the element as the root.
+func TreeOf(elem any) *Tree[any] {
+	if elem == nil {
+		return nil
+	}
+
+	var tree *Tree[any]
+
+	switch elem := elem.(type) {
+	case Treeer[any]:
+		tree = elem.TreeOf()
+	default:
+		tree = NewTree(elem)
+	}
+
+	return tree
+}
+
 // CommonAncestor returns the first common ancestor of the two nodes.
 //
 // Parameters:
@@ -53,13 +91,3 @@ func ExtractData[T any](nodes []*TreeNode[T]) []T {
 
 	return data
 }
-
-// LeafProcessor is a function that processes the data of a leaf node.
-//
-// Parameters:
-//   - data: The data of the leaf node.
-//
-// Returns:
-//   - []T: The data of the new nodes created by the processor.
-//   - error: An error that occurred during the processing.
-type LeafProcessor[T any] func(data T) ([]T, error)

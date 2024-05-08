@@ -3,7 +3,7 @@ package Tree
 import (
 	"github.com/PlayerR9/MyGoLib/ListLike/Queuer"
 	"github.com/PlayerR9/MyGoLib/ListLike/Stacker"
-	itff "github.com/PlayerR9/MyGoLib/Units/Common"
+	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 	slext "github.com/PlayerR9/MyGoLib/Utility/SliceExt"
 )
 
@@ -272,7 +272,7 @@ func (t *Tree[T]) UpdateLeaves() []*TreeNode[T] {
 //
 // Behaviors:
 //   - The traversal stops as soon as the observer returns an error.
-func (t *Tree[T]) BFSTraversal(observer itff.ObserverFunc[T]) error {
+func (t *Tree[T]) BFSTraversal(observer uc.ObserverFunc[T]) error {
 	if observer == nil || t.root == nil {
 		return nil
 	}
@@ -310,7 +310,7 @@ func (t *Tree[T]) BFSTraversal(observer itff.ObserverFunc[T]) error {
 //
 // Behaviors:
 //   - The traversal stops as soon as the observer returns an error.
-func (t *Tree[T]) DFSTraversal(observer itff.ObserverFunc[T]) error {
+func (t *Tree[T]) DFSTraversal(observer uc.ObserverFunc[T]) error {
 	if observer == nil || t.root == nil {
 		return nil
 	}
@@ -584,7 +584,7 @@ func (t *Tree[T]) replaceLeafWithTree(at int, children []T) {
 //   - The function must return a slice of values of type T.
 //   - If the function returns an error, the process stops and the error is returned.
 //   - The leaves are replaced with the children returned by the function.
-func (t *Tree[T]) ProcessLeaves(f LeafProcessor[T]) error {
+func (t *Tree[T]) ProcessLeaves(f uc.EvalManyFunc[T]) error {
 	for i, leaf := range t.leaves {
 		children, err := f(leaf.Data)
 		if err != nil {
