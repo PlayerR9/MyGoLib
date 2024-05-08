@@ -211,3 +211,203 @@ func MakeTree[T any, I intf.Copier](elem T, info I, f NextsFunc[T, I]) (*Tree[T]
 
 	return tree, nil
 }
+
+// NoInfo is a struct that contains no information.
+type NoInfo struct{}
+
+// Copy creates a copy of the NoInfo.
+//
+// Returns:
+//   - Copier: The copy of the NoInfo.
+func (n *NoInfo) Copy() intf.Copier {
+	return &NoInfo{}
+}
+
+// NewNoInfo creates a new NoInfo. This is useful for when traversing a tree
+// but no additional information is needed.
+//
+// Returns:
+//   - *NoInfo: The NoInfo.
+func NewNoInfo() *NoInfo {
+	return &NoInfo{}
+}
+
+// ObserverFunc is a function that observes a node.
+//
+// Parameters:
+//   - data: The data of the node.
+//   - info: The info of the node.
+//
+// Returns:
+//   - error: An error if the observation fails.
+type NoInfoObserverFunc[T any] func(data T) error
+
+// NoInfoTraversor is a struct that traverses a tree.
+type NoInfoTraversor[T any] struct {
+	// The helper struct.
+	node *TreeNode[T]
+
+	// The observer function.
+	observe NoInfoObserverFunc[T]
+}
+
+// DFS traverses the tree in depth-first order.
+//
+// Returns:
+//   - error: An error if the traversal fails.
+func (t *NoInfoTraversor[T]) DFS() error {
+	if t.node == nil || t.observe == nil {
+		return nil
+	}
+
+	S := Stacker.NewLinkedStack(t.node)
+
+	for {
+		top, err := S.Pop()
+		if err != nil {
+			break
+		}
+
+		err = t.observe(top.Data)
+		if err != nil {
+			return err
+		}
+
+		for _, child := range top.children {
+			err := S.Push(child)
+			if err != nil {
+				panic(err)
+			}
+		}
+	}
+
+	return nil
+}
+
+// BFS traverses the tree in breadth-first order.
+//
+// Returns:
+//   - error: An error if the traversal fails.
+func (t *NoInfoTraversor[T]) BFS() error {
+	if t.node == nil || t.observe == nil {
+		return nil
+	}
+
+	Q := Queuer.NewLinkedQueue(t.node)
+
+	for {
+		first, err := Q.Dequeue()
+		if err != nil {
+			break
+		}
+
+		err = t.observe(first.Data)
+		if err != nil {
+			return err
+		}
+
+		for _, child := range first.children {
+			err := Q.Enqueue(child)
+			if err != nil {
+				panic(err)
+			}
+		}
+	}
+
+	return nil
+}
+
+// Traverse creates a new traversor for the tree.
+//
+// Parameters:
+//   - tree: The tree to traverse.
+//   - init: The initial info.
+//   - f: The observer function.
+//
+// Returns:
+//   - Traversor[T, I]: The traversor.
+func NoInfoTraverse[T any](tree *Tree[T], f NoInfoObserverFunc[T]) *NoInfoTraversor[T] {
+	var root *TreeNode[T]
+
+	if tree == nil {
+		root = nil
+	} else {
+		root = tree.root
+	}
+
+	return &NoInfoTraversor[T]{
+		node:    root,
+		observe: f,
+	}
+}
+
+// NextsFunc is a function that returns the next elements.
+//
+// Parameters:
+//   - elem: The current element.
+//   - info: The info of the current element.
+//
+// Returns:
+//   - []T: The next elements.
+//   - error: An error if the next elements cannot be found.
+type NoInfoNextsFunc[T any] func(elem T) ([]T, error)
+
+// MakeTree creates a tree from the given element.
+//
+// Parameters:
+//   - elem: The element to start the tree from.
+//
+// Returns:
+//   - *Tree[T]: The tree created from the element.
+//   - error: An error if the tree cannot be created.
+func NoInfoMakeTree[T any](elem T, f NoInfoNextsFunc[T]) (*Tree[T], error) {
+	// 1. Handle the first element
+	nexts, err := f(elem)
+	if err != nil {
+		return nil, err
+	}
+
+	tree := NewTree(elem)
+
+	if len(nexts) == 0 {
+		return tree, nil
+	}
+
+	// 2. Create a stack and push the first element
+	type StackElement struct {
+		Prev *TreeNode[T]
+		Elem *TreeNode[T]
+	}
+
+	S := Stacker.NewLinkedStack[StackElement]()
+
+	for _, next := range nexts {
+		err := S.Push(StackElement{Prev: tree.root, Elem: newTreeNode(next)})
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	for {
+		top, err := S.Pop()
+		if err != nil {
+			break
+		}
+
+		nexts, err := f(top.Elem.Data)
+		if err != nil {
+			return nil, err
+		}
+
+		top.Prev.AddChildren(top.Elem)
+
+		for _, next := range nexts {
+			err := S.Push(StackElement{Prev: top.Elem, Elem: newTreeNode(next)})
+			if err != nil {
+				panic(err)
+			}
+		}
+	}
+
+	return tree, nil
+}
