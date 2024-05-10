@@ -7,6 +7,8 @@ import (
 	"strings"
 
 	fs "github.com/PlayerR9/MyGoLib/Formatting/FString"
+
+	cdd "github.com/PlayerR9/MyGoLib/CustomData/Document"
 )
 
 // CommandInfo represents a console command.
@@ -15,7 +17,7 @@ type CommandInfo struct {
 	name string
 
 	// Brief explanation of what the command does.
-	description *Description
+	description *cdd.Document
 
 	// Slice of FlagInfo representing the flags accepted by
 	// the command.
@@ -163,6 +165,6 @@ func (ci *CommandInfo) AddFlags(flags ...*FlagInfo) {
 //
 // Parameters:
 //   - description: The description to set.
-func (ci *CommandInfo) SetDescription(description *Description) {
+func (ci *CommandInfo) SetDescription(description *cdd.Document) {
 	ci.description = description
 }

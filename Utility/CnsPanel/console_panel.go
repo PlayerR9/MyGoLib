@@ -6,6 +6,7 @@ import (
 	"slices"
 	"strings"
 
+	cdd "github.com/PlayerR9/MyGoLib/CustomData/Document"
 	fs "github.com/PlayerR9/MyGoLib/Formatting/FString"
 	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
 )
@@ -16,7 +17,7 @@ type ConsolePanel struct {
 	executableName string
 
 	// Description of the executable.
-	description *Description
+	description *cdd.Document
 
 	// Map of commands accepted by the console.
 	commands []*CommandInfo
@@ -133,7 +134,7 @@ func (cp *ConsolePanel) AddCommands(commands ...*CommandInfo) {
 //
 // Parameters:
 //   - contents: The contents of the paragraph to append.
-func (b *ConsolePanel) SetDescription(description *Description) {
+func (b *ConsolePanel) SetDescription(description *cdd.Document) {
 	b.description = description
 }
 

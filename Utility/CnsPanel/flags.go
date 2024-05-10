@@ -6,6 +6,7 @@ import (
 	"slices"
 	"strings"
 
+	cdd "github.com/PlayerR9/MyGoLib/CustomData/Document"
 	fs "github.com/PlayerR9/MyGoLib/Formatting/FString"
 )
 
@@ -19,7 +20,7 @@ type FlagInfo struct {
 	args []string
 
 	// Brief explanation of what the flag does.
-	description *Description
+	description *cdd.Document
 
 	// Boolean indicating whether the flag is required.
 	required bool
@@ -167,6 +168,6 @@ func NewFlagInfo(name string, isRequired bool, callback FlagCallbackFunc, args .
 //
 // Parameters:
 //   - description: The description of the FlagInfo.
-func (cfi *FlagInfo) SetDescription(description *Description) {
+func (cfi *FlagInfo) SetDescription(description *cdd.Document) {
 	cfi.description = description
 }

@@ -67,12 +67,15 @@ func NewDocument(sentences ...string) *Document {
 // Parameters:
 //   - line: The line to add.
 //
+// Returns:
+//   - *Document: A pointer to the document. This allows for chaining.
+//
 // Example:
 //   - AddLine("Hello,", "world!")
 //   - AddLine("This is a sentence.")
-func (d *Document) AddLine(sentences ...string) {
+func (d *Document) AddLine(sentences ...string) *Document {
 	if len(sentences) == 0 {
-		return
+		return d
 	}
 
 	var builder strings.Builder
@@ -100,4 +103,6 @@ func (d *Document) AddLine(sentences ...string) {
 	if builder.Len() != 0 {
 		d.lines = append(d.lines, strings.Split(builder.String(), "\n")...)
 	}
+
+	return d
 }
