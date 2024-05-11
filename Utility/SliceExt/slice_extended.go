@@ -463,7 +463,7 @@ func FindSubsliceFromFunc[T uc.Equaler[T]](S []T, subS []T, at int) int {
 //   - If accept is nil, the function returns nil.
 //   - If f is nil, the function returns the application of accept on todo.
 //   - The function performs the do-while loop on the elements in todo.
-func DoWhile[T any](todo []T, accept PredicateFilter[T], f uc.EvalManyFunc[T]) []T {
+func DoWhile[T any](todo []T, accept PredicateFilter[T], f uc.EvalManyFunc[T, T]) []T {
 	if len(todo) == 0 {
 		return nil
 	} else if accept == nil {

@@ -57,7 +57,7 @@ func (te *TreeEvaluator[R, M, O]) addMatchLeaves(root *tr.Tree[*CurrentEval[O]],
 // Returns:
 //   - bool: True if all leaves are complete, false otherwise.
 //   - error: An error of type *ErrAllMatchesFailed if all matches failed.
-func (te *TreeEvaluator[R, M, O]) processLeaves() uc.EvalManyFunc[*CurrentEval[O]] {
+func (te *TreeEvaluator[R, M, O]) processLeaves() uc.EvalManyFunc[*CurrentEval[O], *CurrentEval[O]] {
 	filterFunc := func(data *CurrentEval[O]) ([]*CurrentEval[O], error) {
 		nextAt := te.matcher.GetNext(data.Elem)
 

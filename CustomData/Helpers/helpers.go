@@ -65,14 +65,15 @@ func (hr HResult[T]) DoIfFailure(f uc.DualDoFunc[T, error]) {
 // EvaluateFunc evaluates a function and returns the result as an HResult.
 //
 // Parameters:
+//   - elem: The element to evaluate.
 //   - f: The function to evaluate.
 //
 // Returns:
 //   - HResult: The result of the function evaluation.
-func EvaluateFunc[T any](elem T, f uc.EvalOneFunc[T]) HResult[T] {
+func EvaluateFunc[E, R any](elem E, f uc.EvalOneFunc[E, R]) HResult[R] {
 	res, err := f(elem)
 
-	return HResult[T]{
+	return HResult[R]{
 		First:  res,
 		Second: err,
 	}
@@ -82,18 +83,24 @@ func EvaluateFunc[T any](elem T, f uc.EvalOneFunc[T]) HResult[T] {
 // returns the results as an array of HResults.
 //
 // Parameters:
+//   - elem: The element to evaluate.
 //   - f: The function to evaluate.
 //
 // Returns:
 //   - []HResult: The results of the function evaluation.
-func EvaluateMany[T any](elem T, f uc.EvalManyFunc[T]) []HResult[T] {
+func EvaluateMany[E, R any](elem E, f uc.EvalManyFunc[E, R]) []HResult[R] {
 	res, err := f(elem)
 
 	if len(res) == 0 {
-		return []HResult[T]{NewHResult(*new(T), err)}
+		return []HResult[R]{
+			{
+				First:  *new(R),
+				Second: err,
+			},
+		}
 	}
 
-	results := make([]HResult[T], len(res))
+	results := make([]HResult[R], len(res))
 
 	for i, r := range res {
 		results[i] = NewHResult(r, err)
@@ -128,4 +135,28 @@ func FilterOut[T any](batch []HResult[T]) []HResult[T] {
 //   - bool: True if the slice was filtered, false otherwise.
 func FilterSuccessOrFail[T any](batch []HResult[T]) ([]HResult[T], bool) {
 	return slext.SFSeparateEarly(batch, FilterNilHResult)
+}
+
+// ApplyFunc applies a function to each element in the slice and returns
+// the results as an array of HResults.
+//
+// Parameters:
+//   - elems: The slice to apply the function to.
+//   - f: The function to apply.
+//
+// Returns:
+//   - []HResult: The results of the function application.
+func ApplyFunc[E, R any](elems []E, f uc.EvalOneFunc[E, R]) []HResult[R] {
+	results := make([]HResult[R], len(elems))
+
+	for i, elem := range elems {
+		res, err := f(elem)
+
+		results[i] = HResult[R]{
+			First:  res,
+			Second: err,
+		}
+	}
+
+	return results
 }

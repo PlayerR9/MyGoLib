@@ -22,19 +22,19 @@ type DualDoFunc[T any, U any] func(T, U)
 // EvalOneFunc is a function that evaluates one element.
 //
 // Parameters:
-//   - T: The type of the element to evaluate.
+//   - elem: The element to evaluate.
 //
 // Returns:
-//   - T: The element that was evaluated.
+//   - R: The result of the evaluation.
 //   - error: An error if the evaluation failed.
-type EvalOneFunc[T any] func(T) (T, error)
+type EvalOneFunc[E, R any] func(elem E) (R, error)
 
 // EvalManyFunc is a function that evaluates many elements.
 //
 // Parameters:
-//   - T: The type of elements to evaluate.
+//   - elem: The element to evaluate.
 //
 // Returns:
-//   - []T: The elements that were evaluated.
+//   - []R: The results of the evaluation.
 //   - error: An error if the evaluation failed.
-type EvalManyFunc[T any] func(T) ([]T, error)
+type EvalManyFunc[E, R any] func(elem E) ([]R, error)
