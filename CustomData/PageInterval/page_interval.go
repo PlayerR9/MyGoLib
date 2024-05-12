@@ -174,11 +174,19 @@ func (pi *PageInterval) AddPage(page int) error {
 	} else {
 		insertPos := sort.Search(len(pi.intervals), criteriaPageGTE)
 
+		var ok bool
+
 		if insertPos > 0 && pi.intervals[insertPos-1].Second >= page-1 {
 			insertPos--
-			pi.intervals[insertPos].Second = gen.Max(pi.intervals[insertPos].Second, page)
+			pi.intervals[insertPos].Second, ok = gen.Max(pi.intervals[insertPos].Second, page)
+			if !ok {
+				panic(ers.NewErrUnexpectedError(ers.NewErrNotComparable()))
+			}
 		} else if insertPos < len(pi.intervals) && pi.intervals[insertPos].First <= page+1 {
-			pi.intervals[insertPos].First = gen.Min(pi.intervals[insertPos].First, page)
+			pi.intervals[insertPos].First, ok = gen.Min(pi.intervals[insertPos].First, page)
+			if !ok {
+				panic(ers.NewErrUnexpectedError(ers.NewErrNotComparable()))
+			}
 		} else {
 			pi.intervals = append(pi.intervals[:insertPos],
 				append([]*PageRange{newPageRange(page, page)}, pi.intervals[insertPos:]...)...,

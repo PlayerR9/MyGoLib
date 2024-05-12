@@ -38,3 +38,13 @@ type EvalOneFunc[E, R any] func(elem E) (R, error)
 //   - []R: The results of the evaluation.
 //   - error: An error if the evaluation failed.
 type EvalManyFunc[E, R any] func(elem E) ([]R, error)
+
+// MainFunc is a function type that takes no parameters and returns an error.
+// It is used to represent things such as the main function of a program.
+//
+// Returns:
+//   - error: An error if the function failed.
+type MainFunc func() error
+
+// Routine is a function type used to represent a go routine.
+type RoutineFunc func()

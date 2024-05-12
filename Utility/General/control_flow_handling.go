@@ -6,13 +6,9 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-)
 
-// MainFunc is a type for the main function of a program.
-//
-// Return:
-//   - error: An error if the program cannot be run.
-type MainFunc func() error
+	uc "github.com/PlayerR9/MyGoLib/Units/Common"
+)
 
 // RunInPowerShell is a function that returns a function that runs a program in
 // a new PowerShell process.
@@ -27,7 +23,7 @@ type MainFunc func() error
 //
 // Return:
 //   - MainFunc: A function that runs the program in a new PowerShell process.
-func RunInPowerShell(program string, args ...string) MainFunc {
+func RunInPowerShell(program string, args ...string) uc.MainFunc {
 	var builder strings.Builder
 
 	builder.WriteString("'-NoExit', '")

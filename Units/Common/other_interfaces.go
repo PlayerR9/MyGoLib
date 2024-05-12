@@ -52,3 +52,46 @@ func SliceOf[T any](elem any) []T {
 		return []T{elem.(T)}
 	}
 }
+
+// Comparer is an interface that defines a method to compare two objects
+// of the same type.
+type Comparer[T any] interface {
+	// Compare returns a negative value if the object is less than the other object,
+	// zero if they are equal, and a positive value if the object is greater
+	// than the other object.
+	//
+	// Parameters:
+	//   - other: The other object to compare to.
+	//
+	// Returns:
+	//   - int: The result of the comparison.
+	Compare(other T) int
+}
+
+// CompareOf compares two objects of the same type. If any of the objects implements
+// the Comparer interface, the Compare method is called. Otherwise, the objects are
+// compared using the < and == operators.
+//
+// Parameters:
+//   - obj1: The first object to compare.
+//   - obj2: The second object to compare.
+//
+// Returns:
+//   - int: The result of the comparison.
+func CompareOf(obj1, obj2 any) (int, bool) {
+	if obj1 == nil || obj2 == nil {
+		return 0, false
+	}
+
+	switch obj1 := obj1.(type) {
+	case Comparer[any]:
+		val2, ok := obj2.(Comparer[any])
+		if !ok {
+			return 0, false
+		}
+
+		return obj1.Compare(val2), true
+	default:
+		return CompareAny(obj1, obj2)
+	}
+}

@@ -3,39 +3,51 @@ package General
 import (
 	"reflect"
 
-	itf "github.com/PlayerR9/MyGoLib/Units/Common"
+	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
 )
 
-// Min is a function that takes two parameters, a and b, of any type T that
-// implements the Comparable interface and returns the smaller of the two values.
+// Min is a function that takes two parameters, a and b, of any type T
+// according to the uc.CompareOf function and returns the smaller of the two values.
 //
 // Parameters:
 //   - a, b: The two values to compare.
 //
 // Return:
 //   - T: The smaller of the two values.
-func Min[T itf.Comparable](a, b T) T {
-	if a < b {
-		return a
+//   - bool: True if the values are comparable. False otherwise
+func Min[T any](a, b T) (T, bool) {
+	res, ok := uc.CompareOf(a, b)
+	if !ok {
+		return *new(T), false
+	}
+
+	if res < 0 {
+		return a, true
 	} else {
-		return b
+		return b, true
 	}
 }
 
-// Max is a function that takes two parameters, a and b, of any type T that
-// implements the Comparable interface and returns the larger of the two values.
+// Max is a function that takes two parameters, a and b, of any type T
+// according to the uc.CompareOf function and returns the larger of the two values.
 //
 // Parameters:
 //   - a, b: The two values to compare.
 //
 // Return:
 //   - T: The larger of the two values.
-func Max[T itf.Comparable](a, b T) T {
-	if a < b {
-		return b
+//   - bool: True if the values are comparable. False otherwise
+func Max[T any](a, b T) (T, bool) {
+	res, ok := uc.CompareOf(a, b)
+	if !ok {
+		return *new(T), false
+	}
+
+	if res > 0 {
+		return a, true
 	} else {
-		return a
+		return b, true
 	}
 }
 

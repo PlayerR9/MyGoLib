@@ -19,7 +19,7 @@ import (
 //
 // Returns:
 //   - []rune: The slice of runes
-//   - error: An error of type *ue,ErrAtIndex if the string contains
+//   - error: An error of type *ErrInvalidUTF8Encoding if the string contains
 //     invalid UTF-8 encoding.
 //
 // Behaviors:
@@ -31,19 +31,11 @@ func ToUTF8Runes(s string) ([]rune, error) {
 		return nil, nil
 	}
 
-	solution := make([]rune, 0)
-
-	for i := 0; len(s) > 0; i++ {
-		r, size := utf8.DecodeRuneInString(s)
-		if r == utf8.RuneError {
-			return solution, ue.NewErrAt(i, NewErrInvalidUTF8Encoding())
-		}
-
-		solution = append(solution, r)
-		s = s[size:]
+	if !utf8.ValidString(s) {
+		return nil, NewErrInvalidUTF8Encoding()
 	}
 
-	return solution, nil
+	return []rune(s), nil
 }
 
 // ReplaceSuffix replaces the end of the given string with the provided suffix.
@@ -72,6 +64,10 @@ func ToUTF8Runes(s string) ([]rune, error) {
 //		fmt.Println(result) // Output: hello woBob
 //	}
 func ReplaceSuffix(str, suffix string) (string, error) {
+	if suffix == "" {
+		return str, nil
+	}
+
 	countStr := utf8.RuneCountInString(str)
 	countSuffix := utf8.RuneCountInString(suffix)
 
@@ -81,10 +77,6 @@ func ReplaceSuffix(str, suffix string) (string, error) {
 
 	if countStr == countSuffix {
 		return suffix, nil
-	}
-
-	if countSuffix == 0 {
-		return str, nil
 	}
 
 	return str[:countStr-countSuffix] + suffix, nil
@@ -146,18 +138,23 @@ func FindContentIndexes(openingToken, closingToken string, contentTokens []strin
 	}
 
 	tokenBalance := 1
-	tokenBalanceFunc := func(token string) bool {
-		if token == closingToken {
+	closingTokenIndex := -1
+
+	for i := result[0]; i < len(contentTokens); i++ {
+		if contentTokens[i] == closingToken {
 			tokenBalance--
-		} else if token == openingToken {
+
+			if tokenBalance == 0 {
+				closingTokenIndex = i
+				break
+			}
+		} else if contentTokens[i] == openingToken {
 			tokenBalance++
 		}
-
-		return tokenBalance == 0
 	}
 
-	result[1] = slices.IndexFunc(contentTokens[result[0]:], tokenBalanceFunc) + 1
-	if result[1] != 0 {
+	if closingTokenIndex != -1 {
+		result[1] = closingTokenIndex + 1
 		return
 	}
 
@@ -214,6 +211,7 @@ func AdvancedFieldsSplitter(sentence string, indentLevel int) ([][]string, error
 		if char == utf8.RuneError {
 			if builder.Len() != 0 {
 				words = append(words, builder.String())
+				builder.Reset()
 			}
 
 			if len(words) > 0 {
@@ -230,7 +228,7 @@ func AdvancedFieldsSplitter(sentence string, indentLevel int) ([][]string, error
 		case '\v':
 			// Do nothing
 		case '\r':
-			if utf8.RuneCountInString(sentence) > 0 {
+			if size != 0 {
 				nextRune, size := utf8.DecodeRuneInString(sentence)
 
 				if nextRune == '\n' {
@@ -239,31 +237,24 @@ func AdvancedFieldsSplitter(sentence string, indentLevel int) ([][]string, error
 			}
 
 			fallthrough
-		case '\n', '\u0085':
+		case '\n', '\u0085', ' ', '\f':
 			if builder.Len() != 0 {
 				words = append(words, builder.String())
 				builder.Reset()
 			}
 
-			lines = append(lines, words)
-			words = make([]string, 0)
-		case ' ':
-			if builder.Len() != 0 {
-				words = append(words, builder.String())
-				builder.Reset()
+			if char != ' ' {
+				if len(words) > 0 {
+					lines = append(lines, words)
+					words = make([]string, 0)
+				}
+
+				if char == '\f' {
+					lines = append(lines, []string{string(char)})
+				}
 			}
 		case '\u00A0':
 			builder.WriteRune(' ')
-		case '\f':
-			if builder.Len() != 0 {
-				words = append(words, builder.String())
-				builder.Reset()
-			}
-
-			lines = append(lines, words)
-			words = make([]string, 0)
-
-			lines = append(lines, []string{string(char)})
 		default:
 			builder.WriteRune(char)
 		}

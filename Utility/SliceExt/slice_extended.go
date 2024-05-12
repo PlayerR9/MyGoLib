@@ -1,8 +1,6 @@
 package SliceExt
 
 import (
-	"slices"
-
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 )
 
@@ -32,12 +30,51 @@ type PredicateFilter[T any] func(T) bool
 //     does not satisfy.
 func Intersect[T any](funcs ...PredicateFilter[T]) PredicateFilter[T] {
 	if len(funcs) == 0 {
-		return func(e T) bool { return true }
+		return func(elem T) bool { return true }
 	}
 
-	return func(e T) bool {
+	return func(elem T) bool {
 		for _, f := range funcs {
-			if !f(e) {
+			if !f(elem) {
+				return false
+			}
+		}
+
+		return true
+	}
+}
+
+// ParallelIntersect returns a PredicateFilter function that checks if an element
+// satisfies all the PredicateFilter functions in funcs concurrently.
+//
+// Parameters:
+//   - funcs: A slice of PredicateFilter functions.
+//
+// Returns:
+//   - PredicateFilter: A PredicateFilter function that checks if a element satisfies
+//     all the PredicateFilter functions in funcs.
+//
+// Behavior:
+//   - If no filter functions are provided, then all elements are considered to satisfy
+//     the filter function.
+//   - It returns false as soon as it finds a function in funcs that the element
+//     does not satisfy.
+func ParallelIntersect[T any](funcs ...PredicateFilter[T]) PredicateFilter[T] {
+	if len(funcs) == 0 {
+		return func(elem T) bool { return true }
+	}
+
+	return func(elem T) bool {
+		resultChan := make(chan bool, len(funcs))
+
+		for _, f := range funcs {
+			go func(f PredicateFilter[T]) {
+				resultChan <- f(elem)
+			}(f)
+		}
+
+		for range funcs {
+			if !<-resultChan {
 				return false
 			}
 		}
@@ -63,12 +100,51 @@ func Intersect[T any](funcs ...PredicateFilter[T]) PredicateFilter[T] {
 //     satisfies.
 func Union[T any](funcs ...PredicateFilter[T]) PredicateFilter[T] {
 	if len(funcs) == 0 {
-		return func(e T) bool { return false }
+		return func(elem T) bool { return false }
 	}
 
-	return func(e T) bool {
+	return func(elem T) bool {
 		for _, f := range funcs {
-			if f(e) {
+			if f(elem) {
+				return true
+			}
+		}
+
+		return false
+	}
+}
+
+// ParallelUnion returns a PredicateFilter function that checks if an element
+// satisfies at least one of the PredicateFilter functions in funcs concurrently.
+//
+// Parameters:
+//   - funcs: A slice of PredicateFilter functions.
+//
+// Returns:
+//   - PredicateFilter: A PredicateFilter function that checks if a element satisfies
+//     at least one of the PredicateFilter functions in funcs.
+//
+// Behavior:
+//   - If no filter functions are provided, then no elements are considered to satisfy
+//     the filter function.
+//   - It returns true as soon as it finds a function in funcs that the element
+//     satisfies.
+func ParallelUnion[T any](funcs ...PredicateFilter[T]) PredicateFilter[T] {
+	if len(funcs) == 0 {
+		return func(elem T) bool { return false }
+	}
+
+	return func(elem T) bool {
+		resultChan := make(chan bool, len(funcs))
+
+		for _, f := range funcs {
+			go func(f PredicateFilter[T]) {
+				resultChan <- f(elem)
+			}(f)
+		}
+
+		for range funcs {
+			if <-resultChan {
 				return true
 			}
 		}
@@ -93,30 +169,39 @@ func Union[T any](funcs ...PredicateFilter[T]) PredicateFilter[T] {
 //     returns a slice with that element. Otherwise, it returns a nil slice.
 //   - An element is said to satisfy the filter function if the function returns true
 //     when applied to the element.
-func SliceFilter[T any](S []T, filter PredicateFilter[T]) (solution []T) {
-	switch len(S) {
-	case 0:
-		// Do nothing
-	case 1:
-		if filter(S[0]) {
-			solution = []T{S[0]}
-		}
-	default:
-		solution = make([]T, len(S))
-		copy(solution, S)
+func SliceFilter[T any](S []T, filter PredicateFilter[T]) []T {
+	solution := make([]T, 0)
 
-		pos := 0
-		for _, item := range S {
-			if filter(item) {
-				solution[pos] = item
-				pos++
-			}
+	for _, item := range S {
+		if filter(item) {
+			solution = append(solution, item)
 		}
-
-		solution = solution[:pos]
 	}
 
-	return
+	return solution
+}
+
+// FilterNilValues is a function that iterates over the slice and removes the
+// nil elements.
+//
+// Parameters:
+//   - S: slice of elements.
+//
+// Returns:
+//   - []*T: slice of elements that satisfy the filter function.
+//
+// Behavior:
+//   - If S is empty, the function returns a nil slice.
+func FilterNilValues[T any](S []*T) []*T {
+	solution := make([]*T, 0)
+
+	for _, item := range S {
+		if item != nil {
+			solution = append(solution, item)
+		}
+	}
+
+	return solution
 }
 
 // SFSeparate is a function that iterates over the slice and applies the filter
@@ -166,23 +251,18 @@ func SFSeparateEarly[T any](S []T, filter PredicateFilter[T]) ([]T, bool) {
 		return []T{}, true
 	}
 
-	index := slices.IndexFunc(S, filter)
-	if index == -1 {
-		return S, false
-	}
-
-	success := make([]T, len(S)-index)
-	copy(success, S[index:])
-
-	pos := 0
-	for _, item := range S[index:] {
+	success := make([]T, 0)
+	for _, item := range S {
 		if filter(item) {
-			success[pos] = item
-			pos++
+			success = append(success, item)
 		}
 	}
 
-	return success[:pos], true
+	if len(success) == 0 {
+		return S, false
+	}
+
+	return success, true
 }
 
 // RemoveDuplicates removes duplicate elements from the slice.
@@ -199,7 +279,7 @@ func SFSeparateEarly[T any](S []T, filter PredicateFilter[T]) ([]T, bool) {
 //     occurrence is kept.
 //   - If there are less than two elements in the slice, the function
 //     returns the original slice.
-func RemoveDuplicates[T uc.Comparable](S []T) []T {
+func RemoveDuplicates[T comparable](S []T) []T {
 	if len(S) < 2 {
 		return S
 	}
@@ -238,20 +318,22 @@ func RemoveDuplicatesFunc[T uc.Equaler[T]](S []T) []T {
 		return S
 	}
 
-	unique := make([]T, 0, len(S))
+	indexMap := make(map[int]T)
+	unique := make([]T, 0)
 
-	for _, e := range S {
+	for i, elem := range S {
 		found := false
 
-		for _, u := range unique {
-			if u.Equals(e) {
+		for _, value := range indexMap {
+			if value.Equals(elem) {
 				found = true
 				break
 			}
 		}
 
 		if !found {
-			unique = append(unique, e)
+			unique = append(unique, elem)
+			indexMap[i] = elem
 		}
 	}
 
@@ -259,17 +341,13 @@ func RemoveDuplicatesFunc[T uc.Equaler[T]](S []T) []T {
 }
 
 // IndexOfDuplicate returns the index of the first duplicate element in the slice.
-// If there are no duplicates, it returns -1.
 //
 // Parameters:
 //   - S: slice of elements.
 //
 // Returns:
 //   - int: index of the first duplicate element or -1 if there are no duplicates.
-//
-// Behavior:
-//   - If there are less than two elements in the slice, the function returns -1.
-func IndexOfDuplicate[T uc.Comparable](S []T) int {
+func IndexOfDuplicate[T comparable](S []T) int {
 	if len(S) < 2 {
 		return -1
 	}
@@ -288,31 +366,72 @@ func IndexOfDuplicate[T uc.Comparable](S []T) int {
 }
 
 // IndexOfDuplicateFunc returns the index of the first duplicate element in the slice.
-// If there are no duplicates, it returns -1.
 //
 // Parameters:
 //   - S: slice of elements.
-//   - equals: function that takes two elements and returns a bool.
 //
 // Returns:
 //   - int: index of the first duplicate element or -1 if there are no duplicates.
-//
-// Behavior:
-//   - If there are less than two elements in the slice, the function returns -1.
 func IndexOfDuplicateFunc[T uc.Equaler[T]](S []T) int {
 	if len(S) < 2 {
 		return -1
 	}
 
-	for i, e := range S {
-		for j := i + 1; j < len(S); j++ {
-			if e.Equals(S[j]) {
-				return i
+	indexMap := make(map[int]T)
+
+	for i, elem := range S {
+		found := false
+
+		for _, value := range indexMap {
+			if value.Equals(elem) {
+				found = true
+				break
 			}
 		}
+
+		if found {
+			return i
+		}
+
+		indexMap[i] = elem
 	}
 
 	return -1
+}
+
+// computeLPSArray is a helper function that computes the Longest Prefix
+// Suffix (LPS) array for the Knuth-Morris-Pratt algorithm.
+//
+// Parameters:
+//   - subS: The subslice to compute the LPS array for.
+//   - lps: The LPS array to store the results in.
+//
+// Behavior:
+//   - The function modifies the lps array in place.
+//   - The lps array is initialized with zeros.
+//   - The lps array is used to store the length of the longest prefix
+//     that is also a suffix for each index in the subslice.
+//   - The first element of the lps array is always 0.
+func computeLPSArray[T comparable](subS []T, lps []int) {
+	length := 0
+	i := 1
+	lps[0] = 0 // lps[0] is always 0
+
+	// the loop calculates lps[i] for i = 1 to len(subS)-1
+	for i < len(subS) {
+		if subS[i] == subS[length] {
+			length++
+			lps[i] = length
+			i++
+		} else {
+			if length != 0 {
+				length = lps[length-1]
+			} else {
+				lps[i] = 0
+				i++
+			}
+		}
+	}
 }
 
 // FindSubBytesFrom finds the first occurrence of a subslice in a byte
@@ -331,7 +450,7 @@ func IndexOfDuplicateFunc[T uc.Equaler[T]](S []T) int {
 //   - If S or subS is empty, the function returns -1.
 //   - If the subslice is not found, the function returns -1.
 //   - If at is negative, it is set to 0.
-func FindSubsliceFrom[T uc.Comparable](S []T, subS []T, at int) int {
+func FindSubsliceFrom[T comparable](S []T, subS []T, at int) int {
 	if len(subS) == 0 || len(S) == 0 || at+len(subS) > len(S) {
 		return -1
 	}
@@ -340,45 +459,65 @@ func FindSubsliceFrom[T uc.Comparable](S []T, subS []T, at int) int {
 		at = 0
 	}
 
-	possibleStarts := make([]int, 0)
+	lps := make([]int, len(subS))
+	computeLPSArray(subS, lps)
 
-	// Find all possible starting points.
-	for i := at; i < len(S)-len(subS); i++ {
-		if S[i] == subS[0] {
-			possibleStarts = append(possibleStarts, i)
+	i := at
+	j := 0
+	for i < len(S) {
+		if S[i] == subS[j] {
+			i++
+			j++
 		}
-	}
 
-	// Check only the possible starting points that have enough space
-	// to contain the subslice in full.
-	top := 0
-
-	for i := 0; i < len(possibleStarts)-1; i++ {
-		if possibleStarts[i+1]-possibleStarts[i] >= len(subS) {
-			possibleStarts[top] = possibleStarts[i]
-			top++
-		}
-	}
-
-	possibleStarts = possibleStarts[:top]
-
-	// Check if the subslice is present at any of the possible starting points
-	for _, start := range possibleStarts {
-		found := true
-
-		for j := 0; j < len(subS); j++ {
-			if S[start+j] != subS[j] {
-				found = false
-				break
+		if j == len(subS) {
+			return i - j
+		} else if i < len(S) && S[i] != subS[j] {
+			if j != 0 {
+				j = lps[j-1]
+			} else {
+				i = i + 1
 			}
-		}
-
-		if found {
-			return start
 		}
 	}
 
 	return -1
+}
+
+// computeLPSArrayFunc is a helper function that computes the Longest Prefix
+// Suffix (LPS) array for the Knuth-Morris-Pratt algorithm using a custom
+// comparison function.
+//
+// Parameters:
+//   - subS: The subslice to compute the LPS array for.
+//   - lps: The LPS array to store the results in.
+//
+// Behavior:
+//   - The function modifies the lps array in place.
+//   - The lps array is initialized with zeros.
+//   - The lps array is used to store the length of the longest prefix
+//     that is also a suffix for each index in the subslice.
+//   - The first element of the lps array is always 0.
+func computeLPSArrayFunc[T uc.Equaler[T]](subS []T, lps []int) {
+	length := 0
+	i := 1
+	lps[0] = 0 // lps[0] is always 0
+
+	// the loop calculates lps[i] for i = 1 to len(subS)-1
+	for i < len(subS) {
+		if subS[i].Equals(subS[length]) {
+			length++
+			lps[i] = length
+			i++
+		} else {
+			if length != 0 {
+				length = lps[length-1]
+			} else {
+				lps[i] = 0
+				i++
+			}
+		}
+	}
 }
 
 // FindSubsliceFromFunc finds the first occurrence of a subslice in a byte
@@ -388,7 +527,6 @@ func FindSubsliceFrom[T uc.Comparable](S []T, subS []T, at int) int {
 //   - S: The byte slice to search in.
 //   - subS: The byte slice to search for.
 //   - at: The index to start searching from.
-//   - equals: The comparison function.
 //
 // Returns:
 //   - int: The index of the first occurrence of the subslice.
@@ -407,41 +545,25 @@ func FindSubsliceFromFunc[T uc.Equaler[T]](S []T, subS []T, at int) int {
 		at = 0
 	}
 
-	possibleStarts := make([]int, 0)
+	lps := make([]int, len(subS))
+	computeLPSArrayFunc(subS, lps)
 
-	// Find all possible starting points.
-	for i := at; i < len(S)-len(subS); i++ {
-		if S[i].Equals(subS[0]) {
-			possibleStarts = append(possibleStarts, i)
+	i := at
+	j := 0
+	for i < len(S) {
+		if S[i].Equals(subS[j]) {
+			i++
+			j++
 		}
-	}
 
-	// Check only the possible starting points that have enough space
-	// to contain the subslice in full.
-	top := 0
-
-	for i := 0; i < len(possibleStarts)-1; i++ {
-		if possibleStarts[i+1]-possibleStarts[i] >= len(subS) {
-			possibleStarts[top] = possibleStarts[i]
-			top++
-		}
-	}
-
-	possibleStarts = possibleStarts[:top]
-
-	// Check if the subslice is present at any of the possible starting points
-	for _, start := range possibleStarts {
-		found := true
-
-		for j := 0; j < len(subS); j++ {
-			if !S[start+j].Equals(subS[j]) {
-				found = false
-				break
+		if j == len(subS) {
+			return i - j
+		} else if i < len(S) && !S[i].Equals(subS[j]) {
+			if j != 0 {
+				j = lps[j-1]
+			} else {
+				i = i + 1
 			}
-		}
-
-		if found {
-			return start
 		}
 	}
 

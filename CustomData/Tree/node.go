@@ -163,7 +163,7 @@ func (n *TreeNode[T]) AddChild(child *TreeNode[T]) {
 // Behaviors:
 //   - This is just a more efficient way to add multiple children.
 func (n *TreeNode[T]) AddChildren(children ...*TreeNode[T]) {
-	children = slext.SliceFilter(children, FilterNilNode)
+	children = slext.FilterNilValues(children)
 	if len(children) == 0 {
 		return
 	}

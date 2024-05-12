@@ -10,14 +10,3 @@ package Tree
 func FilterNilTree[T any](tree *Tree[T]) bool {
 	return tree != nil && tree.root != nil
 }
-
-// FilterNilNode is a filter that returns true if the node is not nil.
-//
-// Parameters:
-//   - node: The node to filter.
-//
-// Returns:
-//   - bool: True if the node is not nil, false otherwise.
-func FilterNilNode[T any](node *TreeNode[T]) bool {
-	return node != nil
-}

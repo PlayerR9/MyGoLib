@@ -2,7 +2,6 @@
 package Errors
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -112,7 +111,7 @@ func NewErrInvalidParameter(parameter string, reason error) *ErrInvalidParameter
 }
 
 // ErrNilParameter represents an error when a parameter is nil.
-// This is a shorthand for NewErrInvalidParameter(parameter, errors.New("value is nil")).
+// This is a shorthand for NewErrInvalidParameter(parameter, NewErrNilValue()).
 //
 // Parameters:
 //   - parameter: The name of the parameter.
@@ -122,7 +121,7 @@ func NewErrInvalidParameter(parameter string, reason error) *ErrInvalidParameter
 func NewErrNilParameter(parameter string) *ErrInvalidParameter {
 	return &ErrInvalidParameter{
 		Parameter: parameter,
-		Reason:    errors.New("value is nil"),
+		Reason:    NewErrNilValue(),
 	}
 }
 

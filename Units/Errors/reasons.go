@@ -442,3 +442,65 @@ func (e *ErrInvalidType[T]) Error() string {
 func NewErrInvalidType[T any](typeName string, elem T) *ErrInvalidType[T] {
 	return &ErrInvalidType[T]{Elem: elem, Type: typeName}
 }
+
+// ErrInvalidCharacter represents an error when an invalid character is found.
+type ErrInvalidCharacter struct {
+	Character rune
+}
+
+// Error returns the error message: "invalid character (character)".
+//
+// Returns:
+//   - string: The error message.
+func (e *ErrInvalidCharacter) Error() string {
+	return fmt.Sprintf("invalid character (%c)", e.Character)
+}
+
+// NewErrInvalidCharacter creates a new ErrInvalidCharacter error.
+//
+// Parameters:
+//   - character: The invalid character.
+//
+// Returns:
+//   - *ErrInvalidCharacter: The new ErrInvalidCharacter error.
+func NewErrInvalidCharacter(character rune) *ErrInvalidCharacter {
+	return &ErrInvalidCharacter{Character: character}
+}
+
+// ErrNotComparable represents an error when a value is not comparable.
+type ErrNotComparable struct{}
+
+// Error returns the error message: "value is not comparable".
+//
+// Returns:
+//   - string: The error message.
+func (e *ErrNotComparable) Error() string {
+	return "value is not comparable"
+}
+
+// NewErrNotComparable creates a new ErrNotComparable error.
+//
+// Returns:
+//   - *ErrNotComparable: The new ErrNotComparable error.
+func NewErrNotComparable() *ErrNotComparable {
+	return &ErrNotComparable{}
+}
+
+// ErrNilValue represents an error when a value is nil.
+type ErrNilValue struct{}
+
+// Error returns the error message: "value must not be nil".
+//
+// Returns:
+//   - string: The error message.
+func (e *ErrNilValue) Error() string {
+	return "value must not be nil"
+}
+
+// NewErrNilValue creates a new ErrNilValue error.
+//
+// Returns:
+//   - *ErrNilValue: The new ErrNilValue error.
+func NewErrNilValue() *ErrNilValue {
+	return &ErrNilValue{}
+}

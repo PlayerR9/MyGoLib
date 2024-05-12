@@ -4,11 +4,22 @@ import (
 	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
 )
 
+// Tray is a struct that represents a tape.
 type Tray[T any] struct {
-	tape  []T
+	// tape is a slice of elements on the tape.
+	tape []T
+
+	// arrow is the position of the arrow on the tape.
 	arrow int
 }
 
+// NewTray creates a new Tray with the given tape.
+//
+// Parameters:
+//   - tape: The tape to use.
+//
+// Returns:
+//   - *Tray: A pointer to the new Tray.
 func NewTray[T any](tape []T) *Tray[T] {
 	return &Tray[T]{
 		tape:  tape,
@@ -16,6 +27,13 @@ func NewTray[T any](tape []T) *Tray[T] {
 	}
 }
 
+// MoveLeft moves the arrow to the left by n positions.
+//
+// Parameters:
+//   - n: The number of positions to move the arrow.
+//
+// Returns:
+//   - bool: True if the number of positions is equal to n, false otherwise.
 func (t *Tray[T]) MoveLeft(n int) bool {
 	if n == 0 {
 		return true
@@ -34,6 +52,13 @@ func (t *Tray[T]) MoveLeft(n int) bool {
 	return true
 }
 
+// MoveRight moves the arrow to the right by n positions.
+//
+// Parameters:
+//   - n: The number of positions to move the arrow.
+//
+// Returns:
+//   - bool: True if the number of positions is equal to n, false otherwise.
 func (t *Tray[T]) MoveRight(n int) bool {
 	if n == 0 {
 		return true
@@ -52,6 +77,13 @@ func (t *Tray[T]) MoveRight(n int) bool {
 	return true
 }
 
+// Write writes the given element to the tape at the arrow position.
+//
+// Parameters:
+//   - elem: The element to write.
+//
+// Returns:
+//   - error: An error of type *ErrEmptyTray if the tape is empty.
 func (t *Tray[T]) Write(elem T) error {
 	if len(t.tape) == 0 {
 		return NewErrEmptyTray()
@@ -62,6 +94,11 @@ func (t *Tray[T]) Write(elem T) error {
 	return nil
 }
 
+// Read reads the element at the arrow position.
+//
+// Returns:
+//   - T: The element at the arrow position.
+//   - error: An error of type *ErrEmptyTray if the tape is empty.
 func (t *Tray[T]) Read() (T, error) {
 	if len(t.tape) == 0 {
 		return *new(T), NewErrEmptyTray()
@@ -70,6 +107,15 @@ func (t *Tray[T]) Read() (T, error) {
 	return t.tape[t.arrow], nil
 }
 
+// ReadLeft reads the element to the left of the arrow position.
+//
+// Returns:
+//   - T: The element to the left of the arrow position.
+//   - error: An error if elements to the left of the arrow position cannot be found.
+//
+// Errors:
+//   - *ErrEmptyTray: The tape is empty.
+//   - *ers.ErrInvalidParameter: If n is less than 0.
 func (t *Tray[T]) Delete(n int) error {
 	if n < 0 {
 		return ers.NewErrInvalidParameter(
@@ -98,6 +144,10 @@ func (t *Tray[T]) Delete(n int) error {
 	return nil
 }
 
+// Insert inserts the given elements to the tape at the arrow position.
+//
+// Parameters:
+//   - elems: The elements to insert.
 func (t *Tray[T]) Insert(elems ...T) {
 	if len(t.tape) == 0 {
 		t.tape = elems
@@ -106,6 +156,10 @@ func (t *Tray[T]) Insert(elems ...T) {
 	}
 }
 
+// ExtendTapeOnLeft extends the tape on the left with the given elements.
+//
+// Parameters:
+//   - elems: The elements to add.
 func (t *Tray[T]) ExtendTapeOnLeft(elems ...T) {
 	if len(t.tape) == 0 {
 		t.tape = elems
@@ -116,6 +170,10 @@ func (t *Tray[T]) ExtendTapeOnLeft(elems ...T) {
 	}
 }
 
+// ExtendTapeOnRight extends the tape on the right with the given elements.
+//
+// Parameters:
+//   - elems: The elements to add.
 func (t *Tray[T]) ExtendTapeOnRight(elems ...T) {
 	if len(t.tape) == 0 {
 		t.tape = elems
@@ -125,14 +183,21 @@ func (t *Tray[T]) ExtendTapeOnRight(elems ...T) {
 	}
 }
 
+// ArrowStart moves the arrow to the start of the tape.
 func (t *Tray[T]) ArrowStart() {
 	t.arrow = 0
 }
 
+// ArrowEnd moves the arrow to the end of the tape.
 func (t *Tray[T]) ArrowEnd() {
 	t.arrow = len(t.tape) - 1
 }
 
+// ShiftLeftOfArrow shifts the elements on the right of the
+// arrow to the left by n positions.
+//
+// Parameters:
+//   - n: The number of positions to shift the elements.
 func (t *Tray[T]) ShiftLeftOfArrow(n int) {
 	if t.arrow == 0 || len(t.tape) == 0 || n == 0 {
 		return
@@ -147,6 +212,11 @@ func (t *Tray[T]) ShiftLeftOfArrow(n int) {
 	}
 }
 
+// ShiftRightOfArrow shifts the elements on the left of the
+// arrow to the right by n positions.
+//
+// Parameters:
+//   - n: The number of positions to shift the elements.
 func (t *Tray[T]) ShiftRightOfArrow(n int) {
 	if t.arrow == len(t.tape) || len(t.tape) == 0 || n == 0 {
 		return
