@@ -1,9 +1,5 @@
 package Common
 
-// ObserverFunc is a function type that takes a value of type T and returns an error.
-// It is used to observe the values of the nodes during a traversal.
-type ObserverFunc[T any] func(T) error
-
 // DoFunc is a generic type that represents a function that takes a value
 // and does something with it.
 //

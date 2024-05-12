@@ -5,6 +5,8 @@ import (
 	"github.com/PlayerR9/MyGoLib/ListLike/Queuer"
 	"github.com/PlayerR9/MyGoLib/ListLike/Stacker"
 	intf "github.com/PlayerR9/MyGoLib/Units/Common"
+
+	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
 )
 
 // ObserverFunc is a function that observes a node.
@@ -14,8 +16,9 @@ import (
 //   - info: The info of the node.
 //
 // Returns:
+//   - bool: True if the traversal should continue, otherwise false.
 //   - error: An error if the observation fails.
-type ObserverFunc[T any, I intf.Copier] func(data T, info I) error
+type ObserverFunc[T any, I intf.Copier] func(data T, info I) (bool, error)
 
 // helper is a helper struct for traversing the tree.
 type helper[T any, I intf.Copier] up.Pair[*TreeNode[T], I]
@@ -61,9 +64,13 @@ func (t *Traversor[T, I]) DFS() error {
 			break
 		}
 
-		err = t.observe(top.First.Data, top.Second)
+		ok, err := t.observe(top.First.Data, top.Second)
 		if err != nil {
 			return err
+		}
+
+		if !ok {
+			continue
 		}
 
 		for _, child := range top.First.children {
@@ -94,9 +101,13 @@ func (t *Traversor[T, I]) BFS() error {
 			break
 		}
 
-		err = t.observe(first.First.Data, first.Second)
+		ok, err := t.observe(first.First.Data, first.Second)
 		if err != nil {
 			return err
+		}
+
+		if !ok {
+			continue
 		}
 
 		for _, child := range first.First.children {
@@ -239,8 +250,9 @@ func NewNoInfo() *NoInfo {
 //   - info: The info of the node.
 //
 // Returns:
+//   - bool: True if the traversal should continue, otherwise false.
 //   - error: An error if the observation fails.
-type NoInfoObserverFunc[T any] func(data T) error
+type NoInfoObserverFunc[T any] func(data T) (bool, error)
 
 // NoInfoTraversor is a struct that traverses a tree.
 type NoInfoTraversor[T any] struct {
@@ -255,6 +267,9 @@ type NoInfoTraversor[T any] struct {
 //
 // Returns:
 //   - error: An error if the traversal fails.
+//
+// Behavior:
+//   - Use *ers.ErrNoError to stop the traversal without an error.
 func (t *NoInfoTraversor[T]) DFS() error {
 	if t.node == nil || t.observe == nil {
 		return nil
@@ -268,9 +283,17 @@ func (t *NoInfoTraversor[T]) DFS() error {
 			break
 		}
 
-		err = t.observe(top.Data)
+		ok, err := t.observe(top.Data)
 		if err != nil {
-			return err
+			if ers.As[*ers.ErrNoError](err) {
+				return nil
+			} else {
+				return err
+			}
+		}
+
+		if !ok {
+			continue
 		}
 
 		for _, child := range top.children {
@@ -288,6 +311,9 @@ func (t *NoInfoTraversor[T]) DFS() error {
 //
 // Returns:
 //   - error: An error if the traversal fails.
+//
+// Behavior:
+//   - Use *ers.ErrNoError to stop the traversal without an error.
 func (t *NoInfoTraversor[T]) BFS() error {
 	if t.node == nil || t.observe == nil {
 		return nil
@@ -301,9 +327,17 @@ func (t *NoInfoTraversor[T]) BFS() error {
 			break
 		}
 
-		err = t.observe(first.Data)
+		ok, err := t.observe(first.Data)
 		if err != nil {
-			return err
+			if ers.As[*ers.ErrNoError](err) {
+				return nil
+			} else {
+				return err
+			}
+		}
+
+		if !ok {
+			continue
 		}
 
 		for _, child := range first.children {

@@ -262,82 +262,6 @@ func (t *Tree[T]) UpdateLeaves() []*TreeNode[T] {
 	return newLeaves
 }
 
-// BFSTraversal traverses the tree in BFS order.
-//
-// Parameters:
-//   - observer: The observer function to apply to the nodes of the tree.
-//
-// Returns:
-//   - error: An error returned by the observer.
-//
-// Behaviors:
-//   - The traversal stops as soon as the observer returns an error.
-func (t *Tree[T]) BFSTraversal(observer uc.ObserverFunc[T]) error {
-	if observer == nil || t.root == nil {
-		return nil
-	}
-
-	Q := Queuer.NewLinkedQueue(t.root)
-
-	for {
-		node, err := Q.Dequeue()
-		if err != nil {
-			break
-		}
-
-		if err := observer(node.Data); err != nil {
-			return err
-		}
-
-		for _, child := range node.children {
-			err := Q.Enqueue(child)
-			if err != nil {
-				panic(err)
-			}
-		}
-	}
-
-	return nil
-}
-
-// DFSTraversal traverses the tree rooted at n in a DFS order.
-//
-// Parameters:
-//   - observer: The observer function to apply to the nodes of the tree.
-//
-// Returns:
-//   - error: An error returned by the observer.
-//
-// Behaviors:
-//   - The traversal stops as soon as the observer returns an error.
-func (t *Tree[T]) DFSTraversal(observer uc.ObserverFunc[T]) error {
-	if observer == nil || t.root == nil {
-		return nil
-	}
-
-	S := Stacker.NewLinkedStack(t.root)
-
-	for {
-		node, err := S.Pop()
-		if err != nil {
-			break
-		}
-
-		if err := observer(node.Data); err != nil {
-			return err
-		}
-
-		for _, child := range node.children {
-			err := S.Push(child)
-			if err != nil {
-				panic(err)
-			}
-		}
-	}
-
-	return nil
-}
-
 // SnakeTraversal returns all the paths from the root to the leaves of the tree.
 //
 // Returns:
@@ -656,4 +580,16 @@ func (t *Tree[T]) DeleteBranchContaining(tn *TreeNode[T]) error {
 	t.leaves = t.RegenerateLeaves()
 
 	return nil
+}
+
+// GetDirectChildren returns the direct children of the root of the tree.
+//
+// Returns:
+//   - []*Node[T]: A slice of pointers to the direct children of the root.
+func (t *Tree[T]) GetDirectChildren() []*TreeNode[T] {
+	if t.root == nil {
+		return nil
+	}
+
+	return t.root.children
 }

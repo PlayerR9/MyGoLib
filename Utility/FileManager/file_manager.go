@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"io/fs"
 	"net/http"
 	"os"
 	"path"
@@ -224,4 +225,40 @@ func SplitPath(filePath string) []string {
 	slices.Reverse(parts)
 
 	return parts
+}
+
+// CreateFile creates a file at the specified path with the given permissions.
+// If the file already exists, it does nothing.
+//
+// Parameters:
+//   - filePath: A string representing the path to the file.
+//   - perm: An fs.FileMode representing the permissions to set on the file.
+//
+// Returns:
+//   - error: An error if it fails to create the file.
+func CreateFile(filePath string, perm fs.FileMode) error {
+	// Check if the file already exists
+	exists, err := FileExists(filePath)
+	if err != nil {
+		return err
+	}
+
+	if exists {
+		return nil
+	}
+
+	dir := filepath.Dir(filePath)
+
+	err = os.MkdirAll(dir, perm)
+	if err != nil {
+		return err
+	}
+
+	file, err := os.Create(filePath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	return nil
 }

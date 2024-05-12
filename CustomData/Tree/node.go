@@ -382,3 +382,11 @@ func (n *TreeNode[T]) removeNode() []*TreeNode[T] {
 
 	return nil
 }
+
+// GetData is a getter for the data of the node.
+//
+// Returns:
+//   - T: The data of the node.
+func (n *TreeNode[T]) GetData() T {
+	return n.Data
+}

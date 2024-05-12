@@ -169,7 +169,14 @@ func ParallelUnion[T any](funcs ...PredicateFilter[T]) PredicateFilter[T] {
 //     returns a slice with that element. Otherwise, it returns a nil slice.
 //   - An element is said to satisfy the filter function if the function returns true
 //     when applied to the element.
+//   - If the filter function is nil, the function returns the original slice.
 func SliceFilter[T any](S []T, filter PredicateFilter[T]) []T {
+	if len(S) == 0 {
+		return nil
+	} else if filter == nil {
+		return S
+	}
+
 	solution := make([]T, 0)
 
 	for _, item := range S {
@@ -194,6 +201,33 @@ func SliceFilter[T any](S []T, filter PredicateFilter[T]) []T {
 //   - If S is empty, the function returns a nil slice.
 func FilterNilValues[T any](S []*T) []*T {
 	solution := make([]*T, 0)
+
+	for _, item := range S {
+		if item != nil {
+			solution = append(solution, item)
+		}
+	}
+
+	return solution
+}
+
+// FilterNilPredicates is a function that iterates over the slice and removes the
+// nil predicate functions.
+//
+// Parameters:
+//   - S: slice of predicate functions.
+//
+// Returns:
+//   - []PredicateFilter: slice of predicate functions that are not nil.
+//
+// Behavior:
+//   - If S is empty, the function returns a nil slice.
+func FilterNilPredicates[T any](S []PredicateFilter[T]) []PredicateFilter[T] {
+	if len(S) == 0 {
+		return nil
+	}
+
+	solution := make([]PredicateFilter[T], 0)
 
 	for _, item := range S {
 		if item != nil {

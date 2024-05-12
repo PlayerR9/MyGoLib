@@ -14,7 +14,7 @@ import (
 //
 // Returns:
 //   - []error: A slice of errors that represent the error statuses of the Go routines.
-func WaitAll(batch map[string]*HandlerSimple) []error {
+func WaitAll(batch map[string]*HandlerSimple) map[string]error {
 	// 1. Filter out nil GRHandler instances.
 	batch = mext.FilterNilValues(batch)
 	if len(batch) == 0 {
@@ -22,27 +22,31 @@ func WaitAll(batch map[string]*HandlerSimple) []error {
 	}
 
 	// 2. Initialize all error channels.
-	errChans := make([]<-chan error, 0, len(batch))
+	errChans := make(map[string]<-chan error)
 
-	for _, h := range batch {
-		errChans = append(errChans, h.GetErrChannel())
+	for k, h := range batch {
+		errChans[k] = h.GetErrChannel()
 	}
 
 	// 3. Wait for all Go routines to finish.
-	errs := make([]error, len(batch))
+	errs := make(map[string]error)
+
+	for k := range batch {
+		errs[k] = nil
+	}
 
 	var wg sync.WaitGroup
 
 	wg.Add(len(batch))
 
-	for i, errChan := range errChans {
-		go func(i int, errChan <-chan error) {
+	for k, errChan := range errChans {
+		go func(k string, errChan <-chan error) {
 			defer wg.Done()
 
 			for err := range errChan {
-				errs[i] = err
+				errs[k] = err
 			}
-		}(i, errChan)
+		}(k, errChan)
 	}
 
 	wg.Wait()

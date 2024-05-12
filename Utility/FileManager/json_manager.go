@@ -102,6 +102,11 @@ func (m *JSONManager[T]) CreateEmpty() error {
 		return err
 	}
 
+	err = CreateFile(m.path, 0755)
+	if err != nil {
+		return err
+	}
+
 	return os.WriteFile(m.path, data, 0644)
 }
 
