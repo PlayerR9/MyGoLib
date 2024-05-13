@@ -69,22 +69,42 @@ func (fs *FString) Traversor(indent *IndentConfig) *Traversor {
 func (fs *FString) Boxed(width, height int) ([]string, error) {
 	fs.fix()
 
-	ts, err := fs.generateContentBox(width, height)
-	if err == nil {
-		return nil, err
-	}
+	all_fields := fs.getAllFields()
 
-	leftLimit := ts.GetFurthestRightEdge()
+	fss := make([]*FString, 0, len(all_fields))
 
-	lines := make([]string, 0, len(ts.Lines))
-
-	for _, line := range ts.Lines {
-		fitted, err := sext.FitString(line.String(), leftLimit)
-		if err != nil {
-			return nil, err
+	for _, fields := range all_fields {
+		fs := &FString{
+			lines: fields,
 		}
 
-		lines = append(lines, fitted)
+		fss = append(fss, fs)
+	}
+
+	lines := make([]string, 0)
+
+	for _, fs := range fss {
+		for index := 0; index < len(fs.lines); index++ {
+			if fs.lines[index] == "" {
+				lines = append(lines, strings.Repeat(" ", width))
+			} else {
+				ts, err := fs.generateContentBox(width, height, index)
+				if err != nil {
+					return nil, err
+				}
+
+				leftLimit := ts.GetFurthestRightEdge()
+
+				for _, line := range ts.Lines {
+					fitted, err := sext.FitString(line.String(), leftLimit)
+					if err != nil {
+						return nil, err
+					}
+
+					lines = append(lines, fitted)
+				}
+			}
+		}
 	}
 
 	return lines, nil
@@ -106,6 +126,11 @@ func (fs *FString) fix() {
 // Must call Fix() before calling this function.
 func (fs *FString) getAllFields() [][]string {
 	// TO DO: Handle special WHITESPACE characters
+
+	for _, content := range fs.lines {
+		fields := strings.Fields(content)
+	}
+
 	fieldList := make([][]string, 0)
 
 	for _, content := range fs.lines {
@@ -162,7 +187,7 @@ func (fs *FString) insertField(fields []string, width, height int) (bool, error)
 		}
 
 		// 4. Insert the line in the text split.
-		ok := ts.InsertWord(splt.String())
+		ok := ts.InsertWord(splt.Line[0])
 		if !ok {
 			panic("could not insert word")
 		}
@@ -200,11 +225,8 @@ func (fs *FString) insertField(fields []string, width, height int) (bool, error)
 	return false, nil
 }
 
-func (fs *FString) generateContentBox(width, height int) (*splt.TextSplit, error) {
-	fieldList := fs.getAllFields()
-	if len(fieldList) == 0 {
-		return splt.NewTextSplit(width, 0)
-	}
+func (fs *FString) generateContentBox(width, height int, index int) (*splt.TextSplit, error) {
+	fieldList := fs.lines
 
 	// Try to optimize lines
 
@@ -213,14 +235,14 @@ func (fs *FString) generateContentBox(width, height int) (*splt.TextSplit, error
 		return nil, fmt.Errorf("width cannot be less than %d", MarginLeft)
 	}
 
-	fields := fieldList[0]
+	fields := fieldList[index]
 
 	possibleNewLine, err := fs.insertField(fields, width-MarginLeft, height)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, fields := range fieldList[1:] {
+	for _, fields := range fieldList[index+1:] {
 		if possibleNewLine {
 			for len(fields) > 0 {
 				if !ts.CanInsertWord(fields[0], len(ts.Lines)-1) {

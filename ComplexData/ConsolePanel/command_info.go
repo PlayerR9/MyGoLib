@@ -178,8 +178,6 @@ func (inf *CommandInfo) Parse(args []string) (*ParsedCommand, error) {
 		}
 
 		return command, nil
-	} else if len(args) == 0 {
-		return nil, errors.New("no arguments provided")
 	}
 
 	argsMap := make(map[string]any)

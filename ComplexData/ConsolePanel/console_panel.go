@@ -124,17 +124,41 @@ func NewConsolePanel(execName string, description *cdd.Document) *ConsolePanel {
 	helpCommandInfo := NewCommandInfo(
 		cdd.NewDocument("Displays help information for the console."),
 		func(args map[string]any) error {
-			trav := fs.NewFString()
+			if len(args) == 0 {
+				trav := fs.NewFString()
 
-			cp.FString(trav.Traversor(nil))
+				cp.FString(trav.Traversor(nil))
 
-			lines, err := trav.Boxed(cp.width, cp.height)
-			if err != nil {
-				return err
+				lines, err := trav.Boxed(cp.width, cp.height)
+				if err != nil {
+					return err
+				}
+
+				for _, line := range lines {
+					fmt.Println(line)
+				}
+
+				return nil
 			}
 
-			for _, line := range lines {
-				fmt.Println(line)
+			for opcode := range args {
+				command, err := cp.GetCommand(opcode)
+				if err != nil {
+					return err
+				}
+
+				trav := fs.NewFString()
+
+				command.FString(trav.Traversor(nil))
+
+				lines, err := trav.Boxed(cp.width, cp.height)
+				if err != nil {
+					return err
+				}
+
+				for _, line := range lines {
+					fmt.Println(line)
+				}
 			}
 
 			return nil
@@ -211,18 +235,9 @@ func (cns *ConsolePanel) ParseArguments(args []string) (*ParsedCommand, error) {
 
 	args = args[1:] // Remove the command name
 
-	var pc *ParsedCommand
-
-	if len(args) == 0 {
-		pc, err = NewParsedCommand(make(map[string]any), command.GetCallback())
-		if err != nil {
-			panic(err)
-		}
-	} else {
-		pc, err = command.Parse(args)
-		if err != nil {
-			return nil, err
-		}
+	pc, err := command.Parse(args)
+	if err != nil {
+		return nil, err
 	}
 
 	return pc, nil
