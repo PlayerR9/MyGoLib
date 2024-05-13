@@ -114,10 +114,7 @@ func NewConsolePanel(execName string, description *cdd.Document) *ConsolePanel {
 		},
 	)
 
-	cp.AddCommand(
-		"help",
-		helpCommandInfo,
-	)
+	cp.commandMap.AddEntry("help", helpCommandInfo)
 
 	return cp
 }
