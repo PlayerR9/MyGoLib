@@ -1,13 +1,9 @@
-package Results
-
-import (
-	com "github.com/PlayerR9/MyGoLib/ComplexData/ConsolePanel/Common"
-)
+package ConsolePanel
 
 // FlagParseResult represents the result of parsing a flag.
 type FlagParseResult struct {
 	// Parsed arguments.
-	Args com.ArgumentsMap
+	Args map[string]any
 
 	// Index of the last unsuccessful parse argument.
 	Index int
@@ -22,7 +18,7 @@ type FlagParseResult struct {
 //
 // Returns:
 //   - *FlagParseResult: A pointer to the new FlagParseResult.
-func NewFlagParseResult(args com.ArgumentsMap, index int) *FlagParseResult {
+func NewFlagParseResult(args map[string]any, index int) *FlagParseResult {
 	return &FlagParseResult{
 		Args:  args,
 		Index: index,

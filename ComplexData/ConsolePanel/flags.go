@@ -1,6 +1,6 @@
 // Package CnsPanel provides a structure and functions for handling
 // console command flags.
-package Structs
+package ConsolePanel
 
 import (
 	"errors"
@@ -8,10 +8,35 @@ import (
 	cdd "github.com/PlayerR9/MyGoLib/CustomData/Document"
 	fs "github.com/PlayerR9/MyGoLib/Formatting/FString"
 	slext "github.com/PlayerR9/MyGoLib/Utility/SliceExt"
-
-	com "github.com/PlayerR9/MyGoLib/ComplexData/ConsolePanel/Common"
-	res "github.com/PlayerR9/MyGoLib/ComplexData/ConsolePanel/Results"
 )
+
+// FlagCallbackFunc is a function type that represents a callback
+// function for a console command flag.
+//
+// Parameters:
+//   - argMap: A map of string keys to any values representing the
+//     arguments passed to the flag.
+//
+// Returns:
+//   - map[string]any: A map of string keys to any values representing
+//     the parsed arguments.
+//   - error: An error if the flag fails.
+type FlagCallbackFunc func(argMap map[string]any) (map[string]any, error)
+
+// NoFlagCallback is a default callback function for a console command flag
+// when no callback is provided.
+//
+// Parameters:
+//   - args: A slice of strings representing the arguments passed to
+//     the flag.
+//
+// Returns:
+//   - map[string]any: A map of string keys to any values representing
+//     the parsed arguments.
+//   - error: nil
+func NoFlagCallback(argMap map[string]any) (map[string]any, error) {
+	return argMap, nil
+}
 
 // FlagInfo represents a flag for a console command.
 type FlagInfo struct {
@@ -26,7 +51,7 @@ type FlagInfo struct {
 	required bool
 
 	// callback is the function that parses the flag arguments.
-	callback com.FlagCallbackFunc
+	callback FlagCallbackFunc
 }
 
 // FString generates a formatted string representation of a FlagInfo.
@@ -96,7 +121,7 @@ func (cfi *FlagInfo) FString(trav *fs.Traversor) {
 // Behaviors:
 //   - Any nil arguments are filtered out.
 //   - If 'callback' is nil, a default callback is used that returns nil without error.
-func NewFlagInfo(isRequired bool, callback com.FlagCallbackFunc, args ...*Argument) *FlagInfo {
+func NewFlagInfo(isRequired bool, callback FlagCallbackFunc, args ...*Argument) *FlagInfo {
 	flag := &FlagInfo{
 		description: nil,
 		required:    isRequired,
@@ -105,7 +130,7 @@ func NewFlagInfo(isRequired bool, callback com.FlagCallbackFunc, args ...*Argume
 	flag.args = slext.FilterNilValues(args)
 
 	if callback == nil {
-		flag.callback = com.NoFlagCallback
+		flag.callback = NoFlagCallback
 	} else {
 		flag.callback = callback
 	}
@@ -140,22 +165,22 @@ func (cfi *FlagInfo) SetDescription(description *cdd.Document) *FlagInfo {
 //   - args: The arguments to parse.
 //
 // Returns:
-//   - ArgumentsMap: A map of the parsed arguments.
+//   - map[string]any: A map of the parsed arguments.
 //   - int: The index of the last unsuccessful parse argument.
 //   - bool: A boolean indicating whether the error is ignorable.
 //   - error: An error, if any.
-func (flag *FlagInfo) Parse(args []string) (*res.FlagParseResult, error) {
+func (flag *FlagInfo) Parse(args []string) (*FlagParseResult, error) {
 	if len(args) == 0 {
-		return res.NewFlagParseResult(nil, -1), errors.New("no arguments provided")
+		return NewFlagParseResult(nil, -1), errors.New("no arguments provided")
 	}
 
 	if len(args) <= len(flag.args) {
-		return res.NewFlagParseResult(nil, 1), errors.New("not enough arguments provided")
+		return NewFlagParseResult(nil, 1), errors.New("not enough arguments provided")
 	} else if len(args)+1 > len(flag.args) {
-		return res.NewFlagParseResult(nil, 1), errors.New("too many arguments provided")
+		return NewFlagParseResult(nil, 1), errors.New("too many arguments provided")
 	}
 
-	parsedArgs := make(com.ArgumentsMap) // Map to store the parsed arguments
+	parsedArgs := make(map[string]any) // Map to store the parsed arguments
 
 	i := 1
 	for i < len(flag.args) {
@@ -163,7 +188,7 @@ func (flag *FlagInfo) Parse(args []string) (*res.FlagParseResult, error) {
 
 		parsedArg, err := arg.Parse(args[i])
 		if err != nil {
-			return res.NewFlagParseResult(nil, i), err
+			return NewFlagParseResult(nil, i), err
 		}
 
 		parsedArgs[arg.name] = parsedArg
@@ -172,10 +197,10 @@ func (flag *FlagInfo) Parse(args []string) (*res.FlagParseResult, error) {
 
 	parsed, err := flag.callback(parsedArgs)
 	if err != nil {
-		return res.NewFlagParseResult(nil, i), err
+		return NewFlagParseResult(nil, i), err
 	}
 
-	return res.NewFlagParseResult(parsed, i), nil
+	return NewFlagParseResult(parsed, i), nil
 }
 
 // GetArguments returns the arguments of a FlagInfo.

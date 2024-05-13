@@ -1,10 +1,31 @@
-package Structs
+package ConsolePanel
 
 import (
 	"strings"
-
-	com "github.com/PlayerR9/MyGoLib/ComplexData/ConsolePanel/Common"
 )
+
+// ArgumentParserFunc is a function type that represents a function
+// that parses a string argument.
+//
+// Parameters:
+//   - string: The string to parse.
+//
+// Returns:
+//   - any: The parsed value.
+type ArgumentParserFunc func(string) (any, error)
+
+// NoArgumentParser is a default argument parser function that returns
+// the string as is.
+//
+// Parameters:
+//   - string: The string to parse.
+//
+// Returns:
+//   - any: The string as is.
+//   - error: nil
+func NoArgumentParser(s string) (any, error) {
+	return s, nil
+}
 
 // Argument represents an argument of a flag.
 type Argument struct {
@@ -12,7 +33,7 @@ type Argument struct {
 	name string
 
 	// parserFunc is the function that parses the argument.
-	parserFunc com.ArgumentParserFunc
+	parserFunc ArgumentParserFunc
 }
 
 // String returns the string: <name>
@@ -40,7 +61,7 @@ func (a *Argument) String() string {
 //
 // Behaviors:
 //   - If argumentParserFunc is nil, the default NoArgumentParser is used.
-func NewArgument(name string, argumentParserFunc com.ArgumentParserFunc) *Argument {
+func NewArgument(name string, argumentParserFunc ArgumentParserFunc) *Argument {
 	arg := &Argument{
 		name: name,
 	}
@@ -48,7 +69,7 @@ func NewArgument(name string, argumentParserFunc com.ArgumentParserFunc) *Argume
 	if argumentParserFunc != nil {
 		arg.parserFunc = argumentParserFunc
 	} else {
-		arg.parserFunc = com.NoArgumentParser
+		arg.parserFunc = NoArgumentParser
 	}
 
 	return arg

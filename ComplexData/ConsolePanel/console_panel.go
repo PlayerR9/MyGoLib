@@ -10,10 +10,6 @@ import (
 	fs "github.com/PlayerR9/MyGoLib/Formatting/FString"
 
 	sm "github.com/PlayerR9/MyGoLib/CustomData/SortedMap"
-
-	com "github.com/PlayerR9/MyGoLib/ComplexData/ConsolePanel/Common"
-	res "github.com/PlayerR9/MyGoLib/ComplexData/ConsolePanel/Results"
-	"github.com/PlayerR9/MyGoLib/ComplexData/ConsolePanel/Structs"
 )
 
 // ConsolePanel represents a command line console.
@@ -25,7 +21,7 @@ type ConsolePanel struct {
 	description *cdd.Document
 
 	// commandMap is a map of command opcodes to CommandInfo.
-	commandMap *sm.SortedMap[string, *Structs.CommandInfo]
+	commandMap *sm.SortedMap[string, *CommandInfo]
 }
 
 // FString generates a formatted string representation of a ConsolePanel.
@@ -101,13 +97,13 @@ func NewConsolePanel(execName string, description *cdd.Document) *ConsolePanel {
 	cp := &ConsolePanel{
 		ExecutableName: execName,
 		description:    description,
-		commandMap:     sm.NewSortedMap[string, *Structs.CommandInfo](),
+		commandMap:     sm.NewSortedMap[string, *CommandInfo](),
 	}
 
 	// Add the help command
-	helpCommandInfo := Structs.NewCommandInfo(
+	helpCommandInfo := NewCommandInfo(
 		cdd.NewDocument("Displays help information for the console."),
-		func(args com.ArgumentsMap) error {
+		func(args map[string]any) error {
 			trav := fs.NewFString()
 
 			cp.FString(trav.Traversor(nil))
@@ -139,15 +135,15 @@ func NewConsolePanel(execName string, description *cdd.Document) *ConsolePanel {
 //   - If opcode is either an empty string or "help", the command is not added.
 //   - If info is nil, the command is not added.
 //   - If the opcode already exists, the existing command is replaced with the new one.
-func (cp *ConsolePanel) AddCommand(opcode string, info *Structs.CommandInfo) *ConsolePanel {
+func (cp *ConsolePanel) AddCommand(opcode string, info *CommandInfo) *ConsolePanel {
 	if info == nil || opcode == "" || opcode == "help" {
 		return cp
 	}
 
 	cp.commandMap.AddEntry(opcode, info)
 
-	addSpecificHelp := func(info *Structs.CommandInfo) (*Structs.CommandInfo, error) {
-		newInfo := Structs.NewFlagInfo(false, nil, nil).SetDescription(
+	addSpecificHelp := func(info *CommandInfo) (*CommandInfo, error) {
+		newInfo := NewFlagInfo(false, nil, nil).SetDescription(
 			cdd.NewDocument(
 				fmt.Sprintf("Displays the help information for the %q command.", opcode),
 			),
@@ -179,7 +175,7 @@ func (cp *ConsolePanel) AddCommand(opcode string, info *Structs.CommandInfo) *Co
 // Returns:
 //   - *ParsedCommand: A pointer to the parsed command.
 //   - error: An error, if any.
-func (cns *ConsolePanel) ParseArguments(args []string) (*res.ParsedCommand, error) {
+func (cns *ConsolePanel) ParseArguments(args []string) (*ParsedCommand, error) {
 	if len(args) == 0 {
 		return nil, errors.New("missing command name")
 	}
@@ -191,10 +187,10 @@ func (cns *ConsolePanel) ParseArguments(args []string) (*res.ParsedCommand, erro
 
 	args = args[1:] // Remove the command name
 
-	var pc *res.ParsedCommand
+	var pc *ParsedCommand
 
 	if len(args) == 0 {
-		pc, err = res.NewParsedCommand(make(com.ArgumentsMap), command.GetCallback())
+		pc, err = NewParsedCommand(make(map[string]any), command.GetCallback())
 		if err != nil {
 			panic(err)
 		}
@@ -216,6 +212,6 @@ func (cns *ConsolePanel) ParseArguments(args []string) (*res.ParsedCommand, erro
 // Returns:
 //   - *CommandInfo: The CommandInfo for the opcode.
 //   - bool: A boolean indicating if the command was found.
-func (cns *ConsolePanel) GetCommand(opcode string) (*Structs.CommandInfo, error) {
+func (cns *ConsolePanel) GetCommand(opcode string) (*CommandInfo, error) {
 	return cns.commandMap.GetEntry(opcode)
 }

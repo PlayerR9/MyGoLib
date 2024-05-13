@@ -1,18 +1,40 @@
 // Package CnsPanel provides a structure and functions for handling
 // console command flags.
-package Structs
+package ConsolePanel
 
 import (
 	"errors"
 
-	com "github.com/PlayerR9/MyGoLib/ComplexData/ConsolePanel/Common"
 	fs "github.com/PlayerR9/MyGoLib/Formatting/FString"
 
-	res "github.com/PlayerR9/MyGoLib/ComplexData/ConsolePanel/Results"
 	cdd "github.com/PlayerR9/MyGoLib/CustomData/Document"
 
 	sm "github.com/PlayerR9/MyGoLib/CustomData/SortedMap"
 )
+
+// CommandCallbackFunc is a function type that represents a callback
+// function for a console command.
+//
+// Parameters:
+//   - args: A map of string keys to any values representing the
+//     arguments passed to the command.
+//
+// Returns:
+//   - error: An error if the command fails.
+type CommandCallbackFunc func(args map[string]any) error
+
+// NoCommandCallback is a default callback function for a console command
+// when no callback is provided.
+//
+// Parameters:
+//   - args: A map of string keys to any values representing the
+//     arguments passed to the command.
+//
+// Returns:
+//   - error: nil
+func NoCommandCallback(args map[string]any) error {
+	return nil
+}
 
 // CommandInfo represents a console command.
 type CommandInfo struct {
@@ -24,7 +46,7 @@ type CommandInfo struct {
 	flags *sm.SortedMap[string, *FlagInfo]
 
 	// callback is the function to call when the command is executed.
-	callback com.CommandCallbackFunc
+	callback CommandCallbackFunc
 }
 
 // FString generates a formatted string representation of a CommandInfo.
@@ -90,7 +112,7 @@ func (cci *CommandInfo) FString(trav *fs.Traversor) {
 //
 // Behaviors:
 //   - If callback is nil, NoCommandCallback is used.
-func NewCommandInfo(description *cdd.Document, callback com.CommandCallbackFunc) *CommandInfo {
+func NewCommandInfo(description *cdd.Document, callback CommandCallbackFunc) *CommandInfo {
 	inf := &CommandInfo{
 		description: description,
 		flags:       sm.NewSortedMap[string, *FlagInfo](),
@@ -99,7 +121,7 @@ func NewCommandInfo(description *cdd.Document, callback com.CommandCallbackFunc)
 	if callback != nil {
 		inf.callback = callback
 	} else {
-		inf.callback = com.NoCommandCallback
+		inf.callback = NoCommandCallback
 	}
 
 	return inf
@@ -142,13 +164,13 @@ func (ci *CommandInfo) AddFlag(flag string, info *FlagInfo) *CommandInfo {
 // Returns:
 //   - *ParsedCommand: A pointer to the parsed command.
 //   - error: An error, if any.
-func (inf *CommandInfo) Parse(args []string) (*res.ParsedCommand, error) {
+func (inf *CommandInfo) Parse(args []string) (*ParsedCommand, error) {
 	if inf.flags.Size() == 0 {
 		if len(args) != 0 {
 			return nil, errors.New("no flags expected")
 		}
 
-		command, err := res.NewParsedCommand(make(com.ArgumentsMap), inf.callback)
+		command, err := NewParsedCommand(make(map[string]any), inf.callback)
 		if err != nil {
 			panic(err)
 		}
@@ -158,7 +180,7 @@ func (inf *CommandInfo) Parse(args []string) (*res.ParsedCommand, error) {
 		return nil, errors.New("no arguments provided")
 	}
 
-	argsMap := make(com.ArgumentsMap)
+	argsMap := make(map[string]any)
 	todo := inf.flags.Copy().(*sm.SortedMap[string, *FlagInfo])
 
 	for len(args) > 0 {
@@ -190,7 +212,7 @@ func (inf *CommandInfo) Parse(args []string) (*res.ParsedCommand, error) {
 		}
 	}
 
-	command, err := res.NewParsedCommand(argsMap, inf.callback)
+	command, err := NewParsedCommand(argsMap, inf.callback)
 	if err != nil {
 		panic(err)
 	}
@@ -224,6 +246,6 @@ func (inf *CommandInfo) GetFlags() []*FlagInfo {
 //
 // Behaviors:
 //   - Never returns nil.
-func (inf *CommandInfo) GetCallback() com.CommandCallbackFunc {
+func (inf *CommandInfo) GetCallback() CommandCallbackFunc {
 	return inf.callback
 }

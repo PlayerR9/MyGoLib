@@ -1,4 +1,4 @@
-package Common
+package ConsolePanel
 
 import "fmt"
 

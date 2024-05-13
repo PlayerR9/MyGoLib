@@ -1,19 +1,18 @@
 // Package CnsPanel provides a structure and functions for handling
 // console command flags.
-package Results
+package ConsolePanel
 
 import (
-	com "github.com/PlayerR9/MyGoLib/ComplexData/ConsolePanel/Common"
 	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
 )
 
 // ParsedCommand represents a parsed console command.
 type ParsedCommand struct {
 	// args is the arguments passed to the command.
-	args com.ArgumentsMap
+	args map[string]any
 
 	// callback is the function to call when the command is used.
-	callback com.CommandCallbackFunc
+	callback CommandCallbackFunc
 }
 
 // NewParsedCommand creates a new ParsedCommand with the provided name, arguments,
@@ -30,7 +29,7 @@ type ParsedCommand struct {
 //
 // Behaviors:
 //   - If callbackFunc is nil, NoCommandCallback is used.
-func NewParsedCommand(args com.ArgumentsMap, callbackFunc com.CommandCallbackFunc) (*ParsedCommand, error) {
+func NewParsedCommand(args map[string]any, callbackFunc CommandCallbackFunc) (*ParsedCommand, error) {
 	if callbackFunc == nil {
 		return nil, ers.NewErrNilParameter("callbackFunc")
 	}
