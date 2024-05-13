@@ -1,6 +1,7 @@
 package Tree
 
 import (
+	ffs "github.com/PlayerR9/MyGoLib/Formatting/FString"
 	"github.com/PlayerR9/MyGoLib/ListLike/Queuer"
 	"github.com/PlayerR9/MyGoLib/ListLike/Stacker"
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
@@ -26,12 +27,12 @@ type Tree[T any] struct {
 //
 // Returns:
 //   - []string: A slice of strings that represent the tree.
-func (t *Tree[T]) FString(indentLevel int) []string {
+func (t *Tree[T]) FString(trav *ffs.Traversor) {
 	if t.root == nil {
-		return []string{}
+		return
 	}
 
-	return t.root.FString(indentLevel)
+	t.root.FString(trav)
 }
 
 // NewTree creates a new tree with the given root.

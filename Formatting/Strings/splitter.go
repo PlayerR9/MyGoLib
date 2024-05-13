@@ -98,6 +98,45 @@ type TextSplit struct {
 	Lines []*SpltLine
 }
 
+// NewTextSplit creates a new TextSplit with the given width.
+//
+// Parameters:
+//   - width: The maximum length of a line.
+//   - height: The maximum number of lines.
+//
+// Returns:
+//   - *TextSplit: A pointer to the newly created TextSplit.
+//   - error: An error of type *ers.ErrInvalidParameter if the width or height is less
+//     than 0.
+func NewTextSplit(width, height int) (*TextSplit, error) {
+	if width < 0 {
+		return nil, ers.NewErrInvalidParameter(
+			"width",
+			ers.NewErrGTE(0),
+		)
+	}
+
+	if height < 0 {
+		return nil, ers.NewErrInvalidParameter(
+			"width",
+			ers.NewErrGTE(0),
+		)
+	}
+
+	return &TextSplit{
+		Width: width,
+		Lines: make([]*SpltLine, 0, height),
+	}, nil
+}
+
+func (ts *TextSplit) GetFirstLine() *SpltLine {
+	if len(ts.Lines) == 0 {
+		return nil
+	}
+
+	return ts.Lines[0]
+}
+
 // GetFurthestRightEdge is a method that returns the length of the
 // longest line in the TextSplit.
 //

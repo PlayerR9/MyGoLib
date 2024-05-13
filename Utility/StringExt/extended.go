@@ -305,3 +305,43 @@ func GenerateID(size int) (string, error) {
 
 	return hex.EncodeToString(b), nil
 }
+
+// FitString fits a string to the specified width by adding spaces to the end
+// of the string until the width is reached.
+//
+// Parameters:
+//   - width: The width to fit the string to.
+//
+// Returns:
+//   - string: The string with spaces added to the end to fit the width.
+//   - error: An error if the width is less than 0.
+//
+// Behaviors:
+//   - If the width is less than the length of the string, the string is
+//     truncated to fit the width.
+//   - If the width is greater than the length of the string, spaces are added
+//     to the end of the string until the width is reached.
+func FitString(s string, width int) (string, error) {
+	if width < 0 {
+		return "", ue.NewErrInvalidParameter(
+			"width",
+			ue.NewErrGTE(0),
+		)
+	}
+
+	len := len([]rune(s))
+
+	if width == 0 {
+		return "", nil
+	} else if len == 0 {
+		return strings.Repeat(" ", width), nil
+	} else if len == width {
+		return s, nil
+	}
+
+	if len > width {
+		return s[:width], nil
+	} else {
+		return s + strings.Repeat(" ", width-len), nil
+	}
+}

@@ -4,7 +4,6 @@ package Structs
 
 import (
 	"errors"
-	"strings"
 
 	cdd "github.com/PlayerR9/MyGoLib/CustomData/Document"
 	fs "github.com/PlayerR9/MyGoLib/Formatting/FString"
@@ -46,53 +45,40 @@ type FlagInfo struct {
 //		// <description>
 //
 //	Required: <Yes/No>
-func (cfi *FlagInfo) FString(indentLevel int) []string {
-	lines := make([]string, 0)
-	var builder strings.Builder
-
+func (cfi *FlagInfo) FString(trav *fs.Traversor) {
 	// Arguments:
 	values := make([]string, 0, len(cfi.args))
 	for _, arg := range cfi.args {
 		values = append(values, arg.String())
 	}
 
-	builder.WriteString("Arguments: ")
-	builder.WriteString(strings.Join(values, " "))
-
-	lines = append(lines, builder.String())
+	trav.AppendString("Arguments: ")
+	trav.AppendStrings(" ", values...)
+	trav.AddLines()
 
 	// Empty line
-	lines = append(lines, "")
+	trav.EmptyLine()
 
 	// Description:
 	if cfi.description == nil {
-		lines = append(lines, "Description: [No description provided]")
+		trav.AddLines("Description: [No description provided]")
 	} else {
-		lines = append(lines, "Description:")
+		trav.AddLines("Description:")
 
-		descriptionLines := cfi.description.FString(indentLevel + 1)
-		lines = append(lines, descriptionLines...)
+		cfi.description.FString(trav.IncreaseIndent(1))
 	}
 
 	// Empty line
-	lines = append(lines, "")
+	trav.EmptyLine()
 
 	// Required:
 	if cfi.required {
-		lines = append(lines, "Required: Yes")
+		trav.AddLines("Required: Yes")
 	} else {
-		lines = append(lines, "Required: No")
+		trav.AddLines("Required: No")
 	}
 
-	// Add the indentation to each line
-	indentCfig := fs.NewIndentConfig(fs.DefaultIndentation, indentLevel, false)
-	indent := indentCfig.String()
-
-	for i := 0; i < len(lines); i++ {
-		lines[i] = indent + lines[i]
-	}
-
-	return lines
+	trav.Apply()
 }
 
 // NewFlagInfo creates a new FlagInfo with the given name and

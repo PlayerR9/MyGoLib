@@ -2,6 +2,7 @@ package Document
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	ffs "github.com/PlayerR9/MyGoLib/Formatting/FString"
@@ -10,7 +11,11 @@ import (
 func TestFString(t *testing.T) {
 	doc := NewDocument("Hello", "World")
 
-	expected := doc.FString(0)
+	trav := ffs.NewFString()
+
+	doc.FString(trav.Traversor(nil))
+
+	expected := strings.Split(trav.String(), "\n")
 
 	var builder ffs.Builder
 

@@ -5,7 +5,6 @@ package ConsolePanel
 import (
 	"errors"
 	"fmt"
-	"strings"
 
 	cdd "github.com/PlayerR9/MyGoLib/CustomData/Document"
 	fs "github.com/PlayerR9/MyGoLib/Formatting/FString"
@@ -50,64 +49,45 @@ type ConsolePanel struct {
 //		- <command 2>:
 //	   	// <description>
 //		// ...
-func (cns *ConsolePanel) FString(indentLevel int) []string {
-	lines := make([]string, 0)
-	var builder strings.Builder
-	indentCfig := fs.NewIndentConfig(fs.DefaultIndentation, indentLevel, false)
-	indent := indentCfig.String()
+func (cns *ConsolePanel) FString(trav *fs.Traversor) {
+	indent := trav.GetIndent()
 
 	// Usage:
-	builder.WriteString("Usage: ")
-	builder.WriteString(cns.ExecutableName)
-	builder.WriteString(" <command> [flags]")
-
-	lines = append(lines, builder.String())
+	trav.AppendStrings(" ", "Usage:", cns.ExecutableName, "<command> [flags]")
+	trav.AddLines()
 
 	// Empty line
-	lines = append(lines, "")
+	trav.EmptyLine()
 
 	// Description:
 	if cns.description == nil {
-		lines = append(lines, "Description: [No description provided]")
+		trav.AddLines("Description: [No description provided]")
 	} else {
-		lines = append(lines, "Description:")
+		trav.AddLines("Description:")
 
-		descriptionLines := cns.description.FString(indentLevel + 1)
-		lines = append(lines, descriptionLines...)
+		cns.description.FString(trav.IncreaseIndent(1))
 	}
 
 	// Empty line
-	lines = append(lines, "")
+	trav.EmptyLine()
 
 	// Commands:
 	if cns.commandMap.Size() == 0 {
-		lines = append(lines, "Commands: None")
+		trav.AddLines("Commands: None")
 	} else {
-		lines = append(lines, "Commands:")
+		trav.AddLines("Commands:")
 
 		commands := cns.commandMap.GetEntries()
 
 		for _, command := range commands {
-			builder.Reset()
+			trav.AppendStrings("", indent, "- ", command.First, ":")
+			trav.AddLines()
 
-			builder.WriteString(indent)
-			builder.WriteString("- ")
-			builder.WriteString(command.First)
-			builder.WriteRune(':')
-
-			lines = append(lines, builder.String())
-
-			commandLines := command.Second.FString(indentLevel + 2)
-			lines = append(lines, commandLines...)
+			command.Second.FString(trav.IncreaseIndent(2))
 		}
 	}
 
-	// Add the indentation to each line
-	for i := 0; i < len(lines); i++ {
-		lines[i] = indent + lines[i]
-	}
-
-	return lines
+	trav.Apply()
 }
 
 // NewConsolePanel creates a new ConsolePanel with the provided executable name.
@@ -128,11 +108,11 @@ func NewConsolePanel(execName string, description *cdd.Document) *ConsolePanel {
 	helpCommandInfo := Structs.NewCommandInfo(
 		cdd.NewDocument("Displays help information for the console."),
 		func(args com.ArgumentsMap) error {
-			lines := cp.FString(0)
+			trav := fs.NewFString()
 
-			for _, line := range lines {
-				fmt.Println(line)
-			}
+			cp.FString(trav.Traversor(nil))
+
+			fmt.Println(trav.String())
 
 			return nil
 		},

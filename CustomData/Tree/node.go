@@ -29,19 +29,14 @@ type TreeNode[T any] struct {
 //
 // Returns:
 //   - []string: A slice of strings that represent the node.
-func (t *TreeNode[T]) FString(indentLevel int) []string {
-	indentConfig := ffs.NewIndentConfig(ffs.DefaultIndentation, indentLevel, false)
-	indent := indentConfig.String()
-
-	result := make([]string, 0)
-
-	result = append(result, indent+intf.StringOf(t.Data))
+func (t *TreeNode[T]) FString(trav *ffs.Traversor) {
+	trav.AddLines(intf.StringOf(t.Data))
 
 	for _, child := range t.children {
-		result = append(result, child.FString(indentLevel+1)...)
+		child.FString(trav.IncreaseIndent(1))
 	}
 
-	return result
+	trav.Apply()
 }
 
 // Copy returns a deep copy of the node.

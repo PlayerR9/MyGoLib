@@ -4,7 +4,6 @@ package Structs
 
 import (
 	"errors"
-	"strings"
 
 	com "github.com/PlayerR9/MyGoLib/ComplexData/ConsolePanel/Common"
 	fs "github.com/PlayerR9/MyGoLib/Formatting/FString"
@@ -47,66 +46,36 @@ type CommandInfo struct {
 //		- <flag 2>:
 //	   	// <description>
 //		// ...
-func (cci *CommandInfo) FString(indentLevel int) []string {
-	indentCfig := fs.NewIndentConfig(fs.DefaultIndentation, indentLevel, false)
-	indent := indentCfig.String()
-
-	lines := make([]string, 0)
+func (cci *CommandInfo) FString(trav *fs.Traversor) {
+	indent := trav.GetIndent()
 
 	// Description:
 	if cci.description == nil {
-		lines = append(lines, "Description: [No description provided]")
+		trav.AddLines("Description: [No description provided]")
 	} else {
-		lines = append(lines, "Description:")
+		trav.AddLines("Description:")
 
-		descriptionLines := cci.description.FString(indentLevel + 1)
-		lines = append(lines, descriptionLines...)
+		cci.description.FString(trav.IncreaseIndent(1))
 	}
 
 	// Empty line
-	lines = append(lines, "")
+	trav.EmptyLine()
 
 	// Flags:
 	if cci.flags.Size() == 0 {
-		lines = append(lines, "Flags: None")
+		trav.AddLines("Flags: None")
 	} else {
-		lines = append(lines, "Flags:")
+		trav.AddLines("Flags:")
 
-		var builder strings.Builder
+		for _, p := range cci.flags.GetEntries() {
+			trav.AppendStrings("", indent, "- ", p.First, ":")
+			trav.AddLines()
 
-		entries := cci.flags.GetEntries()
-
-		builder.WriteString(indent)
-		builder.WriteString("- ")
-		builder.WriteString(entries[0].First)
-		builder.WriteRune(':')
-
-		lines = append(lines, builder.String())
-
-		flagLines := entries[0].Second.FString(indentLevel + 1)
-		lines = append(lines, flagLines...)
-
-		for _, p := range entries[1:] {
-			builder.Reset()
-
-			builder.WriteString(indent)
-			builder.WriteString("- ")
-			builder.WriteString(p.First)
-			builder.WriteRune(':')
-
-			lines = append(lines, builder.String())
-
-			flagLines := p.Second.FString(indentLevel + 2)
-			lines = append(lines, flagLines...)
+			p.Second.FString(trav.IncreaseIndent(2))
 		}
 	}
 
-	// Add the indentation to each line
-	for i := 0; i < len(lines); i++ {
-		lines[i] = indent + lines[i]
-	}
-
-	return lines
+	trav.Apply()
 }
 
 // NewCommandInfo creates a new CommandInfo with the

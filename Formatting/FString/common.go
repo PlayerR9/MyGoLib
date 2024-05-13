@@ -1,9 +1,5 @@
 package FString
 
-import (
-	"strings"
-)
-
 const (
 	// DefaultIndentation is the default indentation string.
 	DefaultIndentation string = "   "
@@ -36,9 +32,10 @@ type FStringer interface {
 	//
 	// Returns:
 	//   - []string: A slice of strings that represent the object.
-	FString() []string
+	FString(trav *Traversor) []string
 }
 
+/*
 func FString(form *Formatter, values []string) string {
 	if form == nil {
 		var builder Builder
@@ -48,3 +45,4 @@ func FString(form *Formatter, values []string) string {
 
 	return strings.Join(form.Apply(values), "\n")
 }
+*/

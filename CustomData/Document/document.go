@@ -31,17 +31,10 @@ func (d *Document) Tmp() []string {
 //
 // Returns:
 //   - []string: The formatted string representation of the document.
-func (d *Document) FString(indentLevel int) []string {
-	indentConfig := ffs.NewIndentConfig(ffs.DefaultIndentation, indentLevel, false)
-	indent := indentConfig.String()
+func (d *Document) FString(trav *ffs.Traversor) {
+	trav.AddLines(d.lines...)
 
-	lines := make([]string, 0, len(d.lines))
-
-	for _, line := range d.lines {
-		lines = append(lines, indent+line)
-	}
-
-	return lines
+	trav.Apply()
 }
 
 // NewDocument creates a new document.
