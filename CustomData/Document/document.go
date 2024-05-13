@@ -51,6 +51,9 @@ func (d *Document) FString(indentLevel int) []string {
 //
 // Returns:
 //   - *Document: A pointer to the newly created document.
+//
+// Behaviors:
+//   - The sentences are separated by a space and on the same line.
 func NewDocument(sentences ...string) *Document {
 	d := &Document{
 		lines: make([]string, 0),
