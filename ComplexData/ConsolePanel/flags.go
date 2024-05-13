@@ -87,8 +87,12 @@ func (cfi *FlagInfo) FString(trav *fs.Traversor) {
 	// Description:
 	if cfi.description == nil {
 		trav.AddLines("Description: [No description provided]")
+
+		trav.Apply()
 	} else {
 		trav.AddLines("Description:")
+
+		trav.Apply()
 
 		cfi.description.FString(trav.IncreaseIndent(1))
 	}

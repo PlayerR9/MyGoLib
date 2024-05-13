@@ -86,6 +86,8 @@ func (cci *CommandInfo) FString(trav *fs.Traversor) {
 	// Flags:
 	if cci.flags.Size() == 0 {
 		trav.AddLines("Flags: None")
+
+		trav.Apply()
 	} else {
 		trav.AddLines("Flags:")
 
@@ -93,11 +95,11 @@ func (cci *CommandInfo) FString(trav *fs.Traversor) {
 			trav.AppendStrings("", indent, "- ", p.First, ":")
 			trav.AddLines()
 
+			trav.Apply()
+
 			p.Second.FString(trav.IncreaseIndent(2))
 		}
 	}
-
-	trav.Apply()
 }
 
 // NewCommandInfo creates a new CommandInfo with the

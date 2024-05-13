@@ -10,6 +10,15 @@ import (
 	fs "github.com/PlayerR9/MyGoLib/Formatting/FString"
 
 	sm "github.com/PlayerR9/MyGoLib/CustomData/SortedMap"
+	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
+)
+
+const (
+	// DefaultWidth is the default width of the console.
+	DefaultWidth int = 80
+
+	// DefaultHeight is the default height of the console.
+	DefaultHeight int = 24
 )
 
 // ConsolePanel represents a command line console.
@@ -22,6 +31,9 @@ type ConsolePanel struct {
 
 	// commandMap is a map of command opcodes to CommandInfo.
 	commandMap *sm.SortedMap[string, *CommandInfo]
+
+	// width and height are the dimensions of the console, respectively.
+	width, height int
 }
 
 // FString generates a formatted string representation of a ConsolePanel.
@@ -58,8 +70,12 @@ func (cns *ConsolePanel) FString(trav *fs.Traversor) {
 	// Description:
 	if cns.description == nil {
 		trav.AddLines("Description: [No description provided]")
+
+		trav.Apply()
 	} else {
 		trav.AddLines("Description:")
+
+		trav.Apply()
 
 		cns.description.FString(trav.IncreaseIndent(1))
 	}
@@ -70,6 +86,8 @@ func (cns *ConsolePanel) FString(trav *fs.Traversor) {
 	// Commands:
 	if cns.commandMap.Size() == 0 {
 		trav.AddLines("Commands: None")
+
+		trav.Apply()
 	} else {
 		trav.AddLines("Commands:")
 
@@ -79,11 +97,11 @@ func (cns *ConsolePanel) FString(trav *fs.Traversor) {
 			trav.AppendStrings("", indent, "- ", command.First, ":")
 			trav.AddLines()
 
+			trav.Apply()
+
 			command.Second.FString(trav.IncreaseIndent(2))
 		}
 	}
-
-	trav.Apply()
 }
 
 // NewConsolePanel creates a new ConsolePanel with the provided executable name.
@@ -98,6 +116,8 @@ func NewConsolePanel(execName string, description *cdd.Document) *ConsolePanel {
 		ExecutableName: execName,
 		description:    description,
 		commandMap:     sm.NewSortedMap[string, *CommandInfo](),
+		width:          DefaultWidth,
+		height:         DefaultHeight,
 	}
 
 	// Add the help command
@@ -108,7 +128,14 @@ func NewConsolePanel(execName string, description *cdd.Document) *ConsolePanel {
 
 			cp.FString(trav.Traversor(nil))
 
-			fmt.Println(trav.String())
+			lines, err := trav.Boxed(cp.width, cp.height)
+			if err != nil {
+				return err
+			}
+
+			for _, line := range lines {
+				fmt.Println(line)
+			}
 
 			return nil
 		},
@@ -211,4 +238,32 @@ func (cns *ConsolePanel) ParseArguments(args []string) (*ParsedCommand, error) {
 //   - bool: A boolean indicating if the command was found.
 func (cns *ConsolePanel) GetCommand(opcode string) (*CommandInfo, error) {
 	return cns.commandMap.GetEntry(opcode)
+}
+
+// SetDimensions sets the dimensions of the console.
+//
+// Parameters:
+//   - width: The width of the console.
+//   - height: The height of the console.
+//
+// Returns:
+//   - error: An error of type *ers.ErrInvalidParameter if width or height is less than
+//     or equal to 0.
+func (cns *ConsolePanel) SetDimensions(width, height int) error {
+	if width <= 0 {
+		return ers.NewErrInvalidParameter(
+			"width",
+			ers.NewErrGT(0),
+		)
+	} else if height <= 0 {
+		return ers.NewErrInvalidParameter(
+			"height",
+			ers.NewErrGT(0),
+		)
+	}
+
+	cns.width = width
+	cns.height = height
+
+	return nil
 }
