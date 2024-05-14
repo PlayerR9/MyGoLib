@@ -129,13 +129,17 @@ func NewConsolePanel(execName string, description *cdd.Document) *ConsolePanel {
 
 				cp.FString(trav.Traversor(nil))
 
-				lines, err := trav.Boxed(cp.width, cp.height)
-				if err != nil {
-					return err
-				}
+				lines := trav.GetLines()
 
 				for _, line := range lines {
-					fmt.Println(line)
+					newLines, err := line.Draw(cp.width, cp.height)
+					if err != nil {
+						return err
+					}
+
+					for _, newLine := range newLines {
+						fmt.Println(newLine)
+					}
 				}
 
 				return nil
@@ -151,13 +155,17 @@ func NewConsolePanel(execName string, description *cdd.Document) *ConsolePanel {
 
 				command.FString(trav.Traversor(nil))
 
-				lines, err := trav.Boxed(cp.width, cp.height)
-				if err != nil {
-					return err
-				}
+				mlts := trav.GetLines()
 
-				for _, line := range lines {
-					fmt.Println(line)
+				for _, mlt := range mlts {
+					lines, err := mlt.Draw(cp.width, cp.height)
+					if err != nil {
+						return err
+					}
+
+					for _, line := range lines {
+						fmt.Println(line)
+					}
 				}
 			}
 

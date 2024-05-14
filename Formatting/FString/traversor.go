@@ -1,6 +1,10 @@
 package FString
 
-import "strings"
+import (
+	"strings"
+
+	cb "github.com/PlayerR9/MyGoLib/Formatting/ContentBox"
+)
 
 // Traversor is a type that represents a traversor for a formatted string.
 type Traversor struct {
@@ -8,13 +12,13 @@ type Traversor struct {
 	indent *IndentConfig
 
 	// lines is the lines of the traversor.
-	lines *[]string
+	lines *[]*cb.MultiLineText
 
 	// buffer is the buffer of the traversor.
-	buffer []string
+	buffer []*cb.MultiLineText
 
 	// halfLine is the half line of the traversor.
-	halfLine strings.Builder
+	halfLine *cb.MultiLineText
 }
 
 // IncreaseIndent increases the indentation level of the traversor.
@@ -26,17 +30,18 @@ type Traversor struct {
 //   - *Traversor: A pointer to the new traversor.
 //
 // Behaviors:
-//		- If by is negative, it is converted to a positive value.
-//    - If the traversor does not have an indentation configuration, the traversor is returned as is.
+//   - If by is negative, it is converted to a positive value.
+//   - If the traversor does not have an indentation configuration, the traversor is returned as is.
 func (trav *Traversor) IncreaseIndent(by int) *Traversor {
 	if trav.indent == nil {
 		return trav
 	}
 
 	return &Traversor{
-		indent: trav.indent.Increase(by),
-		lines:  trav.lines,        // The lines are shared.
-		buffer: make([]string, 0), // The buffer is reset.
+		indent:   trav.indent.Increase(by),
+		lines:    trav.lines,                   // The lines are shared.
+		buffer:   make([]*cb.MultiLineText, 0), // The buffer is reset.
+		halfLine: nil,                          // The half line is reset.
 	}
 }
 
@@ -58,30 +63,30 @@ func (trav *Traversor) GetIndent() string {
 //   - lines: The lines to add.
 //
 // Behaviors:
-// 	- If the half line is not empty, then the first line is added to the
-//    half line, the new half line is added to the buffer (half line is reset),
-//    and the rest of the lines are added to the buffer.
-//    - If the half line is empty, then the lines are added to the buffer. However,
-//      if the lines are empty, then an empty line is added to the buffer.
+//   - If the half line is not empty, then the first line is added to the
+//     half line, the new half line is added to the buffer (half line is reset),
+//     and the rest of the lines are added to the buffer.
+//   - If the half line is empty, then the lines are added to the buffer. However,
+//     if the lines are empty, then an empty line is added to the buffer.
 func (trav *Traversor) AddLines(lines ...string) {
 	if len(lines) == 0 {
-		if trav.halfLine.Len() == 0 {
+		if trav.halfLine == nil {
 			// Add an empty line if the half line is empty.
-			trav.buffer = append(trav.buffer, "")
+			trav.buffer = append(trav.buffer, cb.NewMultiLineText())
 		} else {
 			// Accept the half line.
-			trav.buffer = append(trav.buffer, trav.halfLine.String())
-			trav.halfLine.Reset()
+			trav.buffer = append(trav.buffer, trav.halfLine)
+			trav.halfLine = nil
 		}
 
 		return
 	}
 
-	if trav.halfLine.Len() > 0 {
-		trav.halfLine.WriteString(lines[0])
+	if trav.halfLine != nil {
+		trav.halfLine.AppendString(lines[0])
 
-		trav.buffer = append(trav.buffer, trav.halfLine.String())
-		trav.halfLine.Reset()
+		trav.buffer = append(trav.buffer, trav.halfLine)
+		trav.halfLine = nil
 
 		lines = lines[1:]
 
@@ -90,7 +95,9 @@ func (trav *Traversor) AddLines(lines ...string) {
 		}
 	}
 
-	trav.buffer = append(trav.buffer, lines...)
+	for _, line := range lines {
+		trav.buffer = append(trav.buffer, cb.NewMultiLineText(line))
+	}
 }
 
 // AppendString appends a string to the half line of the traversor.
@@ -98,7 +105,11 @@ func (trav *Traversor) AddLines(lines ...string) {
 // Parameters:
 //   - str: The string to append.
 func (trav *Traversor) AppendString(str string) {
-	trav.halfLine.WriteString(str)
+	if trav.halfLine == nil {
+		trav.halfLine = cb.NewMultiLineText(str)
+	} else {
+		trav.halfLine.AppendString(str)
+	}
 }
 
 // AppendStrings appends strings to the half line of the traversor with a separator
@@ -109,31 +120,35 @@ func (trav *Traversor) AppendString(str string) {
 //   - strs: The strings to append.
 //
 // Behaviors:
-//		- If there are no strings, then nothing is appended.
+//   - If there are no strings, then nothing is appended.
 func (trav *Traversor) AppendStrings(separator string, strs ...string) {
 	if len(strs) == 0 {
 		return
 	}
 
-	trav.halfLine.WriteString(strings.Join(strs, separator))
+	if trav.halfLine == nil {
+		trav.halfLine = cb.NewMultiLineText(strings.Join(strs, separator))
+	} else {
+		trav.halfLine.AppendString(strings.Join(strs, separator))
+	}
 }
 
 // Apply adds the buffer to the lines of the traversor.
 //
 // Behaviors:
-//		- If the half line is not empty, then the half line is added to the buffer
-//    (half line is reset) and the buffer is added to the lines of the traversor.
-//    - Each line in the buffer is indented by the indentation configuration.
+//   - If the half line is not empty, then the half line is added to the buffer
+//     (half line is reset) and the buffer is added to the lines of the traversor.
+//   - Each line in the buffer is indented by the indentation configuration.
 func (trav *Traversor) Apply() {
-	if trav.halfLine.Len() > 0 {
-		trav.buffer = append(trav.buffer, trav.halfLine.String())
-		trav.halfLine.Reset()
+	if trav.halfLine != nil {
+		trav.buffer = append(trav.buffer, trav.halfLine)
+		trav.halfLine = nil
 	}
 
 	indent := trav.GetIndent()
 
 	for _, line := range trav.buffer {
-		*trav.lines = append(*trav.lines, indent+line)
+		*trav.lines = append(*trav.lines, cb.NewMultiLineText(indent+line.String()))
 	}
 
 	trav.buffer = trav.buffer[:0]
@@ -142,13 +157,13 @@ func (trav *Traversor) Apply() {
 // EmptyLine adds an empty line to the traversor.
 //
 // Behaviors:
-//		- If the half line is not empty, then the half line is added to the buffer
-//    (half line is reset) and an empty line is added to the buffer.
+//   - If the half line is not empty, then the half line is added to the buffer
+//     (half line is reset) and an empty line is added to the buffer.
 func (trav *Traversor) EmptyLine() {
-	if trav.halfLine.Len() > 0 {
-		trav.buffer = append(trav.buffer, trav.halfLine.String())
-		trav.halfLine.Reset()
+	if trav.halfLine != nil {
+		trav.buffer = append(trav.buffer, trav.halfLine)
+		trav.halfLine = nil
 	}
 
-	trav.buffer = append(trav.buffer, "")
+	trav.buffer = append(trav.buffer, cb.NewMultiLineText())
 }
