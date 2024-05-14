@@ -84,26 +84,20 @@ func (fs *FString) Boxed(width, height int) ([]string, error) {
 	lines := make([]string, 0)
 
 	for _, fs := range fss {
-		for index := 0; index < len(fs.lines); index++ {
-			if fs.lines[index] == "" {
-				lines = append(lines, strings.Repeat(" ", width))
-			} else {
-				ts, err := fs.generateContentBox(width, height, index)
-				if err != nil {
-					return nil, err
-				}
+		ts, err := fs.generateContentBox(width, height)
+		if err != nil {
+			return nil, err
+		}
 
-				leftLimit := ts.GetFurthestRightEdge()
+		leftLimit := ts.GetFurthestRightEdge()
 
-				for _, line := range ts.Lines {
-					fitted, err := sext.FitString(line.String(), leftLimit)
-					if err != nil {
-						return nil, err
-					}
-
-					lines = append(lines, fitted)
-				}
+		for _, line := range ts.Lines {
+			fitted, err := sext.FitString(line.String(), leftLimit)
+			if err != nil {
+				return nil, err
 			}
+
+			lines = append(lines, fitted)
 		}
 	}
 
@@ -126,10 +120,6 @@ func (fs *FString) fix() {
 // Must call Fix() before calling this function.
 func (fs *FString) getAllFields() [][]string {
 	// TO DO: Handle special WHITESPACE characters
-
-	for _, content := range fs.lines {
-		fields := strings.Fields(content)
-	}
 
 	fieldList := make([][]string, 0)
 
@@ -225,8 +215,8 @@ func (fs *FString) insertField(fields []string, width, height int) (bool, error)
 	return false, nil
 }
 
-func (fs *FString) generateContentBox(width, height int, index int) (*splt.TextSplit, error) {
-	fieldList := fs.lines
+func (fs *FString) generateContentBox(width, height int) (*splt.TextSplit, error) {
+	fieldList := fs.getAllFields()
 
 	// Try to optimize lines
 
@@ -235,14 +225,14 @@ func (fs *FString) generateContentBox(width, height int, index int) (*splt.TextS
 		return nil, fmt.Errorf("width cannot be less than %d", MarginLeft)
 	}
 
-	fields := fieldList[index]
+	fields := fieldList[0]
 
 	possibleNewLine, err := fs.insertField(fields, width-MarginLeft, height)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, fields := range fieldList[index+1:] {
+	for _, fields := range fieldList[1:] {
 		if possibleNewLine {
 			for len(fields) > 0 {
 				if !ts.CanInsertWord(fields[0], len(ts.Lines)-1) {
