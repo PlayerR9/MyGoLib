@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 
+	cdt "github.com/PlayerR9/MyGoLib/ComplexData/Display"
+
 	cdd "github.com/PlayerR9/MyGoLib/CustomData/Document"
 	fs "github.com/PlayerR9/MyGoLib/Formatting/FString"
 
@@ -132,10 +134,17 @@ func NewConsolePanel(execName string, description *cdd.Document) *ConsolePanel {
 				lines := trav.GetLines()
 
 				for _, line := range lines {
-					newLines, err := line.Draw(cp.width, cp.height)
+					table, err := cdt.NewDrawTable(cp.width, cp.height)
 					if err != nil {
 						return err
 					}
+
+					err = line.Draw(table)
+					if err != nil {
+						return err
+					}
+
+					newLines := table.GetLines()
 
 					for _, newLine := range newLines {
 						fmt.Println(newLine)
@@ -158,13 +167,20 @@ func NewConsolePanel(execName string, description *cdd.Document) *ConsolePanel {
 				mlts := trav.GetLines()
 
 				for _, mlt := range mlts {
-					lines, err := mlt.Draw(cp.width, cp.height)
+					table, err := cdt.NewDrawTable(cp.width, cp.height)
 					if err != nil {
 						return err
 					}
 
-					for _, line := range lines {
-						fmt.Println(line)
+					err = mlt.Draw(table)
+					if err != nil {
+						return err
+					}
+
+					newLines := table.GetLines()
+
+					for _, newLine := range newLines {
+						fmt.Println(newLine)
 					}
 				}
 			}

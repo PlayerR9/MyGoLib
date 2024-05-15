@@ -83,7 +83,10 @@ func (trav *Traversor) AddLines(lines ...string) {
 	}
 
 	if trav.halfLine != nil {
-		trav.halfLine.AppendString(lines[0])
+		err := trav.halfLine.AppendSentence(lines[0])
+		if err != nil {
+			panic(err)
+		}
 
 		trav.buffer = append(trav.buffer, trav.halfLine)
 		trav.halfLine = nil
@@ -96,7 +99,14 @@ func (trav *Traversor) AddLines(lines ...string) {
 	}
 
 	for _, line := range lines {
-		trav.buffer = append(trav.buffer, cb.NewMultiLineText(line))
+		mlt := cb.NewMultiLineText()
+
+		err := mlt.AppendSentence(line)
+		if err != nil {
+			panic(err)
+		}
+
+		trav.buffer = append(trav.buffer, mlt)
 	}
 }
 
@@ -106,9 +116,12 @@ func (trav *Traversor) AddLines(lines ...string) {
 //   - str: The string to append.
 func (trav *Traversor) AppendString(str string) {
 	if trav.halfLine == nil {
-		trav.halfLine = cb.NewMultiLineText(str)
-	} else {
-		trav.halfLine.AppendString(str)
+		trav.halfLine = cb.NewMultiLineText()
+	}
+
+	err := trav.halfLine.AppendSentence(str)
+	if err != nil {
+		panic(err)
 	}
 }
 
@@ -127,9 +140,12 @@ func (trav *Traversor) AppendStrings(separator string, strs ...string) {
 	}
 
 	if trav.halfLine == nil {
-		trav.halfLine = cb.NewMultiLineText(strings.Join(strs, separator))
-	} else {
-		trav.halfLine.AppendString(strings.Join(strs, separator))
+		trav.halfLine = cb.NewMultiLineText()
+	}
+
+	err := trav.halfLine.AppendSentence(strings.Join(strs, separator))
+	if err != nil {
+		panic(err)
 	}
 }
 
@@ -148,7 +164,16 @@ func (trav *Traversor) Apply() {
 	indent := trav.GetIndent()
 
 	for _, line := range trav.buffer {
-		*trav.lines = append(*trav.lines, cb.NewMultiLineText(indent+line.String()))
+		mlt := cb.NewMultiLineText()
+
+		for _, newLine := range line.GetLines() {
+			err := mlt.AppendSentence(indent + newLine)
+			if err != nil {
+				panic(err)
+			}
+		}
+
+		*trav.lines = append(*trav.lines, mlt)
 	}
 
 	trav.buffer = trav.buffer[:0]

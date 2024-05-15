@@ -30,7 +30,7 @@ type FString struct {
 func (fs *FString) String() string {
 	values := make([]string, 0, len(fs.lines))
 	for _, line := range fs.lines {
-		values = append(values, line.String())
+		values = append(values, line.GetLines()...)
 	}
 
 	return strings.Join(values, "\n")

@@ -227,3 +227,33 @@ func (dt *DrawTable) WriteLineAt(x, y int, line string, style tcell.Style, isHor
 		dt.WriteVerticalSequence(x, y, sequence)
 	}
 }
+
+// IsXInBounds checks if the given x-coordinate is within the bounds of the drawTable.
+//
+// Parameters:
+//   - x: The x-coordinate to check.
+//
+// Returns:
+//   - error: An error of type *ers.ErrOutOfBounds if the x-coordinate is out of bounds.
+func (dt *DrawTable) IsXInBounds(x int) error {
+	if x < 0 || x >= dt.width {
+		return ers.NewErrOutOfBounds(x, 0, dt.width)
+	} else {
+		return nil
+	}
+}
+
+// IsYInBounds checks if the given y-coordinate is within the bounds of the drawTable.
+//
+// Parameters:
+//   - y: The y-coordinate to check.
+//
+// Returns:
+//   - error: An error of type *ers.ErrOutOfBounds if the y-coordinate is out of bounds.
+func (dt *DrawTable) IsYInBounds(y int) error {
+	if y < 0 || y >= dt.height {
+		return ers.NewErrOutOfBounds(y, 0, dt.height)
+	} else {
+		return nil
+	}
+}

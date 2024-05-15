@@ -1,7 +1,10 @@
-package ContentBox
+package Components
 
 import (
 	"testing"
+
+	cdd "github.com/PlayerR9/MyGoLib/ComplexData/Display"
+	"github.com/gdamore/tcell"
 )
 
 func TestTitle(t *testing.T) {
@@ -10,19 +13,22 @@ func TestTitle(t *testing.T) {
 		ExpectedLine string = " *** Test Title *** "
 	)
 
-	title := NewTitleBox(Title)
-
-	lines, err := title.DrawTitle(20)
+	table, err := cdd.NewDrawTable(20, 1)
 	if err != nil {
-		t.Errorf("Expected no error, but got %s", err.Error())
+		t.Fatalf("Expected no error, but got %s", err.Error())
 	}
 
-	if len(lines) != 1 {
-		t.Errorf("Expected 1 line, but got %d", len(lines))
+	title := NewTitle(Title, tcell.StyleDefault)
+
+	err = title.Draw(table)
+	if err != nil {
+		t.Fatalf("Expected no error, but got %s", err.Error())
 	}
+
+	lines := table.GetLines()
 
 	if lines[0] != ExpectedLine {
-		t.Errorf("Expected line to be '%s', but got '%s'", ExpectedLine, lines[0])
+		t.Fatalf("Expected line to be '%s', but got '%s'", ExpectedLine, lines[0])
 	}
 }
 
@@ -69,12 +75,19 @@ func TestMiddleSplit(t *testing.T) {
 	}
 
 	for i, test := range tests {
-		title := NewTitleBox(test.title)
+		title := NewTitle(test.title, tcell.StyleDefault)
 
-		lines, err := title.DrawTitle(test.width)
+		table, err := cdd.NewDrawTable(test.width, test.height)
 		if err != nil {
-			t.Errorf("At test %d, expected no error, but got %s", i, err.Error())
+			t.Fatalf("At test %d, expected no error, but got %s", i, err.Error())
 		}
+
+		err = title.Draw(table)
+		if err != nil {
+			t.Fatalf("At test %d, expected no error, but got %s", i, err.Error())
+		}
+
+		lines := table.GetLines()
 
 		if len(lines) != len(test.expectedLines) {
 			t.Errorf("At test %d, expected %d lines, but got %d", i, len(test.expectedLines), len(lines))
@@ -94,16 +107,19 @@ func TestTitleTruncation(t *testing.T) {
 		ExpectedLine string = "*** Th... ***"
 	)
 
-	title := NewTitleBox(Title)
+	title := NewTitle(Title, tcell.StyleDefault)
 
-	lines, err := title.DrawTitle(13)
+	table, err := cdd.NewDrawTable(13, 1)
 	if err != nil {
-		t.Errorf("Expected no error, but got %s", err.Error())
+		t.Fatalf("Expected no error, but got %s", err.Error())
 	}
 
-	if len(lines) != 1 {
-		t.Errorf("Expected 1 line, but got %d", len(lines))
+	err = title.Draw(table)
+	if err != nil {
+		t.Fatalf("Expected no error, but got %s", err.Error())
 	}
+
+	lines := table.GetLines()
 
 	if lines[0] != ExpectedLine {
 		t.Errorf("Expected line to be '%s', but got '%s'", ExpectedLine, lines[0])

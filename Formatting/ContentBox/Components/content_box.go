@@ -1,4 +1,4 @@
-package ContentBox
+package Components
 
 import (
 	"fmt"
@@ -13,7 +13,6 @@ import (
 	sext "github.com/PlayerR9/MyGoLib/Utility/StringExt"
 
 	"github.com/gdamore/tcell"
-	"github.com/markphelps/optional"
 )
 
 const (
@@ -31,7 +30,7 @@ const (
 	// into the ContentBox.
 	// It is set to " ", which is the standard representation of a space in
 	// text.
-	Space rune = ' '
+	Space string = " "
 
 	// FieldSpacing defines the number of spaces between each field (word)
 	// when they are written into the ContentBox.
@@ -46,64 +45,87 @@ const (
 )
 
 type ContentBox struct {
-	lines    [][]string
-	maxWidth int
-	sep      optional.Rune
+	lines     [][]string
+	maxWidth  int
+	maxHeight int
+	sep       *rune
+	style     tcell.Style
 }
 
-type ContentBoxOption func(*ContentBox)
+func (cb *ContentBox) Draw(table *cdd.DrawTable) error {
+	cb.maxWidth = table.GetWidth()
+	cb.maxHeight = table.GetHeight()
 
-func WithSeparator(separator rune) ContentBoxOption {
-	return func(cb *ContentBox) {
-		cb.sep = optional.NewRune(separator)
+	tss, err := cb.apply()
+	if err != nil {
+		return err
 	}
-}
 
-func WithLines(lines [][]string) ContentBoxOption {
-	return func(cb *ContentBox) {
-		if lines == nil {
-			cb.lines = make([][]string, 0)
-		} else {
-			cb.lines = lines
+	totalHeight := 0
+	tableHeight := table.GetHeight()
+
+	for _, ts := range tss {
+		totalHeight += ts.GetHeight()
+
+		if totalHeight > tableHeight {
+			break
 		}
 	}
+
+	yCoord := 0
+
+	for _, ts := range tss {
+		currentHeight := ts.GetHeight()
+
+		shouldExit := currentHeight+yCoord > tableHeight
+		if shouldExit {
+			return nil
+		}
+
+		if err := writeLines(ts, cb.style, table, yCoord); err != nil {
+			return fmt.Errorf("could not write lines: %s", err.Error())
+		}
+
+		yCoord += currentHeight
+	}
+
+	return nil
 }
 
-func NewContentBox(maxWidth, maxHeight int, options ...ContentBoxOption) ([]*fs.TextSplit, error) {
-	if maxWidth <= 0 {
-		return nil, ers.NewErrInvalidParameter(
-			"maxWidth",
-			ers.NewErrGT(0),
-		)
+func NewContentBox(lines [][]string) *ContentBox {
+	return &ContentBox{
+		lines: lines,
+		sep:   nil,
 	}
+}
 
-	cb := &ContentBox{
-		lines:    make([][]string, 0),
-		maxWidth: maxWidth,
-	}
+func (cb *ContentBox) SetSeparator(char rune) {
+	cb.sep = &char
+}
 
-	for _, option := range options {
-		option(cb)
-	}
+func (cb *ContentBox) SetStyle(style tcell.Style) {
+	cb.style = style
+}
 
+func (cb *ContentBox) apply() ([]*fs.TextSplit, error) {
 	finalTs := make([]*fs.TextSplit, 0, len(cb.lines))
 
 	for _, line := range cb.lines {
 		var sentences [][]string
 
-		if !cb.sep.Present() {
+		if cb.sep == nil {
 			sentences = [][]string{line}
 		} else {
-			s := cb.sep.MustGet()
-
 			for _, field := range line {
-				sentences = append(sentences, strings.FieldsFunc(field, func(r rune) bool {
-					return r == s
-				}))
+				fieldsFunc := func(r rune) bool {
+					return r == *cb.sep
+				}
+
+				sentences = append(sentences, strings.FieldsFunc(field, fieldsFunc))
 			}
 		}
 
-		ts, err := cb.createTextSplitter(sentences, maxHeight)
+		ts, err := cb.createTextSplitter(sentences, cb.maxHeight)
 		if err != nil {
 			return nil, err
 		}
@@ -142,15 +164,15 @@ func (cb *ContentBox) processFirstLine(words []string, ts *fs.TextSplit) (*fs.Te
 	if err != nil {
 		var line string
 
-		if !cb.sep.Present() {
+		if cb.sep == nil {
 			line = strings.Join(words, "")
 		} else {
-			line = strings.Join(words, string(cb.sep.MustGet()))
+			line = strings.Join(words, string(*cb.sep))
 		}
 
 		line, err = sext.ReplaceSuffix(line[:cb.maxWidth], Hellip)
 		if err != nil {
-			return nil, false, fmt.Errorf("could not replace suffix: %v", err)
+			return nil, false, fmt.Errorf("could not replace suffix: %s", err.Error())
 		}
 
 		ok := ts.InsertWord(line)
@@ -188,25 +210,23 @@ func (cb *ContentBox) processFirstLine(words []string, ts *fs.TextSplit) (*fs.Te
 			wpLen += utf8.RuneCountInString(nextField) + 1
 		}
 
-		for _, word := range wordsProcessed {
-			ok := ts.InsertWord(word)
-			if !ok {
-				panic("could not insert word")
-			}
+		firstNotInserted := ts.InsertWords(wordsProcessed...)
+		if firstNotInserted != -1 {
+			panic(fmt.Sprintf("could not insert word %s", wordsProcessed[firstNotInserted]))
 		}
 	} else {
 		halfTs, err := fs.SplitInEqualSizedLines(
 			words, cb.maxWidth, numberOfLines,
 		)
 		if err != nil {
-			return nil, false, fmt.Errorf("could not split text: %v", err)
+			return nil, false, fmt.Errorf("could not split text: %s", err.Error())
 		}
 
-		for _, words := range halfTs.GetFirstLine().GetWords() {
-			ok := ts.InsertWord(words)
-			if !ok {
-				panic("could not insert word")
-			}
+		wordsProcessed := halfTs.GetFirstLine().GetWords()
+
+		firstNotInserted := ts.InsertWords(wordsProcessed...)
+		if firstNotInserted != -1 {
+			panic(fmt.Sprintf("could not insert word %s", wordsProcessed[firstNotInserted]))
 		}
 	}
 
@@ -249,15 +269,15 @@ func (cb *ContentBox) processOtherLines(fields []string, ts *fs.TextSplit, possi
 	if err != nil {
 		var line string
 
-		if !cb.sep.Present() {
+		if cb.sep == nil {
 			line = strings.Join(fields, "")
 		} else {
-			line = strings.Join(fields, string(cb.sep.MustGet()))
+			line = strings.Join(fields, string(*cb.sep))
 		}
 
 		line, err = sext.ReplaceSuffix(line[:cb.maxWidth-IndentLevel], Hellip)
 		if err != nil {
-			return nil, false, fmt.Errorf("could not replace suffix: %v", err)
+			return nil, false, fmt.Errorf("could not replace suffix: %s", err.Error())
 		}
 
 		ok := ts.InsertWord(line)
@@ -265,18 +285,24 @@ func (cb *ContentBox) processOtherLines(fields []string, ts *fs.TextSplit, possi
 			panic("could not insert word")
 		}
 	} else if numberOfLines > 1 {
-		splt := sext.NewSpltLine(fields[0])
+		wordsToProcess := []string{fields[0]}
+		wtpLen := utf8.RuneCountInString(fields[0])
 
 		for _, field := range fields[1:] {
-			if splt.Len+1+utf8.RuneCountInString(field)+HellipLen+IndentLevel > cb.maxWidth {
-				splt.InsertWord(field + Hellip)
+			if wtpLen+1+utf8.RuneCountInString(field)+HellipLen+IndentLevel > cb.maxWidth {
+				wordsToProcess = append(wordsToProcess, field, Hellip)
+				wtpLen += utf8.RuneCountInString(field) + HellipLen + 1
 				break
 			}
 
-			splt.InsertWord(field)
+			wordsToProcess = append(wordsToProcess, field)
+			wtpLen += utf8.RuneCountInString(field) + 1
 		}
 
-		ts.Lines = append(ts.Lines, splt)
+		firstNotInserted := ts.InsertWords(wordsToProcess...)
+		if firstNotInserted != -1 {
+			panic(fmt.Sprintf("could not insert word %s", wordsToProcess[firstNotInserted]))
+		}
 
 		return ts, true, nil
 	}
@@ -285,12 +311,14 @@ func (cb *ContentBox) processOtherLines(fields []string, ts *fs.TextSplit, possi
 		fields, cb.maxWidth-IndentLevel, numberOfLines,
 	)
 	if err != nil {
-		return nil, false, fmt.Errorf("could not split text: %v", err)
+		return nil, false, fmt.Errorf("could not split text: %s", err.Error())
 	}
 
-	ok := ts.InsertWord(halfTs.GetFirstLine().String())
-	if !ok {
-		panic("could not insert word")
+	words := halfTs.GetFirstLine().GetWords()
+
+	firstNotInserted := ts.InsertWords(words...)
+	if firstNotInserted != -1 {
+		panic(fmt.Sprintf("could not insert word %s", words[firstNotInserted]))
 	}
 
 	return ts, false, nil
@@ -310,7 +338,7 @@ func (cb *ContentBox) processOtherLines(fields []string, ts *fs.TextSplit, possi
 func (cb *ContentBox) createTextSplitter(lines [][]string, maxHeight int) (*fs.TextSplit, error) {
 	ts, err := fs.NewTextSplit(cb.maxWidth-IndentLevel, maxHeight)
 	if err != nil {
-		return nil, fmt.Errorf("could not create TextSplitter: %v", err)
+		return nil, fmt.Errorf("could not create TextSplitter: %s", err.Error())
 	}
 
 	possibleNewLine := false
@@ -392,45 +420,6 @@ func writeLines(ts *fs.TextSplit, style tcell.Style, table *cdd.DrawTable, yCoor
 
 		table.WriteLineAt(IndentLevel, i+yCoord, line, style, true)
 		table.WriteLineAt(IndentLevel+len(line), i+yCoord, emptyLine, style, true)
-	}
-
-	return nil
-}
-
-type MakeContentBoxFunc func() ([]*fs.TextSplit, error)
-
-func ContentBoxWrite(table *cdd.DrawTable, style tcell.Style, make MakeContentBoxFunc) error {
-	tss, err := make()
-	if err != nil {
-		return fmt.Errorf("could not fit lines: %v", err)
-	}
-
-	totalHeight := 0
-	tableHeight := table.GetHeight()
-
-	for _, ts := range tss {
-		totalHeight += ts.GetHeight()
-
-		if totalHeight > tableHeight {
-			break
-		}
-	}
-
-	yCoord := 0
-
-	for _, ts := range tss {
-		currentHeight := ts.GetHeight()
-
-		shouldExit := currentHeight+yCoord > tableHeight
-		if shouldExit {
-			return nil
-		}
-
-		if err := writeLines(ts, style, table, yCoord); err != nil {
-			return fmt.Errorf("could not write lines: %v", err)
-		}
-
-		yCoord += currentHeight
 	}
 
 	return nil
