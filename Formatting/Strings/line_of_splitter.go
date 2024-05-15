@@ -57,6 +57,14 @@ func newLineOfSplitter(word string) *lineOfSplitter {
 	return splt
 }
 
+// GetWords is a method of SpltLine that returns the words in the line.
+//
+// Returns:
+//   - []string: The words in the line.
+func (sl *lineOfSplitter) GetWords() []string {
+	return sl.line
+}
+
 // Length is a method that returns the length of the line. (i.e., the
 // number of characters in the line, including spaces between words.)
 //
