@@ -13,6 +13,18 @@ type ErrNoError struct {
 	Err error
 }
 
+// ErrorIf is a method of that returns the error if the error is not nil.
+//
+// Returns:
+//   - error: The error if the error is not nil, nil otherwise.
+func (e *ErrNoError) ErrorIf() error {
+	if e.Err != nil {
+		return e
+	}
+
+	return nil
+}
+
 // Error is a method of the error interface.
 //
 // Returns:

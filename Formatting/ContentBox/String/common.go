@@ -317,28 +317,43 @@ func Join(elems []*String, sep string) *String {
 //
 // Parameters:
 //   - s: The string to split.
-//   - f: The function to determine the separator.
+//   - sep: The function to determine the separator.
 //
 // Returns:
 //   - []*String: The fields of the string.
-func FieldsFunc(s *String, f func(rune) bool) []*String {
-	fields := make([]*String, 0)
-	var builder strings.Builder
+func FieldsFunc(s *String, sep string) []*String {
+	if sep == "" {
+		return []*String{s.Copy().(*String)}
+	} else {
+		fields := make([]*String, 0)
+		var builder strings.Builder
 
-	for _, r := range s.content {
-		if f(r) {
-			fields = append(fields, NewString(builder.String(), s.style))
-			builder.Reset()
-		} else {
-			builder.WriteRune(r)
+		runes := []rune(sep)
+		counter := 0
+
+		for _, r := range s.content {
+			if r != runes[counter] {
+				counter = 0
+				builder.WriteRune(r)
+
+				continue
+			}
+
+			counter++
+
+			if counter == len(runes) {
+				fields = append(fields, NewString(builder.String(), s.style))
+				builder.Reset()
+				counter = 0
+			}
 		}
-	}
 
-	if builder.Len() > 0 {
-		fields = append(fields, NewString(builder.String(), s.style))
-	}
+		if builder.Len() > 0 {
+			fields = append(fields, NewString(builder.String(), s.style))
+		}
 
-	return fields
+		return fields
+	}
 }
 
 // Repeat repeats a string count times.

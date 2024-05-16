@@ -21,6 +21,19 @@ const (
 	DefaultLoggerFlags int = log.LstdFlags | log.Llongfile
 )
 
+// Errorer is an interface that defines a method to return the error if the
+// error itself meets a certain condition.
+type Errorer interface {
+	// ErrorIf returns the error if the error itself meets a certain condition.
+	//
+	// Returns:
+	//   - error: The error if the error itself meets a certain condition.
+	//     Otherwise, nil.
+	ErrorIf() error
+
+	error
+}
+
 // Unwrapper is an interface that defines a method to unwrap an error.
 type Unwrapper interface {
 	// Unwrap returns the error that this error wraps.
@@ -34,6 +47,8 @@ type Unwrapper interface {
 	// Parameters:
 	//   - reason: The new reason of the error.
 	ChangeReason(reason error)
+
+	error
 }
 
 // As is function that checks if an error is of type T.

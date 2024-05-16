@@ -5,8 +5,6 @@ import (
 
 	cdd "github.com/PlayerR9/MyGoLib/ComplexData/Display"
 
-	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
-
 	sx "github.com/PlayerR9/MyGoLib/Formatting/ContentBox/String"
 
 	"github.com/gdamore/tcell"
@@ -47,10 +45,9 @@ type ContentBox struct {
 	// of the box.
 	lines [][]*sx.String
 
-	// sep is a pointer to a rune that represents the separator between
-	// fields in the content. If sep is nil, the content is not separated
-	// into fields.
-	sep *rune
+	// sepStr is a string that represents the separator between fields in the content.
+	// If sepStr is an empty string, the content is not separated into fields.
+	sepStr string
 
 	// style is the style to be used when writing the content into the box.
 	style tcell.Style
@@ -105,28 +102,70 @@ func (cb *ContentBox) Draw(table *cdd.DrawTable, x, y int) error {
 	return nil
 }
 
+// Draw draws the content of the ContentBox into the specified draw table.
+//
+// Parameters:
+//   - table - the draw table to draw the content into.
+//   - x - the x coordinate to start drawing the content at.
+//   - y - the y coordinate to start drawing the content at.
+//
+// Returns:
+//   - error - an error if the content could not be drawn.
+func (cb *ContentBox) ForceDraw(table *cdd.DrawTable, x, y int) error {
+	maxWidth := table.GetWidth() - x
+	maxHeight := table.GetHeight() - y
+
+	tss, err := cb.apply(maxWidth, maxHeight)
+	if err != nil {
+		return err
+	}
+
+	totalHeight := 0
+	tableHeight := maxHeight
+
+	for _, ts := range tss {
+		totalHeight += ts.GetHeight()
+
+		if totalHeight > tableHeight {
+			break
+		}
+	}
+
+	yCoord := 0
+
+	for _, ts := range tss {
+		currentHeight := ts.GetHeight()
+
+		shouldExit := currentHeight+yCoord > tableHeight
+		if shouldExit {
+			return nil
+		}
+
+		if err := writeLines(ts, cb.style, table, yCoord); err != nil {
+			return fmt.Errorf("could not write lines: %s", err.Error())
+		}
+
+		yCoord += currentHeight
+	}
+
+	return nil
+}
+
 // NewContentBox creates a new ContentBox with the specified lines of content.
 //
 // Parameters:
 //   - lines - a two-dimensional slice of strings representing the content of the box.
 //   - style - the style to be used when writing the content into the box.
+//   - sepStr - the separator to be used between fields in the content.
 //
 // Returns:
 //   - *ContentBox - a pointer to the created ContentBox.
-func NewContentBox(lines [][]*sx.String, style tcell.Style) *ContentBox {
+func NewContentBox(lines [][]*sx.String, style tcell.Style, sepStr string) *ContentBox {
 	return &ContentBox{
-		lines: lines,
-		sep:   nil,
-		style: style,
+		lines:  lines,
+		sepStr: sepStr,
+		style:  style,
 	}
-}
-
-// SetSeparator sets the separator between fields in the content of the ContentBox.
-//
-// Parameters:
-//   - char - the separator to be used between fields.
-func (cb *ContentBox) SetSeparator(char rune) {
-	cb.sep = &char
 }
 
 // processLine processes a line of text represented by a slice of fields.
@@ -157,15 +196,7 @@ func (cb *ContentBox) processLine(isFirst bool, maxWidth int, ts *sx.TextSplit, 
 	numberOfLines, err := sx.CalculateNumberOfLines(words, maxWidth)
 
 	if err != nil {
-		var line *sx.String
-
-		if cb.sep == nil {
-			line = sx.Join(words, "")
-		} else {
-			line = sx.Join(words, string(*cb.sep))
-		}
-
-		line = line.TrimEnd(maxWidth)
+		line := sx.Join(words, cb.sepStr).TrimEnd(maxWidth)
 
 		ok := line.ReplaceSuffix(Hellip)
 		if !ok {
@@ -301,15 +332,11 @@ func (cb *ContentBox) apply(maxWidth, maxHeight int) ([]*sx.TextSplit, error) {
 	for _, line := range cb.lines {
 		var sentences [][]*sx.String
 
-		if cb.sep == nil {
+		if cb.sepStr == "" {
 			sentences = [][]*sx.String{line}
 		} else {
 			for _, field := range line {
-				fieldsFunc := func(r rune) bool {
-					return r == *cb.sep
-				}
-
-				sentences = append(sentences, sx.FieldsFunc(field, fieldsFunc))
+				sentences = append(sentences, sx.FieldsFunc(field, cb.sepStr))
 			}
 		}
 
@@ -331,62 +358,45 @@ func (cb *ContentBox) apply(maxWidth, maxHeight int) ([]*sx.TextSplit, error) {
 	return finalTs, nil
 }
 
-// writeLines takes a TextSplitter, a tcell.Style, and a WriteOnlyDrawTable,
-// and writes the lines of text from the TextSplitter into the drawTable
-// with the specified style.
-// It first calculates the rightmost limit of the text, and then for each
-// line of the drawTable, it writes the corresponding line of text from the
-// TextSplitter at the beginning of the line, and fills the rest of the line
-// with spaces. The first line of the drawTable is written at the beginning,
-// while the rest of the lines are indented by a constant IndentLevel.
-func writeLines(ts *sx.TextSplit, style tcell.Style, table *cdd.DrawTable, yCoord int) error {
-	height := ts.GetHeight()
+// apply takes a maximum width and height, and applies the content of the ContentBox
+// to the specified width and height. It splits the content into lines of the specified
+// width, and optimizes the text if possible.
+//
+// Parameters:
+//   - maxWidth - the maximum width of the content.
+//   - maxHeight - the maximum height of the content.
+//
+// Returns:
+//   - []*sx.TextSplit - a slice of TextSplit objects representing the optimized content.
+//   - error - an error if the content could not be applied.
+func (cb *ContentBox) forceApply(maxWidth, maxHeight int) ([]*sx.TextSplit, error) {
+	finalTs := make([]*sx.TextSplit, 0, len(cb.lines))
 
-	if height > table.GetHeight() {
-		return ers.NewErrInvalidParameter(
-			"ts.Lines",
-			fmt.Errorf("length (%d) exceeds height (%d)", height, table.GetHeight()),
-		)
-	}
+	for _, line := range cb.lines {
+		var sentences [][]*sx.String
 
-	rightMostLimit, ok := ts.GetFurthestRightEdge()
-	if !ok {
-		panic("could not get furthest right edge")
-	}
-
-	var line, emptyLine *sx.String
-
-	// First line
-	line = sx.Join(ts.GetFirstLine(), "")
-	emptyLine = sx.Repeat(sx.NewString(Space, style), rightMostLimit-line.GetLength())
-
-	err := line.Draw(table, 0, yCoord)
-	if err != nil {
-		return fmt.Errorf("could not draw line: %s", err.Error())
-	}
-
-	err = emptyLine.Draw(table, line.GetLength(), yCoord)
-	if err != nil {
-		return fmt.Errorf("could not draw empty line: %s", err.Error())
-	}
-
-	// Rest of the lines
-	tsLines := ts.GetLines()
-
-	for i := 1; i < len(tsLines); i++ {
-		line = tsLines[i]
-		emptyLine = sx.Repeat(sx.NewString(Space, style), rightMostLimit-line.GetLength())
-
-		err := line.Draw(table, IndentLevel, i+yCoord)
-		if err != nil {
-			return fmt.Errorf("could not draw line: %s", err.Error())
+		if cb.sepStr == "" {
+			sentences = [][]*sx.String{line}
+		} else {
+			for _, field := range line {
+				sentences = append(sentences, sx.FieldsFunc(field, cb.sepStr))
+			}
 		}
 
-		err = emptyLine.Draw(table, IndentLevel+line.GetLength(), i+yCoord)
+		ts, err := cb.createTextSplitter(sentences, maxWidth, maxHeight)
 		if err != nil {
-			return fmt.Errorf("could not draw empty line: %s", err.Error())
+			return nil, err
+		}
+
+		// If it is possible to optimize the text, optimize it.
+		// Otherwise, the unoptimized text is also fine.
+		optimizedTs, err := sx.SplitInEqualSizedLines(ts.GetLines(), maxWidth, -1)
+		if err != nil {
+			finalTs = append(finalTs, ts)
+		} else {
+			finalTs = append(finalTs, optimizedTs)
 		}
 	}
 
-	return nil
+	return finalTs, nil
 }

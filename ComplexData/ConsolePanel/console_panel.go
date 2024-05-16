@@ -139,7 +139,7 @@ func NewConsolePanel(execName string, description *cdd.Document) *ConsolePanel {
 						return err
 					}
 
-					err = line.Draw(table)
+					err = line.ForceDraw(table, 0, 0)
 					if err != nil {
 						return err
 					}

@@ -17,9 +17,6 @@ type String struct {
 	// content is the content of the unit.
 	content string
 
-	// style is the style of the unit.
-	style tcell.Style
-
 	// length is the length of the content.
 	length int
 }
@@ -39,7 +36,6 @@ func (dtu *String) String() string {
 func (dtu *String) Copy() com.Copier {
 	return &String{
 		content: dtu.content,
-		style:   dtu.style,
 		length:  dtu.length,
 	}
 }
