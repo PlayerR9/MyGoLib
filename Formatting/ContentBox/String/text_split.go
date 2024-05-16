@@ -129,6 +129,23 @@ func (ts *TextSplit) InsertWord(word *String) bool {
 	return true
 }
 
+// InsertWords is a method that attempts to insert multiple words into the TextSplit.
+//
+// Parameters:
+//   - words: The words to insert.
+//
+// Returns:
+//   - int: The index of the first word that could not be inserted, or -1 if all words were inserted.
+func (ts *TextSplit) InsertWords(words []*String) int {
+	for i, word := range words {
+		if !ts.InsertWord(word) {
+			return i
+		}
+	}
+
+	return -1
+}
+
 // canShiftUp is an helper method that checks if the first word of a given line
 // can be shifted up to the previous line without exceeding the width.
 //
@@ -190,4 +207,41 @@ func (ts *TextSplit) GetLines() []*String {
 	}
 
 	return lines
+}
+
+// GetFirstLine is a method that returns the first line of the TextSplit.
+//
+// Returns:
+//   - []*String: The first line of the TextSplit, or nil if the TextSplit is empty.
+//
+// Behaviors:
+//   - If the TextSplit is empty, the method returns nil.
+func (ts *TextSplit) GetFirstLine() []*String {
+	if len(ts.lines) == 0 {
+		return nil
+	}
+
+	return ts.lines[0].line
+}
+
+// GetFurthestRightEdge is a method that returns the number of characters in
+// the longest line of the TextSplit.
+//
+// Returns:
+//   - int: The number of characters in the longest line.
+//   - bool: True if the TextSplit is not empty, and false otherwise.
+func (ts *TextSplit) GetFurthestRightEdge() (int, bool) {
+	if len(ts.lines) == 0 {
+		return 0, false
+	}
+
+	max := ts.lines[0].len
+
+	for _, line := range ts.lines[1:] {
+		if line.len > max {
+			max = line.len
+		}
+	}
+
+	return max, true
 }

@@ -2,15 +2,12 @@ package Components
 
 import (
 	"fmt"
-	"strings"
-	"unicode/utf8"
 
 	cdd "github.com/PlayerR9/MyGoLib/ComplexData/Display"
 
 	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
 
-	fs "github.com/PlayerR9/MyGoLib/Formatting/Strings"
-	sext "github.com/PlayerR9/MyGoLib/Utility/StringExt"
+	sx "github.com/PlayerR9/MyGoLib/Formatting/ContentBox/String"
 
 	"github.com/gdamore/tcell"
 )
@@ -44,25 +41,41 @@ const (
 	IndentLevel int = 3
 )
 
+// ContentBox represents a box that contains content.
 type ContentBox struct {
-	lines     [][]string
-	maxWidth  int
-	maxHeight int
-	sep       *rune
-	style     tcell.Style
+	// lines is a two-dimensional slice of strings representing the content
+	// of the box.
+	lines [][]*sx.String
+
+	// sep is a pointer to a rune that represents the separator between
+	// fields in the content. If sep is nil, the content is not separated
+	// into fields.
+	sep *rune
+
+	// style is the style to be used when writing the content into the box.
+	style tcell.Style
 }
 
-func (cb *ContentBox) Draw(table *cdd.DrawTable) error {
-	cb.maxWidth = table.GetWidth()
-	cb.maxHeight = table.GetHeight()
+// Draw draws the content of the ContentBox into the specified draw table.
+//
+// Parameters:
+//   - table - the draw table to draw the content into.
+//   - x - the x coordinate to start drawing the content at.
+//   - y - the y coordinate to start drawing the content at.
+//
+// Returns:
+//   - error - an error if the content could not be drawn.
+func (cb *ContentBox) Draw(table *cdd.DrawTable, x, y int) error {
+	maxWidth := table.GetWidth() - x
+	maxHeight := table.GetHeight() - y
 
-	tss, err := cb.apply()
+	tss, err := cb.apply(maxWidth, maxHeight)
 	if err != nil {
 		return err
 	}
 
 	totalHeight := 0
-	tableHeight := table.GetHeight()
+	tableHeight := maxHeight
 
 	for _, ts := range tss {
 		totalHeight += ts.GetHeight()
@@ -92,90 +105,74 @@ func (cb *ContentBox) Draw(table *cdd.DrawTable) error {
 	return nil
 }
 
-func NewContentBox(lines [][]string) *ContentBox {
+// NewContentBox creates a new ContentBox with the specified lines of content.
+//
+// Parameters:
+//   - lines - a two-dimensional slice of strings representing the content of the box.
+//   - style - the style to be used when writing the content into the box.
+//
+// Returns:
+//   - *ContentBox - a pointer to the created ContentBox.
+func NewContentBox(lines [][]*sx.String, style tcell.Style) *ContentBox {
 	return &ContentBox{
 		lines: lines,
 		sep:   nil,
+		style: style,
 	}
 }
 
+// SetSeparator sets the separator between fields in the content of the ContentBox.
+//
+// Parameters:
+//   - char - the separator to be used between fields.
 func (cb *ContentBox) SetSeparator(char rune) {
 	cb.sep = &char
 }
 
-func (cb *ContentBox) SetStyle(style tcell.Style) {
-	cb.style = style
-}
-
-func (cb *ContentBox) apply() ([]*fs.TextSplit, error) {
-	finalTs := make([]*fs.TextSplit, 0, len(cb.lines))
-
-	for _, line := range cb.lines {
-		var sentences [][]string
-
-		if cb.sep == nil {
-			sentences = [][]string{line}
-		} else {
-			for _, field := range line {
-				fieldsFunc := func(r rune) bool {
-					return r == *cb.sep
-				}
-
-				sentences = append(sentences, strings.FieldsFunc(field, fieldsFunc))
-			}
-		}
-
-		ts, err := cb.createTextSplitter(sentences, cb.maxHeight)
-		if err != nil {
-			return nil, err
-		}
-
-		// If it is possible to optimize the text, optimize it.
-		// Otherwise, the unoptimized text is also fine.
-		optimizedTs, err := cb.finalOptimization(ts)
-		if err != nil {
-			finalTs = append(finalTs, ts)
-		} else {
-			finalTs = append(finalTs, optimizedTs)
-		}
+// processLine processes a line of text represented by a slice of fields.
+// It calculates the number of lines the text would occupy if split into
+// lines of a specified width. If the text cannot be split into lines of
+// the specified width, it replaces the suffix of the text with a hellip
+// and adds the resulting line to the TextSplitter. If the text can be split
+// into more than one line, it creates a new line with the first field and
+// as many subsequent fields as can fit into the line width, adding a hellip
+// if necessary. If the text can be split into exactly one line, it splits
+// the text into equal-sized lines and adds the first line to the TextSplitter.
+//
+// Parameters:
+//   - isFirst - a boolean indicating whether the line is the first line of text.
+//   - maxWidth - the maximum width of the line.
+//   - ts - the TextSplitter to add the line to.
+//   - words - a slice of fields representing the line of text.
+//
+// Returns:
+//   - *sx.TextSplit - the updated TextSplitter.
+//   - bool - a boolean indicating whether the text was truncated.
+//   - error - an error if the text could not be processed.
+func (cb *ContentBox) processLine(isFirst bool, maxWidth int, ts *sx.TextSplit, words []*sx.String, possibleNewLine bool) (*sx.TextSplit, bool, error) {
+	if !isFirst {
+		maxWidth -= IndentLevel
 	}
 
-	return finalTs, nil
-}
+	numberOfLines, err := sx.CalculateNumberOfLines(words, maxWidth)
 
-// processFirstLine processes the first line of text represented by
-// a slice of fields.
-// It calculates the number of lines the text would occupy if split
-// into lines of a specified width. If the text cannot be split into
-// lines of the specified width, it replaces the suffix of the text
-// with a hellip and adds the resulting line to the TextSplitter. If
-// the text can be split into more than one line, it creates a new
-// line with the first field and as many subsequent fields as can fit
-// into the line width, adding a hellip if necessary. If the text can
-// be split into exactly one line, it splits the text into equal-sized
-// lines and adds the first line to the TextSplitter.
-//
-// The function returns the updated TextSplitter, a boolean indicating
-// whether the text was truncated, and an error. If an error occurs
-// while replacing the suffix or splitting the text, the error is
-// returned. Otherwise, the error is nil.
-func (cb *ContentBox) processFirstLine(words []string, ts *fs.TextSplit) (*fs.TextSplit, bool, error) {
-	numberOfLines, err := fs.CalculateNumberOfLines(words, cb.maxWidth)
 	if err != nil {
-		var line string
+		var line *sx.String
 
 		if cb.sep == nil {
-			line = strings.Join(words, "")
+			line = sx.Join(words, "")
 		} else {
-			line = strings.Join(words, string(*cb.sep))
+			line = sx.Join(words, string(*cb.sep))
 		}
 
-		line, err = sext.ReplaceSuffix(line[:cb.maxWidth], Hellip)
-		if err != nil {
-			return nil, false, fmt.Errorf("could not replace suffix: %s", err.Error())
+		line = line.TrimEnd(maxWidth)
+
+		ok := line.ReplaceSuffix(Hellip)
+		if !ok {
+			return nil, false, fmt.Errorf("suffix is bigger than maxWidth")
 		}
 
-		ok := ts.InsertWord(line)
+		ok = ts.InsertWord(line)
 		if !ok {
 			panic("could not insert word")
 		}
@@ -184,144 +181,58 @@ func (cb *ContentBox) processFirstLine(words []string, ts *fs.TextSplit) (*fs.Te
 	}
 
 	if numberOfLines > 1 {
-		wordsProcessed := []string{words[0]}
-		wpLen := utf8.RuneCountInString(words[0])
+		wordsProcessed := []*sx.String{words[0]}
+		wpLen := words[0].GetLength()
 
-		var nextField string
+		var nextField *sx.String
 
 		for i, currentField := range words[1 : len(words)-1] {
 			nextField = words[i+1]
 
-			totalLen := wpLen + 2 + utf8.RuneCountInString(currentField) +
-				utf8.RuneCountInString(nextField)
+			totalLen := wpLen + 2 + currentField.GetLength() +
+				nextField.GetLength()
 
-			if totalLen+HellipLen > cb.maxWidth {
-				wordsProcessed = append(wordsProcessed, currentField+Hellip)
-				wpLen += utf8.RuneCountInString(currentField) + HellipLen + 1
+			if totalLen+HellipLen > maxWidth {
+				currentField.AppendString(Hellip)
+
+				wordsProcessed = append(wordsProcessed, currentField)
+				wpLen += currentField.GetLength() + 1
 				break
 			}
 
 			wordsProcessed = append(wordsProcessed, currentField)
-			wpLen += utf8.RuneCountInString(currentField) + 1
+			wpLen += currentField.GetLength() + 1
 		}
 
-		if wpLen+1+utf8.RuneCountInString(nextField)+HellipLen <= cb.maxWidth {
+		if wpLen+1+nextField.GetLength()+HellipLen <= maxWidth {
 			wordsProcessed = append(wordsProcessed, nextField)
-			wpLen += utf8.RuneCountInString(nextField) + 1
+			wpLen += nextField.GetLength() + 1
 		}
 
-		firstNotInserted := ts.InsertWords(wordsProcessed...)
+		firstNotInserted := ts.InsertWords(wordsProcessed)
 		if firstNotInserted != -1 {
 			panic(fmt.Sprintf("could not insert word %s", wordsProcessed[firstNotInserted]))
 		}
+
+		return ts, true, nil
 	} else {
-		halfTs, err := fs.SplitInEqualSizedLines(
-			words, cb.maxWidth, numberOfLines,
+		halfTs, err := sx.SplitInEqualSizedLines(
+			words, maxWidth, numberOfLines,
 		)
+
 		if err != nil {
 			return nil, false, fmt.Errorf("could not split text: %s", err.Error())
 		}
 
-		wordsProcessed := halfTs.GetFirstLine().GetWords()
+		wordsProcessed := halfTs.GetFirstLine()
 
-		firstNotInserted := ts.InsertWords(wordsProcessed...)
+		firstNotInserted := ts.InsertWords(wordsProcessed)
 		if firstNotInserted != -1 {
 			panic(fmt.Sprintf("could not insert word %s", wordsProcessed[firstNotInserted]))
 		}
+
+		return ts, false, nil
 	}
-
-	return ts, false, nil
-}
-
-// processOtherLines processes the other lines of text (i.e., all lines
-// except the first) represented by a slice of fields. It calculates
-// the number of lines the text would occupy if split into lines of a
-// specified width. If the text cannot be split into lines of the
-// specified width, it replaces the suffix of the text with a hellip and
-// adds the resulting line to the TextSplitter. If the text can be split
-// into more than one line, it creates a new line with the first field
-// and as many subsequent fields as can fit into the line width, adding
-// a hellip if necessary. If the text can be split into exactly one line,
-// it splits the text into equal-sized lines and adds the first line to
-// the TextSplitter.
-//
-// The function returns the updated TextSplitter, a boolean indicating
-// whether the text was truncated, and an error. If an error occurs while
-// replacing the suffix or splitting the text, the error is returned.
-// Otherwise, the error is nil.
-func (cb *ContentBox) processOtherLines(fields []string, ts *fs.TextSplit, possibleNewLine bool) (*fs.TextSplit, bool, error) {
-	if possibleNewLine {
-		for len(fields) > 0 {
-			ok := ts.InsertWord(fields[0])
-			if !ok {
-				break
-			}
-
-			fields = fields[1:]
-		}
-	}
-
-	if len(fields) == 0 {
-		return ts, possibleNewLine, nil
-	}
-
-	numberOfLines, err := fs.CalculateNumberOfLines(fields, cb.maxWidth-IndentLevel)
-	if err != nil {
-		var line string
-
-		if cb.sep == nil {
-			line = strings.Join(fields, "")
-		} else {
-			line = strings.Join(fields, string(*cb.sep))
-		}
-
-		line, err = sext.ReplaceSuffix(line[:cb.maxWidth-IndentLevel], Hellip)
-		if err != nil {
-			return nil, false, fmt.Errorf("could not replace suffix: %s", err.Error())
-		}
-
-		ok := ts.InsertWord(line)
-		if !ok {
-			panic("could not insert word")
-		}
-	} else if numberOfLines > 1 {
-		wordsToProcess := []string{fields[0]}
-		wtpLen := utf8.RuneCountInString(fields[0])
-
-		for _, field := range fields[1:] {
-			if wtpLen+1+utf8.RuneCountInString(field)+HellipLen+IndentLevel > cb.maxWidth {
-				wordsToProcess = append(wordsToProcess, field, Hellip)
-				wtpLen += utf8.RuneCountInString(field) + HellipLen + 1
-				break
-			}
-
-			wordsToProcess = append(wordsToProcess, field)
-			wtpLen += utf8.RuneCountInString(field) + 1
-		}
-
-		firstNotInserted := ts.InsertWords(wordsToProcess...)
-		if firstNotInserted != -1 {
-			panic(fmt.Sprintf("could not insert word %s", wordsToProcess[firstNotInserted]))
-		}
-
-		return ts, true, nil
-	}
-
-	halfTs, err := fs.SplitInEqualSizedLines(
-		fields, cb.maxWidth-IndentLevel, numberOfLines,
-	)
-	if err != nil {
-		return nil, false, fmt.Errorf("could not split text: %s", err.Error())
-	}
-
-	words := halfTs.GetFirstLine().GetWords()
-
-	firstNotInserted := ts.InsertWords(words...)
-	if firstNotInserted != -1 {
-		panic(fmt.Sprintf("could not insert word %s", words[firstNotInserted]))
-	}
-
-	return ts, false, nil
 }
 
 // createTextSplitter takes a two-dimensional slice of strings
@@ -335,48 +246,89 @@ func (cb *ContentBox) processOtherLines(fields []string, ts *fs.TextSplit, possi
 // The function returns a pointer to the created TextSplitter
 // and an error. If no errors occur during the creation of the
 // TextSplitter, the error is nil.
-func (cb *ContentBox) createTextSplitter(lines [][]string, maxHeight int) (*fs.TextSplit, error) {
-	ts, err := fs.NewTextSplit(cb.maxWidth-IndentLevel, maxHeight)
+func (cb *ContentBox) createTextSplitter(lines [][]*sx.String, maxWidth, maxHeight int) (*sx.TextSplit, error) {
+	ts, err := sx.NewTextSplit(maxWidth-IndentLevel, maxHeight)
 	if err != nil {
 		return nil, fmt.Errorf("could not create TextSplitter: %s", err.Error())
 	}
 
 	possibleNewLine := false
 
-	ts, possibleNewLine, err = cb.processFirstLine(lines[0], ts)
+	ts, possibleNewLine, err = cb.processLine(true, maxWidth, ts, lines[0], true)
 	if err != nil {
 		return nil, err
 	}
 
 	for _, line := range lines[1:] {
-		ts, possibleNewLine, err = cb.processOtherLines(line, ts, possibleNewLine)
+		if possibleNewLine {
+			for len(line) > 0 {
+				ok := ts.InsertWord(line[0])
+				if !ok {
+					break
+				}
+
+				line = line[1:]
+			}
+		}
+
+		if len(line) == 0 {
+			continue
+		}
+
+		ts, possibleNewLine, err = cb.processLine(false, maxWidth, ts, line, possibleNewLine)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("could not process line: %s", err.Error())
 		}
 	}
 
 	return ts, nil
 }
 
-// finalOptimization takes a TextSplitter and a width, and optimizes the
-// lines of text in the TextSplitter by splitting them into equal-sized
-// lines of the specified width.
-// It first converts the lines of the TextSplitter into a slice of strings,
-// and then calls the SplitTextInEqualSizedLines function with this slice,
-// the specified width, and -1 as the arguments.
+// apply takes a maximum width and height, and applies the content of the ContentBox
+// to the specified width and height. It splits the content into lines of the specified
+// width, and optimizes the text if possible.
 //
-// The function returns a new TextSplitter resulting from the optimization
-// and an error.
-// If an error occurs during the optimization, the error is returned.
-// Otherwise, the error is nil.
-func (cb *ContentBox) finalOptimization(ts *fs.TextSplit) (*fs.TextSplit, error) {
-	text := make([]string, 0)
+// Parameters:
+//   - maxWidth - the maximum width of the content.
+//   - maxHeight - the maximum height of the content.
+//
+// Returns:
+//   - []*sx.TextSplit - a slice of TextSplit objects representing the optimized content.
+//   - error - an error if the content could not be applied.
+func (cb *ContentBox) apply(maxWidth, maxHeight int) ([]*sx.TextSplit, error) {
+	finalTs := make([]*sx.TextSplit, 0, len(cb.lines))
 
-	for _, line := range ts.GetLines() {
-		text = append(text, line.String())
+	for _, line := range cb.lines {
+		var sentences [][]*sx.String
+
+		if cb.sep == nil {
+			sentences = [][]*sx.String{line}
+		} else {
+			for _, field := range line {
+				fieldsFunc := func(r rune) bool {
+					return r == *cb.sep
+				}
+
+				sentences = append(sentences, sx.FieldsFunc(field, fieldsFunc))
+			}
+		}
+
+		ts, err := cb.createTextSplitter(sentences, maxWidth, maxHeight)
+		if err != nil {
+			return nil, err
+		}
+
+		// If it is possible to optimize the text, optimize it.
+		// Otherwise, the unoptimized text is also fine.
+		optimizedTs, err := sx.SplitInEqualSizedLines(ts.GetLines(), maxWidth, -1)
+		if err != nil {
+			finalTs = append(finalTs, ts)
+		} else {
+			finalTs = append(finalTs, optimizedTs)
+		}
 	}
 
-	return fs.SplitInEqualSizedLines(text, cb.maxWidth, -1)
+	return finalTs, nil
 }
 
 // writeLines takes a TextSplitter, a tcell.Style, and a WriteOnlyDrawTable,
@@ -387,7 +339,7 @@ func (cb *ContentBox) finalOptimization(ts *fs.TextSplit) (*fs.TextSplit, error)
 // TextSplitter at the beginning of the line, and fills the rest of the line
 // with spaces. The first line of the drawTable is written at the beginning,
 // while the rest of the lines are indented by a constant IndentLevel.
-func writeLines(ts *fs.TextSplit, style tcell.Style, table *cdd.DrawTable, yCoord int) error {
+func writeLines(ts *sx.TextSplit, style tcell.Style, table *cdd.DrawTable, yCoord int) error {
 	height := ts.GetHeight()
 
 	if height > table.GetHeight() {
@@ -402,24 +354,38 @@ func writeLines(ts *fs.TextSplit, style tcell.Style, table *cdd.DrawTable, yCoor
 		panic("could not get furthest right edge")
 	}
 
-	var line, emptyLine string
+	var line, emptyLine *sx.String
 
 	// First line
-	line = ts.GetFirstLine().String()
-	emptyLine = strings.Repeat(string(Space), rightMostLimit-len(line))
+	line = sx.Join(ts.GetFirstLine(), "")
+	emptyLine = sx.Repeat(sx.NewString(Space, style), rightMostLimit-line.GetLength())
 
-	table.WriteLineAt(0, yCoord, line, style, true)
-	table.WriteLineAt(len(line), yCoord, emptyLine, style, true)
+	err := line.Draw(table, 0, yCoord)
+	if err != nil {
+		return fmt.Errorf("could not draw line: %s", err.Error())
+	}
+
+	err = emptyLine.Draw(table, line.GetLength(), yCoord)
+	if err != nil {
+		return fmt.Errorf("could not draw empty line: %s", err.Error())
+	}
 
 	// Rest of the lines
 	tsLines := ts.GetLines()
 
 	for i := 1; i < len(tsLines); i++ {
-		line = tsLines[i].String()
-		emptyLine = strings.Repeat(string(Space), rightMostLimit-len(line))
+		line = tsLines[i]
+		emptyLine = sx.Repeat(sx.NewString(Space, style), rightMostLimit-line.GetLength())
 
-		table.WriteLineAt(IndentLevel, i+yCoord, line, style, true)
-		table.WriteLineAt(IndentLevel+len(line), i+yCoord, emptyLine, style, true)
+		err := line.Draw(table, IndentLevel, i+yCoord)
+		if err != nil {
+			return fmt.Errorf("could not draw line: %s", err.Error())
+		}
+
+		err = emptyLine.Draw(table, IndentLevel+line.GetLength(), i+yCoord)
+		if err != nil {
+			return fmt.Errorf("could not draw empty line: %s", err.Error())
+		}
 	}
 
 	return nil

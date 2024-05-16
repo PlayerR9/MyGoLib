@@ -120,21 +120,19 @@ func (t *Title) ForceDraw(table *cdd.DrawTable, x, y int) error {
 	// 2. Generate the lines
 	width := table.GetWidth()
 
-	lines, err := t.tryToFitLines(width, x, y, fullTitle)
+	lines, err := forceGenerateLines(fullTitle, width, x, y)
 	if err != nil {
-		return fmt.Errorf("failed to fit lines: %s", err.Error())
+		return fmt.Errorf("failed to generate lines: %s", err.Error())
 	}
 
-	// 3. Check if the lines fit in the draw table
-	if len(lines) > table.GetHeight() {
-		return errors.New("lines do not fit in draw table")
-	}
-
-	// 4. Write the lines with centered alignment
+	// 3. Write the lines with centered alignment
 	for i := 0; i < len(lines); i++ {
 		startPos := (width - lines[i].GetLength()) / 2
 
-		lines[i].Draw(table, startPos, i)
+		err := lines[i].ForceDraw(table, startPos, i)
+		if err != nil {
+			return fmt.Errorf("failed to draw line %d: %s", i, err.Error())
+		}
 	}
 
 	return nil
@@ -165,36 +163,6 @@ func NewTitle(title string, style tcell.Style) *Title {
 //   - If the subtitle is an empty string, the subtitle is removed.
 func (t *Title) SetSubtitle(subtitle string) {
 	t.subtitle = subtitle
-}
-
-// tryToFitLines is a helper method that tries to fit the full title in the draw table.
-//
-// Parameters:
-//   - table: The draw table.
-//   - fullTitle: The full title.
-//
-// Returns:
-//   - []*sx.String: The lines of the title.
-//   - error: An error if the full title could not be split in lines.
-func (t *Title) tryToFitLines(width int, x, y int, fullTitle *sx.String) ([]*sx.String, error) {
-	lines, err := generateLines(fullTitle, width, x, y)
-	if err == nil {
-		return lines, nil
-	}
-
-	fullTitle = fullTitle.TrimEnd(width - x - TitleMinWidth)
-
-	ok := fullTitle.ReplaceSuffix(Hellip)
-	if !ok {
-		return nil, errors.New("Hellip is longer than the full title")
-	}
-
-	fullTitle.PrependRune(' ')
-	fullTitle.PrependString(Asterisks)
-	fullTitle.AppendRune(' ')
-	fullTitle.AppendString(Asterisks)
-
-	return []*sx.String{fullTitle}, nil
 }
 
 // generateLines is a helper method that generates the lines of the title.
@@ -231,41 +199,7 @@ func generateLines(fullTitle *sx.String, width int, x, y int) ([]*sx.String, err
 	return lines, nil
 }
 
-// forceGenerateLines is a helper method that generates the lines of the title.
-//
-// Parameters:
-//   - fullTitle: The full title.
-//   - width: The width of the lines.
-//
-// Returns:
-//   - []*sx.String: The lines of the title.
-//   - error: An error if the full title could not be split in lines.
-func forceGenerateLines(fullTitle *sx.String, width int, x, y int) ([]*sx.String, error) {
-	contents := fullTitle.Fields()
-
-	numberOfLines, err := sx.CalculateNumberOfLines(contents, width-x-TitleMinWidth)
-	if err != nil {
-		return nil, fmt.Errorf("could not calculate number of lines: %s", err.Error())
-	}
-
-	ts, err := sx.SplitInEqualSizedLines(contents, width-x-TitleMinWidth, numberOfLines)
-	if err != nil {
-		return nil, fmt.Errorf("could not split text in equal sized lines: %s", err.Error())
-	}
-
-	lines := ts.GetLines()
-
-	for _, line := range lines {
-		line.PrependRune(' ')
-		line.PrependString(Asterisks)
-		line.AppendRune(' ')
-		line.AppendString(Asterisks)
-	}
-
-	return lines, nil
-}
-
-// forceTryToFitLines is a helper method that tries to fit the full title in the draw table.
+// tryToFitLines is a helper method that tries to fit the full title in the draw table.
 //
 // Parameters:
 //   - table: The draw table.
@@ -274,7 +208,7 @@ func forceGenerateLines(fullTitle *sx.String, width int, x, y int) ([]*sx.String
 // Returns:
 //   - []*sx.String: The lines of the title.
 //   - error: An error if the full title could not be split in lines.
-func (t *Title) forceTryToFitLines(width int, x, y int, fullTitle *sx.String) ([]*sx.String, error) {
+func (t *Title) tryToFitLines(width int, x, y int, fullTitle *sx.String) ([]*sx.String, error) {
 	lines, err := generateLines(fullTitle, width, x, y)
 	if err == nil {
 		return lines, nil
@@ -293,6 +227,40 @@ func (t *Title) forceTryToFitLines(width int, x, y int, fullTitle *sx.String) ([
 	fullTitle.AppendString(Asterisks)
 
 	return []*sx.String{fullTitle}, nil
+}
+
+// forceGenerateLines is a helper method that generates the lines of the title.
+//
+// Parameters:
+//   - fullTitle: The full title.
+//   - width: The width of the lines.
+//
+// Returns:
+//   - []*sx.String: The lines of the title.
+//   - error: An error if the full title could not be split in lines.
+func forceGenerateLines(fullTitle *sx.String, width int, x, y int) ([]*sx.String, error) {
+	contents := fullTitle.Fields()
+
+	numberOfLines, err := sx.CalculateNumberOfLines(contents, width-x-TitleMinWidth)
+	if err != nil && !ers.As[*sx.ErrLinesGreaterThanWords](err) {
+		return nil, fmt.Errorf("could not calculate number of lines: %s", err.Error())
+	}
+
+	ts, err := sx.SplitInEqualSizedLines(contents, width-x-TitleMinWidth, numberOfLines)
+	if err != nil {
+		return nil, fmt.Errorf("could not split text in equal sized lines: %s", err.Error())
+	}
+
+	lines := ts.GetLines()
+
+	for _, line := range lines {
+		line.PrependRune(' ')
+		line.PrependString(Asterisks)
+		line.AppendRune(' ')
+		line.AppendString(Asterisks)
+	}
+
+	return lines, nil
 }
 
 // GetTitle returns the title of the Title.

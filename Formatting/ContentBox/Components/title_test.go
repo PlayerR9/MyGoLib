@@ -20,7 +20,7 @@ func TestTitle(t *testing.T) {
 
 	title := NewTitle(Title, tcell.StyleDefault)
 
-	err = title.Draw(table)
+	err = title.Draw(table, 0, 0)
 	if err != nil {
 		t.Fatalf("Expected no error, but got %s", err.Error())
 	}
@@ -82,7 +82,7 @@ func TestMiddleSplit(t *testing.T) {
 			t.Fatalf("At test %d, expected no error, but got %s", i, err.Error())
 		}
 
-		err = title.Draw(table)
+		err = title.Draw(table, 0, 0)
 		if err != nil {
 			t.Fatalf("At test %d, expected no error, but got %s", i, err.Error())
 		}
@@ -114,7 +114,7 @@ func TestTitleTruncation(t *testing.T) {
 		t.Fatalf("Expected no error, but got %s", err.Error())
 	}
 
-	err = title.Draw(table)
+	err = title.Draw(table, 0, 0)
 	if err != nil {
 		t.Fatalf("Expected no error, but got %s", err.Error())
 	}

@@ -251,11 +251,7 @@ func (s *String) ReplaceSuffix(suffix string) bool {
 //   - If the limit is greater than the length of the string, the string is unchanged.
 func (s *String) TrimEnd(limit int) *String {
 	if s.content == "" || limit >= s.length {
-		return &String{
-			content: s.content,
-			style:   s.style,
-			length:  s.length,
-		}
+		return s.Copy().(*String)
 	}
 
 	if limit <= 0 {
