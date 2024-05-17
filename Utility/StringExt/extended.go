@@ -113,19 +113,13 @@ func FindContentIndexes(openingToken, closingToken string, contentTokens []strin
 	result[0] = -1
 	result[1] = -1
 
-	if openingToken == "" {
-		err = ue.NewErrInvalidParameter(
-			"openingToken",
-			ue.NewErrEmptyString(),
-		)
-
+	if reason := ue.NewErrEmpty(openingToken).ErrorIf(); reason != nil {
+		err = ue.NewErrInvalidParameter("openingToken", reason)
 		return
-	} else if closingToken == "" {
-		err = ue.NewErrInvalidParameter(
-			"closingToken",
-			ue.NewErrEmptyString(),
-		)
+	}
 
+	if reason := ue.NewErrEmpty(closingToken).ErrorIf(); reason != nil {
+		err = ue.NewErrInvalidParameter("closingToken", reason)
 		return
 	}
 

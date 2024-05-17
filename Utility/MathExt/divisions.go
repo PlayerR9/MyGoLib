@@ -24,7 +24,7 @@ func PrimeFactorization(inputNumber int) (map[int]int, error) {
 	if inputNumber == 0 {
 		return nil, ers.NewErrInvalidParameter(
 			"inputNumber",
-			ers.NewErrInvalidValue(0),
+			ers.NewErrUnexpectedValue(0),
 		)
 	}
 

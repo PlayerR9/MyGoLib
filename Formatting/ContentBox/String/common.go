@@ -146,11 +146,8 @@ func CalculateNumberOfLines(text []*String, width int) (int, error) {
 // If maxHeight is not provided, the function calculates the number of lines needed to fit
 // the text within the width using the CalculateNumberOfLines function.
 func SplitInEqualSizedLines(text []*String, width, height int) (*TextSplit, error) {
-	if len(text) == 0 {
-		return nil, ers.NewErrInvalidParameter(
-			"text",
-			ers.NewErrEmptySlice(),
-		)
+	if err := ers.NewErrEmpty(text).ErrorIf(); err != nil {
+		return nil, ers.NewErrInvalidParameter("text", err)
 	}
 
 	if height == -1 {
@@ -309,7 +306,7 @@ func Join(elems []*String, sep string) *String {
 			builder.WriteString(elem.content)
 		}
 
-		return NewString(builder.String(), elems[0].style)
+		return NewString(builder.String())
 	}
 }
 
@@ -342,14 +339,14 @@ func FieldsFunc(s *String, sep string) []*String {
 			counter++
 
 			if counter == len(runes) {
-				fields = append(fields, NewString(builder.String(), s.style))
+				fields = append(fields, NewString(builder.String()))
 				builder.Reset()
 				counter = 0
 			}
 		}
 
 		if builder.Len() > 0 {
-			fields = append(fields, NewString(builder.String(), s.style))
+			fields = append(fields, NewString(builder.String()))
 		}
 
 		return fields
@@ -378,5 +375,5 @@ func Repeat(s *String, count int) *String {
 		builder.WriteString(s.content)
 	}
 
-	return NewString(builder.String(), s.style)
+	return NewString(builder.String())
 }

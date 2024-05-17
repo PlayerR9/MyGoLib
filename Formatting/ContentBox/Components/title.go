@@ -50,7 +50,7 @@ func (t *Title) Draw(table *cdd.DrawTable, x, y int) error {
 	var fullTitle *sx.String
 
 	if t.subtitle == "" {
-		fullTitle = sx.NewString(t.title, t.style)
+		fullTitle = sx.NewString(t.title)
 	} else {
 		var builder strings.Builder
 
@@ -60,7 +60,7 @@ func (t *Title) Draw(table *cdd.DrawTable, x, y int) error {
 		builder.WriteRune(' ')
 		builder.WriteString(t.subtitle)
 
-		fullTitle = sx.NewString(builder.String(), t.style)
+		fullTitle = sx.NewString(builder.String())
 	}
 
 	// 2. Generate the lines
@@ -80,7 +80,12 @@ func (t *Title) Draw(table *cdd.DrawTable, x, y int) error {
 	for i := 0; i < len(lines); i++ {
 		startPos := (width - lines[i].GetLength()) / 2
 
-		lines[i].Draw(table, startPos, i)
+		cell := cdd.NewDtUnit(lines[i], t.style)
+
+		err := cell.Draw(table, startPos, i)
+		if err != nil {
+			return fmt.Errorf("failed to draw line %d: %s", i, err.Error())
+		}
 	}
 
 	return nil
@@ -104,7 +109,7 @@ func (t *Title) ForceDraw(table *cdd.DrawTable, x, y int) error {
 	var fullTitle *sx.String
 
 	if t.subtitle == "" {
-		fullTitle = sx.NewString(t.title, t.style)
+		fullTitle = sx.NewString(t.title)
 	} else {
 		var builder strings.Builder
 
@@ -114,7 +119,7 @@ func (t *Title) ForceDraw(table *cdd.DrawTable, x, y int) error {
 		builder.WriteRune(' ')
 		builder.WriteString(t.subtitle)
 
-		fullTitle = sx.NewString(builder.String(), t.style)
+		fullTitle = sx.NewString(builder.String())
 	}
 
 	// 2. Generate the lines
@@ -129,7 +134,9 @@ func (t *Title) ForceDraw(table *cdd.DrawTable, x, y int) error {
 	for i := 0; i < len(lines); i++ {
 		startPos := (width - lines[i].GetLength()) / 2
 
-		err := lines[i].ForceDraw(table, startPos, i)
+		cell := cdd.NewDtUnit(lines[i], t.style)
+
+		err := cell.ForceDraw(table, startPos, i)
 		if err != nil {
 			return fmt.Errorf("failed to draw line %d: %s", i, err.Error())
 		}

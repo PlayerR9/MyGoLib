@@ -31,26 +31,9 @@ type DtCell struct {
 func (c *DtCell) Draw(table *DrawTable, x, y int) error {
 	if table == nil {
 		return ers.NewErrNilParameter("table")
+	} else {
+		return table.WriteAt(x, y, c)
 	}
-
-	width := table.GetWidth()
-	height := table.GetHeight()
-
-	if x < 0 || x >= width {
-		return ers.NewErrInvalidParameter(
-			"x",
-			ers.NewErrOutOfBounds(x, 0, width),
-		)
-	} else if y < 0 || y >= height {
-		return ers.NewErrInvalidParameter(
-			"y",
-			ers.NewErrOutOfBounds(y, 0, height),
-		)
-	}
-
-	table.WriteAt(x, y, c)
-
-	return nil
 }
 
 // ForceDraw is a method of cdd.TableDrawer that draws the cell to the table at the given x
@@ -69,15 +52,10 @@ func (c *DtCell) Draw(table *DrawTable, x, y int) error {
 func (c *DtCell) ForceDraw(table *DrawTable, x, y int) error {
 	if table == nil {
 		return ers.NewErrNilParameter("table")
-	}
-
-	if x < 0 || x >= table.GetWidth() || y < 0 || y >= table.GetHeight() {
+	} else {
+		table.ForceWriteAt(x, y, c)
 		return nil
 	}
-
-	table.WriteAt(x, y, c)
-
-	return nil
 }
 
 // NewDtCell creates a new DtCell with the given content and style.

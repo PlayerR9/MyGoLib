@@ -289,16 +289,12 @@ func (cns *ConsolePanel) GetCommand(opcode string) (*CommandInfo, error) {
 //   - error: An error of type *ers.ErrInvalidParameter if width or height is less than
 //     or equal to 0.
 func (cns *ConsolePanel) SetDimensions(width, height int) error {
-	if width <= 0 {
-		return ers.NewErrInvalidParameter(
-			"width",
-			ers.NewErrGT(0),
-		)
-	} else if height <= 0 {
-		return ers.NewErrInvalidParameter(
-			"height",
-			ers.NewErrGT(0),
-		)
+	if err := ers.NewErrGT(0).ErrorIf(width); err != nil {
+		return ers.NewErrInvalidParameter("width", err)
+	}
+
+	if err := ers.NewErrGT(0).ErrorIf(height); err != nil {
+		return ers.NewErrInvalidParameter("height", err)
 	}
 
 	cns.width = width

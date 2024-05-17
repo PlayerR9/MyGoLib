@@ -194,7 +194,6 @@ func (ts *TextSplit) GetLines() []*String {
 			panic("line has no words")
 		}
 
-		style := line.line[0].style
 		builder.WriteString(line.line[0].content)
 
 		for _, word := range line.line[1:] {
@@ -202,7 +201,7 @@ func (ts *TextSplit) GetLines() []*String {
 			builder.WriteString(word.content)
 		}
 
-		lines = append(lines, NewString(builder.String(), style))
+		lines = append(lines, NewString(builder.String()))
 		builder.Reset()
 	}
 

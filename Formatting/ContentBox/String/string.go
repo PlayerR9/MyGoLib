@@ -1,13 +1,8 @@
 package String
 
 import (
-	"fmt"
 	"strings"
 	"unicode/utf8"
-
-	cdd "github.com/PlayerR9/MyGoLib/ComplexData/Display"
-	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
-	"github.com/gdamore/tcell"
 
 	com "github.com/PlayerR9/MyGoLib/Units/Common"
 )
@@ -40,76 +35,31 @@ func (dtu *String) Copy() com.Copier {
 	}
 }
 
-// Draw is a method of cdd.TableDrawer that draws the unit to the table at the given x and y
-// coordinates.
-//
-// Parameters:
-//   - table: The table to draw the unit to.
-//   - x: The x coordinate to draw the unit at.
-//   - y: The y coordinate to draw the unit at.
+// GetRunes returns the content of the unit as a slice of runes.
 //
 // Returns:
-//   - error: An error of type *ers.ErrInvalidParameter if the table is nil.
+//   - [][]rune: The content of the unit as a slice of runes.
 //
 // Behaviors:
-//   - Out of bounds values are ignored.
-func (dtu *String) Draw(table *cdd.DrawTable, x, y int) error {
-	if table == nil {
-		return ers.NewErrNilParameter("table")
-	}
+//   - The content is returned as a slice of runes with one line.
+func (s *String) GetRunes() [][]rune {
+	runes := make([][]rune, 1)
+	runes[0] = []rune(s.content)
 
-	if err := table.IsXInBounds(x); err != nil {
-		return ers.NewErrInvalidParameter("x", err)
-	} else if err := table.IsYInBounds(y); err != nil {
-		return ers.NewErrInvalidParameter("y", err)
-	}
+	return runes
 
-	exceeding := x + dtu.length - table.GetWidth()
-
-	if exceeding > 0 {
-		return fmt.Errorf("content exceeds table width by %d", exceeding)
-	}
-
-	table.WriteLineAt(x, y, dtu.content, dtu.style, true)
-
-	return nil
-}
-
-// Draw is a method of cdd.TableDrawer that draws the unit to the table at the given x and y
-// coordinates.
-//
-// Parameters:
-//   - table: The table to draw the unit to.
-//   - x: The x coordinate to draw the unit at.
-//   - y: The y coordinate to draw the unit at.
-//
-// Returns:
-//   - error: An error of type *ers.ErrInvalidParameter if the table is nil.
-//
-// Behaviors:
-//   - Out of bounds values are ignored.
-func (dtu *String) ForceDraw(table *cdd.DrawTable, x, y int) error {
-	if table == nil {
-		return ers.NewErrNilParameter("table")
-	}
-
-	table.WriteLineAt(x, y, dtu.content, dtu.style, true)
-
-	return nil
 }
 
 // NewDtUnit creates a new DtUnit with the given content and style.
 //
 // Parameters:
 //   - content: The content of the unit.
-//   - style: The style of the unit.
 //
 // Returns:
 //   - *DtUnit: The new DtUnit.
-func NewString(content string, style tcell.Style) *String {
+func NewString(content string) *String {
 	return &String{
 		content: content,
-		style:   style,
 		length:  utf8.RuneCountInString(content),
 	}
 }
@@ -120,14 +70,6 @@ func NewString(content string, style tcell.Style) *String {
 //   - string: The content of the unit.
 func (dtu *String) GetContent() string {
 	return dtu.content
-}
-
-// GetStyle returns the style of the unit.
-//
-// Returns:
-//   - tcell.Style: The style of the unit.
-func (dtu *String) GetStyle() tcell.Style {
-	return dtu.style
 }
 
 // GetLength returns the length of the content.
@@ -148,7 +90,7 @@ func (dtu *String) Fields() []*String {
 
 	for _, r := range dtu.content {
 		if r == ' ' {
-			fields = append(fields, NewString(builder.String(), dtu.style))
+			fields = append(fields, NewString(builder.String()))
 			builder.Reset()
 		} else {
 			builder.WriteRune(r)
@@ -156,7 +98,7 @@ func (dtu *String) Fields() []*String {
 	}
 
 	if builder.Len() > 0 {
-		fields = append(fields, NewString(builder.String(), dtu.style))
+		fields = append(fields, NewString(builder.String()))
 	}
 
 	return fields
@@ -253,14 +195,12 @@ func (s *String) TrimEnd(limit int) *String {
 	if limit <= 0 {
 		return &String{
 			content: "",
-			style:   s.style,
 			length:  0,
 		}
 	}
 
 	return &String{
 		content: s.content[:limit],
-		style:   s.style,
 		length:  limit,
 	}
 }

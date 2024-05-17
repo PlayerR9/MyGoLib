@@ -10,6 +10,8 @@ import (
 	cdd "github.com/PlayerR9/MyGoLib/CustomData/Document"
 
 	sm "github.com/PlayerR9/MyGoLib/CustomData/SortedMap"
+
+	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
 )
 
 // CommandCallbackFunc is a function type that represents a callback
@@ -168,7 +170,7 @@ func (ci *CommandInfo) AddFlag(flag string, info *FlagInfo) *CommandInfo {
 //   - error: An error, if any.
 func (inf *CommandInfo) Parse(args []string) (*ParsedCommand, error) {
 	if inf.flags.Size() == 0 {
-		if len(args) != 0 {
+		if err := ers.NewErrEmpty(args); err == nil {
 			return nil, errors.New("no flags expected")
 		}
 

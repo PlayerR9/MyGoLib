@@ -4,6 +4,8 @@ package Errors
 import (
 	"fmt"
 	"strings"
+
+	com "github.com/PlayerR9/MyGoLib/Units/Common"
 )
 
 // ErrPanic represents an error when a panic occurs.
@@ -247,4 +249,91 @@ func (e *ErrUnexpected) Error() string {
 //   - *ErrUnexpected: A pointer to the newly created ErrUnexpected.
 func NewErrUnexpected(got fmt.Stringer, expected ...string) *ErrUnexpected {
 	return &ErrUnexpected{Expected: expected, Actual: got}
+}
+
+// ErrEmpty represents an error when a value is empty.
+type ErrEmpty[T any] struct {
+	// Value is the value that caused the error.
+	Value T
+}
+
+// Error returns the error message: "value must not be empty".
+//
+// Returns:
+//   - string: The error message.
+func (e *ErrEmpty[T]) Error() string {
+	var builder strings.Builder
+
+	builder.WriteString(com.StringOf(e.Value))
+	builder.WriteString(" must not be empty")
+
+	return builder.String()
+}
+
+// ErrorIf returns the error if the target value is empty.
+//
+// Parameters:
+//   - empty: A function that returns true if the target value is empty.
+//
+// Returns:
+//   - error: The error if the target value is empty, nil otherwise.
+func (e *ErrEmpty[T]) ErrorIf() error {
+	if com.IsEmpty(e) {
+		return e
+	} else {
+		return nil
+	}
+}
+
+// NewErrEmpty creates a new ErrEmpty error.
+//
+// Parameters:
+//   - value: The value that caused the error.
+//
+// Returns:
+//   - *ErrEmpty: A pointer to the newly created ErrEmpty.
+func NewErrEmpty[T any](value T) *ErrEmpty[T] {
+	return &ErrEmpty[T]{Value: value}
+}
+
+// ErrNotComparable represents an error when a value is not comparable.
+type ErrNotComparable[T any] struct {
+	// Value is the value that caused the error.
+	Value T
+}
+
+// Error returns the error message: "type <type> does not support comparison".
+//
+// Returns:
+//   - string: The error message.
+func (e *ErrNotComparable[T]) Error() string {
+	var builder strings.Builder
+
+	builder.WriteString("type ")
+	builder.WriteString(fmt.Sprintf("%T", e.Value))
+	builder.WriteString(" does not support comparison")
+
+	return builder.String()
+}
+
+// ErrorIf returns the error if the target value is not comparable.
+//
+// Returns:
+//   - error: The error if the target value is not comparable, nil otherwise.
+func (e *ErrNotComparable[T]) ErrorIf() error {
+	if com.IsComparable(e.Value) {
+		return nil
+	} else {
+		return e
+	}
+}
+
+// NewErrNotComparable creates a new ErrNotComparable error.
+//
+// Returns:
+//   - *ErrNotComparable: A pointer to the newly created ErrNotComparable.
+func NewErrNotComparable[T any](value T) *ErrNotComparable[T] {
+	return &ErrNotComparable[T]{
+		Value: value,
+	}
 }

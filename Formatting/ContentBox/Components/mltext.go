@@ -64,7 +64,7 @@ func (mlt *MultiLineText) AppendSentence(sentence string) error {
 		newWords := make([]*sx.String, 0, len(line))
 
 		for _, words := range line {
-			newWords = append(newWords, sx.NewString(words, mlt.style))
+			newWords = append(newWords, sx.NewString(words))
 		}
 
 		mlt.lines = append(mlt.lines, newWords)

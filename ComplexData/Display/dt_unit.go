@@ -3,6 +3,8 @@ package Display
 import (
 	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
 	"github.com/gdamore/tcell"
+
+	cdt "github.com/PlayerR9/MyGoLib/CustomData/Table"
 )
 
 // DtUniter is an interface that represents the content of a unit in a draw table.
@@ -44,37 +46,30 @@ func (u *DtUnit[T]) Draw(table *DrawTable, x, y int) error {
 		return ers.NewErrNilParameter("table")
 	}
 
-	if x < 0 || x >= table.width {
-		return ers.NewErrInvalidParameter(
-			"x",
-			ers.NewErrOutOfBounds(x, 0, table.width),
-		)
-	} else if y < 0 || y >= table.height {
-		return ers.NewErrInvalidParameter(
-			"y",
-			ers.NewErrOutOfBounds(y, 0, table.height),
-		)
+	if err := table.IsXInBounds(x); err != nil {
+		return ers.NewErrInvalidParameter("x", err)
+	}
+
+	if err := table.IsYInBounds(y); err != nil {
+		return ers.NewErrInvalidParameter("y", err)
 	}
 
 	runes := u.Content.GetRunes()
 
 	for i, row := range runes {
-		if y+i >= table.height {
-			return NewErrHeightExceeded(y + i - table.height)
+		sequence := make([]*DtCell, 0, len(row))
+
+		for _, r := range row {
+			if r == EmptyRuneCell {
+				sequence = append(sequence, nil)
+			} else {
+				sequence = append(sequence, NewDtCell(r, u.Style))
+			}
 		}
 
-		if len(row) == 0 {
-			continue
-		}
-
-		for j, r := range row {
-			if x+j >= table.width {
-				return NewErrWidthExceeded(x + j - table.width)
-			}
-
-			if r != '\000' {
-				table.table[y+i][x+j] = NewDtCell(r, u.Style)
-			}
+		err := table.WriteHorizontalSequence(x, y+i, sequence)
+		if err != nil {
+			return err
 		}
 	}
 
@@ -101,7 +96,7 @@ func (u *DtUnit[T]) ForceDraw(table *DrawTable, x, y int) error {
 
 	runes := u.Content.GetRunes()
 
-	runes, x, y = FixBoundaries(table.width, table.height, runes, x, y)
+	runes, x, y = cdt.FixBoundaries(table.GetWidth(), table.GetHeight(), runes, x, y)
 	if len(runes) == 0 {
 		return nil
 	}
@@ -111,15 +106,17 @@ func (u *DtUnit[T]) ForceDraw(table *DrawTable, x, y int) error {
 			continue
 		}
 
-		for j, r := range row {
-			if x+j >= table.width {
-				break
-			}
+		sequence := make([]*DtCell, 0, len(row))
 
-			if r != '\000' {
-				table.table[y+i][x+j] = NewDtCell(r, u.Style)
+		for _, r := range row {
+			if r == EmptyRuneCell {
+				sequence = append(sequence, nil)
+			} else {
+				sequence = append(sequence, NewDtCell(r, u.Style))
 			}
 		}
+
+		table.ForceWriteHorizontalSequence(x, y+i, sequence)
 	}
 
 	return nil

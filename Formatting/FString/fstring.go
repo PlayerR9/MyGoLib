@@ -3,7 +3,7 @@ package FString
 import (
 	"strings"
 
-	cb "github.com/PlayerR9/MyGoLib/Formatting/ContentBox"
+	cb "github.com/PlayerR9/MyGoLib/Formatting/ContentBox/Components"
 )
 
 const (
