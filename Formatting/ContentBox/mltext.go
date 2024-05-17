@@ -1,4 +1,4 @@
-package Components
+package ContentBox
 
 import (
 	cdd "github.com/PlayerR9/MyGoLib/ComplexData/Display"
