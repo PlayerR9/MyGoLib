@@ -6,6 +6,7 @@ import (
 	"errors"
 
 	fs "github.com/PlayerR9/MyGoLib/Formatting/FString"
+	"github.com/gdamore/tcell"
 
 	cdd "github.com/PlayerR9/MyGoLib/CustomData/Document"
 
@@ -75,27 +76,27 @@ func (cci *CommandInfo) FString(trav *fs.Traversor) {
 
 	// Description:
 	if cci.description == nil {
-		trav.AddLines("Description: [No description provided]")
+		trav.AddLines(tcell.StyleDefault, "Description: [No description provided]")
 	} else {
-		trav.AddLines("Description:")
+		trav.AddLines(tcell.StyleDefault, "Description:")
 
 		cci.description.FString(trav.IncreaseIndent(1))
 	}
 
 	// Empty line
-	trav.EmptyLine()
+	trav.EmptyLine(tcell.StyleDefault)
 
 	// Flags:
 	if cci.flags.Size() == 0 {
-		trav.AddLines("Flags: None")
+		trav.AddLines(tcell.StyleDefault, "Flags: None")
 
 		trav.Apply()
 	} else {
-		trav.AddLines("Flags:")
+		trav.AddLines(tcell.StyleDefault, "Flags:")
 
 		for _, p := range cci.flags.GetEntries() {
-			trav.AppendStrings("", indent, "- ", p.First, ":")
-			trav.AddLines()
+			trav.AppendStrings(tcell.StyleDefault, "", indent, "- ", p.First, ":")
+			trav.AddLines(tcell.StyleDefault)
 
 			trav.Apply()
 

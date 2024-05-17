@@ -5,7 +5,7 @@ import (
 
 	cdd "github.com/PlayerR9/MyGoLib/ComplexData/Display"
 
-	sx "github.com/PlayerR9/MyGoLib/Formatting/ContentBox/String"
+	sx "github.com/PlayerR9/MyGoLib/Units/String"
 
 	"github.com/gdamore/tcell"
 )
@@ -44,10 +44,6 @@ type ContentBox struct {
 	// lines is a two-dimensional slice of strings representing the content
 	// of the box.
 	lines [][]*sx.String
-
-	// sepStr is a string that represents the separator between fields in the content.
-	// If sepStr is an empty string, the content is not separated into fields.
-	sepStr string
 
 	// style is the style to be used when writing the content into the box.
 	style tcell.Style
@@ -92,8 +88,11 @@ func (cb *ContentBox) Draw(table *cdd.DrawTable, x, y int) error {
 			return nil
 		}
 
-		if err := writeLines(ts, cb.style, table, yCoord); err != nil {
-			return fmt.Errorf("could not write lines: %s", err.Error())
+		cell := cdd.NewDtUnit(ts, cb.style)
+
+		err := cell.Draw(table, x, y+yCoord)
+		if err != nil {
+			return fmt.Errorf("could not draw cell: %s", err.Error())
 		}
 
 		yCoord += currentHeight
@@ -115,7 +114,7 @@ func (cb *ContentBox) ForceDraw(table *cdd.DrawTable, x, y int) error {
 	maxWidth := table.GetWidth() - x
 	maxHeight := table.GetHeight() - y
 
-	tss, err := cb.apply(maxWidth, maxHeight)
+	tss, err := cb.forceApply(maxWidth, maxHeight)
 	if err != nil {
 		return err
 	}
@@ -141,8 +140,11 @@ func (cb *ContentBox) ForceDraw(table *cdd.DrawTable, x, y int) error {
 			return nil
 		}
 
-		if err := writeLines(ts, cb.style, table, yCoord); err != nil {
-			return fmt.Errorf("could not write lines: %s", err.Error())
+		cell := cdd.NewDtUnit(ts, cb.style)
+
+		err := cell.ForceDraw(table, x, y+yCoord)
+		if err != nil {
+			return fmt.Errorf("could not draw cell: %s", err.Error())
 		}
 
 		yCoord += currentHeight
@@ -156,15 +158,13 @@ func (cb *ContentBox) ForceDraw(table *cdd.DrawTable, x, y int) error {
 // Parameters:
 //   - lines - a two-dimensional slice of strings representing the content of the box.
 //   - style - the style to be used when writing the content into the box.
-//   - sepStr - the separator to be used between fields in the content.
 //
 // Returns:
 //   - *ContentBox - a pointer to the created ContentBox.
-func NewContentBox(lines [][]*sx.String, style tcell.Style, sepStr string) *ContentBox {
+func NewContentBox(lines [][]*sx.String, style tcell.Style) *ContentBox {
 	return &ContentBox{
-		lines:  lines,
-		sepStr: sepStr,
-		style:  style,
+		lines: lines,
+		style: style,
 	}
 }
 
@@ -196,7 +196,7 @@ func (cb *ContentBox) processLine(isFirst bool, maxWidth int, ts *sx.TextSplit, 
 	numberOfLines, err := sx.CalculateNumberOfLines(words, maxWidth)
 
 	if err != nil {
-		line := sx.Join(words, cb.sepStr).TrimEnd(maxWidth)
+		line := sx.Join(words, "").TrimEnd(maxWidth)
 
 		ok := line.ReplaceSuffix(Hellip)
 		if !ok {
@@ -330,15 +330,7 @@ func (cb *ContentBox) apply(maxWidth, maxHeight int) ([]*sx.TextSplit, error) {
 	finalTs := make([]*sx.TextSplit, 0, len(cb.lines))
 
 	for _, line := range cb.lines {
-		var sentences [][]*sx.String
-
-		if cb.sepStr == "" {
-			sentences = [][]*sx.String{line}
-		} else {
-			for _, field := range line {
-				sentences = append(sentences, sx.FieldsFunc(field, cb.sepStr))
-			}
-		}
+		sentences := [][]*sx.String{line}
 
 		ts, err := cb.createTextSplitter(sentences, maxWidth, maxHeight)
 		if err != nil {
@@ -373,15 +365,7 @@ func (cb *ContentBox) forceApply(maxWidth, maxHeight int) ([]*sx.TextSplit, erro
 	finalTs := make([]*sx.TextSplit, 0, len(cb.lines))
 
 	for _, line := range cb.lines {
-		var sentences [][]*sx.String
-
-		if cb.sepStr == "" {
-			sentences = [][]*sx.String{line}
-		} else {
-			for _, field := range line {
-				sentences = append(sentences, sx.FieldsFunc(field, cb.sepStr))
-			}
-		}
+		sentences := [][]*sx.String{line}
 
 		ts, err := cb.createTextSplitter(sentences, maxWidth, maxHeight)
 		if err != nil {

@@ -3,7 +3,7 @@ package SortedMap
 import (
 	"slices"
 
-	cdp "github.com/PlayerR9/MyGoLib/CustomData/Pair"
+	cdp "github.com/PlayerR9/MyGoLib/Units/Pair"
 
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 )

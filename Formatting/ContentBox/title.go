@@ -7,7 +7,7 @@ import (
 
 	cdd "github.com/PlayerR9/MyGoLib/ComplexData/Display"
 
-	sx "github.com/PlayerR9/MyGoLib/Formatting/ContentBox/String"
+	sx "github.com/PlayerR9/MyGoLib/Units/String"
 
 	"github.com/gdamore/tcell"
 
@@ -66,7 +66,7 @@ func (t *Title) Draw(table *cdd.DrawTable, x, y int) error {
 	// 2. Generate the lines
 	width := table.GetWidth()
 
-	lines, err := t.tryToFitLines(width, x, y, fullTitle)
+	lines, err := t.tryToFitLines(width, x, fullTitle)
 	if err != nil {
 		return fmt.Errorf("failed to fit lines: %s", err.Error())
 	}
@@ -125,7 +125,7 @@ func (t *Title) ForceDraw(table *cdd.DrawTable, x, y int) error {
 	// 2. Generate the lines
 	width := table.GetWidth()
 
-	lines, err := forceGenerateLines(fullTitle, width, x, y)
+	lines, err := forceGenerateLines(fullTitle, width, x)
 	if err != nil {
 		return fmt.Errorf("failed to generate lines: %s", err.Error())
 	}
@@ -181,7 +181,7 @@ func (t *Title) SetSubtitle(subtitle string) {
 // Returns:
 //   - []*sx.String: The lines of the title.
 //   - error: An error if the full title could not be split in lines.
-func generateLines(fullTitle *sx.String, width int, x, y int) ([]*sx.String, error) {
+func generateLines(fullTitle *sx.String, width int, x int) ([]*sx.String, error) {
 	contents := fullTitle.Fields()
 
 	numberOfLines, err := sx.CalculateNumberOfLines(contents, width-x-TitleMinWidth)
@@ -215,8 +215,8 @@ func generateLines(fullTitle *sx.String, width int, x, y int) ([]*sx.String, err
 // Returns:
 //   - []*sx.String: The lines of the title.
 //   - error: An error if the full title could not be split in lines.
-func (t *Title) tryToFitLines(width int, x, y int, fullTitle *sx.String) ([]*sx.String, error) {
-	lines, err := generateLines(fullTitle, width, x, y)
+func (t *Title) tryToFitLines(width int, x int, fullTitle *sx.String) ([]*sx.String, error) {
+	lines, err := generateLines(fullTitle, width, x)
 	if err == nil {
 		return lines, nil
 	}
@@ -225,7 +225,7 @@ func (t *Title) tryToFitLines(width int, x, y int, fullTitle *sx.String) ([]*sx.
 
 	ok := fullTitle.ReplaceSuffix(Hellip)
 	if !ok {
-		return nil, errors.New("Hellip is longer than the full title")
+		return nil, errors.New("hellip is longer than the full title")
 	}
 
 	fullTitle.PrependRune(' ')
@@ -245,7 +245,7 @@ func (t *Title) tryToFitLines(width int, x, y int, fullTitle *sx.String) ([]*sx.
 // Returns:
 //   - []*sx.String: The lines of the title.
 //   - error: An error if the full title could not be split in lines.
-func forceGenerateLines(fullTitle *sx.String, width int, x, y int) ([]*sx.String, error) {
+func forceGenerateLines(fullTitle *sx.String, width int, x int) ([]*sx.String, error) {
 	contents := fullTitle.Fields()
 
 	numberOfLines, err := sx.CalculateNumberOfLines(contents, width-x-TitleMinWidth)

@@ -6,7 +6,7 @@ import (
 
 	itf "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
 
-	cdp "github.com/PlayerR9/MyGoLib/CustomData/Pair"
+	cdp "github.com/PlayerR9/MyGoLib/Units/Pair"
 )
 
 // PageRange represents a pair of integers that represent the start and end

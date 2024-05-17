@@ -37,6 +37,27 @@ func (ts *TextSplit) Copy() intf.Copier {
 	return newTs
 }
 
+// GetRunes is a method of TextSplit that returns the runes of the TextSplit.
+//
+// Returns:
+//   - [][]rune: A slice of runes representing the words in the TextSplit.
+//
+// Behaviors:
+//   - It is always a slice of runes with one line.
+func (ts *TextSplit) GetRunes() [][]rune {
+	if len(ts.lines) == 0 {
+		return [][]rune{{}}
+	}
+
+	runes := ts.lines[0].GetRunes()
+
+	for _, line := range ts.lines[1:] {
+		runes = append(runes, line.GetRunes()[0])
+	}
+
+	return runes
+}
+
 // NewTextSplit creates a new TextSplit with the given maximum width and height.
 //
 // Parameters:

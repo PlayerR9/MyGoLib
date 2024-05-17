@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	cdt "github.com/PlayerR9/MyGoLib/ComplexData/Display"
+	"github.com/gdamore/tcell"
 
 	cdd "github.com/PlayerR9/MyGoLib/CustomData/Document"
 	fs "github.com/PlayerR9/MyGoLib/Formatting/FString"
@@ -63,19 +64,19 @@ func (cns *ConsolePanel) FString(trav *fs.Traversor) {
 	indent := trav.GetIndent()
 
 	// Usage:
-	trav.AppendStrings(" ", "Usage:", cns.ExecutableName, "<command> [flags]")
-	trav.AddLines()
+	trav.AppendStrings(tcell.StyleDefault, " ", "Usage:", cns.ExecutableName, "<command> [flags]")
+	trav.AddLines(tcell.StyleDefault)
 
 	// Empty line
-	trav.EmptyLine()
+	trav.EmptyLine(tcell.StyleDefault)
 
 	// Description:
 	if cns.description == nil {
-		trav.AddLines("Description: [No description provided]")
+		trav.AddLines(tcell.StyleDefault, "Description: [No description provided]")
 
 		trav.Apply()
 	} else {
-		trav.AddLines("Description:")
+		trav.AddLines(tcell.StyleDefault, "Description:")
 
 		trav.Apply()
 
@@ -83,21 +84,21 @@ func (cns *ConsolePanel) FString(trav *fs.Traversor) {
 	}
 
 	// Empty line
-	trav.EmptyLine()
+	trav.EmptyLine(tcell.StyleDefault)
 
 	// Commands:
 	if cns.commandMap.Size() == 0 {
-		trav.AddLines("Commands: None")
+		trav.AddLines(tcell.StyleDefault, "Commands: None")
 
 		trav.Apply()
 	} else {
-		trav.AddLines("Commands:")
+		trav.AddLines(tcell.StyleDefault, "Commands:")
 
 		commands := cns.commandMap.GetEntries()
 
 		for _, command := range commands {
-			trav.AppendStrings("", indent, "- ", command.First, ":")
-			trav.AddLines()
+			trav.AppendStrings(tcell.StyleDefault, "", indent, "- ", command.First, ":")
+			trav.AddLines(tcell.StyleDefault)
 
 			trav.Apply()
 
@@ -172,7 +173,7 @@ func NewConsolePanel(execName string, description *cdd.Document) *ConsolePanel {
 						return err
 					}
 
-					err = mlt.Draw(table)
+					err = mlt.Draw(table, 0, 0)
 					if err != nil {
 						return err
 					}

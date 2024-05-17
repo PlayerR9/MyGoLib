@@ -1,10 +1,10 @@
 package Tree
 
 import (
-	up "github.com/PlayerR9/MyGoLib/CustomData/Pair"
 	"github.com/PlayerR9/MyGoLib/ListLike/Queuer"
 	"github.com/PlayerR9/MyGoLib/ListLike/Stacker"
 	intf "github.com/PlayerR9/MyGoLib/Units/Common"
+	up "github.com/PlayerR9/MyGoLib/Units/Pair"
 
 	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
 )

@@ -1,7 +1,7 @@
 package SliceExt
 
 import (
-	cdp "github.com/PlayerR9/MyGoLib/CustomData/Pair"
+	cdp "github.com/PlayerR9/MyGoLib/Units/Pair"
 )
 
 // WeightFunc is a type that defines a function that assigns a weight to an element.

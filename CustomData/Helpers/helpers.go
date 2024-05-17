@@ -6,8 +6,8 @@
 package Helpers
 
 import (
-	cdp "github.com/PlayerR9/MyGoLib/CustomData/Pair"
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
+	cdp "github.com/PlayerR9/MyGoLib/Units/Pair"
 	slext "github.com/PlayerR9/MyGoLib/Utility/SliceExt"
 )
 

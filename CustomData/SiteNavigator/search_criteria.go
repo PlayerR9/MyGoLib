@@ -5,7 +5,7 @@ import (
 
 	"golang.org/x/net/html"
 
-	cdp "github.com/PlayerR9/MyGoLib/CustomData/Pair"
+	cdp "github.com/PlayerR9/MyGoLib/Units/Pair"
 	slext "github.com/PlayerR9/MyGoLib/Utility/SliceExt"
 )
 

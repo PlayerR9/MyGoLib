@@ -2,7 +2,7 @@ package Components
 
 import (
 	cdd "github.com/PlayerR9/MyGoLib/ComplexData/Display"
-	sx "github.com/PlayerR9/MyGoLib/Formatting/ContentBox/String"
+	sx "github.com/PlayerR9/MyGoLib/Units/String"
 
 	sext "github.com/PlayerR9/MyGoLib/Utility/StringExt"
 
@@ -12,9 +12,8 @@ import (
 )
 
 type MultiLineText struct {
-	lines    [][]*sx.String
-	style    tcell.Style
-	splitStr string // empty string means no split character
+	lines [][]*sx.String
+	style tcell.Style
 }
 
 func (mlt *MultiLineText) Draw(table *cdd.DrawTable, x, y int) error {
@@ -26,7 +25,7 @@ func (mlt *MultiLineText) Draw(table *cdd.DrawTable, x, y int) error {
 		return nil // Nothing to draw
 	}
 
-	cb := NewContentBox(mlt.lines, mlt.style, mlt.splitStr)
+	cb := NewContentBox(mlt.lines, mlt.style)
 
 	return cb.Draw(table, x, y)
 }
@@ -40,18 +39,22 @@ func (mlt *MultiLineText) ForceDraw(table *cdd.DrawTable, x, y int) error {
 		return nil // Nothing to draw
 	}
 
-	cb := NewContentBox(mlt.lines, mlt.style, mlt.splitStr)
+	cb := NewContentBox(mlt.lines, mlt.style)
 
 	return cb.ForceDraw(table, x, y)
 }
 
-func NewMultiLineText(style tcell.Style, splitString string) *MultiLineText {
+func NewMultiLineText(style tcell.Style) *MultiLineText {
 	mlt := &MultiLineText{
 		lines: make([][]*sx.String, 0),
 		style: style,
 	}
 
 	return mlt
+}
+
+func (mlt *MultiLineText) GetStyle() tcell.Style {
+	return mlt.style
 }
 
 func (mlt *MultiLineText) AppendSentence(sentence string) error {
@@ -85,7 +88,7 @@ func (mlt *MultiLineText) GetLines() []*sx.String {
 	lines := make([]*sx.String, 0, len(mlt.lines))
 
 	for _, line := range mlt.lines {
-		lines = append(lines, sx.Join(line, mlt.splitStr))
+		lines = append(lines, sx.Join(line, ""))
 	}
 
 	return lines

@@ -8,7 +8,7 @@ import (
 )
 
 func TestWriteLines_ShortLines(t *testing.T) {
-	mlt := NewMultiLineText(tcell.StyleDefault, "")
+	mlt := NewMultiLineText(tcell.StyleDefault)
 
 	err := mlt.AppendSentence("Hello World")
 	if err != nil {
@@ -33,7 +33,7 @@ func TestWriteLines_ShortLines(t *testing.T) {
 }
 
 func TestWriteLines_LongLine(t *testing.T) {
-	mlt := NewMultiLineText(tcell.StyleDefault, "")
+	mlt := NewMultiLineText(tcell.StyleDefault)
 
 	err := mlt.AppendSentence(
 		"This is really a very long line that should be truncated and end with an ellipsis",

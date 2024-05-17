@@ -27,6 +27,28 @@ func (sl *lineOfSplitter) Copy() intf.Copier {
 	}
 }
 
+// GetRunes is a method of SpltLine that returns the runes of the line.
+//
+// Returns:
+//   - [][]rune: A slice of runes representing the words in the line.
+//
+// Behaviors:
+//   - It is always a slice of runes with one line.
+func (sl *lineOfSplitter) GetRunes() [][]rune {
+	if len(sl.line) == 0 {
+		return [][]rune{{}}
+	}
+
+	runes := sl.line[0].GetRunes()
+
+	for _, word := range sl.line[1:] {
+		runes[0] = append(runes[0], ' ')
+		runes[0] = append(runes[0], word.GetRunes()[0]...)
+	}
+
+	return runes
+}
+
 // newLineOfSplitter is a helper function that creates a new line of
 // splitter with the given word.
 //
