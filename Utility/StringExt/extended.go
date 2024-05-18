@@ -46,8 +46,11 @@ func ToUTF8Runes(s string) ([]rune, error) {
 //
 // Returns:
 //   - string: The resulting string after replacing the end with the suffix.
-//   - error: An error of type *ErrLongerSuffix if the suffix is longer than
-//     the string.
+//   - bool: A boolean indicating if the operation was successful. (i.e., if the
+//     suffix is shorter than the string).
+//
+// Behaviors:
+//   - For quick error, use the *ErrLongerSuffix error type of this package.
 //
 // Examples:
 //
@@ -63,23 +66,23 @@ func ToUTF8Runes(s string) ([]rune, error) {
 //	} else {
 //		fmt.Println(result) // Output: hello woBob
 //	}
-func ReplaceSuffix(str, suffix string) (string, error) {
+func ReplaceSuffix(str, suffix string) (string, bool) {
 	if suffix == "" {
-		return str, nil
+		return str, true
 	}
 
 	countStr := utf8.RuneCountInString(str)
 	countSuffix := utf8.RuneCountInString(suffix)
 
 	if countStr < countSuffix {
-		return "", NewErrLongerSuffix(str, suffix)
+		return "", false
 	}
 
 	if countStr == countSuffix {
-		return suffix, nil
+		return suffix, true
+	} else {
+		return str[:countStr-countSuffix] + suffix, true
 	}
-
-	return str[:countStr-countSuffix] + suffix, nil
 }
 
 // FindContentIndexes searches for the positions of opening and closing

@@ -12,6 +12,7 @@ import (
 	"github.com/gdamore/tcell"
 
 	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
+	sext "github.com/PlayerR9/MyGoLib/Utility/StringExt"
 )
 
 const (
@@ -47,10 +48,10 @@ func (t *Title) Draw(table *cdd.DrawTable, x, y int) error {
 	}
 
 	// 1. Generate the full title
-	var fullTitle *sx.String
+	var fullTitle string
 
 	if t.subtitle == "" {
-		fullTitle = sx.NewString(t.title)
+		fullTitle = t.title
 	} else {
 		var builder strings.Builder
 
@@ -60,7 +61,7 @@ func (t *Title) Draw(table *cdd.DrawTable, x, y int) error {
 		builder.WriteRune(' ')
 		builder.WriteString(t.subtitle)
 
-		fullTitle = sx.NewString(builder.String())
+		fullTitle = builder.String()
 	}
 
 	// 2. Generate the lines
@@ -106,10 +107,10 @@ func (t *Title) ForceDraw(table *cdd.DrawTable, x, y int) error {
 	}
 
 	// 1. Generate the full title
-	var fullTitle *sx.String
+	var fullTitle string
 
 	if t.subtitle == "" {
-		fullTitle = sx.NewString(t.title)
+		fullTitle = t.title
 	} else {
 		var builder strings.Builder
 
@@ -119,7 +120,7 @@ func (t *Title) ForceDraw(table *cdd.DrawTable, x, y int) error {
 		builder.WriteRune(' ')
 		builder.WriteString(t.subtitle)
 
-		fullTitle = sx.NewString(builder.String())
+		fullTitle = builder.String()
 	}
 
 	// 2. Generate the lines
@@ -179,9 +180,9 @@ func (t *Title) SetSubtitle(subtitle string) {
 //   - width: The width of the lines.
 //
 // Returns:
-//   - []*sx.String: The lines of the title.
+//   - []string: The lines of the title.
 //   - error: An error if the full title could not be split in lines.
-func generateLines(fullTitle *sx.String, width int, x int) ([]*sx.String, error) {
+func generateLines(fullTitle string, width int, x int) ([]string, error) {
 	contents := fullTitle.Fields()
 
 	numberOfLines, err := sx.CalculateNumberOfLines(contents, width-x-TitleMinWidth)
@@ -213,27 +214,33 @@ func generateLines(fullTitle *sx.String, width int, x int) ([]*sx.String, error)
 //   - fullTitle: The full title.
 //
 // Returns:
-//   - []*sx.String: The lines of the title.
+//   - []string: The lines of the title.
 //   - error: An error if the full title could not be split in lines.
-func (t *Title) tryToFitLines(width int, x int, fullTitle *sx.String) ([]*sx.String, error) {
+func (t *Title) tryToFitLines(width int, x int, fullTitle string) ([]string, error) {
 	lines, err := generateLines(fullTitle, width, x)
 	if err == nil {
 		return lines, nil
 	}
 
-	fullTitle = fullTitle.TrimEnd(width - x - TitleMinWidth)
-
-	ok := fullTitle.ReplaceSuffix(Hellip)
-	if !ok {
-		return nil, errors.New("hellip is longer than the full title")
+	fullTitle, err = sext.FitString(fullTitle, width-x-TitleMinWidth)
+	if err != nil {
+		return nil, fmt.Errorf("could not fit full title: %s", err.Error())
 	}
 
-	fullTitle.PrependRune(' ')
-	fullTitle.PrependString(Asterisks)
-	fullTitle.AppendRune(' ')
-	fullTitle.AppendString(Asterisks)
+	fullTitle, ok := sext.ReplaceSuffix(fullTitle, Hellip)
+	if !ok {
+		return nil, sext.NewErrLongerSuffix(fullTitle, Hellip)
+	}
 
-	return []*sx.String{fullTitle}, nil
+	var builder strings.Builder
+
+	builder.WriteString(Asterisks)
+	builder.WriteString(Space)
+	builder.WriteString(fullTitle)
+	builder.WriteString(Space)
+	builder.WriteString(Asterisks)
+
+	return []string{builder.String()}, nil
 }
 
 // forceGenerateLines is a helper method that generates the lines of the title.
@@ -243,9 +250,9 @@ func (t *Title) tryToFitLines(width int, x int, fullTitle *sx.String) ([]*sx.Str
 //   - width: The width of the lines.
 //
 // Returns:
-//   - []*sx.String: The lines of the title.
+//   - []string: The lines of the title.
 //   - error: An error if the full title could not be split in lines.
-func forceGenerateLines(fullTitle *sx.String, width int, x int) ([]*sx.String, error) {
+func forceGenerateLines(fullTitle string, width int, x int) ([]string, error) {
 	contents := fullTitle.Fields()
 
 	numberOfLines, err := sx.CalculateNumberOfLines(contents, width-x-TitleMinWidth)
@@ -259,12 +266,17 @@ func forceGenerateLines(fullTitle *sx.String, width int, x int) ([]*sx.String, e
 	}
 
 	lines := ts.GetLines()
+	var builder strings.Builder
 
-	for _, line := range lines {
-		line.PrependRune(' ')
-		line.PrependString(Asterisks)
-		line.AppendRune(' ')
-		line.AppendString(Asterisks)
+	for i := 0; i < len(lines); i++ {
+		builder.WriteString(Asterisks)
+		builder.WriteString(Space)
+		builder.WriteString(lines[i])
+		builder.WriteString(Space)
+		builder.WriteString(Asterisks)
+
+		lines[i] = builder.String()
+		builder.Reset()
 	}
 
 	return lines, nil

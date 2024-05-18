@@ -2,6 +2,7 @@ package String
 
 import (
 	"strings"
+	"unicode/utf8"
 
 	intf "github.com/PlayerR9/MyGoLib/Units/Common"
 	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
@@ -100,12 +101,12 @@ func NewTextSplit(maxWidth, maxHeight int) (*TextSplit, error) {
 // Returns:
 //   - bool: True if the word can be inserted into the line at lineIndex without
 //     exceeding the width, and false otherwise.
-func (ts *TextSplit) canInsertWordAt(word *String, lineIndex int) bool {
+func (ts *TextSplit) canInsertWordAt(word string, lineIndex int) bool {
 	if lineIndex < 0 || lineIndex >= len(ts.lines) {
 		return false
 	}
 
-	return ts.lines[lineIndex].len+word.length+1 <= ts.maxWidth
+	return ts.lines[lineIndex].len+utf8.RuneCountInString(word)+1 <= ts.maxWidth
 }
 
 // InsertWord is a method that attempts to insert a given word into
@@ -117,9 +118,9 @@ func (ts *TextSplit) canInsertWordAt(word *String, lineIndex int) bool {
 // Returns:
 //   - bool: True if the word was successfully inserted, and false if the word is
 //     too long to fit within the width of the TextSplit.
-func (ts *TextSplit) InsertWord(word *String) bool {
+func (ts *TextSplit) InsertWord(word string) bool {
 	if len(ts.lines) < ts.maxHeight {
-		if word.length > ts.maxWidth {
+		if utf8.RuneCountInString(word) > ts.maxWidth {
 			return false
 		}
 
@@ -157,7 +158,7 @@ func (ts *TextSplit) InsertWord(word *String) bool {
 //
 // Returns:
 //   - int: The index of the first word that could not be inserted, or -1 if all words were inserted.
-func (ts *TextSplit) InsertWords(words []*String) int {
+func (ts *TextSplit) InsertWords(words []string) int {
 	for i, word := range words {
 		if !ts.InsertWord(word) {
 			return i
@@ -201,29 +202,15 @@ func (ts *TextSplit) GetHeight() int {
 //
 // Returns:
 //   - []*SpltLine: The lines of the TextSplit.
-func (ts *TextSplit) GetLines() []*String {
+func (ts *TextSplit) GetLines() []string {
 	if len(ts.lines) == 0 {
 		return nil
 	}
 
-	lines := make([]*String, 0, len(ts.lines))
-
-	var builder strings.Builder
+	lines := make([]string, 0, len(ts.lines))
 
 	for _, line := range ts.lines {
-		if len(line.line) == 0 {
-			panic("line has no words")
-		}
-
-		builder.WriteString(line.line[0].content)
-
-		for _, word := range line.line[1:] {
-			builder.WriteRune(' ')
-			builder.WriteString(word.content)
-		}
-
-		lines = append(lines, NewString(builder.String()))
-		builder.Reset()
+		lines = append(lines, strings.Join(line.line, " "))
 	}
 
 	return lines
@@ -232,11 +219,11 @@ func (ts *TextSplit) GetLines() []*String {
 // GetFirstLine is a method that returns the first line of the TextSplit.
 //
 // Returns:
-//   - []*String: The first line of the TextSplit, or nil if the TextSplit is empty.
+//   - []string: The first line of the TextSplit, or nil if the TextSplit is empty.
 //
 // Behaviors:
 //   - If the TextSplit is empty, the method returns nil.
-func (ts *TextSplit) GetFirstLine() []*String {
+func (ts *TextSplit) GetFirstLine() []string {
 	if len(ts.lines) == 0 {
 		return nil
 	}

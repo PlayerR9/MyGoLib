@@ -1,12 +1,16 @@
 package String
 
-import intf "github.com/PlayerR9/MyGoLib/Units/Common"
+import (
+	"unicode/utf8"
+
+	intf "github.com/PlayerR9/MyGoLib/Units/Common"
+)
 
 // lineOfSplitter is a helper struct used in the SplitTextInEqualSizedLines function.
 // It represents a line of text.
 type lineOfSplitter struct {
 	// The line field is a slice of strings, each representing a word in the line.
-	line []*String
+	line []string
 
 	// The len field is an integer representing the total length of the line,
 	// including spaces between words.
@@ -18,7 +22,7 @@ type lineOfSplitter struct {
 // Returns:
 //   - intf.Copier: A shallow copy of the SpltLine.
 func (sl *lineOfSplitter) Copy() intf.Copier {
-	newLine := make([]*String, len(sl.line))
+	newLine := make([]string, len(sl.line))
 	copy(newLine, sl.line)
 
 	return &lineOfSplitter{
@@ -39,14 +43,14 @@ func (sl *lineOfSplitter) GetRunes() [][]rune {
 		return [][]rune{{}}
 	}
 
-	runes := sl.line[0].GetRunes()
+	runes := []rune(sl.line[0])
 
 	for _, word := range sl.line[1:] {
-		runes[0] = append(runes[0], ' ')
-		runes[0] = append(runes[0], word.GetRunes()[0]...)
+		runes = append(runes, ' ')
+		runes = append(runes, []rune(word)...)
 	}
 
-	return runes
+	return [][]rune{runes}
 }
 
 // newLineOfSplitter is a helper function that creates a new line of
@@ -57,10 +61,10 @@ func (sl *lineOfSplitter) GetRunes() [][]rune {
 //
 // Returns:
 //   - *lineOfSplitter: A pointer to the newly created line of splitter.
-func newLineOfSplitter(word *String) *lineOfSplitter {
+func newLineOfSplitter(word string) *lineOfSplitter {
 	splt := &lineOfSplitter{
-		line: []*String{word},
-		len:  word.length,
+		line: []string{word},
+		len:  utf8.RuneCountInString(word),
 	}
 
 	return splt
@@ -70,11 +74,11 @@ func newLineOfSplitter(word *String) *lineOfSplitter {
 //
 // Returns:
 //   - string: The word that was removed.
-func (sl *lineOfSplitter) shiftLeft() *String {
+func (sl *lineOfSplitter) shiftLeft() string {
 	firstWord := sl.line[0]
 
 	sl.line = sl.line[1:]
-	sl.len -= (firstWord.length + 1)
+	sl.len -= utf8.RuneCountInString(firstWord) + 1
 
 	return firstWord
 }
@@ -85,11 +89,11 @@ func (sl *lineOfSplitter) shiftLeft() *String {
 //
 // Parameters:
 //   - word: The word to add to the line.
-func (sl *lineOfSplitter) insertWord(word *String) {
-	if word == nil {
+func (sl *lineOfSplitter) insertWord(word string) {
+	if word == "" {
 		return
 	}
 
 	sl.line = append(sl.line, word)
-	sl.len += (word.length + 1)
+	sl.len += utf8.RuneCountInString(word) + 1
 }

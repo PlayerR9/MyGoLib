@@ -3,6 +3,7 @@ package String
 import (
 	"math"
 	"strings"
+	"unicode/utf8"
 
 	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
 	mext "github.com/PlayerR9/MyGoLib/Utility/MathExt"
@@ -32,7 +33,7 @@ import (
 // given width. The formula is explained in detail in the comments within the function.
 //
 // It also returns the calculated number of lines when it errors out
-func CalculateNumberOfLines(text []*String, width int) (int, error) {
+func CalculateNumberOfLines(text []string, width int) (int, error) {
 	if width <= 0 {
 		return 0, ers.NewErrInvalidParameter(
 			"width",
@@ -105,7 +106,7 @@ func CalculateNumberOfLines(text []*String, width int) (int, error) {
 
 	for _, word := range text {
 		// +1 for the space or any other separator
-		Tl += float64(word.length + 1)
+		Tl += float64(utf8.RuneCountInString(word)) + 1
 	}
 	Tl-- // Remove the last space or separator
 
@@ -145,7 +146,7 @@ func CalculateNumberOfLines(text []*String, width int) (int, error) {
 //
 // If maxHeight is not provided, the function calculates the number of lines needed to fit
 // the text within the width using the CalculateNumberOfLines function.
-func SplitInEqualSizedLines(text []*String, width, height int) (*TextSplit, error) {
+func SplitInEqualSizedLines(text []string, width, height int) (*TextSplit, error) {
 	if err := ers.NewErrEmpty(text).ErrorIf(); err != nil {
 		return nil, ers.NewErrInvalidParameter("text", err)
 	}
@@ -191,7 +192,7 @@ func SplitInEqualSizedLines(text []*String, width, height int) (*TextSplit, erro
 
 	for _, word := range text {
 		if !group.InsertWord(word) {
-			return nil, NewErrLinesGreaterThanWords(width, word.length)
+			return nil, NewErrLinesGreaterThanWords(width, utf8.RuneCountInString(word))
 		}
 	}
 

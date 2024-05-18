@@ -10,9 +10,9 @@ func TestReplaceSuffix(t *testing.T) {
 		Suffix string = "Bob"
 	)
 
-	result, err := ReplaceSuffix(Str, Suffix)
-	if err != nil {
-		t.Errorf("expected no error, got %s instead", err.Error())
+	result, ok := ReplaceSuffix(Str, Suffix)
+	if !ok {
+		t.Fatalf("expected no error, got %s instead", NewErrLongerSuffix(Str, Suffix).Error())
 	}
 
 	if result != "hello woBob" {
