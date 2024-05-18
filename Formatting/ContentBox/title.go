@@ -196,12 +196,17 @@ func generateLines(fullTitle string, width int, x int) ([]string, error) {
 	}
 
 	lines := ts.GetLines()
+	var builder strings.Builder
 
-	for _, line := range lines {
-		line.PrependRune(' ')
-		line.PrependString(Asterisks)
-		line.AppendRune(' ')
-		line.AppendString(Asterisks)
+	for i := 0; i < len(lines); i++ {
+		builder.WriteString(Asterisks)
+		builder.WriteString(Space)
+		builder.WriteString(lines[i])
+		builder.WriteString(Space)
+		builder.WriteString(Asterisks)
+
+		lines[i] = builder.String()
+		builder.Reset()
 	}
 
 	return lines, nil

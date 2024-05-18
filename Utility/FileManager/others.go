@@ -1,10 +1,8 @@
 package FileManager
 
 import (
-	"bufio"
 	"fmt"
 	"io"
-	"io/fs"
 	"net/http"
 	"os"
 	"path"
@@ -13,27 +11,6 @@ import (
 
 	"golang.org/x/exp/slices"
 )
-
-// FileExists checks if a file exists at the given path.
-//
-// Parameters:
-//   - filePath: A string representing the path to the file.
-//
-// Returns:
-//   - bool: A boolean indicating whether the file exists.
-//   - error: An error if one occurred while checking the file.
-func FileExists(filePath string) (bool, error) {
-	_, err := os.Stat(filePath)
-	if err == nil {
-		return true, nil
-	}
-
-	if os.IsNotExist(err) {
-		return false, nil
-	}
-
-	return false, err
-}
 
 // MediaDownloader downloads a file from the given URL and saves it
 // to the specified destination.
@@ -62,16 +39,16 @@ func MediaDownloader(dest, url string) (string, error) {
 	fields := strings.Split(url, "/")
 	filePath := path.Join(dest, fields[len(fields)-1])
 
-	exists, err := FileExists(filePath)
+	exists, err := fileExists(filePath)
 	if err != nil {
-		return "", fmt.Errorf("could not check if file exists: %s", err.Error())
+		return "", fmt.Errorf("could not check if file exists: %w", err)
 	} else if exists {
 		return filePath, nil // Do nothing
 	}
 
 	resp, err := http.Get(url)
 	if err != nil {
-		return "", fmt.Errorf("could not send GET request: %s", err.Error())
+		return "", fmt.Errorf("could not send GET request: %w", err)
 	}
 	defer resp.Body.Close()
 
@@ -81,66 +58,16 @@ func MediaDownloader(dest, url string) (string, error) {
 
 	file, err := os.Create(filePath)
 	if err != nil {
-		return "", fmt.Errorf("could not create file: %s", err.Error())
+		return "", fmt.Errorf("could not create file: %w", err)
 	}
 	defer file.Close()
 
 	_, err = io.Copy(file, resp.Body)
 	if err != nil {
-		return "", fmt.Errorf("could not copy file: %s", err.Error())
+		return "", fmt.Errorf("could not copy file: %w", err)
 	}
 
 	return filePath, nil
-}
-
-// ReadWholeFileLineByLine reads a file from the provided path line by line
-// and returns a slice of strings, where each string represents a line from
-// the file. If an error occurs while opening the file, the function
-// returns the error and a nil slice.
-//
-// Parameters:
-//   - path: The path to the file to be read.
-//
-// Returns:
-//   - []string: A slice of strings where each string is a line from the file.
-//   - error: An error if one occurred while opening or scanning the file.
-func ReadWholeFileLineByLine(path string) ([]string, error) {
-	f, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-
-	var lines []string
-	scanner := bufio.NewScanner(f)
-
-	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
-	}
-
-	return lines, scanner.Err()
-}
-
-// AppendToFile is a function that appends content to a file, each content
-// on a new line.
-//
-// Parameters:
-//   - filePath: A string representing the path to the file.
-//   - contents: A variadic parameter of strings representing the content
-//     to be appended.
-func AppendToFile(filePath string, contents ...string) error {
-	file, err := os.OpenFile(filePath, os.O_APPEND|os.O_WRONLY, 0644)
-	if err != nil {
-		return fmt.Errorf("could not open file: %s", err.Error())
-	}
-	defer file.Close()
-
-	_, err = file.WriteString(strings.Join(contents, "\n"))
-	if err != nil {
-		return fmt.Errorf("could not write to file: %s", err.Error())
-	}
-
-	return nil
 }
 
 // GetAllFileNamesInDirectory is a function that retrieves all file names
@@ -167,7 +94,7 @@ func GetAllFileNamesInDirectory(directoryPath string) (map[string]string, error)
 	})
 
 	if walkError != nil {
-		return nil, fmt.Errorf("could not read directory: %s", walkError.Error())
+		return nil, fmt.Errorf("could not read directory: %w", walkError)
 	}
 
 	return fileExtensionMap, nil
@@ -190,7 +117,7 @@ func GetFilesEndingIn(directoryPath string, extensions ...string) ([]string, err
 
 	entries, readError := os.ReadDir(directoryPath)
 	if readError != nil {
-		return nil, fmt.Errorf("could not read directory: %s", readError.Error())
+		return nil, fmt.Errorf("could not read directory: %w", readError)
 	}
 
 	for _, entry := range entries {
@@ -225,40 +152,4 @@ func SplitPath(filePath string) []string {
 	slices.Reverse(parts)
 
 	return parts
-}
-
-// CreateFile creates a file at the specified path with the given permissions.
-// If the file already exists, it does nothing.
-//
-// Parameters:
-//   - filePath: A string representing the path to the file.
-//   - perm: An fs.FileMode representing the permissions to set on the file.
-//
-// Returns:
-//   - error: An error if it fails to create the file.
-func CreateFile(filePath string, perm fs.FileMode) error {
-	// Check if the file already exists
-	exists, err := FileExists(filePath)
-	if err != nil {
-		return err
-	}
-
-	if exists {
-		return nil
-	}
-
-	dir := filepath.Dir(filePath)
-
-	err = os.MkdirAll(dir, perm)
-	if err != nil {
-		return err
-	}
-
-	file, err := os.Create(filePath)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	return nil
 }

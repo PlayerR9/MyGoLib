@@ -22,20 +22,37 @@ type JSONManager[T JSONEncoder] struct {
 	// Data is the data to save and load.
 	Data T
 
-	// Path to the JSON file.
-	path string
+	// loc is the location to the JSON file.
+	loc string
+}
+
+// GetLocation returns the path to the JSON file.
+//
+// Returns:
+//   - string: The path to the JSON file.
+func (m *JSONManager[T]) GetLocation() string {
+	return m.loc
+}
+
+// Exists checks if the JSON file exists.
+//
+// Returns:
+//   - bool: True if the file exists, false otherwise.
+//   - error: An error if there was an issue checking if the file exists.
+func (m *JSONManager[T]) Exists() (bool, error) {
+	return fileExists(m.loc)
 }
 
 // NewJSONManager creates a new JSONManager.
 //
 // Parameters:
-//   - path: The path to the JSON file.
+//   - loc: The path to the JSON file.
 //
 // Returns:
 //   - JSONManager[T]: The new JSONManager.
-func NewJSONManager[T JSONEncoder](path string) JSONManager[T] {
+func NewJSONManager[T JSONEncoder](loc string) JSONManager[T] {
 	return JSONManager[T]{
-		path: path,
+		loc: loc,
 	}
 }
 
@@ -44,7 +61,7 @@ func NewJSONManager[T JSONEncoder](path string) JSONManager[T] {
 // Parameters:
 //   - path: The new path to the JSON file.
 func (m *JSONManager[T]) ChangePath(path string) {
-	m.path = path
+	m.loc = path
 }
 
 // Load loads the data from the JSON file.
@@ -52,7 +69,7 @@ func (m *JSONManager[T]) ChangePath(path string) {
 // Returns:
 //   - error: An error if there was an issue loading the data.
 func (m *JSONManager[T]) Load() error {
-	data, err := os.ReadFile(m.path)
+	data, err := os.ReadFile(m.loc)
 	if err != nil {
 		return err
 	}
@@ -70,25 +87,7 @@ func (m *JSONManager[T]) Save() error {
 		return err
 	}
 
-	return os.WriteFile(m.path, data, 0644)
-}
-
-// Exists checks if the JSON file exists.
-//
-// Returns:
-//   - bool: True if the file exists, false otherwise.
-//   - error: An error if there was an issue checking if the file exists.
-func (m *JSONManager[T]) Exists() (bool, error) {
-	_, err := os.Stat(m.path)
-	if err == nil {
-		return true, nil
-	}
-
-	if os.IsNotExist(err) {
-		return false, nil
-	} else {
-		return false, err
-	}
+	return os.WriteFile(m.loc, data, 0644)
 }
 
 // CreateEmpty creates an empty JSON file with the default values of the data.
@@ -102,12 +101,14 @@ func (m *JSONManager[T]) CreateEmpty() error {
 		return err
 	}
 
-	err = CreateFile(m.path, 0755)
+	f, err := os.Create(m.loc)
 	if err != nil {
 		return err
 	}
+	defer f.Close()
 
-	return os.WriteFile(m.path, data, 0644)
+	_, err = f.Write(data)
+	return err
 }
 
 // Delete deletes the JSON file. No operation is performed if the file does not exist.
@@ -115,5 +116,5 @@ func (m *JSONManager[T]) CreateEmpty() error {
 // Returns:
 //   - error: An error if there was an issue deleting the file.
 func (m *JSONManager[T]) Delete() error {
-	return os.Remove(m.path)
+	return os.Remove(m.loc)
 }
