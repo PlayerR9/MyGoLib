@@ -180,12 +180,12 @@ func (pi *PageInterval) AddPage(page int) error {
 			insertPos--
 			pi.intervals[insertPos].Second, ok = gen.Max(pi.intervals[insertPos].Second, page)
 			if !ok {
-				panic(ers.NewErrUnexpectedError(ers.NewErrNotComparable()))
+				panic(ers.NewErrUnexpectedError(ers.NewErrNotComparable(page)))
 			}
 		} else if insertPos < len(pi.intervals) && pi.intervals[insertPos].First <= page+1 {
 			pi.intervals[insertPos].First, ok = gen.Min(pi.intervals[insertPos].First, page)
 			if !ok {
-				panic(ers.NewErrUnexpectedError(ers.NewErrNotComparable()))
+				panic(ers.NewErrUnexpectedError(ers.NewErrNotComparable(page)))
 			}
 		} else {
 			pi.intervals = append(pi.intervals[:insertPos],

@@ -4,7 +4,6 @@ go 1.22.2
 
 require (
 	github.com/gdamore/tcell v1.4.0
-	github.com/markphelps/optional v0.11.0
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842
 	golang.org/x/net v0.25.0
 )

@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	ffs "github.com/PlayerR9/MyGoLib/Formatting/FString"
+	"github.com/gdamore/tcell"
 )
 
 // Document is a generic data structure that represents a document.
@@ -31,17 +32,10 @@ func (d *Document) Tmp() []string {
 //
 // Returns:
 //   - []string: The formatted string representation of the document.
-func (d *Document) FString(indentLevel int) []string {
-	indentConfig := ffs.NewIndentConfig(ffs.DefaultIndentation, indentLevel, false)
-	indent := indentConfig.String()
+func (d *Document) FString(trav *ffs.Traversor) {
+	trav.AddLines(tcell.StyleDefault, d.lines...)
 
-	lines := make([]string, 0, len(d.lines))
-
-	for _, line := range d.lines {
-		lines = append(lines, indent+line)
-	}
-
-	return lines
+	trav.Apply()
 }
 
 // NewDocument creates a new document.
@@ -51,6 +45,9 @@ func (d *Document) FString(indentLevel int) []string {
 //
 // Returns:
 //   - *Document: A pointer to the newly created document.
+//
+// Behaviors:
+//   - The sentences are separated by a space and on the same line.
 func NewDocument(sentences ...string) *Document {
 	d := &Document{
 		lines: make([]string, 0),

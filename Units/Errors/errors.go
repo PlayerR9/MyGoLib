@@ -13,6 +13,18 @@ type ErrNoError struct {
 	Err error
 }
 
+// ErrorIf is a method of that returns the error if the error is not nil.
+//
+// Returns:
+//   - error: The error if the error is not nil, nil otherwise.
+func (e *ErrNoError) ErrorIf() error {
+	if e.Err != nil {
+		return e
+	}
+
+	return nil
+}
+
 // Error is a method of the error interface.
 //
 // Returns:
@@ -569,5 +581,59 @@ func (e *ErrUnexpectedError) ChangeReason(reason error) {
 func NewErrUnexpectedError(reason error) *ErrUnexpectedError {
 	return &ErrUnexpectedError{
 		Reason: reason,
+	}
+}
+
+// ErrVariableError represents an error that occurs when a variable is invalid.
+type ErrVariableError struct {
+	// Variable is the name of the variable that caused the error.
+	Variable string
+
+	// Reason is the reason for the variable error.
+	Reason error
+}
+
+// Error returns the error message: "variable (<variable>) error"
+// or "variable (<variable>) error: <reason>" if the reason is provided.
+//
+// Returns:
+//   - string: The error message.
+func (e *ErrVariableError) Error() string {
+	if e.Reason == nil {
+		return fmt.Sprintf("variable (%s) error", e.Variable)
+	} else {
+		return fmt.Sprintf("variable (%s) error: %s", e.Variable, e.Reason.Error())
+	}
+}
+
+// Unwrap returns the reason for the variable error.
+// It is used for error unwrapping.
+//
+// Returns:
+//   - error: The reason for the variable error.
+func (e *ErrVariableError) Unwrap() error {
+	return e.Reason
+}
+
+// ChangeReason changes the reason for the variable error.
+//
+// Parameters:
+//   - reason: The new reason for the variable error.
+func (e *ErrVariableError) ChangeReason(reason error) {
+	e.Reason = reason
+}
+
+// NewErrVariableError creates a new ErrVariableError error.
+//
+// Parameters:
+//   - variable: The name of the variable that caused the error.
+//   - reason: The reason for the variable error.
+//
+// Returns:
+//   - *ErrVariableError: A pointer to the new ErrVariableError error.
+func NewErrVariableError(variable string, reason error) *ErrVariableError {
+	return &ErrVariableError{
+		Variable: variable,
+		Reason:   reason,
 	}
 }

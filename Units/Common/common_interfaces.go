@@ -1,6 +1,9 @@
 package Common
 
-import "fmt"
+import (
+	"fmt"
+	"strconv"
+)
 
 // Comparable is an interface that defines the behavior of a type that can be
 // compared with other values of the same type using the < and > operators.
@@ -159,6 +162,30 @@ func CompareAny(a, b any) (int, bool) {
 	}
 }
 
+// IsComparable returns true if the value is comparable with other values of the
+// same type using the < and > operators or the Comparable interface.
+//
+// Parameters:
+//   - value: The value to check.
+//
+// Returns:
+//   - bool: True if the value is comparable, false otherwise.
+func IsComparable(value any) bool {
+	if value == nil {
+		return false
+	}
+
+	switch value.(type) {
+	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64,
+		float32, float64, string:
+		return true
+	case Comparer[any]:
+		return true
+	default:
+		return false
+	}
+}
+
 // StringOf converts any type to a string.
 //
 // Parameters:
@@ -179,6 +206,32 @@ func StringOf(elem any) string {
 	}
 
 	switch elem := elem.(type) {
+	case int:
+		return strconv.FormatInt(int64(elem), 10)
+	case int8:
+		return strconv.FormatInt(int64(elem), 10)
+	case int16:
+		return strconv.FormatInt(int64(elem), 10)
+	case int32:
+		return strconv.FormatInt(int64(elem), 10)
+	case int64:
+		return strconv.FormatInt(elem, 10)
+	case uint:
+		return strconv.FormatUint(uint64(elem), 10)
+	case uint8:
+		return strconv.FormatUint(uint64(elem), 10)
+	case uint16:
+		return strconv.FormatUint(uint64(elem), 10)
+	case uint32:
+		return strconv.FormatUint(uint64(elem), 10)
+	case uint64:
+		return strconv.FormatUint(elem, 10)
+	case float32:
+		return strconv.FormatFloat(float64(elem), 'f', -1, 32)
+	case float64:
+		return strconv.FormatFloat(elem, 'f', -1, 64)
+	case bool:
+		return strconv.FormatBool(elem)
 	case string:
 		return elem
 	case fmt.Stringer:

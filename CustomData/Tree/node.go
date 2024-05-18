@@ -5,6 +5,7 @@ import (
 
 	"github.com/PlayerR9/MyGoLib/ListLike/Stacker"
 	slext "github.com/PlayerR9/MyGoLib/Utility/SliceExt"
+	"github.com/gdamore/tcell"
 
 	ffs "github.com/PlayerR9/MyGoLib/Formatting/FString"
 	intf "github.com/PlayerR9/MyGoLib/Units/Common"
@@ -29,19 +30,14 @@ type TreeNode[T any] struct {
 //
 // Returns:
 //   - []string: A slice of strings that represent the node.
-func (t *TreeNode[T]) FString(indentLevel int) []string {
-	indentConfig := ffs.NewIndentConfig(ffs.DefaultIndentation, indentLevel, false)
-	indent := indentConfig.String()
+func (t *TreeNode[T]) FString(trav *ffs.Traversor) {
+	trav.AddLines(tcell.StyleDefault, intf.StringOf(t.Data))
 
-	result := make([]string, 0)
-
-	result = append(result, indent+intf.StringOf(t.Data))
+	trav.Apply()
 
 	for _, child := range t.children {
-		result = append(result, child.FString(indentLevel+1)...)
+		child.FString(trav.IncreaseIndent(1))
 	}
-
-	return result
 }
 
 // Copy returns a deep copy of the node.

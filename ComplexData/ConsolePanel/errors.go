@@ -1,4 +1,4 @@
-package CnsPanel
+package ConsolePanel
 
 import "fmt"
 
@@ -69,22 +69,27 @@ func NewErrParsingFlags(name string, reason error) *ErrParsingFlags {
 }
 
 // ErrUnknownFlag represents an error where an unknown flag is provided.
-type ErrUnknownFlag struct{}
+type ErrUnknownFlag struct {
+	// The flag that is unknown.
+	Flag string
+}
 
-// Error returns the error message for an ErrUnknownFlag.
+// Error returns the error message: "<flag> is not a known flag".
 //
 // Returns:
 //   - string: The error message.
 func (e *ErrUnknownFlag) Error() string {
-	return "unknown flag"
+	return fmt.Sprintf("%q is not a known flag", e.Flag)
 }
 
 // NewErrUnknownFlag creates a new ErrUnknownFlag.
 //
 // Returns:
 //   - *ErrUnknownFlag: A pointer to the new ErrUnknownFlag.
-func NewErrUnknownFlag() *ErrUnknownFlag {
-	return &ErrUnknownFlag{}
+func NewErrUnknownFlag(flag string) *ErrUnknownFlag {
+	return &ErrUnknownFlag{
+		Flag: flag,
+	}
 }
 
 // ErrFewArguments represents an error where not enough arguments are provided.

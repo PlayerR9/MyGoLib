@@ -1,0 +1,138 @@
+package Display
+
+import (
+	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
+	"github.com/gdamore/tcell"
+
+	cdt "github.com/PlayerR9/MyGoLib/CustomData/Table"
+)
+
+// DtUniter is an interface that represents the content of a unit in a draw table.
+type DtUniter interface {
+	// GetRunes returns the content of the unit as a 2D slice of runes.
+	//
+	// Returns:
+	//   - [][]rune: The content of the unit as a 2D slice of runes.
+	GetRunes() [][]rune
+}
+
+// DtUnit represents a unit in a draw table. It contains the content of the unit
+type DtUnit[T DtUniter] struct {
+	// Content is the content of the unit.
+	Content T
+
+	// Style is the style of the unit.
+	Style tcell.Style
+}
+
+// Draw is a method of cdd.TableDrawer that draws the unit to the table at the given x and y
+// coordinates.
+//
+// Parameters:
+//   - table: The table to draw the unit to.
+//   - x: The x coordinate to draw the unit at.
+//   - y: The y coordinate to draw the unit at.
+//
+// Returns:
+//   - error: An error if the table cannot be drawn to.
+//
+// Errors:
+//   - *ers.ErrInvalidParameter: If the table is nil, or if the x or y coordinates are out of
+//     bounds.
+//   - *ErrHeightExceeded: If the unit would be drawn below the table.
+//   - *ErrWidthExceeded: If the unit would be drawn to the right of the table.
+func (u *DtUnit[T]) Draw(table *DrawTable, x, y int) error {
+	if table == nil {
+		return ers.NewErrNilParameter("table")
+	}
+
+	if err := table.IsXInBounds(x); err != nil {
+		return ers.NewErrInvalidParameter("x", err)
+	}
+
+	if err := table.IsYInBounds(y); err != nil {
+		return ers.NewErrInvalidParameter("y", err)
+	}
+
+	runes := u.Content.GetRunes()
+
+	for i, row := range runes {
+		sequence := make([]*DtCell, 0, len(row))
+
+		for _, r := range row {
+			if r == EmptyRuneCell {
+				sequence = append(sequence, nil)
+			} else {
+				sequence = append(sequence, NewDtCell(r, u.Style))
+			}
+		}
+
+		err := table.WriteHorizontalSequence(x, y+i, sequence)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// Draw is a method of cdd.TableDrawer that draws the unit to the table at the given x and y
+// coordinates.
+//
+// Parameters:
+//   - table: The table to draw the unit to.
+//   - x: The x coordinate to draw the unit at.
+//   - y: The y coordinate to draw the unit at.
+//
+// Returns:
+//   - error: An error of type *ers.ErrInvalidParameter if the table is nil.
+//
+// Behaviors:
+//   - Any value that would be drawn outside of the table is not drawn.
+func (u *DtUnit[T]) ForceDraw(table *DrawTable, x, y int) error {
+	if table == nil {
+		return ers.NewErrNilParameter("table")
+	}
+
+	runes := u.Content.GetRunes()
+
+	runes, x, y = cdt.FixBoundaries(table.GetWidth(), table.GetHeight(), runes, x, y)
+	if len(runes) == 0 {
+		return nil
+	}
+
+	for i, row := range runes {
+		if len(row) == 0 {
+			continue
+		}
+
+		sequence := make([]*DtCell, 0, len(row))
+
+		for _, r := range row {
+			if r == EmptyRuneCell {
+				sequence = append(sequence, nil)
+			} else {
+				sequence = append(sequence, NewDtCell(r, u.Style))
+			}
+		}
+
+		table.ForceWriteHorizontalSequence(x, y+i, sequence)
+	}
+
+	return nil
+}
+
+// NewDtUnit creates a new DtUnit with the given content and style.
+//
+// Parameters:
+//   - content: The content of the unit.
+//   - style: The style of the unit.
+//
+// Returns:
+//   - *DtUnit: The new DtUnit.
+func NewDtUnit[T DtUniter](content T, style tcell.Style) *DtUnit[T] {
+	return &DtUnit[T]{
+		Content: content,
+		Style:   style,
+	}
+}

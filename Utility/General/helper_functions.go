@@ -99,15 +99,14 @@ func SplitIntoGroups[T any](slice []T, n int) ([][]T, error) {
 		return [][]T{slice}, nil
 	}
 
-	if n < 0 {
+	if err := ers.NewErrGTE(0).ErrorIf(n); err != nil {
+		return nil, ers.NewErrInvalidParameter("n", err)
+	}
+
+	if n == 0 {
 		return nil, ers.NewErrInvalidParameter(
 			"n",
-			ers.NewErrGTE(0),
-		)
-	} else if n == 0 {
-		return nil, ers.NewErrInvalidParameter(
-			"n",
-			ers.NewErrInvalidValue(0),
+			ers.NewErrUnexpectedValue(0),
 		)
 	}
 
