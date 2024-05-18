@@ -182,7 +182,7 @@ func (t *HtmlTree) ExtractContentFromDocument(matchFun slext.PredicateFilter[*ht
 //
 // Behavior:
 //   - If no criteria is provided, then any node will match.
-func (t *HtmlTree) ExtractNodes(criterias []slext.PredicateFilter[*html.Node]) []*html.Node {
+func (t *HtmlTree) ExtractNodes(criterias ...slext.PredicateFilter[*html.Node]) []*html.Node {
 	criterias = slext.FilterNilPredicates(criterias)
 	if len(criterias) == 0 {
 		return nil
