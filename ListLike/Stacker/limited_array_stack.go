@@ -1,12 +1,13 @@
 package Stacker
 
 import (
-	"fmt"
 	"slices"
+	"strconv"
 	"strings"
 
 	itf "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
+	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
@@ -52,7 +53,7 @@ func NewLimitedArrayStack[T any](values ...T) *LimitedArrayStack[T] {
 //   - value: The value of type T to be added to the stack.
 func (stack *LimitedArrayStack[T]) Push(value T) error {
 	if len(stack.values) == stack.capacity {
-		return NewErrFullList(stack)
+		return NewErrFullStack(stack)
 	}
 
 	stack.values = append(stack.values, value)
@@ -70,7 +71,7 @@ func (stack *LimitedArrayStack[T]) Push(value T) error {
 //   - T: The element at the end of the stack.
 func (stack *LimitedArrayStack[T]) Pop() (T, error) {
 	if len(stack.values) == 0 {
-		return *new(T), NewErrEmptyStack(stack)
+		return *new(T), ers.NewErrEmpty(stack)
 	}
 
 	toRemove := stack.values[len(stack.values)-1]
@@ -89,7 +90,7 @@ func (stack *LimitedArrayStack[T]) Pop() (T, error) {
 //   - T: The element at the end of the stack.
 func (stack *LimitedArrayStack[T]) Peek() (T, error) {
 	if len(stack.values) == 0 {
-		return *new(T), NewErrEmptyStack(stack)
+		return *new(T), ers.NewErrEmpty(stack)
 	}
 
 	return stack.values[len(stack.values)-1], nil
@@ -170,12 +171,17 @@ func (stack *LimitedArrayStack[T]) String() string {
 		values = append(values, uc.StringOf(value))
 	}
 
-	return fmt.Sprintf(
-		"LimitedArrayStack[capacity=%d, size=%d, values=[%s →]]",
-		stack.capacity,
-		len(stack.values),
-		strings.Join(values, ", "),
-	)
+	var builder strings.Builder
+
+	builder.WriteString("LimitedArrayStack[capacity=")
+	builder.WriteString(strconv.Itoa(stack.capacity))
+	builder.WriteString(", size=")
+	builder.WriteString(strconv.Itoa(len(stack.values)))
+	builder.WriteString(", values=[")
+	builder.WriteString(strings.Join(values, ", "))
+	builder.WriteString(" →]]")
+
+	return builder.String()
 }
 
 // CutNilValues is a method of the LimitedArrayStack type. It is used to remove all nil

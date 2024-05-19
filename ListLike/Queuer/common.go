@@ -34,26 +34,40 @@ type Queuer[T any] interface {
 	ListLike.ListLike[T]
 }
 
-// QueueNode represents a node in a linked list.
+// QueueNode represents a node in a linked queue.
 type QueueNode[T any] struct {
 	// Value is the value stored in the node.
 	Value T
 
-	// next is a pointer to the next linkedNode in the list.
+	// next is a pointer to the next linkedNode in the queue.
 	next *QueueNode[T]
 }
 
-// NewQueueNode creates a new LinkedNode with the given value.
+// NewQueueNode creates a new QueueNode with the given value.
+//
+// Parameters:
+//   - value: The value to store in the node.
+//
+// Returns:
+//   - *QueueNode: A pointer to the new node.
 func NewQueueNode[T any](value T) *QueueNode[T] {
 	return &QueueNode[T]{
 		Value: value,
 	}
 }
 
+// SetNext sets the next node in the queue.
+//
+// Parameters:
+//   - next: The next node in the queue.
 func (node *QueueNode[T]) SetNext(next *QueueNode[T]) {
 	node.next = next
 }
 
+// Next returns the next node in the queue.
+//
+// Returns:
+//   - *QueueNode: The next node in the queue.
 func (node *QueueNode[T]) Next() *QueueNode[T] {
 	return node.next
 }
@@ -88,26 +102,38 @@ type SafeQueuer[T any] interface {
 	ListLike.ListLike[T]
 }
 
-// QueueSafeNode represents a node in a linked list.
+// QueueSafeNode represents a node in a linked queue.
 type QueueSafeNode[T any] struct {
 	// Value is the Value stored in the node.
 	Value T
 
-	// next is a pointer to the next queueLinkedNode in the list.
+	// next is a pointer to the next queueLinkedNode in the queue.
 	next *QueueSafeNode[T]
 }
 
 // NewQueueSafeNode creates a new QueueSafeNode with the given value.
+//
+// Parameters:
+//   - value: The value to store in the node.
+//
+// Returns:
+//   - *QueueSafeNode: A pointer to the new node.
 func NewQueueSafeNode[T any](value T) *QueueSafeNode[T] {
 	return &QueueSafeNode[T]{Value: value}
 }
 
-// SetNext sets the next node in the list.
+// SetNext sets the next node in the queue.
+//
+// Parameters:
+//   - next: The next node in the queue.
 func (node *QueueSafeNode[T]) SetNext(next *QueueSafeNode[T]) {
 	node.next = next
 }
 
-// Next returns the next node in the list.
+// Next returns the next node in the queue.
+//
+// Returns:
+//   - *QueueSafeNode: The next node in the queue.
 func (node *QueueSafeNode[T]) Next() *QueueSafeNode[T] {
 	return node.next
 }

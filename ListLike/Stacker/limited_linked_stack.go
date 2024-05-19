@@ -1,11 +1,12 @@
 package Stacker
 
 import (
-	"fmt"
+	"strconv"
 	"strings"
 
 	itf "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
+	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
@@ -67,7 +68,7 @@ func NewLimitedLinkedStack[T any](values ...T) *LimitedLinkedStack[T] {
 //   - value: The value to be added to the stack.
 func (stack *LimitedLinkedStack[T]) Push(value T) error {
 	if stack.size >= stack.capacity {
-		return NewErrFullList(stack)
+		return NewErrFullStack(stack)
 	}
 
 	node := NewStackNode(value)
@@ -92,7 +93,7 @@ func (stack *LimitedLinkedStack[T]) Push(value T) error {
 //   - T: The value of the last element in the stack.
 func (stack *LimitedLinkedStack[T]) Pop() (T, error) {
 	if stack.front == nil {
-		return *new(T), NewErrEmptyStack(stack)
+		return *new(T), ers.NewErrEmpty(stack)
 	}
 
 	toRemove := stack.front
@@ -114,7 +115,7 @@ func (stack *LimitedLinkedStack[T]) Pop() (T, error) {
 //   - T: The value of the last element in the stack.
 func (stack *LimitedLinkedStack[T]) Peek() (T, error) {
 	if stack.front == nil {
-		return *new(T), NewErrEmptyStack(stack)
+		return *new(T), ers.NewErrEmpty(stack)
 	}
 
 	return stack.front.Value, nil
@@ -212,12 +213,17 @@ func (stack *LimitedLinkedStack[T]) String() string {
 		values = append(values, uc.StringOf(stack_node.Value))
 	}
 
-	return fmt.Sprintf(
-		"LimitedLinkedStack[capacity=%d, size=%d, values=[%s →]]",
-		stack.capacity,
-		stack.size,
-		strings.Join(values, ", "),
-	)
+	var builder strings.Builder
+
+	builder.WriteString("LimitedLinkedStack[capacity=")
+	builder.WriteString(strconv.Itoa(stack.capacity))
+	builder.WriteString(", size=")
+	builder.WriteString(strconv.Itoa(stack.size))
+	builder.WriteString(", values=[")
+	builder.WriteString(strings.Join(values, ", "))
+	builder.WriteString(" →]]")
+
+	return builder.String()
 }
 
 // CutNilValues is a method of the LimitedLinkedStack type. It is used to remove all nil
@@ -301,8 +307,6 @@ func (stack *LimitedLinkedStack[T]) Slice() []T {
 //
 //   - itf.Copier: A copy of the stack.
 func (stack *LimitedLinkedStack[T]) Copy() uc.Copier {
-	// FIXME: This doesn't work: Node.SetNext(Node)!!!
-
 	stackCopy := &LimitedLinkedStack[T]{
 		size:     stack.size,
 		capacity: stack.capacity,
@@ -317,10 +321,14 @@ func (stack *LimitedLinkedStack[T]) Copy() uc.Copier {
 
 	stackCopy.front = node
 
+	prev := stackCopy.front
+
 	// Subsequent nodes
 	for stack_node := stack.front.Next(); stack_node != nil; stack_node = stack_node.Next() {
 		node := NewStackNode(stack_node.Value)
-		node.SetNext(node)
+		prev.SetNext(node)
+
+		prev = node
 	}
 
 	return stackCopy

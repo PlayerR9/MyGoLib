@@ -537,6 +537,7 @@ func NewErrInvalidUsage(reason error, usage string) *ErrInvalidUsage {
 	}
 }
 
+// ErrUnexpectedError represents an error that occurs unexpectedly.
 type ErrUnexpectedError struct {
 	// Reason is the reason for the unexpected error.
 	Reason error

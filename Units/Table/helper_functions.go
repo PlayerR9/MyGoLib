@@ -20,7 +20,7 @@ func fixVerticalBoundaries[T any](maxHeight int, elems [][]T, y int) ([][]T, int
 
 	totalHeight := len(elems) + y
 
-	if totalHeight < maxHeight {
+	if totalHeight <= maxHeight {
 		return elems, y
 	} else {
 		return elems[:maxHeight-y], maxHeight
@@ -71,7 +71,7 @@ func fixHorizontalBoundaries[T any](maxWidth int, elems [][]T, x int) ([][]T, in
 		elems[i] = row[:maxWidth-x]
 	}
 
-	return elems, maxWidth
+	return elems, x
 }
 
 // FixBoundaries is a function that fixes the boundaries of a table of elements based

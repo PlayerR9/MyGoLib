@@ -6,6 +6,8 @@ import (
 	itf "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
 	"github.com/PlayerR9/MyGoLib/ListLike/Stacker"
 	itff "github.com/PlayerR9/MyGoLib/Units/Common"
+
+	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
 )
 
 // DoubleStack is a stack that can be accepted or refused.
@@ -23,81 +25,10 @@ type DoubleStack[T any] struct {
 	auxStack *Stacker.ArrayStack[T]
 }
 
-// NewDoubleLinkedStack creates a new double stack that uses a linked stack as
-// the main stack.
-//
-// Parameters:
-//
-//   - values: The values to push onto the double stack.
-//
-// Returns:
-//
-//   - *DoubleStack: A pointer to the new double stack.
-func NewDoubleLinkedStack[T any](values ...T) *DoubleStack[T] {
-	ds := &DoubleStack[T]{
-		mainStack: Stacker.NewLinkedStack(values...),
-		auxStack:  Stacker.NewArrayStack[T](),
-	}
-
-	return ds
-}
-
-// NewDoubleArrayStack creates a new double stack that uses an array stack as
-// the main stack.
-//
-// Parameters:
-//
-//   - values: The values to push onto the double stack.
-//
-// Returns:
-//
-//   - *DoubleStack: A pointer to the new double stack.
-func NewDoubleArrayStack[T any](values ...T) *DoubleStack[T] {
-	ds := &DoubleStack[T]{
-		mainStack: Stacker.NewArrayStack(values...),
-		auxStack:  Stacker.NewArrayStack[T](),
-	}
-
-	return ds
-}
-
 // Clear clears the double stack.
 func (ds *DoubleStack[T]) Clear() {
 	ds.mainStack.Clear()
 	ds.auxStack.Clear()
-}
-
-// Accept accepts the elements that have been popped from the stack.
-func (ds *DoubleStack[T]) Accept() {
-	ds.auxStack.Clear()
-}
-
-// GetExtracted returns the elements that have been popped from the stack.
-//
-// Returns:
-//
-//   - []T: The elements that have been popped from the stack.
-func (ds *DoubleStack[T]) GetExtracted() []T {
-	return ds.auxStack.Slice()
-}
-
-// Refuse refuses the elements that have been popped from the stack.
-// The elements are pushed back onto the stack in the same order that they were
-// popped.
-func (ds *DoubleStack[T]) Refuse() error {
-	for {
-		top, err := ds.auxStack.Pop()
-		if err != nil {
-			break
-		}
-
-		err = ds.mainStack.Push(top)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
 
 // IsEmpty returns whether the double stack is empty.
@@ -213,6 +144,88 @@ func (ds *DoubleStack[T]) Copy() itff.Copier {
 	}
 }
 
+// Capacity returns the capacity of the double stack.
+//
+// Returns:
+//   - int: The capacity of the double stack.
+func (ds *DoubleStack[T]) Capacity() int {
+	return ds.mainStack.Capacity()
+}
+
+// IsFull returns whether the double stack is full.
+//
+// Returns:
+//   - bool: Whether the double stack is full.
+func (ds *DoubleStack[T]) IsFull() bool {
+	return ds.mainStack.IsFull()
+}
+
+// NewDoubleStack creates a new double stack that uses a specified stack as
+// the main stack.
+//
+// Parameters:
+//   - stack: The stack to use as the main stack.
+//   - values: The values to push onto the double stack.
+//
+// Returns:
+//   - *DoubleStack: A pointer to the new double stack.
+//
+// Behaviors:
+//   - The stack parameter is used as the main stack while values are pushed onto
+//     the end of the specified stack.
+func NewDoubleStack[T any](stack Stacker.Stacker[T], values ...T) (*DoubleStack[T], error) {
+	if stack == nil {
+		return nil, ers.NewErrNilParameter("stack")
+	}
+
+	ds := &DoubleStack[T]{
+		mainStack: stack,
+		auxStack:  Stacker.NewArrayStack[T](),
+	}
+
+	for _, value := range values {
+		err := ds.mainStack.Push(value)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return ds, nil
+}
+
+// Accept accepts the elements that have been popped from the stack.
+func (ds *DoubleStack[T]) Accept() {
+	ds.auxStack.Clear()
+}
+
+// GetExtracted returns the elements that have been popped from the stack.
+//
+// Returns:
+//
+//   - []T: The elements that have been popped from the stack.
+func (ds *DoubleStack[T]) GetExtracted() []T {
+	return ds.auxStack.Slice()
+}
+
+// Refuse refuses the elements that have been popped from the stack.
+// The elements are pushed back onto the stack in the same order that they were
+// popped.
+func (ds *DoubleStack[T]) Refuse() error {
+	for {
+		top, err := ds.auxStack.Pop()
+		if err != nil {
+			break
+		}
+
+		err = ds.mainStack.Push(top)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // RefuseOne refuses one element that has been popped from the stack.
 // The element is pushed back onto the stack.
 //
@@ -231,12 +244,4 @@ func (ds *DoubleStack[T]) RefuseOne() error {
 	}
 
 	return nil
-}
-
-func (ds *DoubleStack[T]) Capacity() int {
-	return ds.mainStack.Capacity()
-}
-
-func (ds *DoubleStack[T]) IsFull() bool {
-	return ds.mainStack.IsFull()
 }

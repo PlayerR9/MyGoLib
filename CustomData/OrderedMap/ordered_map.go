@@ -1,4 +1,4 @@
-package SortedMap
+package OrderedMap
 
 import (
 	"slices"
@@ -6,10 +6,12 @@ import (
 	cdp "github.com/PlayerR9/MyGoLib/Units/Pair"
 
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
+
+	ll "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
 )
 
-// SortedMap is a generic data structure that represents a sorted map.
-type SortedMap[K comparable, V any] struct {
+// OrderedMap is a generic data structure that represents a sorted map.
+type OrderedMap[K comparable, V any] struct {
 	// mapping is the map of keys to values.
 	mapping map[K]V
 
@@ -21,8 +23,8 @@ type SortedMap[K comparable, V any] struct {
 //
 // Returns:
 //   - uc.Copier: A deep copy of the sorted map.
-func (s *SortedMap[K, V]) Copy() uc.Copier {
-	sCopy := &SortedMap[K, V]{
+func (s *OrderedMap[K, V]) Copy() uc.Copier {
+	sCopy := &OrderedMap[K, V]{
 		mapping: make(map[K]V),
 		keys:    make([]K, len(s.keys)),
 	}
@@ -36,12 +38,12 @@ func (s *SortedMap[K, V]) Copy() uc.Copier {
 	return sCopy
 }
 
-// NewSortedMap creates a new sorted map.
+// NewOrderedMap creates a new sorted map.
 //
 // Returns:
 //   - *SortedMap[K, V]: A pointer to the newly created sorted map.
-func NewSortedMap[K comparable, V any]() *SortedMap[K, V] {
-	return &SortedMap[K, V]{
+func NewOrderedMap[K comparable, V any]() *OrderedMap[K, V] {
+	return &OrderedMap[K, V]{
 		mapping: make(map[K]V),
 		keys:    make([]K, 0),
 	}
@@ -55,7 +57,7 @@ func NewSortedMap[K comparable, V any]() *SortedMap[K, V] {
 //
 // Behaviors:
 //   - If the key already exists, the value is updated.
-func (s *SortedMap[K, V]) AddEntry(key K, value V) {
+func (s *OrderedMap[K, V]) AddEntry(key K, value V) {
 	_, ok := s.mapping[key]
 	if !ok {
 		s.keys = append(s.keys, key)
@@ -71,22 +73,22 @@ func (s *SortedMap[K, V]) AddEntry(key K, value V) {
 //
 // Returns:
 //   - V: The value of the entry.
-//   - error: An error of type *ErrKeyNotFound if the key does not exist.
-func (s *SortedMap[K, V]) GetEntry(key K) (V, error) {
+//   - bool: A boolean indicating if the key exists in the sorted map.
+//
+// Errors:
+//   - One can use the error *ErrKeyNotFound from the package
+//     when the key does not exist.
+func (s *OrderedMap[K, V]) GetEntry(key K) (V, bool) {
 	value, ok := s.mapping[key]
 
-	if !ok {
-		return *new(V), NewErrKeyNotFound(key)
-	}
-
-	return value, nil
+	return value, ok
 }
 
 // Size returns the number of entries in the sorted map.
 //
 // Returns:
 //   - int: The number of entries in the sorted map.
-func (s *SortedMap[K, V]) Size() int {
+func (s *OrderedMap[K, V]) Size() int {
 	return len(s.keys)
 }
 
@@ -94,7 +96,7 @@ func (s *SortedMap[K, V]) Size() int {
 //
 // Returns:
 //   - []V: The values of the entries in the sorted map.
-func (s *SortedMap[K, V]) Values() []V {
+func (s *OrderedMap[K, V]) Values() []V {
 	values := make([]V, 0, len(s.keys))
 
 	for _, key := range s.keys {
@@ -108,7 +110,7 @@ func (s *SortedMap[K, V]) Values() []V {
 //
 // Returns:
 //   - []K: The keys of the entries in the sorted map.
-func (s *SortedMap[K, V]) Keys() []K {
+func (s *OrderedMap[K, V]) Keys() []K {
 	keys := make([]K, len(s.keys))
 	copy(keys, s.keys)
 
@@ -123,7 +125,9 @@ func (s *SortedMap[K, V]) Keys() []K {
 // Behaviors:
 //   - The entries are returned in the order of the keys.
 //   - There are no nil pairs in the returned slice.
-func (s *SortedMap[K, V]) GetEntries() []*cdp.Pair[K, V] {
+//   - Prefer using Iterator() method for iterating over the entries
+//     instead of this method.
+func (s *OrderedMap[K, V]) GetEntries() []*cdp.Pair[K, V] {
 	entries := make([]*cdp.Pair[K, V], 0, len(s.keys))
 
 	for _, key := range s.keys {
@@ -140,7 +144,7 @@ func (s *SortedMap[K, V]) GetEntries() []*cdp.Pair[K, V] {
 //
 // Behaviors:
 //   - If the key does not exist, nothing happens.
-func (s *SortedMap[K, V]) Delete(key K) {
+func (s *OrderedMap[K, V]) Delete(key K) {
 	_, ok := s.mapping[key]
 	if !ok {
 		return
@@ -168,7 +172,7 @@ func (s *SortedMap[K, V]) Delete(key K) {
 // Errors:
 //   - *ErrKeyNotFound: The key does not exist in the sorted map.
 //   - Any error returned by the function 'f'.
-func (s *SortedMap[K, V]) ModifyValueFunc(key K, f ModifyValueFunc[V]) error {
+func (s *OrderedMap[K, V]) ModifyValueFunc(key K, f ModifyValueFunc[V]) error {
 	oldValue, ok := s.mapping[key]
 	if !ok {
 		return NewErrKeyNotFound(key)
@@ -180,6 +184,58 @@ func (s *SortedMap[K, V]) ModifyValueFunc(key K, f ModifyValueFunc[V]) error {
 	}
 
 	s.mapping[key] = newValue
+
+	return nil
+}
+
+// SortKeys sorts the keys of the sorted map.
+//
+// Parameters:
+//   - less: The function that defines the sorting order.
+//
+// Behaviors:
+//   - The keys are sorted in place using the slice.SortFunc function.
+//   - The function 'less' should return < 0 if the first key is less than the second key.
+//   - The function 'less' should return > 0 if the first key is greater than the second key.
+//   - The function 'less' should return 0 if the first key is equal to the second key.
+func (s *OrderedMap[K, V]) SortKeys(less func(K, K) int) {
+	slices.SortFunc(s.keys, less)
+}
+
+// Iterator returns an iterator for the sorted map.
+//
+// Returns:
+//   - ll.Iterater[*cdp.Pair[K, V]]: An iterator for the sorted map.
+//
+// Behaviors:
+//   - The iterator returns the entries in the order of the keys as pairs.
+func (s *OrderedMap[K, V]) Iterator() ll.Iterater[*cdp.Pair[K, V]] {
+	var builder ll.Builder[*cdp.Pair[K, V]]
+
+	for _, key := range s.keys {
+		builder.Append(cdp.NewPair(key, s.mapping[key]))
+	}
+
+	return builder.Build()
+}
+
+// DoFunc performs a function on each entry in the sorted map.
+//
+// Parameters:
+//   - f: The function to perform on each entry.
+//
+// Returns:
+//   - error: An error if the function fails.
+//
+// Behaviors:
+//   - The function 'f' is called for each entry in the sorted map.
+//   - If the function 'f' returns an error, the iteration stops.
+func (s *OrderedMap[K, V]) DoFunc(f func(K, V) error) error {
+	for _, key := range s.keys {
+		if err := f(key, s.mapping[key]); err != nil {
+			return err
+		}
+	}
 
 	return nil
 }

@@ -1,11 +1,12 @@
 package Queuer
 
 import (
-	"fmt"
+	"strconv"
 	"strings"
 
 	itf "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
+	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
@@ -49,7 +50,7 @@ func NewLimitedArrayQueue[T any](values ...T) *LimitedArrayQueue[T] {
 //   - value: The value of type T to be added to the queue.
 func (queue *LimitedArrayQueue[T]) Enqueue(value T) error {
 	if len(queue.values) >= queue.capacity {
-		return NewErrFullList(queue)
+		return NewErrFullQueue(queue)
 	}
 
 	queue.values = append(queue.values, value)
@@ -67,7 +68,7 @@ func (queue *LimitedArrayQueue[T]) Enqueue(value T) error {
 //   - T: The element at the front of the queue.
 func (queue *LimitedArrayQueue[T]) Dequeue() (T, error) {
 	if len(queue.values) == 0 {
-		return *new(T), NewErrEmptyList(queue)
+		return *new(T), ers.NewErrEmpty(queue)
 	}
 
 	toRemove := queue.values[0]
@@ -85,7 +86,7 @@ func (queue *LimitedArrayQueue[T]) Dequeue() (T, error) {
 //   - T: The element at the front of the queue.
 func (queue *LimitedArrayQueue[T]) Peek() (T, error) {
 	if len(queue.values) == 0 {
-		return *new(T), NewErrEmptyList(queue)
+		return *new(T), ers.NewErrEmpty(queue)
 	}
 
 	return queue.values[0], nil
@@ -167,12 +168,17 @@ func (queue *LimitedArrayQueue[T]) String() string {
 		values = append(values, uc.StringOf(value))
 	}
 
-	return fmt.Sprintf(
-		"LimitedArrayQueue[capacity=%d, size=%d, values=[← %s]]",
-		queue.capacity,
-		len(queue.values),
-		strings.Join(values, ", "),
-	)
+	var builder strings.Builder
+
+	builder.WriteString("LimitedArrayQueue[capacity=")
+	builder.WriteString(strconv.Itoa(queue.capacity))
+	builder.WriteString(", size=")
+	builder.WriteString(strconv.Itoa(len(queue.values)))
+	builder.WriteString(", values=[← ")
+	builder.WriteString(strings.Join(values, ", "))
+	builder.WriteString("]]")
+
+	return builder.String()
 }
 
 // CutNilValues is a method of the LimitedArrayQueue type. It is used to remove all nil

@@ -1,11 +1,12 @@
 package Lister
 
 import (
-	"fmt"
+	"strconv"
 	"strings"
 
 	itf "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
+	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
@@ -102,7 +103,7 @@ func (list *LimitedLinkedList[T]) Append(value T) error {
 //   - T: The first element in the list.
 func (list *LimitedLinkedList[T]) DeleteFirst() (T, error) {
 	if list.front == nil {
-		return *new(T), NewErrEmptyList(list)
+		return *new(T), ers.NewErrEmpty(list)
 	}
 
 	toRemove := list.front
@@ -129,7 +130,7 @@ func (list *LimitedLinkedList[T]) DeleteFirst() (T, error) {
 //   - value: The first element in the list.
 func (list *LimitedLinkedList[T]) PeekFirst() (T, error) {
 	if list.front == nil {
-		return *new(T), NewErrEmptyList(list)
+		return *new(T), ers.NewErrEmpty(list)
 	}
 
 	return list.front.Value, nil
@@ -231,10 +232,17 @@ func (list *LimitedLinkedList[T]) String() string {
 		values = append(values, uc.StringOf(list_node.Value))
 	}
 
-	return fmt.Sprintf(
-		"LimitedLinkedList[capacity=%d, size=%d, values=[%s]]",
-		list.capacity, list.size, strings.Join(values, ", "),
-	)
+	var builder strings.Builder
+
+	builder.WriteString("LimitedLinkedList[capacity=")
+	builder.WriteString(strconv.Itoa(list.capacity))
+	builder.WriteString(", size=")
+	builder.WriteString(strconv.Itoa(list.size))
+	builder.WriteString(", values=[")
+	builder.WriteString(strings.Join(values, ", "))
+	builder.WriteString("]]")
+
+	return builder.String()
 }
 
 // Prepend is a method of the LimitedLinkedList type. It is used to add an element to
@@ -276,7 +284,7 @@ func (list *LimitedLinkedList[T]) Prepend(value T) error {
 //   - T: The last element in the list.
 func (list *LimitedLinkedList[T]) DeleteLast() (T, error) {
 	if list.front == nil {
-		return *new(T), NewErrEmptyList(list)
+		return *new(T), ers.NewErrEmpty(list)
 	}
 
 	toRemove := list.back
@@ -305,7 +313,7 @@ func (list *LimitedLinkedList[T]) DeleteLast() (T, error) {
 //   - value: The last element in the list.
 func (list *LimitedLinkedList[T]) PeekLast() (T, error) {
 	if list.front == nil {
-		return *new(T), NewErrEmptyList(list)
+		return *new(T), ers.NewErrEmpty(list)
 	}
 
 	return list.back.Value, nil

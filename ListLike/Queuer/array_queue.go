@@ -1,11 +1,12 @@
 package Queuer
 
 import (
-	"fmt"
+	"strconv"
 	"strings"
 
 	itf "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
+	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
@@ -60,7 +61,7 @@ func (queue *ArrayQueue[T]) Enqueue(value T) error {
 //   - T: The element at the front of the queue.
 func (queue *ArrayQueue[T]) Dequeue() (T, error) {
 	if len(queue.values) == 0 {
-		return *new(T), NewErrEmptyList(queue)
+		return *new(T), ers.NewErrEmpty(queue)
 	}
 
 	toRemove := queue.values[0]
@@ -78,7 +79,7 @@ func (queue *ArrayQueue[T]) Dequeue() (T, error) {
 //   - T: The element at the front of the queue.
 func (queue *ArrayQueue[T]) Peek() (T, error) {
 	if len(queue.values) == 0 {
-		return *new(T), NewErrEmptyList(queue)
+		return *new(T), ers.NewErrEmpty(queue)
 	}
 
 	return queue.values[0], nil
@@ -139,11 +140,15 @@ func (queue *ArrayQueue[T]) String() string {
 		values = append(values, uc.StringOf(value))
 	}
 
-	return fmt.Sprintf(
-		"ArrayQueue{size=%d, values=[← %s]}",
-		len(queue.values),
-		strings.Join(values, ", "),
-	)
+	var builder strings.Builder
+
+	builder.WriteString("ArrayQueue{size=")
+	builder.WriteString(strconv.Itoa(len(queue.values)))
+	builder.WriteString(", values=[← ")
+	builder.WriteString(strings.Join(values, ", "))
+	builder.WriteString("]}")
+
+	return builder.String()
 }
 
 // CutNilValues is a method of the ArrayQueue type. It is used to remove aCommon nil
@@ -186,10 +191,20 @@ func (queue *ArrayQueue[T]) Copy() uc.Copier {
 	return queueCopy
 }
 
+// Capacity is a method of the ArrayQueue type. It is used to return the capacity of
+// the queue.
+//
+// Returns:
+//   - int: The capacity of the queue, which is always -1 for an ArrayQueue.
 func (queue *ArrayQueue[T]) Capacity() int {
 	return -1
 }
 
+// IsFull is a method of the ArrayQueue type. It is used to check if the queue is
+// full.
+//
+// Returns:
+//   - bool: A boolean value that is always false for an ArrayQueue.
 func (queue *ArrayQueue[T]) IsFull() bool {
 	return false
 }

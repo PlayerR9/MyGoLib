@@ -224,7 +224,7 @@ func (e *ErrLTE) ErrorIf(target int) error {
 }
 
 // ErrInvalidValues represents an error when a value is in a list of invalid values.
-type ErrInvalidValues[T any] struct {
+type ErrInvalidValues[T comparable] struct {
 	// Values is the list of invalid values.
 	Values []T
 }
@@ -291,7 +291,7 @@ func (e *ErrInvalidValues[T]) Error() string {
 //
 // Returns:
 //   - *ErrInvalidValues: A pointer to the newly created ErrInvalidValues.
-func NewErrInvalidValues[T any](values []T) *ErrInvalidValues[T] {
+func NewErrInvalidValues[T comparable](values []T) *ErrInvalidValues[T] {
 	return &ErrInvalidValues[T]{
 		Values: values,
 	}
@@ -306,9 +306,9 @@ func NewErrInvalidValues[T any](values []T) *ErrInvalidValues[T] {
 // Returns:
 //   - error: The error if the target value is in the list of invalid values, nil
 //     otherwise.
-func (e *ErrInvalidValues[T]) ErrorIf(equals func(T) bool) error {
+func (e *ErrInvalidValues[T]) ErrorIf(target T) error {
 	for _, v := range e.Values {
-		if equals(v) {
+		if v == target {
 			return e
 		}
 	}
@@ -323,7 +323,7 @@ func (e *ErrInvalidValues[T]) ErrorIf(equals func(T) bool) error {
 //
 // Returns:
 //   - *ErrInvalidValues: A pointer to the newly created ErrInvalidValues.
-func NewErrUnexpectedValue[T any](value T) *ErrInvalidValues[T] {
+func NewErrUnexpectedValue[T comparable](value T) *ErrInvalidValues[T] {
 	return &ErrInvalidValues[T]{
 		Values: []T{value},
 	}

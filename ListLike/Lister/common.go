@@ -74,22 +74,44 @@ type ListNode[T any] struct {
 }
 
 // NewListNode creates a new LinkedNode with the given value.
+//
+// Parameters:
+//   - value: The value to store in the node.
+//
+// Returns:
+//   - *ListNode: A pointer to the new node.
 func NewListNode[T any](value T) *ListNode[T] {
 	return &ListNode[T]{Value: value}
 }
 
+// SetNext sets the next node in the list.
+//
+// Parameters:
+//   - next: The next node in the list.
 func (node *ListNode[T]) SetNext(next *ListNode[T]) {
 	node.next = next
 }
 
+// Next returns the next node in the list.
+//
+// Returns:
+//   - *ListNode: The next node in the list.
 func (node *ListNode[T]) Next() *ListNode[T] {
 	return node.next
 }
 
+// SetPrev sets the previous node in the list.
+//
+// Parameters:
+//   - prev: The previous node in the list.
 func (node *ListNode[T]) SetPrev(prev *ListNode[T]) {
 	node.prev = prev
 }
 
+// Prev returns the previous node in the list.
+//
+// Returns:
+//   - *ListNode: The previous node in the list.
 func (node *ListNode[T]) Prev() *ListNode[T] {
 	return node.prev
 }
@@ -164,26 +186,44 @@ type ListSafeNode[T any] struct {
 }
 
 // NewListSafeNode creates a new ListSafeNode with the given value.
+//
+// Parameters:
+//   - value: The value to store in the node.
+//
+// Returns:
+//   - *ListSafeNode: A pointer to the new node.
 func NewListSafeNode[T any](value T) *ListSafeNode[T] {
 	return &ListSafeNode[T]{Value: value}
 }
 
 // SetNext sets the next node in the list.
+//
+// Parameters:
+//   - next: The next node in the list.
 func (node *ListSafeNode[T]) SetNext(next *ListSafeNode[T]) {
 	node.next = next
 }
 
 // Next returns the next node in the list.
+//
+// Returns:
+//   - *ListSafeNode: The next node in the list.
 func (node *ListSafeNode[T]) Next() *ListSafeNode[T] {
 	return node.next
 }
 
 // SetPrev sets the previous node in the list.
+//
+// Parameters:
+//   - prev: The previous node in the list.
 func (node *ListSafeNode[T]) SetPrev(prev *ListSafeNode[T]) {
 	node.prev = prev
 }
 
 // Prev returns the previous node in the list.
+//
+// Returns:
+//   - *ListSafeNode: The previous node in the list.
 func (node *ListSafeNode[T]) Prev() *ListSafeNode[T] {
 	return node.prev
 }

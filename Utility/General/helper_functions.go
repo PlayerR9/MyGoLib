@@ -51,30 +51,6 @@ func Max[T any](a, b T) (T, bool) {
 	}
 }
 
-// DeepCopy is a function that performs a deep copy of a given value.
-//
-// Parameters:
-//   - value: The value to copy.
-//
-// Return:
-//   - any: A deep copy of the input value.
-func DeepCopy(value any) any {
-	typ := reflect.TypeOf(value)
-
-	if typ.Kind() != reflect.Ptr {
-		// Perform a shallow copy if the value is not a pointer
-		return value
-	}
-
-	// Create a new instance of the underlying type
-	newValue := reflect.New(typ.Elem()).Interface()
-
-	// Use reflection to copy the value
-	reflect.ValueOf(newValue).Elem().Set(reflect.ValueOf(value).Elem())
-
-	return newValue
-}
-
 // SplitIntoGroups splits the slice into n groups and returns a 2D slice where
 // each inner slice represents a group.
 //
@@ -99,15 +75,8 @@ func SplitIntoGroups[T any](slice []T, n int) ([][]T, error) {
 		return [][]T{slice}, nil
 	}
 
-	if err := ers.NewErrGTE(0).ErrorIf(n); err != nil {
+	if err := ers.NewErrGT(0).ErrorIf(n); err != nil {
 		return nil, ers.NewErrInvalidParameter("n", err)
-	}
-
-	if n == 0 {
-		return nil, ers.NewErrInvalidParameter(
-			"n",
-			ers.NewErrUnexpectedValue(0),
-		)
 	}
 
 	groups := make([][]T, n)

@@ -41,16 +41,31 @@ type StackNode[T any] struct {
 	next *StackNode[T]
 }
 
+// NewStackNode is a constructor function that creates a new linkedNode with the given value.
+//
+// Parameters:
+//  	- value: The value to store in the linkedNode.
+//
+// Returns:
+//  	- *linkedNode: A pointer to the newly created linkedNode.
 func NewStackNode[T any](value T) *StackNode[T] {
 	return &StackNode[T]{
 		Value: value,
 	}
 }
 
+// SetNext is a method that sets the next linkedNode in the list.
+//
+// Parameters:
+//  	- next: A pointer to the next linkedNode in the list.
 func (node *StackNode[T]) SetNext(next *StackNode[T]) {
 	node.next = next
 }
 
+// Next is a method that returns the next linkedNode in the list.
+//
+// Returns:
+//  	- *linkedNode: A pointer to the next linkedNode in the list.
 func (node *StackNode[T]) Next() *StackNode[T] {
 	return node.next
 }

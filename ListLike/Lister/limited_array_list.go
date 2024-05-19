@@ -1,11 +1,12 @@
 package Lister
 
 import (
-	"fmt"
+	"strconv"
 	"strings"
 
 	itf "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
+	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
@@ -76,7 +77,7 @@ func (list *LimitedArrayList[T]) Append(value T) error {
 //   - T: The first element in the list.
 func (list *LimitedArrayList[T]) DeleteFirst() (T, error) {
 	if len(list.values) <= 0 {
-		return *new(T), NewErrEmptyList(list)
+		return *new(T), ers.NewErrEmpty(list)
 	}
 
 	toRemove := list.values[0]
@@ -93,7 +94,7 @@ func (list *LimitedArrayList[T]) DeleteFirst() (T, error) {
 //   - T: A pointer to the first element in the list.
 func (list *LimitedArrayList[T]) PeekFirst() (T, error) {
 	if len(list.values) == 0 {
-		return *new(T), NewErrEmptyList(list)
+		return *new(T), ers.NewErrEmpty(list)
 	}
 
 	return list.values[0], nil
@@ -171,10 +172,17 @@ func (list *LimitedArrayList[T]) String() string {
 		values = append(values, uc.StringOf(v))
 	}
 
-	return fmt.Sprintf(
-		"LimitedArrayList[capacity=%d, size=%d, values=[%s]]",
-		list.capacity, len(list.values), strings.Join(values, ", "),
-	)
+	var builder strings.Builder
+
+	builder.WriteString("LimitedArrayList[capacity=")
+	builder.WriteString(strconv.Itoa(list.capacity))
+	builder.WriteString(", size=")
+	builder.WriteString(strconv.Itoa(len(list.values)))
+	builder.WriteString(", values=[")
+	builder.WriteString(strings.Join(values, ", "))
+	builder.WriteString("]]")
+
+	return builder.String()
 }
 
 // Prepend is a method of the LimitedArrayList type. It is used to add an element to the
@@ -203,7 +211,7 @@ func (list *LimitedArrayList[T]) Prepend(value T) error {
 //   - T: The last element in the list.
 func (list *LimitedArrayList[T]) DeleteLast() (T, error) {
 	if len(list.values) == 0 {
-		return *new(T), NewErrEmptyList(list)
+		return *new(T), ers.NewErrEmpty(list)
 	}
 
 	toRemove := list.values[len(list.values)-1]
@@ -220,7 +228,7 @@ func (list *LimitedArrayList[T]) DeleteLast() (T, error) {
 //   - T: The last element in the list.
 func (list *LimitedArrayList[T]) PeekLast() (T, error) {
 	if len(list.values) == 0 {
-		return *new(T), NewErrEmptyList(list)
+		return *new(T), ers.NewErrEmpty(list)
 	}
 
 	return list.values[len(list.values)-1], nil

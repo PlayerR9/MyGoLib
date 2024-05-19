@@ -29,16 +29,12 @@ type Table[T any] struct {
 //   - error: An error of type *ers.ErrInvalidParameter if the width or height
 //     are less than 0.
 func NewTable[T any](width, height int) (*Table[T], error) {
-	if width < 0 {
-		return nil, ers.NewErrInvalidParameter(
-			"width",
-			ers.NewErrGTE(0),
-		)
-	} else if height < 0 {
-		return nil, ers.NewErrInvalidParameter(
-			"height",
-			ers.NewErrGTE(0),
-		)
+	if err := ers.NewErrGTE(0).ErrorIf(width); err != nil {
+		return nil, ers.NewErrInvalidParameter("width", err)
+	}
+
+	if err := ers.NewErrGTE(0).ErrorIf(height); err != nil {
+		return nil, ers.NewErrInvalidParameter("height", err)
 	}
 
 	table := make([][]T, height)
@@ -185,11 +181,7 @@ func (dt *Table[T]) GetFullTable() [][]T {
 // Returns:
 //   - error: An error of type *ers.ErrOutOfBounds if the x-coordinate is out of bounds.
 func (dt *Table[T]) IsXInBounds(x int) error {
-	if x < 0 || x >= dt.width {
-		return ers.NewErrOutOfBounds(x, 0, dt.width)
-	} else {
-		return nil
-	}
+	return ers.NewErrOutOfBounds(x, 0, dt.width).ErrorIf()
 }
 
 // IsYInBounds checks if the given y-coordinate is within the bounds of the table.
@@ -200,9 +192,5 @@ func (dt *Table[T]) IsXInBounds(x int) error {
 // Returns:
 //   - error: An error of type *ers.ErrOutOfBounds if the y-coordinate is out of bounds.
 func (dt *Table[T]) IsYInBounds(y int) error {
-	if y < 0 || y >= dt.height {
-		return ers.NewErrOutOfBounds(y, 0, dt.height)
-	} else {
-		return nil
-	}
+	return ers.NewErrOutOfBounds(y, 0, dt.height).ErrorIf()
 }

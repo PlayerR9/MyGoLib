@@ -4,12 +4,13 @@ package ConsolePanel
 
 import (
 	"errors"
+	"fmt"
 
 	fs "github.com/PlayerR9/MyGoLib/Formatting/FString"
 
 	cdd "github.com/PlayerR9/MyGoLib/CustomData/Document"
 
-	sm "github.com/PlayerR9/MyGoLib/CustomData/SortedMap"
+	sm "github.com/PlayerR9/MyGoLib/CustomData/OrderedMap"
 
 	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
 )
@@ -47,7 +48,7 @@ type CommandInfo struct {
 
 	// flags is a slice of FlagInfo representing the flags accepted by
 	// the command.
-	flags *sm.SortedMap[string, *FlagInfo]
+	flags *sm.OrderedMap[string, *FlagInfo]
 
 	// callback is the function to call when the command is executed.
 	callback CommandCallbackFunc
@@ -95,13 +96,20 @@ func (cci *CommandInfo) FString(trav *fs.Traversor) {
 	} else {
 		trav.AddLines("Flags:")
 
-		for _, p := range cci.flags.GetEntries() {
-			trav.AppendStrings("", indent, "- ", p.First, ":")
+		iter := cci.flags.Iterator()
+
+		for {
+			entry, err := iter.Consume()
+			if err != nil {
+				break
+			}
+
+			trav.AppendStrings("", indent, "- ", entry.First, ":")
 			trav.AddLines()
 
 			trav.Apply()
 
-			p.Second.FString(trav.IncreaseIndent(2))
+			entry.Second.FString(trav.IncreaseIndent(2))
 		}
 	}
 }
@@ -121,7 +129,7 @@ func (cci *CommandInfo) FString(trav *fs.Traversor) {
 func NewCommandInfo(description *cdd.Document, callback CommandCallbackFunc) *CommandInfo {
 	inf := &CommandInfo{
 		description: description,
-		flags:       sm.NewSortedMap[string, *FlagInfo](),
+		flags:       sm.NewOrderedMap[string, *FlagInfo](),
 	}
 
 	if callback != nil {
@@ -185,16 +193,16 @@ func (inf *CommandInfo) Parse(args []string) (*ParsedCommand, error) {
 	}
 
 	argsMap := make(map[string]any)
-	todo := inf.flags.Copy().(*sm.SortedMap[string, *FlagInfo])
+	todo := inf.flags.Copy().(*sm.OrderedMap[string, *FlagInfo])
 
 	for len(args) > 0 {
 		if todo.Size() == 0 {
 			return nil, errors.New("too many arguments provided")
 		}
 
-		flag, err := todo.GetEntry(args[0])
-		if err != nil {
-			return nil, err
+		flag, ok := todo.GetEntry(args[0])
+		if !ok {
+			return nil, fmt.Errorf("invalid flag %q", args[0])
 		}
 
 		parsed, err := flag.Parse(args[1:])
@@ -209,8 +217,15 @@ func (inf *CommandInfo) Parse(args []string) (*ParsedCommand, error) {
 	}
 
 	if todo.Size() > 0 {
-		for _, p := range todo.GetEntries() {
-			if p.Second.IsRequired() {
+		iter := todo.Iterator()
+
+		for {
+			entry, err := iter.Consume()
+			if err != nil {
+				break
+			}
+
+			if entry.Second.IsRequired() {
 				return nil, errors.New("missing required flag")
 			}
 		}

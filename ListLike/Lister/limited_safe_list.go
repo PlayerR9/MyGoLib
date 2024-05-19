@@ -1,12 +1,13 @@
 package Lister
 
 import (
-	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 
 	itf "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
+	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
@@ -115,7 +116,7 @@ func (list *LimitedSafeList[T]) DeleteFirst() (T, error) {
 	defer list.frontMutex.Unlock()
 
 	if list.front == nil {
-		return *new(T), NewErrEmptyList(list)
+		return *new(T), ers.NewErrEmpty(list)
 	}
 
 	toRemove := list.front
@@ -152,7 +153,7 @@ func (list *LimitedSafeList[T]) PeekFirst() (T, error) {
 	defer list.frontMutex.RUnlock()
 
 	if list.front == nil {
-		return *new(T), NewErrEmptyList(list)
+		return *new(T), ers.NewErrEmpty(list)
 	}
 
 	return list.front.Value, nil
@@ -280,10 +281,17 @@ func (list *LimitedSafeList[T]) String() string {
 		values = append(values, uc.StringOf(node.Value))
 	}
 
-	return fmt.Sprintf(
-		"LimitedSafeList[capacity=%d, size=%d, values=[%s]]",
-		list.capacity, list.size, strings.Join(values, ", "),
-	)
+	var builder strings.Builder
+
+	builder.WriteString("LimitedSafeList[capacity=")
+	builder.WriteString(strconv.Itoa(list.capacity))
+	builder.WriteString(", size=")
+	builder.WriteString(strconv.Itoa(list.size))
+	builder.WriteString(", values=[")
+	builder.WriteString(strings.Join(values, ", "))
+	builder.WriteString("]]")
+
+	return builder.String()
 }
 
 // Prepend is a method of the LimitedSafeList type. It is used to add an element to the
@@ -334,7 +342,7 @@ func (list *LimitedSafeList[T]) DeleteLast() (T, error) {
 	defer list.backMutex.Unlock()
 
 	if list.back == nil {
-		return *new(T), NewErrEmptyList(list)
+		return *new(T), ers.NewErrEmpty(list)
 	}
 
 	toRemove := list.back
@@ -371,7 +379,7 @@ func (list *LimitedSafeList[T]) PeekLast() (T, error) {
 	defer list.backMutex.RUnlock()
 
 	if list.back == nil {
-		return *new(T), NewErrEmptyList(list)
+		return *new(T), ers.NewErrEmpty(list)
 	}
 
 	return list.back.Value, nil

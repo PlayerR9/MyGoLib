@@ -1,12 +1,13 @@
 package Queuer
 
 import (
-	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 
 	itf "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
+	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
@@ -77,7 +78,7 @@ func (queue *LimitedSafeQueue[T]) Enqueue(value T) error {
 	defer queue.backMutex.Unlock()
 
 	if queue.size >= queue.capacity {
-		return NewErrFullList(queue)
+		return NewErrFullQueue(queue)
 	}
 
 	node := NewQueueSafeNode(value)
@@ -109,7 +110,7 @@ func (queue *LimitedSafeQueue[T]) Dequeue() (T, error) {
 	defer queue.frontMutex.Unlock()
 
 	if queue.front == nil {
-		return *new(T), NewErrEmptyList(queue)
+		return *new(T), ers.NewErrEmpty(queue)
 	}
 
 	toRemove := queue.front
@@ -143,7 +144,7 @@ func (queue *LimitedSafeQueue[T]) Peek() (T, error) {
 	defer queue.frontMutex.RUnlock()
 
 	if queue.front == nil {
-		return *new(T), NewErrEmptyList(queue)
+		return *new(T), ers.NewErrEmpty(queue)
 	}
 
 	return queue.front.Value, nil
@@ -271,12 +272,17 @@ func (queue *LimitedSafeQueue[T]) String() string {
 		values = append(values, uc.StringOf(node.Value))
 	}
 
-	return fmt.Sprintf(
-		"LimitedSafeQueue[capacity=%d, size=%d, values=[← %s]]",
-		queue.capacity,
-		queue.size,
-		strings.Join(values, ", "),
-	)
+	var builder strings.Builder
+
+	builder.WriteString("LimitedSafeQueue[capacity=")
+	builder.WriteString(strconv.Itoa(queue.capacity))
+	builder.WriteString(", size=")
+	builder.WriteString(strconv.Itoa(queue.size))
+	builder.WriteString(", values=[← ")
+	builder.WriteString(strings.Join(values, ", "))
+	builder.WriteString("]]")
+
+	return builder.String()
 }
 
 // CutNilValues is a method of the LimitedSafeQueue type. It is used to remove all nil

@@ -2,6 +2,7 @@ package Strings
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -22,16 +23,18 @@ func AndString(vals ...string) string {
 	case 1:
 		return vals[0]
 	case 2:
-		return fmt.Sprintf("%s and %s", vals[0], vals[1])
+		var builder strings.Builder
+
+		builder.WriteString(vals[0])
+		builder.WriteString(" and ")
+		builder.WriteString(vals[1])
+
+		return builder.String()
 	default:
 		var builder strings.Builder
 
 		builder.WriteString(strings.Join(vals[0:len(vals)-1], ", "))
-
-		builder.WriteRune(',')
-		builder.WriteRune(' ')
-		builder.WriteString("and")
-		builder.WriteRune(' ')
+		builder.WriteString(", and ")
 		builder.WriteString(vals[len(vals)-1])
 
 		return builder.String()
@@ -54,16 +57,18 @@ func OrString(vals ...string) string {
 	case 1:
 		return vals[0]
 	case 2:
-		return fmt.Sprintf("%s or %s", vals[0], vals[1])
+		var builder strings.Builder
+
+		builder.WriteString(vals[0])
+		builder.WriteString(" or ")
+		builder.WriteString(vals[1])
+
+		return builder.String()
 	default:
 		var builder strings.Builder
 
 		builder.WriteString(strings.Join(vals[0:len(vals)-1], ", "))
-
-		builder.WriteRune(',')
-		builder.WriteRune(' ')
-		builder.WriteString("or")
-		builder.WriteRune(' ')
+		builder.WriteString(", or ")
 		builder.WriteString(vals[len(vals)-1])
 
 		return builder.String()
@@ -83,31 +88,33 @@ func OrString(vals ...string) string {
 // For example, for the number 1, the function returns "1st"; for the number 2,
 // it returns "2nd"; and so on.
 func GetOrdinalSuffix(number int) string {
+	var builder strings.Builder
+
+	builder.WriteString(strconv.Itoa(number))
+
 	if number < 0 {
-		return fmt.Sprintf("%dth", number)
+		number = -number
 	}
 
 	lastTwoDigits := number % 100
 	lastDigit := lastTwoDigits % 10
 
 	if lastTwoDigits >= 11 && lastTwoDigits <= 13 {
-		return fmt.Sprintf("%dth", number)
+		builder.WriteString("th")
+	} else {
+		switch lastDigit {
+		case 1:
+			builder.WriteString("st")
+		case 2:
+			builder.WriteString("nd")
+		case 3:
+			builder.WriteString("rd")
+		default:
+			builder.WriteString("th")
+		}
 	}
 
-	if lastDigit == 0 || lastDigit > 3 {
-		return fmt.Sprintf("%dth", number)
-	}
-
-	switch lastDigit {
-	case 1:
-		return fmt.Sprintf("%dst", number)
-	case 2:
-		return fmt.Sprintf("%dnd", number)
-	case 3:
-		return fmt.Sprintf("%drd", number)
-	}
-
-	return ""
+	return builder.String()
 }
 
 // DateStringer prints the date in the format "1st January, 2006".
@@ -120,11 +127,15 @@ func GetOrdinalSuffix(number int) string {
 //
 //   - string: The date in the format "1st January, 2006".
 func DateStringer(date time.Time) string {
-	return fmt.Sprintf("%s %s, %d",
-		GetOrdinalSuffix(date.Day()),
-		date.Month().String(),
-		date.Year(),
-	)
+	var builder strings.Builder
+
+	builder.WriteString(GetOrdinalSuffix(date.Day()))
+	builder.WriteRune(' ')
+	builder.WriteString(date.Month().String())
+	builder.WriteString(", ")
+	builder.WriteString(strconv.Itoa(date.Year()))
+
+	return builder.String()
 }
 
 // TimeStringer prints the time in the format "3:04 PM".

@@ -4,26 +4,34 @@ import (
 	"fmt"
 )
 
-type ErrEmptyStack[T any] struct {
-	Stack Stacker[T]
-}
-
-func NewErrEmptyStack[T any](stack Stacker[T]) *ErrEmptyStack[T] {
-	return &ErrEmptyStack[T]{Stack: stack}
-}
-
-func (e *ErrEmptyStack[T]) Error() string {
-	return fmt.Sprintf("stack (%T) is empty", e.Stack)
-}
-
+// ErrFullStack is an error type for a full stack.
 type ErrFullStack[T any] struct {
+	// Stack is the stack that is full.
 	Stack Stacker[T]
 }
 
-func NewErrFullList[T any](stack Stacker[T]) *ErrFullStack[T] {
-	return &ErrFullStack[T]{Stack: stack}
+// Error returns the error message: "stack (%T) is full".
+//
+// Returns:
+//   - string: The error message.
+//
+// Behaviors:
+//   - If the stack is nil, the error message is "stack is full".
+func (e *ErrFullStack[T]) Error() string {
+	if e.Stack == nil {
+		return "stack is full"
+	} else {
+		return fmt.Sprintf("stack (%T) is full", e.Stack)
+	}
 }
 
-func (e *ErrFullStack[T]) Error() string {
-	return fmt.Sprintf("stack (%T) is full", e.Stack)
+// NewErrFullStack is a constructor for ErrFullStack.
+//
+// Parameters:
+//   - stack: The stack that is full.
+//
+// Returns:
+//   - *ErrFullStack: The error.
+func NewErrFullStack[T any](stack Stacker[T]) *ErrFullStack[T] {
+	return &ErrFullStack[T]{Stack: stack}
 }

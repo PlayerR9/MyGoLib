@@ -1,4 +1,4 @@
-package SortedMap
+package OrderedMap
 
 import (
 	"fmt"

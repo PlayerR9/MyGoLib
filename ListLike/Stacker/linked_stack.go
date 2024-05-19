@@ -1,11 +1,12 @@
 package Stacker
 
 import (
-	"fmt"
+	"strconv"
 	"strings"
 
 	itf "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
+	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
@@ -85,7 +86,7 @@ func (stack *LinkedStack[T]) Push(value T) error {
 //   - T: The value of the last element in the stack.
 func (stack *LinkedStack[T]) Pop() (T, error) {
 	if stack.front == nil {
-		return *new(T), NewErrEmptyStack(stack)
+		return *new(T), ers.NewErrEmpty(stack)
 	}
 
 	toRemove := stack.front
@@ -107,7 +108,7 @@ func (stack *LinkedStack[T]) Pop() (T, error) {
 //   - T: The value of the last element in the stack.
 func (stack *LinkedStack[T]) Peek() (T, error) {
 	if stack.front == nil {
-		return *new(T), NewErrEmptyStack(stack)
+		return *new(T), ers.NewErrEmpty(stack)
 	}
 
 	return stack.front.Value, nil
@@ -185,11 +186,15 @@ func (stack *LinkedStack[T]) String() string {
 		values = append(values, uc.StringOf(stack_node.Value))
 	}
 
-	return fmt.Sprintf(
-		"LinkedStack[size=%d, values=[%s →]]",
-		stack.size,
-		strings.Join(values, ", "),
-	)
+	var builder strings.Builder
+
+	builder.WriteString("LinkedStack[size=")
+	builder.WriteString(strconv.Itoa(stack.size))
+	builder.WriteString(", values=[")
+	builder.WriteString(strings.Join(values, ", "))
+	builder.WriteString(" →]]")
+
+	return builder.String()
 }
 
 // CutNilValues is a method of the LinkedStack type. It is used to remove aCommon nil
@@ -273,8 +278,6 @@ func (stack *LinkedStack[T]) Slice() []T {
 //
 //   - itf.Copier: A copy of the stack.
 func (stack *LinkedStack[T]) Copy() uc.Copier {
-	// FIXME: This doesn't work: Node.SetNext(Node)!!!
-
 	stackCopy := &LinkedStack[T]{
 		size: stack.size,
 	}
@@ -288,18 +291,32 @@ func (stack *LinkedStack[T]) Copy() uc.Copier {
 	stackCopy.front = node
 
 	// Subsequent nodes
-	for stack_node := stack.front.Next(); stack_node != nil; stack_node = stack_node.Next() {
-		node := NewStackNode(stack_node.Value)
-		node.SetNext(node)
+	prev := node
+
+	for stackNode := stack.front.Next(); stackNode != nil; stackNode = stackNode.Next() {
+		node := NewStackNode(stackNode.Value)
+		prev.SetNext(node)
+
+		prev = node
 	}
 
 	return stackCopy
 }
 
+// Capacity is a method of the LinkedStack type. It is used to return the maximum
+// number of elements that the stack can store.
+//
+// Returns:
+//   - int: -1
 func (stack *LinkedStack[T]) Capacity() int {
 	return -1
 }
 
+// IsFull is a method of the LinkedStack type. It is used to check if the stack is
+// full.
+//
+// Returns:
+//   - bool: false
 func (stack *LinkedStack[T]) IsFull() bool {
 	return false
 }

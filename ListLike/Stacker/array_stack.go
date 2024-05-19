@@ -1,12 +1,13 @@
 package Stacker
 
 import (
-	"fmt"
 	"slices"
+	"strconv"
 	"strings"
 
 	itf "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
+	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
@@ -63,7 +64,7 @@ func (stack *ArrayStack[T]) Push(value T) error {
 //   - T: The element at the end of the stack.
 func (stack *ArrayStack[T]) Pop() (T, error) {
 	if len(stack.values) == 0 {
-		return *new(T), NewErrEmptyStack(stack)
+		return *new(T), ers.NewErrEmpty(stack)
 	}
 
 	toRemove := stack.values[len(stack.values)-1]
@@ -82,7 +83,7 @@ func (stack *ArrayStack[T]) Pop() (T, error) {
 //   - T: The element at the end of the stack.
 func (stack *ArrayStack[T]) Peek() (T, error) {
 	if len(stack.values) == 0 {
-		return *new(T), NewErrEmptyStack(stack)
+		return *new(T), ers.NewErrEmpty(stack)
 	}
 
 	return stack.values[len(stack.values)-1], nil
@@ -142,11 +143,15 @@ func (stack *ArrayStack[T]) String() string {
 		values = append(values, uc.StringOf(value))
 	}
 
-	return fmt.Sprintf(
-		"ArrayStack{size=%d, values=[%s →]}",
-		len(stack.values),
-		strings.Join(values, ", "),
-	)
+	var builder strings.Builder
+
+	builder.WriteString("ArrayStack{size=")
+	builder.WriteString(strconv.Itoa(len(stack.values)))
+	builder.WriteString(", values=[")
+	builder.WriteString(strings.Join(values, ", "))
+	builder.WriteString(" →]}")
+
+	return builder.String()
 }
 
 // CutNilValues is a method of the ArrayStack type. It is used to remove aCommon nil
@@ -191,10 +196,19 @@ func (stack *ArrayStack[T]) Copy() uc.Copier {
 	return stackCopy
 }
 
+// Capacity is a method of the ArrayStack type. It is used to return the capacity of
+// the stack.
+//
+// Returns:
+//   - int: -1
 func (stack *ArrayStack[T]) Capacity() int {
 	return -1
 }
 
+// IsFull is a method of the ArrayStack type. It is used to check if the stack is full.
+//
+// Returns:
+//   - bool: false
 func (stack *ArrayStack[T]) IsFull() bool {
 	return false
 }

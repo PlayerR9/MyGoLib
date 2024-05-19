@@ -1,11 +1,12 @@
 package Queuer
 
 import (
-	"fmt"
+	"strconv"
 	"strings"
 
 	itf "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
+	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
@@ -91,7 +92,7 @@ func (queue *LinkedQueue[T]) Enqueue(value T) error {
 //   - T: The value of the element at the front of the queue.
 func (queue *LinkedQueue[T]) Dequeue() (T, error) {
 	if queue.front == nil {
-		return *new(T), NewErrEmptyList(queue)
+		return *new(T), ers.NewErrEmpty(queue)
 	}
 
 	toRemove := queue.front
@@ -117,7 +118,7 @@ func (queue *LinkedQueue[T]) Dequeue() (T, error) {
 //   - T: The value of the element at the front of the queue.
 func (queue *LinkedQueue[T]) Peek() (T, error) {
 	if queue.front == nil {
-		return *new(T), NewErrEmptyList(queue)
+		return *new(T), ers.NewErrEmpty(queue)
 	}
 
 	return queue.front.Value, nil
@@ -195,11 +196,15 @@ func (queue *LinkedQueue[T]) String() string {
 		values = append(values, uc.StringOf(queue_node.Value))
 	}
 
-	return fmt.Sprintf(
-		"LinkedQueue{size=%d, values=[← %s]}",
-		queue.size,
-		strings.Join(values, ", "),
-	)
+	var builder strings.Builder
+
+	builder.WriteString("LinkedQueue{size=")
+	builder.WriteString(strconv.Itoa(queue.size))
+	builder.WriteString(", values=[← ")
+	builder.WriteString(strings.Join(values, ", "))
+	builder.WriteString("]}")
+
+	return builder.String()
 }
 
 // CutNilValues is a method of the LinkedQueue type. It is used to remove aCommon nil
@@ -308,10 +313,20 @@ func (queue *LinkedQueue[T]) Copy() uc.Copier {
 	return queueCopy
 }
 
+// Capacity is a method of the LinkedQueue type. It is used to return the maximum
+// number of elements that the queue can store.
+//
+// Returns:
+//   - int: -1
 func (queue *LinkedQueue[T]) Capacity() int {
 	return -1
 }
 
+// IsFull is a method of the LinkedQueue type. It is used to check if the queue is
+// full.
+//
+// Returns:
+//   - bool: false
 func (queue *LinkedQueue[T]) IsFull() bool {
 	return false
 }

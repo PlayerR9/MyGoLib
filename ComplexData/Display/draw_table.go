@@ -5,12 +5,12 @@ import (
 
 	"github.com/gdamore/tcell"
 
-	cdt "github.com/PlayerR9/MyGoLib/CustomData/Table"
+	cdt "github.com/PlayerR9/MyGoLib/Units/Table"
 )
 
 // DrawTable represents a table of cells that can be drawn to the screen.
 type DrawTable struct {
-	*cdt.Table[*DtCell]
+	*cdt.Table[*dtCell]
 }
 
 // NewDrawTable creates a new DrawTable with the given width and height.
@@ -24,7 +24,7 @@ type DrawTable struct {
 //   - error: An error of type *ers.ErrInvalidParameter if the width or height
 //     are less than 0.
 func NewDrawTable(width, height int) (*DrawTable, error) {
-	table, err := cdt.NewTable[*DtCell](width, height)
+	table, err := cdt.NewTable[*dtCell](width, height)
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +48,7 @@ func (dt *DrawTable) GetLines() []string {
 	for _, row := range table {
 		for _, cell := range row {
 			if cell != nil {
-				builder.WriteRune(cell.Content)
+				builder.WriteRune(cell.content)
 			} else {
 				builder.WriteRune(' ')
 			}
@@ -77,10 +77,10 @@ func (dt *DrawTable) GetLines() []string {
 func (dt *DrawTable) WriteLineAt(x, y int, line string, style tcell.Style, isHorizontal bool) {
 	runes := []rune(line)
 
-	sequence := make([]*DtCell, 0, len(runes))
+	sequence := make([]*dtCell, 0, len(runes))
 
 	for _, r := range runes {
-		sequence = append(sequence, NewDtCell(r, style))
+		sequence = append(sequence, newDtCell(r, style))
 	}
 
 	if isHorizontal {

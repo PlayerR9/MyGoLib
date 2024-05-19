@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	cdm "github.com/PlayerR9/MyGoLib/CustomData/SortedMap"
+	cdm "github.com/PlayerR9/MyGoLib/CustomData/OrderedMap"
 )
 
 const (
@@ -13,24 +13,40 @@ const (
 )
 
 type Console struct {
-	commandMap *cdm.SortedMap[string, *CommandInfo]
+	commandMap *cdm.OrderedMap[string, *CommandInfo]
 }
 
 func NewConsole() *Console {
 	console := &Console{
-		commandMap: cdm.NewSortedMap[string, *CommandInfo](),
+		commandMap: cdm.NewOrderedMap[string, *CommandInfo](),
 	}
 
 	helpCommand := func(flagMap map[string]any) (any, error) {
-		var builder strings.Builder
-
-		builder.WriteString("Here are the commands you can use:\n")
-
-		for _, entry := range console.commandMap.GetEntries() {
-			builder.WriteString(fmt.Sprintf("%s : %s\n", entry.First, entry.Second.description))
+		lines := []string{
+			"Here are the commands you can use:",
 		}
 
-		return builder.String(), nil
+		var builder strings.Builder
+
+		iter := console.commandMap.Iterator()
+
+		for {
+			entry, err := iter.Consume()
+			if err != nil {
+				break
+			}
+
+			builder.WriteString(entry.First)
+			builder.WriteRune(' ')
+			builder.WriteRune(':')
+			builder.WriteRune(' ')
+			builder.WriteString(entry.Second.description)
+
+			lines = append(lines, builder.String())
+			builder.Reset()
+		}
+
+		return strings.Join(lines, "\n"), nil
 	}
 
 	console.commandMap.AddEntry(
@@ -58,8 +74,8 @@ func (c *Console) ParseArgs(args []string) (*ParsedCommand, error) {
 		return nil, errors.New("invalid command")
 	}
 
-	cInfo, err := c.commandMap.GetEntry(args[1])
-	if err != nil {
+	cInfo, ok := c.commandMap.GetEntry(args[1])
+	if !ok {
 		return nil, fmt.Errorf("%q is not a valid command", args[1])
 	}
 

@@ -83,10 +83,10 @@ func (t *Tray[T]) MoveRight(n int) bool {
 //   - elem: The element to write.
 //
 // Returns:
-//   - error: An error of type *ErrEmptyTray if the tape is empty.
+//   - error: An error of type *ers.Empty[*Tray] if the tape is empty.
 func (t *Tray[T]) Write(elem T) error {
 	if len(t.tape) == 0 {
-		return NewErrEmptyTray()
+		return ers.NewErrEmpty(t)
 	}
 
 	t.tape[t.arrow] = elem
@@ -98,10 +98,10 @@ func (t *Tray[T]) Write(elem T) error {
 //
 // Returns:
 //   - T: The element at the arrow position.
-//   - error: An error of type *ErrEmptyTray if the tape is empty.
+//   - error: An error of type *ers.Empty[*Tray] if the tape is empty.
 func (t *Tray[T]) Read() (T, error) {
 	if len(t.tape) == 0 {
-		return *new(T), NewErrEmptyTray()
+		return *new(T), ers.NewErrEmpty(t)
 	}
 
 	return t.tape[t.arrow], nil
@@ -114,7 +114,7 @@ func (t *Tray[T]) Read() (T, error) {
 //   - error: An error if elements to the left of the arrow position cannot be found.
 //
 // Errors:
-//   - *ErrEmptyTray: The tape is empty.
+//   - *ers.ErrEmpty[*Tray]: If the tape is empty.
 //   - *ers.ErrInvalidParameter: If n is less than 0.
 func (t *Tray[T]) Delete(n int) error {
 	if n < 0 {
@@ -125,7 +125,7 @@ func (t *Tray[T]) Delete(n int) error {
 	} else if n == 0 {
 		return nil
 	} else if len(t.tape) == 0 {
-		return NewErrEmptyTray()
+		return ers.NewErrEmpty(t)
 	} else if n >= len(t.tape) {
 		t.tape = []T{}
 		t.arrow = 0

@@ -1,12 +1,13 @@
 package Queuer
 
 import (
-	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 
 	itf "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
+	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
@@ -102,7 +103,7 @@ func (queue *SafeQueue[T]) Dequeue() (T, error) {
 	defer queue.frontMutex.Unlock()
 
 	if queue.front == nil {
-		return *new(T), NewErrEmptyList(queue)
+		return *new(T), ers.NewErrEmpty(queue)
 	}
 
 	toRemove := queue.front
@@ -136,7 +137,7 @@ func (queue *SafeQueue[T]) Peek() (T, error) {
 	defer queue.frontMutex.RUnlock()
 
 	if queue.front == nil {
-		return *new(T), NewErrEmptyList(queue)
+		return *new(T), ers.NewErrEmpty(queue)
 	}
 
 	return queue.front.Value, nil
@@ -239,11 +240,15 @@ func (queue *SafeQueue[T]) String() string {
 		values = append(values, uc.StringOf(node.Value))
 	}
 
-	return fmt.Sprintf(
-		"SafeQueue{size=%d, values=[← %s]}",
-		queue.size,
-		strings.Join(values, ", "),
-	)
+	var builder strings.Builder
+
+	builder.WriteString("SafeQueue{size=")
+	builder.WriteString(strconv.Itoa(queue.size))
+	builder.WriteString(", values=[← ")
+	builder.WriteString(strings.Join(values, ", "))
+	builder.WriteString("]}")
+
+	return builder.String()
 }
 
 // CutNilValues is a method of the SafeQueue type. It is used to remove all nil
@@ -370,10 +375,20 @@ func (queue *SafeQueue[T]) Copy() uc.Copier {
 	return queueCopy
 }
 
+// Capacity is a method of the SafeQueue type. It is used to return the maximum
+// number of elements that the queue can store.
+//
+// Returns:
+//   - int: -1
 func (queue *SafeQueue[T]) Capacity() int {
 	return -1
 }
 
+// IsFull is a method of the SafeQueue type. It is used to check if the queue is
+// full.
+//
+// Returns:
+//   - bool: false
 func (queue *SafeQueue[T]) IsFull() bool {
 	return false
 }

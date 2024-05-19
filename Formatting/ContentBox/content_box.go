@@ -5,7 +5,6 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	sx "github.com/PlayerR9/MyGoLib/Units/String"
 	sext "github.com/PlayerR9/MyGoLib/Utility/StringExt"
 )
 
@@ -131,15 +130,15 @@ func NewContentBox(lines [][]string) *ContentBox {
 //   - words - a slice of fields representing the line of text.
 //
 // Returns:
-//   - *sx.TextSplit - the updated TextSplitter.
+//   - *sext.TextSplit - the updated TextSplitter.
 //   - bool - a boolean indicating whether the text was truncated.
 //   - error - an error if the text could not be processed.
-func (cb *ContentBox) processLine(isFirst bool, maxWidth int, ts *sx.TextSplit, words []string, possibleNewLine bool) (*sx.TextSplit, bool, error) {
+func (cb *ContentBox) processLine(isFirst bool, maxWidth int, ts *sext.TextSplit, words []string) (*sext.TextSplit, bool, error) {
 	if !isFirst {
 		maxWidth -= IndentLevel
 	}
 
-	numberOfLines, err := sx.CalculateNumberOfLines(words, maxWidth)
+	numberOfLines, err := sext.CalculateNumberOfLines(words, maxWidth)
 
 	if err != nil {
 		line := strings.Join(words, "")[:maxWidth]
@@ -193,7 +192,7 @@ func (cb *ContentBox) processLine(isFirst bool, maxWidth int, ts *sx.TextSplit, 
 
 		return ts, true, nil
 	} else {
-		halfTs, err := sx.SplitInEqualSizedLines(
+		halfTs, err := sext.SplitInEqualSizedLines(
 			words, maxWidth, numberOfLines,
 		)
 
@@ -223,15 +222,15 @@ func (cb *ContentBox) processLine(isFirst bool, maxWidth int, ts *sx.TextSplit, 
 // The function returns a pointer to the created TextSplitter
 // and an error. If no errors occur during the creation of the
 // TextSplitter, the error is nil.
-func (cb *ContentBox) createTextSplitter(lines [][]string, maxWidth, maxHeight int) (*sx.TextSplit, error) {
-	ts, err := sx.NewTextSplit(maxWidth-IndentLevel, maxHeight)
+func (cb *ContentBox) createTextSplitter(lines [][]string, maxWidth, maxHeight int) (*sext.TextSplit, error) {
+	ts, err := sext.NewTextSplit(maxWidth, maxHeight)
 	if err != nil {
 		return nil, fmt.Errorf("could not create TextSplitter: %s", err.Error())
 	}
 
 	possibleNewLine := false
 
-	ts, possibleNewLine, err = cb.processLine(true, maxWidth, ts, lines[0], true)
+	ts, possibleNewLine, err = cb.processLine(true, maxWidth, ts, lines[0])
 	if err != nil {
 		return nil, err
 	}
@@ -252,7 +251,7 @@ func (cb *ContentBox) createTextSplitter(lines [][]string, maxWidth, maxHeight i
 			continue
 		}
 
-		ts, possibleNewLine, err = cb.processLine(false, maxWidth, ts, line, possibleNewLine)
+		ts, possibleNewLine, err = cb.processLine(false, maxWidth, ts, line)
 		if err != nil {
 			return nil, fmt.Errorf("could not process line: %s", err.Error())
 		}
@@ -270,10 +269,10 @@ func (cb *ContentBox) createTextSplitter(lines [][]string, maxWidth, maxHeight i
 //   - maxHeight - the maximum height of the content.
 //
 // Returns:
-//   - []*sx.TextSplit - a slice of TextSplit objects representing the optimized content.
+//   - []*sext.TextSplit - a slice of TextSplit objects representing the optimized content.
 //   - error - an error if the content could not be applied.
-func (cb *ContentBox) forceApply(maxWidth, maxHeight int) ([]*sx.TextSplit, error) {
-	finalTs := make([]*sx.TextSplit, 0, len(cb.lines))
+func (cb *ContentBox) forceApply(maxWidth, maxHeight int) ([]*sext.TextSplit, error) {
+	finalTs := make([]*sext.TextSplit, 0, len(cb.lines))
 
 	for _, line := range cb.lines {
 		sentences := [][]string{line}
@@ -285,7 +284,7 @@ func (cb *ContentBox) forceApply(maxWidth, maxHeight int) ([]*sx.TextSplit, erro
 
 		// If it is possible to optimize the text, optimize it.
 		// Otherwise, the unoptimized text is also fine.
-		optimizedTs, err := sx.SplitInEqualSizedLines(ts.GetLines(), maxWidth, -1)
+		optimizedTs, err := sext.SplitInEqualSizedLines(ts.GetLines(), maxWidth, -1)
 		if err != nil {
 			finalTs = append(finalTs, ts)
 		} else {

@@ -1,11 +1,12 @@
 package Lister
 
 import (
-	"fmt"
+	"strconv"
 	"strings"
 
 	itf "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
+	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
@@ -93,7 +94,7 @@ func (list *LinkedList[T]) Append(value T) error {
 //   - T: The first element in the list.
 func (list *LinkedList[T]) DeleteFirst() (T, error) {
 	if list.front == nil {
-		return *new(T), NewErrEmptyList(list)
+		return *new(T), ers.NewErrEmpty(list)
 	}
 
 	toRemove := list.front
@@ -122,7 +123,7 @@ func (list *LinkedList[T]) DeleteFirst() (T, error) {
 //   - value: The first element in the list.
 func (list *LinkedList[T]) PeekFirst() (T, error) {
 	if list.front == nil {
-		return *new(T), NewErrEmptyList(list)
+		return *new(T), ers.NewErrEmpty(list)
 	}
 
 	return list.front.Value, nil
@@ -223,12 +224,17 @@ func (list *LinkedList[T]) String() string {
 		values = append(values, uc.StringOf(list_node.Value))
 	}
 
-	return fmt.Sprintf(
-		"LinkedList[size=%d, capacity=%d, values=[%s]]",
-		list.size,
-		list.Capacity(),
-		strings.Join(values, ", "),
-	)
+	var builder strings.Builder
+
+	builder.WriteString("LinkedList[size=")
+	builder.WriteString(strconv.Itoa(list.size))
+	builder.WriteString(", capacity=")
+	builder.WriteString(strconv.Itoa(list.Capacity()))
+	builder.WriteString(", values=[")
+	builder.WriteString(strings.Join(values, ", "))
+	builder.WriteString("]]")
+
+	return builder.String()
 }
 
 // Prepend is a method of the LinkedList type. It is used to add an element to
@@ -266,7 +272,7 @@ func (list *LinkedList[T]) Prepend(value T) error {
 //   - T: The last element in the list.
 func (list *LinkedList[T]) DeleteLast() (T, error) {
 	if list.front == nil {
-		return *new(T), NewErrEmptyList(list)
+		return *new(T), ers.NewErrEmpty(list)
 	}
 
 	toRemove := list.back
@@ -295,7 +301,7 @@ func (list *LinkedList[T]) DeleteLast() (T, error) {
 //   - value: The last element in the list.
 func (list *LinkedList[T]) PeekLast() (T, error) {
 	if list.front == nil {
-		return *new(T), NewErrEmptyList(list)
+		return *new(T), ers.NewErrEmpty(list)
 	}
 
 	return list.back.Value, nil

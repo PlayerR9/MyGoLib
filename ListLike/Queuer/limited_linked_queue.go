@@ -1,11 +1,12 @@
 package Queuer
 
 import (
-	"fmt"
+	"strconv"
 	"strings"
 
 	itf "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
+	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
@@ -70,7 +71,7 @@ func NewLimitedLinkedQueue[T any](values ...T) *LimitedLinkedQueue[T] {
 //     queue.
 func (queue *LimitedLinkedQueue[T]) Enqueue(value T) error {
 	if queue.size >= queue.capacity {
-		return NewErrFullList(queue)
+		return NewErrFullQueue(queue)
 	}
 
 	queue_node := NewQueueNode(value)
@@ -98,7 +99,7 @@ func (queue *LimitedLinkedQueue[T]) Enqueue(value T) error {
 //   - T: The value of the element at the front of the queue.
 func (queue *LimitedLinkedQueue[T]) Dequeue() (T, error) {
 	if queue.front == nil {
-		return *new(T), NewErrEmptyList(queue)
+		return *new(T), ers.NewErrEmpty(queue)
 	}
 
 	toRemove := queue.front
@@ -124,7 +125,7 @@ func (queue *LimitedLinkedQueue[T]) Dequeue() (T, error) {
 //   - T: The value of the element at the front of the queue.
 func (queue *LimitedLinkedQueue[T]) Peek() (T, error) {
 	if queue.front == nil {
-		return *new(T), NewErrEmptyList(queue)
+		return *new(T), ers.NewErrEmpty(queue)
 	}
 
 	return queue.front.Value, nil
@@ -216,12 +217,17 @@ func (queue *LimitedLinkedQueue[T]) String() string {
 		values = append(values, uc.StringOf(queue_node.Value))
 	}
 
-	return fmt.Sprintf(
-		"LimitedLinkedQueue[capacity=%d, size=%d, values=[← %s]]",
-		queue.capacity,
-		queue.size,
-		strings.Join(values, ", "),
-	)
+	var builder strings.Builder
+
+	builder.WriteString("LimitedLinkedQueue[capacity=")
+	builder.WriteString(strconv.Itoa(queue.capacity))
+	builder.WriteString(", size=")
+	builder.WriteString(strconv.Itoa(queue.size))
+	builder.WriteString(", values=[← ")
+	builder.WriteString(strings.Join(values, ", "))
+	builder.WriteString("]]")
+
+	return builder.String()
 }
 
 // CutNilValues is a method of the LimitedLinkedQueue type. It is used to remove all nil

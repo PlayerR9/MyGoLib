@@ -1,4 +1,4 @@
-package SortedMap
+package OrderedMap
 
 // ModifyValueFunc is a function that modifies a value.
 //

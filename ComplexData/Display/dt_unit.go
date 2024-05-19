@@ -4,7 +4,7 @@ import (
 	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
 	"github.com/gdamore/tcell"
 
-	cdt "github.com/PlayerR9/MyGoLib/CustomData/Table"
+	cdt "github.com/PlayerR9/MyGoLib/Units/Table"
 )
 
 // DtUniter is an interface that represents the content of a unit in a draw table.
@@ -32,11 +32,11 @@ type DtUniter interface {
 
 // DtUnit represents a unit in a draw table. It contains the content of the unit
 type DtUnit[T DtUniter] struct {
-	// Content is the content of the unit.
-	Content T
+	// content is the content of the unit.
+	content T
 
-	// Style is the style of the unit.
-	Style tcell.Style
+	// style is the style of the unit.
+	style tcell.Style
 }
 
 // Draw is a method of cdd.TableDrawer that draws the unit to the table at the given x and y
@@ -59,7 +59,7 @@ func (u *DtUnit[T]) Draw(table *DrawTable, x, y int) error {
 
 	width, height := table.GetWidth(), table.GetHeight()
 
-	runeTable, err := u.Content.Runes(width, height)
+	runeTable, err := u.content.Runes(width, height)
 	if err != nil {
 		return err
 	}
@@ -75,13 +75,13 @@ func (u *DtUnit[T]) Draw(table *DrawTable, x, y int) error {
 			continue
 		}
 
-		sequence := make([]*DtCell, 0, len(row))
+		sequence := make([]*dtCell, 0, len(row))
 
 		for _, r := range row {
 			if r == EmptyRuneCell {
 				sequence = append(sequence, nil)
 			} else {
-				sequence = append(sequence, NewDtCell(r, u.Style))
+				sequence = append(sequence, newDtCell(r, u.style))
 			}
 		}
 
@@ -101,7 +101,7 @@ func (u *DtUnit[T]) Draw(table *DrawTable, x, y int) error {
 //   - *DtUnit: The new DtUnit.
 func NewDtUnit[T DtUniter](content T, style tcell.Style) *DtUnit[T] {
 	return &DtUnit[T]{
-		Content: content,
-		Style:   style,
+		content: content,
+		style:   style,
 	}
 }

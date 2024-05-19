@@ -9,7 +9,7 @@ import (
 	cdd "github.com/PlayerR9/MyGoLib/CustomData/Document"
 	fs "github.com/PlayerR9/MyGoLib/Formatting/FString"
 
-	sm "github.com/PlayerR9/MyGoLib/CustomData/SortedMap"
+	sm "github.com/PlayerR9/MyGoLib/CustomData/OrderedMap"
 	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
 )
 
@@ -30,7 +30,7 @@ type ConsolePanel struct {
 	description *cdd.Document
 
 	// commandMap is a map of command opcodes to CommandInfo.
-	commandMap *sm.SortedMap[string, *CommandInfo]
+	commandMap *sm.OrderedMap[string, *CommandInfo]
 
 	// width and height are the dimensions of the console, respectively.
 	width, height int
@@ -91,15 +91,20 @@ func (cns *ConsolePanel) FString(trav *fs.Traversor) {
 	} else {
 		trav.AddLines("Commands:")
 
-		commands := cns.commandMap.GetEntries()
+		iter := cns.commandMap.Iterator()
 
-		for _, command := range commands {
-			trav.AppendStrings("", indent, "- ", command.First, ":")
+		for {
+			entry, err := iter.Consume()
+			if err != nil {
+				break
+			}
+
+			trav.AppendStrings("", indent, "- ", entry.First, ":")
 			trav.AddLines()
 
 			trav.Apply()
 
-			command.Second.FString(trav.IncreaseIndent(2))
+			entry.Second.FString(trav.IncreaseIndent(2))
 		}
 	}
 }
@@ -115,7 +120,7 @@ func NewConsolePanel(execName string, description *cdd.Document) *ConsolePanel {
 	cp := &ConsolePanel{
 		ExecutableName: execName,
 		description:    description,
-		commandMap:     sm.NewSortedMap[string, *CommandInfo](),
+		commandMap:     sm.NewOrderedMap[string, *CommandInfo](),
 		width:          DefaultWidth,
 		height:         DefaultHeight,
 	}
@@ -148,9 +153,9 @@ func NewConsolePanel(execName string, description *cdd.Document) *ConsolePanel {
 			runeTable := make([][]rune, 0)
 
 			for opcode := range args {
-				command, err := cp.GetCommand(opcode)
-				if err != nil {
-					return nil, err
+				command, ok := cp.GetCommand(opcode)
+				if !ok {
+					return nil, NewErrCommandNotFound(opcode)
 				}
 
 				trav := fs.NewFString()
@@ -236,9 +241,9 @@ func (cns *ConsolePanel) ParseArguments(args []string) (*ParsedCommand, error) {
 		return nil, errors.New("missing command name")
 	}
 
-	command, err := cns.commandMap.GetEntry(args[0])
-	if err != nil {
-		return nil, err
+	command, ok := cns.commandMap.GetEntry(args[0])
+	if !ok {
+		return nil, fmt.Errorf("command %q not found", args[0])
 	}
 
 	args = args[1:] // Remove the command name
@@ -259,7 +264,7 @@ func (cns *ConsolePanel) ParseArguments(args []string) (*ParsedCommand, error) {
 // Returns:
 //   - *CommandInfo: The CommandInfo for the opcode.
 //   - bool: A boolean indicating if the command was found.
-func (cns *ConsolePanel) GetCommand(opcode string) (*CommandInfo, error) {
+func (cns *ConsolePanel) GetCommand(opcode string) (*CommandInfo, bool) {
 	return cns.commandMap.GetEntry(opcode)
 }
 

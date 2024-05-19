@@ -1,11 +1,12 @@
 package Lister
 
 import (
-	"fmt"
+	"strconv"
 	"strings"
 
 	itf "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
+	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
@@ -60,7 +61,7 @@ func (list *ArrayList[T]) Append(value T) error {
 //   - T: The first element in the list.
 func (list *ArrayList[T]) DeleteFirst() (T, error) {
 	if len(list.values) <= 0 {
-		return *new(T), NewErrEmptyList(list)
+		return *new(T), ers.NewErrEmpty(list)
 	}
 
 	toRemove := list.values[0]
@@ -78,7 +79,7 @@ func (list *ArrayList[T]) DeleteFirst() (T, error) {
 //   - T: A pointer to the first element in the list.
 func (list *ArrayList[T]) PeekFirst() (T, error) {
 	if len(list.values) == 0 {
-		return *new(T), NewErrEmptyList(list)
+		return *new(T), ers.NewErrEmpty(list)
 	}
 
 	return list.values[0], nil
@@ -156,11 +157,15 @@ func (list *ArrayList[T]) String() string {
 		values = append(values, uc.StringOf(element))
 	}
 
-	return fmt.Sprintf(
-		"ArrayList[size=%d, values=[%s]]",
-		len(list.values),
-		strings.Join(values, ", "),
-	)
+	var builder strings.Builder
+
+	builder.WriteString("ArrayList[size=")
+	builder.WriteString(strconv.Itoa(len(list.values)))
+	builder.WriteString(", values=[")
+	builder.WriteString(strings.Join(values, ", "))
+	builder.WriteString("]]")
+
+	return builder.String()
 }
 
 // Prepend is a method of the ArrayList type. It is used to add an element to the
@@ -187,7 +192,7 @@ func (list *ArrayList[T]) Prepend(value T) error {
 //   - T: The last element in the list.
 func (list *ArrayList[T]) DeleteLast() (T, error) {
 	if len(list.values) == 0 {
-		return *new(T), NewErrEmptyList(list)
+		return *new(T), ers.NewErrEmpty(list)
 	}
 
 	toRemove := list.values[len(list.values)-1]
@@ -205,7 +210,7 @@ func (list *ArrayList[T]) DeleteLast() (T, error) {
 //   - T: The last element in the list.
 func (list *ArrayList[T]) PeekLast() (T, error) {
 	if len(list.values) == 0 {
-		return *new(T), NewErrEmptyList(list)
+		return *new(T), ers.NewErrEmpty(list)
 	}
 
 	return list.values[len(list.values)-1], nil

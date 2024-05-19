@@ -5,8 +5,6 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	sx "github.com/PlayerR9/MyGoLib/Units/String"
-
 	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
 	sext "github.com/PlayerR9/MyGoLib/Utility/StringExt"
 )
@@ -67,7 +65,10 @@ func (t *Title) Runes(width, height int) ([][]rune, error) {
 	for i := 0; i < len(lines); i++ {
 		startPos := (width - utf8.RuneCountInString(lines[i])) / 2
 
-		copy(runeTable[i][startPos:], []rune(lines[i]))
+		row := make([]rune, width)
+		copy(row[startPos:], []rune(lines[i]))
+
+		runeTable = append(runeTable, row)
 	}
 
 	return runeTable, nil
@@ -147,12 +148,12 @@ func (t *Title) tryToFitLines(fullTitle string, width int) ([]string, error) {
 func generateLines(fullTitle string, width int) ([]string, error) {
 	contents := sext.Fields(fullTitle)
 
-	numberOfLines, err := sx.CalculateNumberOfLines(contents, width-TitleMinWidth)
-	if err != nil && !ers.As[*sx.ErrLinesGreaterThanWords](err) {
+	numberOfLines, err := sext.CalculateNumberOfLines(contents, width-TitleMinWidth)
+	if err != nil && !ers.As[*sext.ErrLinesGreaterThanWords](err) {
 		return nil, fmt.Errorf("could not calculate number of lines: %s", err.Error())
 	}
 
-	ts, err := sx.SplitInEqualSizedLines(contents, width-TitleMinWidth, numberOfLines)
+	ts, err := sext.SplitInEqualSizedLines(contents, width-TitleMinWidth, numberOfLines)
 	if err != nil {
 		return nil, fmt.Errorf("could not split text in equal sized lines: %s", err.Error())
 	}
