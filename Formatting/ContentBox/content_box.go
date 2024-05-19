@@ -2,12 +2,11 @@ package ContentBox
 
 import (
 	"fmt"
-
-	cdd "github.com/PlayerR9/MyGoLib/ComplexData/Display"
+	"strings"
+	"unicode/utf8"
 
 	sx "github.com/PlayerR9/MyGoLib/Units/String"
-
-	"github.com/gdamore/tcell"
+	sext "github.com/PlayerR9/MyGoLib/Utility/StringExt"
 )
 
 const (
@@ -43,32 +42,35 @@ const (
 type ContentBox struct {
 	// lines is a two-dimensional slice of strings representing the content
 	// of the box.
-	lines [][]*sx.String
-
-	// style is the style to be used when writing the content into the box.
-	style tcell.Style
+	lines [][]string
 }
 
-// Draw draws the content of the ContentBox into the specified draw table.
+// Runes returns the content of the unit as a 2D slice of runes
+// given the size of the table.
 //
 // Parameters:
-//   - table - the draw table to draw the content into.
-//   - x - the x coordinate to start drawing the content at.
-//   - y - the y coordinate to start drawing the content at.
+//   - width: The width of the table.
+//   - height: The height of the table.
 //
 // Returns:
-//   - error - an error if the content could not be drawn.
-func (cb *ContentBox) Draw(table *cdd.DrawTable, x, y int) error {
-	maxWidth := table.GetWidth() - x
-	maxHeight := table.GetHeight() - y
-
-	tss, err := cb.apply(maxWidth, maxHeight)
+//   - [][]rune: The content of the unit as a 2D slice of runes.
+//   - error: An error if the content could not be converted to runes.
+//
+// Behaviors:
+//   - Always assume that the width and height are greater than 0. No need to check for
+//     this.
+//   - Errors are only for critical issues, such as the content not being able to be
+//     converted to runes. However, out of bounds or other issues should not error.
+//     Instead, the content should be drawn as much as possible before unable to be
+//     drawn.
+func (cb *ContentBox) Runes(width, height int) ([][]rune, error) {
+	tss, err := cb.forceApply(width, height)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	totalHeight := 0
-	tableHeight := maxHeight
+	tableHeight := height
 
 	for _, ts := range tss {
 		totalHeight += ts.GetHeight()
@@ -78,57 +80,7 @@ func (cb *ContentBox) Draw(table *cdd.DrawTable, x, y int) error {
 		}
 	}
 
-	yCoord := 0
-
-	for _, ts := range tss {
-		currentHeight := ts.GetHeight()
-
-		shouldExit := currentHeight+yCoord > tableHeight
-		if shouldExit {
-			return nil
-		}
-
-		cell := cdd.NewDtUnit(ts, cb.style)
-
-		err := cell.Draw(table, x, y+yCoord)
-		if err != nil {
-			return fmt.Errorf("could not draw cell: %s", err.Error())
-		}
-
-		yCoord += currentHeight
-	}
-
-	return nil
-}
-
-// Draw draws the content of the ContentBox into the specified draw table.
-//
-// Parameters:
-//   - table - the draw table to draw the content into.
-//   - x - the x coordinate to start drawing the content at.
-//   - y - the y coordinate to start drawing the content at.
-//
-// Returns:
-//   - error - an error if the content could not be drawn.
-func (cb *ContentBox) ForceDraw(table *cdd.DrawTable, x, y int) error {
-	maxWidth := table.GetWidth() - x
-	maxHeight := table.GetHeight() - y
-
-	tss, err := cb.forceApply(maxWidth, maxHeight)
-	if err != nil {
-		return err
-	}
-
-	totalHeight := 0
-	tableHeight := maxHeight
-
-	for _, ts := range tss {
-		totalHeight += ts.GetHeight()
-
-		if totalHeight > tableHeight {
-			break
-		}
-	}
+	runeTable := make([][]rune, 0)
 
 	yCoord := 0
 
@@ -137,20 +89,15 @@ func (cb *ContentBox) ForceDraw(table *cdd.DrawTable, x, y int) error {
 
 		shouldExit := currentHeight+yCoord > tableHeight
 		if shouldExit {
-			return nil
+			return runeTable, nil
 		}
 
-		cell := cdd.NewDtUnit(ts, cb.style)
-
-		err := cell.ForceDraw(table, x, y+yCoord)
-		if err != nil {
-			return fmt.Errorf("could not draw cell: %s", err.Error())
-		}
+		runeTable = append(runeTable, ts.GetRunes()...)
 
 		yCoord += currentHeight
 	}
 
-	return nil
+	return runeTable, nil
 }
 
 // NewContentBox creates a new ContentBox with the specified lines of content.
@@ -161,10 +108,9 @@ func (cb *ContentBox) ForceDraw(table *cdd.DrawTable, x, y int) error {
 //
 // Returns:
 //   - *ContentBox - a pointer to the created ContentBox.
-func NewContentBox(lines [][]*sx.String, style tcell.Style) *ContentBox {
+func NewContentBox(lines [][]string) *ContentBox {
 	return &ContentBox{
 		lines: lines,
-		style: style,
 	}
 }
 
@@ -188,7 +134,7 @@ func NewContentBox(lines [][]*sx.String, style tcell.Style) *ContentBox {
 //   - *sx.TextSplit - the updated TextSplitter.
 //   - bool - a boolean indicating whether the text was truncated.
 //   - error - an error if the text could not be processed.
-func (cb *ContentBox) processLine(isFirst bool, maxWidth int, ts *sx.TextSplit, words []*sx.String, possibleNewLine bool) (*sx.TextSplit, bool, error) {
+func (cb *ContentBox) processLine(isFirst bool, maxWidth int, ts *sx.TextSplit, words []string, possibleNewLine bool) (*sx.TextSplit, bool, error) {
 	if !isFirst {
 		maxWidth -= IndentLevel
 	}
@@ -196,11 +142,11 @@ func (cb *ContentBox) processLine(isFirst bool, maxWidth int, ts *sx.TextSplit, 
 	numberOfLines, err := sx.CalculateNumberOfLines(words, maxWidth)
 
 	if err != nil {
-		line := sx.Join(words, "").TrimEnd(maxWidth)
+		line := strings.Join(words, "")[:maxWidth]
 
-		ok := line.ReplaceSuffix(Hellip)
+		line, ok := sext.ReplaceSuffix(line, Hellip)
 		if !ok {
-			return nil, false, fmt.Errorf("suffix is bigger than maxWidth")
+			return nil, false, sext.NewErrLongerSuffix(line, Hellip)
 		}
 
 		ok = ts.InsertWord(line)
@@ -212,32 +158,32 @@ func (cb *ContentBox) processLine(isFirst bool, maxWidth int, ts *sx.TextSplit, 
 	}
 
 	if numberOfLines > 1 {
-		wordsProcessed := []*sx.String{words[0]}
-		wpLen := words[0].GetLength()
+		wordsProcessed := []string{words[0]}
+		wpLen := utf8.RuneCountInString(words[0])
 
-		var nextField *sx.String
+		var nextField string
 
 		for i, currentField := range words[1 : len(words)-1] {
 			nextField = words[i+1]
 
-			totalLen := wpLen + 2 + currentField.GetLength() +
-				nextField.GetLength()
+			totalLen := wpLen + 2 + utf8.RuneCountInString(currentField) +
+				utf8.RuneCountInString(nextField)
 
 			if totalLen+HellipLen > maxWidth {
-				currentField.AppendString(Hellip)
+				currentField += Hellip
 
 				wordsProcessed = append(wordsProcessed, currentField)
-				wpLen += currentField.GetLength() + 1
+				wpLen += utf8.RuneCountInString(currentField) + 1
 				break
 			}
 
 			wordsProcessed = append(wordsProcessed, currentField)
-			wpLen += currentField.GetLength() + 1
+			wpLen += utf8.RuneCountInString(currentField) + 1
 		}
 
-		if wpLen+1+nextField.GetLength()+HellipLen <= maxWidth {
+		if wpLen+1+utf8.RuneCountInString(nextField)+HellipLen <= maxWidth {
 			wordsProcessed = append(wordsProcessed, nextField)
-			wpLen += nextField.GetLength() + 1
+			wpLen += utf8.RuneCountInString(nextField) + 1
 		}
 
 		firstNotInserted := ts.InsertWords(wordsProcessed)
@@ -277,7 +223,7 @@ func (cb *ContentBox) processLine(isFirst bool, maxWidth int, ts *sx.TextSplit, 
 // The function returns a pointer to the created TextSplitter
 // and an error. If no errors occur during the creation of the
 // TextSplitter, the error is nil.
-func (cb *ContentBox) createTextSplitter(lines [][]*sx.String, maxWidth, maxHeight int) (*sx.TextSplit, error) {
+func (cb *ContentBox) createTextSplitter(lines [][]string, maxWidth, maxHeight int) (*sx.TextSplit, error) {
 	ts, err := sx.NewTextSplit(maxWidth-IndentLevel, maxHeight)
 	if err != nil {
 		return nil, fmt.Errorf("could not create TextSplitter: %s", err.Error())
@@ -326,46 +272,11 @@ func (cb *ContentBox) createTextSplitter(lines [][]*sx.String, maxWidth, maxHeig
 // Returns:
 //   - []*sx.TextSplit - a slice of TextSplit objects representing the optimized content.
 //   - error - an error if the content could not be applied.
-func (cb *ContentBox) apply(maxWidth, maxHeight int) ([]*sx.TextSplit, error) {
-	finalTs := make([]*sx.TextSplit, 0, len(cb.lines))
-
-	for _, line := range cb.lines {
-		sentences := [][]*sx.String{line}
-
-		ts, err := cb.createTextSplitter(sentences, maxWidth, maxHeight)
-		if err != nil {
-			return nil, err
-		}
-
-		// If it is possible to optimize the text, optimize it.
-		// Otherwise, the unoptimized text is also fine.
-		optimizedTs, err := sx.SplitInEqualSizedLines(ts.GetLines(), maxWidth, -1)
-		if err != nil {
-			finalTs = append(finalTs, ts)
-		} else {
-			finalTs = append(finalTs, optimizedTs)
-		}
-	}
-
-	return finalTs, nil
-}
-
-// apply takes a maximum width and height, and applies the content of the ContentBox
-// to the specified width and height. It splits the content into lines of the specified
-// width, and optimizes the text if possible.
-//
-// Parameters:
-//   - maxWidth - the maximum width of the content.
-//   - maxHeight - the maximum height of the content.
-//
-// Returns:
-//   - []*sx.TextSplit - a slice of TextSplit objects representing the optimized content.
-//   - error - an error if the content could not be applied.
 func (cb *ContentBox) forceApply(maxWidth, maxHeight int) ([]*sx.TextSplit, error) {
 	finalTs := make([]*sx.TextSplit, 0, len(cb.lines))
 
 	for _, line := range cb.lines {
-		sentences := [][]*sx.String{line}
+		sentences := [][]string{line}
 
 		ts, err := cb.createTextSplitter(sentences, maxWidth, maxHeight)
 		if err != nil {

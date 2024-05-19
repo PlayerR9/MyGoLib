@@ -1,9 +1,9 @@
 package FString
 
 import (
-	cb "github.com/PlayerR9/MyGoLib/Formatting/ContentBox"
+	"strings"
 
-	sx "github.com/PlayerR9/MyGoLib/Units/String"
+	cb "github.com/PlayerR9/MyGoLib/Formatting/ContentBox"
 )
 
 const (
@@ -28,13 +28,13 @@ type FString struct {
 // Returns:
 //   - string: The string representation of the traversor.
 func (fs *FString) String() string {
-	values := make([]*sx.String, 0, len(fs.lines))
+	values := make([]string, 0, len(fs.lines))
 
 	for _, line := range fs.lines {
 		values = append(values, line.GetLines()...)
 	}
 
-	return sx.Join(values, "\n").String()
+	return strings.Join(values, "\n")
 }
 
 // NewFString creates a new formatted string.

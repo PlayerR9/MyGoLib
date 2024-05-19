@@ -4,7 +4,6 @@ import (
 	"strings"
 
 	ffs "github.com/PlayerR9/MyGoLib/Formatting/FString"
-	"github.com/gdamore/tcell"
 )
 
 // Document is a generic data structure that represents a document.
@@ -33,7 +32,7 @@ func (d *Document) Tmp() []string {
 // Returns:
 //   - []string: The formatted string representation of the document.
 func (d *Document) FString(trav *ffs.Traversor) {
-	trav.AddLines(tcell.StyleDefault, d.lines...)
+	trav.AddLines(d.lines...)
 
 	trav.Apply()
 }

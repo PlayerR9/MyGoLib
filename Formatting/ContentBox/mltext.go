@@ -1,60 +1,49 @@
 package ContentBox
 
 import (
-	cdd "github.com/PlayerR9/MyGoLib/ComplexData/Display"
-	sx "github.com/PlayerR9/MyGoLib/Units/String"
+	"strings"
 
 	sext "github.com/PlayerR9/MyGoLib/Utility/StringExt"
-
-	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
-
-	"github.com/gdamore/tcell"
 )
 
 type MultiLineText struct {
-	lines [][]*sx.String
-	style tcell.Style
+	lines [][]string
 }
 
-func (mlt *MultiLineText) Draw(table *cdd.DrawTable, x, y int) error {
-	if table == nil {
-		return ers.NewErrNilParameter("table")
-	}
-
+// Runes returns the content of the unit as a 2D slice of runes
+// given the size of the table.
+//
+// Parameters:
+//   - width: The width of the table.
+//   - height: The height of the table.
+//
+// Returns:
+//   - [][]rune: The content of the unit as a 2D slice of runes.
+//   - error: An error if the content could not be converted to runes.
+//
+// Behaviors:
+//   - Always assume that the width and height are greater than 0. No need to check for
+//     this.
+//   - Errors are only for critical issues, such as the content not being able to be
+//     converted to runes. However, out of bounds or other issues should not error.
+//     Instead, the content should be drawn as much as possible before unable to be
+//     drawn.
+func (mlt *MultiLineText) Runes(width, height int) ([][]rune, error) {
 	if mlt.IsEmpty() {
-		return nil // Nothing to draw
+		return nil, nil // Nothing to draw
 	}
 
-	cb := NewContentBox(mlt.lines, mlt.style)
+	cb := NewContentBox(mlt.lines)
 
-	return cb.Draw(table, x, y)
+	return cb.Runes(width, height)
 }
 
-func (mlt *MultiLineText) ForceDraw(table *cdd.DrawTable, x, y int) error {
-	if table == nil {
-		return ers.NewErrNilParameter("table")
-	}
-
-	if mlt.IsEmpty() {
-		return nil // Nothing to draw
-	}
-
-	cb := NewContentBox(mlt.lines, mlt.style)
-
-	return cb.ForceDraw(table, x, y)
-}
-
-func NewMultiLineText(style tcell.Style) *MultiLineText {
+func NewMultiLineText() *MultiLineText {
 	mlt := &MultiLineText{
-		lines: make([][]*sx.String, 0),
-		style: style,
+		lines: make([][]string, 0),
 	}
 
 	return mlt
-}
-
-func (mlt *MultiLineText) GetStyle() tcell.Style {
-	return mlt.style
 }
 
 func (mlt *MultiLineText) AppendSentence(sentence string) error {
@@ -63,15 +52,7 @@ func (mlt *MultiLineText) AppendSentence(sentence string) error {
 		return err
 	}
 
-	for _, line := range lines {
-		newWords := make([]*sx.String, 0, len(line))
-
-		for _, words := range line {
-			newWords = append(newWords, sx.NewString(words))
-		}
-
-		mlt.lines = append(mlt.lines, newWords)
-	}
+	mlt.lines = append(mlt.lines, lines...)
 
 	return nil
 }
@@ -80,15 +61,15 @@ func (mlt *MultiLineText) IsEmpty() bool {
 	return len(mlt.lines) == 0
 }
 
-func (mlt *MultiLineText) GetLines() []*sx.String {
+func (mlt *MultiLineText) GetLines() []string {
 	if len(mlt.lines) == 0 {
 		return nil
 	}
 
-	lines := make([]*sx.String, 0, len(mlt.lines))
+	lines := make([]string, 0, len(mlt.lines))
 
 	for _, line := range mlt.lines {
-		lines = append(lines, sx.Join(line, ""))
+		lines = append(lines, strings.Join(line, ""))
 	}
 
 	return lines

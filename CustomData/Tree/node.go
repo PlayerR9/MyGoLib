@@ -5,7 +5,6 @@ import (
 
 	"github.com/PlayerR9/MyGoLib/ListLike/Stacker"
 	slext "github.com/PlayerR9/MyGoLib/Utility/SliceExt"
-	"github.com/gdamore/tcell"
 
 	ffs "github.com/PlayerR9/MyGoLib/Formatting/FString"
 	intf "github.com/PlayerR9/MyGoLib/Units/Common"
@@ -31,7 +30,7 @@ type TreeNode[T any] struct {
 // Returns:
 //   - []string: A slice of strings that represent the node.
 func (t *TreeNode[T]) FString(trav *ffs.Traversor) {
-	trav.AddLines(tcell.StyleDefault, intf.StringOf(t.Data))
+	trav.AddLines(intf.StringOf(t.Data))
 
 	trav.Apply()
 

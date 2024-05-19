@@ -8,7 +8,6 @@ import (
 	cdd "github.com/PlayerR9/MyGoLib/CustomData/Document"
 	fs "github.com/PlayerR9/MyGoLib/Formatting/FString"
 	slext "github.com/PlayerR9/MyGoLib/Utility/SliceExt"
-	"github.com/gdamore/tcell"
 )
 
 // FlagCallbackFunc is a function type that represents a callback
@@ -78,20 +77,20 @@ func (cfi *FlagInfo) FString(trav *fs.Traversor) {
 		values = append(values, arg.String())
 	}
 
-	trav.AppendString(tcell.StyleDefault, "Arguments: ")
-	trav.AppendStrings(tcell.StyleDefault, " ", values...)
-	trav.AddLines(tcell.StyleDefault)
+	trav.AppendString("Arguments: ")
+	trav.AppendStrings(" ", values...)
+	trav.AddLines()
 
 	// Empty line
-	trav.EmptyLine(tcell.StyleDefault)
+	trav.EmptyLine()
 
 	// Description:
 	if cfi.description == nil {
-		trav.AddLines(tcell.StyleDefault, "Description: [No description provided]")
+		trav.AddLines("Description: [No description provided]")
 
 		trav.Apply()
 	} else {
-		trav.AddLines(tcell.StyleDefault, "Description:")
+		trav.AddLines("Description:")
 
 		trav.Apply()
 
@@ -99,13 +98,13 @@ func (cfi *FlagInfo) FString(trav *fs.Traversor) {
 	}
 
 	// Empty line
-	trav.EmptyLine(tcell.StyleDefault)
+	trav.EmptyLine()
 
 	// Required:
 	if cfi.required {
-		trav.AddLines(tcell.StyleDefault, "Required: Yes")
+		trav.AddLines("Required: Yes")
 	} else {
-		trav.AddLines(tcell.StyleDefault, "Required: No")
+		trav.AddLines("Required: No")
 	}
 
 	trav.Apply()

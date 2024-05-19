@@ -4,7 +4,6 @@ import (
 	"strings"
 
 	cb "github.com/PlayerR9/MyGoLib/Formatting/ContentBox"
-	"github.com/gdamore/tcell"
 )
 
 // Traversor is a type that represents a traversor for a formatted string.
@@ -69,11 +68,11 @@ func (trav *Traversor) GetIndent() string {
 //     and the rest of the lines are added to the buffer.
 //   - If the half line is empty, then the lines are added to the buffer. However,
 //     if the lines are empty, then an empty line is added to the buffer.
-func (trav *Traversor) AddLines(style tcell.Style, lines ...string) {
+func (trav *Traversor) AddLines(lines ...string) {
 	if len(lines) == 0 {
 		if trav.halfLine == nil {
 			// Add an empty line if the half line is empty.
-			trav.buffer = append(trav.buffer, cb.NewMultiLineText(style))
+			trav.buffer = append(trav.buffer, cb.NewMultiLineText())
 		} else {
 			// Accept the half line.
 			trav.buffer = append(trav.buffer, trav.halfLine)
@@ -100,7 +99,7 @@ func (trav *Traversor) AddLines(style tcell.Style, lines ...string) {
 	}
 
 	for _, line := range lines {
-		mlt := cb.NewMultiLineText(style)
+		mlt := cb.NewMultiLineText()
 
 		err := mlt.AppendSentence(line)
 		if err != nil {
@@ -115,9 +114,9 @@ func (trav *Traversor) AddLines(style tcell.Style, lines ...string) {
 //
 // Parameters:
 //   - str: The string to append.
-func (trav *Traversor) AppendString(style tcell.Style, str string) {
+func (trav *Traversor) AppendString(str string) {
 	if trav.halfLine == nil {
-		trav.halfLine = cb.NewMultiLineText(style)
+		trav.halfLine = cb.NewMultiLineText()
 	}
 
 	err := trav.halfLine.AppendSentence(str)
@@ -135,13 +134,13 @@ func (trav *Traversor) AppendString(style tcell.Style, str string) {
 //
 // Behaviors:
 //   - If there are no strings, then nothing is appended.
-func (trav *Traversor) AppendStrings(style tcell.Style, separator string, strs ...string) {
+func (trav *Traversor) AppendStrings(separator string, strs ...string) {
 	if len(strs) == 0 {
 		return
 	}
 
 	if trav.halfLine == nil {
-		trav.halfLine = cb.NewMultiLineText(style)
+		trav.halfLine = cb.NewMultiLineText()
 	}
 
 	err := trav.halfLine.AppendSentence(strings.Join(strs, separator))
@@ -168,13 +167,13 @@ func (trav *Traversor) Apply() {
 		lines := line.GetLines()
 
 		for _, line := range lines {
-			line.PrependString(indent)
+			line = indent + line
 		}
 
-		mlt := cb.NewMultiLineText(line.GetStyle())
+		mlt := cb.NewMultiLineText()
 
 		for _, line := range lines {
-			err := mlt.AppendSentence(line.String())
+			err := mlt.AppendSentence(line)
 			if err != nil {
 				panic(err)
 			}
@@ -191,11 +190,11 @@ func (trav *Traversor) Apply() {
 // Behaviors:
 //   - If the half line is not empty, then the half line is added to the buffer
 //     (half line is reset) and an empty line is added to the buffer.
-func (trav *Traversor) EmptyLine(style tcell.Style) {
+func (trav *Traversor) EmptyLine() {
 	if trav.halfLine != nil {
 		trav.buffer = append(trav.buffer, trav.halfLine)
 		trav.halfLine = nil
 	}
 
-	trav.buffer = append(trav.buffer, cb.NewMultiLineText(tcell.StyleDefault))
+	trav.buffer = append(trav.buffer, cb.NewMultiLineText())
 }

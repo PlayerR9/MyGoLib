@@ -78,28 +78,7 @@ func (dt *Table[T]) GetHeight() int {
 //
 // Behaviors:
 //   - If the x or y coordinates are out of bounds, the function does nothing.
-func (dt *Table[T]) WriteAt(x, y int, cell T) error {
-	if err := dt.IsXInBounds(x); err != nil {
-		return ers.NewErrInvalidParameter("x", err)
-	} else if err := dt.IsYInBounds(y); err != nil {
-		return ers.NewErrInvalidParameter("y", err)
-	}
-
-	dt.table[y][x] = cell
-
-	return nil
-}
-
-// WriteAt writes a cell to the table at the given coordinates.
-//
-// Parameters:
-//   - x: The x-coordinate of the cell.
-//   - y: The y-coordinate of the cell.
-//   - cell: The cell to write to the table.
-//
-// Behaviors:
-//   - If the x or y coordinates are out of bounds, the function does nothing.
-func (dt *Table[T]) ForceWriteAt(x, y int, cell T) {
+func (dt *Table[T]) WriteAt(x, y int, cell T) {
 	if x < 0 || x >= dt.width || y < 0 || y >= dt.height {
 		return
 	}
@@ -117,29 +96,9 @@ func (dt *Table[T]) ForceWriteAt(x, y int, cell T) {
 //   - T: The cell at the given coordinates.
 //
 // Behaviors:
-//   - If the x or y coordinates are out of bounds, the function returns nil.
-func (dt *Table[T]) GetAt(x, y int) (T, error) {
-	if err := dt.IsXInBounds(x); err != nil {
-		return *new(T), ers.NewErrInvalidParameter("x", err)
-	} else if err := dt.IsYInBounds(y); err != nil {
-		return *new(T), ers.NewErrInvalidParameter("y", err)
-	} else {
-		return dt.table[y][x], nil
-	}
-}
-
-// GetAt returns the cell at the given coordinates in the table.
-//
-// Parameters:
-//   - x: The x-coordinate of the cell.
-//   - y: The y-coordinate of the cell.
-//
-// Returns:
-//   - T: The cell at the given coordinates.
-//
-// Behaviors:
-//   - If the x or y coordinates are out of bounds, the function returns nil.
-func (dt *Table[T]) ForceGetAt(x, y int) T {
+//   - If the x or y coordinates are out of bounds, the function returns
+//     the zero value of type T.
+func (dt *Table[T]) GetAt(x, y int) T {
 	if x < 0 || x >= dt.width || y < 0 || y >= dt.height {
 		return *new(T)
 	} else {
@@ -166,42 +125,7 @@ func (dt *Table[T]) ClearTable() {
 // Behaviors:
 //   - Any value that would cause the sequence to be written outside the
 //     bounds of the table is ignored.
-func (dt *Table[T]) WriteVerticalSequence(x, y int, sequence []T) error {
-	if len(sequence) == 0 {
-		return nil
-	}
-
-	if err := dt.IsXInBounds(x); err != nil {
-		return ers.NewErrInvalidParameter("x", err)
-	} else if err := dt.IsYInBounds(y); err != nil {
-		return ers.NewErrInvalidParameter("y", err)
-	}
-
-	amount := y + len(sequence) - dt.height
-	if amount > 0 {
-		return NewErrHeightExceeded(amount)
-	}
-
-	for i, cell := range sequence {
-		dt.table[y+i][x] = cell
-	}
-
-	return nil
-}
-
-// WriteVerticalSequence writes a sequence of cells to the table
-// starting at the given coordinates. The sequence is written vertically
-// from the starting coordinates.
-//
-// Parameters:
-//   - x: The x-coordinate of the starting cell.
-//   - y: The y-coordinate of the starting cell.
-//   - sequence: The sequence of cells to write to the table.
-//
-// Behaviors:
-//   - Any value that would cause the sequence to be written outside the
-//     bounds of the table is ignored.
-func (dt *Table[T]) ForceWriteVerticalSequence(x, y int, sequence []T) {
+func (dt *Table[T]) WriteVerticalSequence(x, y int, sequence []T) {
 	if len(sequence) == 0 || x < 0 || x >= dt.width || y >= dt.height {
 		return
 	}
@@ -230,40 +154,7 @@ func (dt *Table[T]) ForceWriteVerticalSequence(x, y int, sequence []T) {
 // Behaviors:
 //   - Any value that would cause the sequence to be written outside the
 //     bounds of the table is ignored.
-func (dt *Table[T]) WriteHorizontalSequence(x, y int, sequence []T) error {
-	if len(sequence) == 0 {
-		return nil
-	}
-
-	if err := dt.IsXInBounds(x); err != nil {
-		return ers.NewErrInvalidParameter("x", err)
-	} else if err := dt.IsYInBounds(y); err != nil {
-		return ers.NewErrInvalidParameter("y", err)
-	}
-
-	amount := x + len(sequence) - dt.width
-	if amount > 0 {
-		return NewErrWidthExceeded(amount)
-	}
-
-	copy(dt.table[y][x:], sequence)
-
-	return nil
-}
-
-// WriteHorizontalSequence writes a sequence of cells to the table
-// starting at the given coordinates. The sequence is written horizontally
-// from the starting coordinates.
-//
-// Parameters:
-//   - x: The x-coordinate of the starting cell.
-//   - y: The y-coordinate of the starting cell.
-//   - sequence: The sequence of cells to write to the table.
-//
-// Behaviors:
-//   - Any value that would cause the sequence to be written outside the
-//     bounds of the table is ignored.
-func (dt *Table[T]) ForceWriteHorizontalSequence(x, y int, sequence []T) {
+func (dt *Table[T]) WriteHorizontalSequence(x, y int, sequence []T) {
 	if len(sequence) == 0 || y < 0 || y >= dt.height || x >= dt.width {
 		return
 	}

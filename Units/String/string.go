@@ -20,34 +20,37 @@ type String struct {
 //
 // Returns:
 //   - string: The content of the unit.
-func (dtu *String) String() string {
-	return dtu.content
+func (s *String) String() string {
+	return s.content
 }
 
 // Copy returns a copy of the unit.
 //
 // Returns:
 //   - com.Copier: A copy of the unit.
-func (dtu *String) Copy() com.Copier {
+func (s *String) Copy() com.Copier {
 	return &String{
-		content: dtu.content,
-		length:  dtu.length,
+		content: s.content,
+		length:  s.length,
 	}
 }
 
-// GetRunes returns the content of the unit as a slice of runes.
+// Runes returns the content of the unit as a slice of runes.
+//
+// Parameters:
+//   - width: The width of the table.
+//   - height: The height of the table.
 //
 // Returns:
 //   - [][]rune: The content of the unit as a slice of runes.
+//   - error: An error if the content could not be converted to runes.
 //
 // Behaviors:
-//   - The content is returned as a slice of runes with one line.
-func (s *String) GetRunes() [][]rune {
-	runes := make([][]rune, 1)
-	runes[0] = []rune(s.content)
-
-	return runes
-
+//   - Always assume that the width and height are greater than 0. No need to check for
+//     this.
+//   - Never errors.
+func (s *String) Runes(width, height int) ([][]rune, error) {
+	return [][]rune{[]rune(s.content)}, nil
 }
 
 // NewDtUnit creates a new DtUnit with the given content and style.
@@ -68,27 +71,27 @@ func NewString(content string) *String {
 //
 // Returns:
 //   - string: The content of the unit.
-func (dtu *String) GetContent() string {
-	return dtu.content
+func (s *String) GetContent() string {
+	return s.content
 }
 
 // GetLength returns the length of the content.
 //
 // Returns:
 //   - int: The length of the content.
-func (dtu *String) GetLength() int {
-	return dtu.length
+func (s *String) GetLength() int {
+	return s.length
 }
 
 // Fields splits a string into fields.
 //
 // Returns:
 //   - []*String: The fields of the string.
-func (dtu *String) Fields() []*String {
+func (s *String) Fields() []*String {
 	fields := make([]*String, 0)
 	var builder strings.Builder
 
-	for _, r := range dtu.content {
+	for _, r := range s.content {
 		if r == ' ' {
 			fields = append(fields, NewString(builder.String()))
 			builder.Reset()
@@ -108,44 +111,44 @@ func (dtu *String) Fields() []*String {
 //
 // Parameters:
 //   - r: The rune to append.
-func (dtu *String) AppendRune(r rune) {
-	dtu.content += string(r)
-	dtu.length++
+func (s *String) AppendRune(r rune) {
+	s.content += string(r)
+	s.length++
 }
 
 // AppendString appends a string to the content of the unit.
 //
 // Parameters:
-//   - s: The string to append.
-func (dtu *String) AppendString(s string) {
-	if s == "" {
+//   - otherS: The string to append.
+func (s *String) AppendString(otherS string) {
+	if otherS == "" {
 		return
 	}
 
-	dtu.content += s
-	dtu.length += utf8.RuneCountInString(s)
+	s.content += otherS
+	s.length += utf8.RuneCountInString(otherS)
 }
 
 // PrependRune prepends a rune to the content of the unit.
 //
 // Parameters:
 //   - r: The rune to prepend.
-func (dtu *String) PrependRune(r rune) {
-	dtu.content = string(r) + dtu.content
-	dtu.length++
+func (s *String) PrependRune(r rune) {
+	s.content = string(r) + s.content
+	s.length++
 }
 
 // PrependString prepends a string to the content of the unit.
 //
 // Parameters:
-//   - s: The string to prepend.
-func (dtu *String) PrependString(s string) {
-	if s == "" {
+//   - otherS: The string to prepend.
+func (s *String) PrependString(otherS string) {
+	if otherS == "" {
 		return
 	}
 
-	dtu.content = s + dtu.content
-	dtu.length += utf8.RuneCountInString(s)
+	s.content = otherS + s.content
+	s.length += utf8.RuneCountInString(otherS)
 }
 
 // ReplaceSuffix replaces the end of the string with the given suffix.

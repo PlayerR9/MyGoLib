@@ -6,9 +6,6 @@ import (
 	"errors"
 	"fmt"
 
-	cdt "github.com/PlayerR9/MyGoLib/ComplexData/Display"
-	"github.com/gdamore/tcell"
-
 	cdd "github.com/PlayerR9/MyGoLib/CustomData/Document"
 	fs "github.com/PlayerR9/MyGoLib/Formatting/FString"
 
@@ -64,19 +61,19 @@ func (cns *ConsolePanel) FString(trav *fs.Traversor) {
 	indent := trav.GetIndent()
 
 	// Usage:
-	trav.AppendStrings(tcell.StyleDefault, " ", "Usage:", cns.ExecutableName, "<command> [flags]")
-	trav.AddLines(tcell.StyleDefault)
+	trav.AppendStrings(" ", "Usage:", cns.ExecutableName, "<command> [flags]")
+	trav.AddLines()
 
 	// Empty line
-	trav.EmptyLine(tcell.StyleDefault)
+	trav.EmptyLine()
 
 	// Description:
 	if cns.description == nil {
-		trav.AddLines(tcell.StyleDefault, "Description: [No description provided]")
+		trav.AddLines("Description: [No description provided]")
 
 		trav.Apply()
 	} else {
-		trav.AddLines(tcell.StyleDefault, "Description:")
+		trav.AddLines("Description:")
 
 		trav.Apply()
 
@@ -84,21 +81,21 @@ func (cns *ConsolePanel) FString(trav *fs.Traversor) {
 	}
 
 	// Empty line
-	trav.EmptyLine(tcell.StyleDefault)
+	trav.EmptyLine()
 
 	// Commands:
 	if cns.commandMap.Size() == 0 {
-		trav.AddLines(tcell.StyleDefault, "Commands: None")
+		trav.AddLines("Commands: None")
 
 		trav.Apply()
 	} else {
-		trav.AddLines(tcell.StyleDefault, "Commands:")
+		trav.AddLines("Commands:")
 
 		commands := cns.commandMap.GetEntries()
 
 		for _, command := range commands {
-			trav.AppendStrings(tcell.StyleDefault, "", indent, "- ", command.First, ":")
-			trav.AddLines(tcell.StyleDefault)
+			trav.AppendStrings("", indent, "- ", command.First, ":")
+			trav.AddLines()
 
 			trav.Apply()
 
@@ -126,7 +123,7 @@ func NewConsolePanel(execName string, description *cdd.Document) *ConsolePanel {
 	// Add the help command
 	helpCommandInfo := NewCommandInfo(
 		cdd.NewDocument("Displays help information for the console."),
-		func(args map[string]any) error {
+		func(args map[string]any) (any, error) {
 			if len(args) == 0 {
 				trav := fs.NewFString()
 
@@ -134,31 +131,26 @@ func NewConsolePanel(execName string, description *cdd.Document) *ConsolePanel {
 
 				lines := trav.GetLines()
 
+				runeTable := make([][]rune, 0)
+
 				for _, line := range lines {
-					table, err := cdt.NewDrawTable(cp.width, cp.height)
+					rt, err := line.Runes(cp.width, cp.height)
 					if err != nil {
-						return err
+						return nil, err
 					}
 
-					err = line.ForceDraw(table, 0, 0)
-					if err != nil {
-						return err
-					}
-
-					newLines := table.GetLines()
-
-					for _, newLine := range newLines {
-						fmt.Println(newLine)
-					}
+					runeTable = append(runeTable, rt...)
 				}
 
-				return nil
+				return runeTable, nil
 			}
+
+			runeTable := make([][]rune, 0)
 
 			for opcode := range args {
 				command, err := cp.GetCommand(opcode)
 				if err != nil {
-					return err
+					return nil, err
 				}
 
 				trav := fs.NewFString()
@@ -168,25 +160,16 @@ func NewConsolePanel(execName string, description *cdd.Document) *ConsolePanel {
 				mlts := trav.GetLines()
 
 				for _, mlt := range mlts {
-					table, err := cdt.NewDrawTable(cp.width, cp.height)
+					rt, err := mlt.Runes(cp.width, cp.height)
 					if err != nil {
-						return err
+						return nil, err
 					}
 
-					err = mlt.Draw(table, 0, 0)
-					if err != nil {
-						return err
-					}
-
-					newLines := table.GetLines()
-
-					for _, newLine := range newLines {
-						fmt.Println(newLine)
-					}
+					runeTable = append(runeTable, rt...)
 				}
 			}
 
-			return nil
+			return runeTable, nil
 		},
 	)
 

@@ -8,7 +8,7 @@ import (
 )
 
 func TestWriteLines_ShortLines(t *testing.T) {
-	mlt := NewMultiLineText(tcell.StyleDefault)
+	mlt := NewMultiLineText()
 
 	err := mlt.AppendSentence("Hello World")
 	if err != nil {
@@ -20,7 +20,9 @@ func TestWriteLines_ShortLines(t *testing.T) {
 		t.Fatalf("Expected no error, but got %s", err.Error())
 	}
 
-	err = mlt.Draw(table, 0, 0)
+	cell := cdd.NewDtUnit(mlt, tcell.StyleDefault)
+
+	err = cell.Draw(table, 0, 0)
 	if err != nil {
 		t.Fatalf("Expected no error, but got %s", err.Error())
 	}
@@ -33,7 +35,7 @@ func TestWriteLines_ShortLines(t *testing.T) {
 }
 
 func TestWriteLines_LongLine(t *testing.T) {
-	mlt := NewMultiLineText(tcell.StyleDefault)
+	mlt := NewMultiLineText()
 
 	err := mlt.AppendSentence(
 		"This is really a very long line that should be truncated and end with an ellipsis",
@@ -47,7 +49,9 @@ func TestWriteLines_LongLine(t *testing.T) {
 		t.Fatalf("Expected no error, but got %s", err.Error())
 	}
 
-	err = mlt.Draw(table, 0, 0)
+	cell := cdd.NewDtUnit(mlt, tcell.StyleDefault)
+
+	err = cell.Draw(table, 0, 0)
 	if err != nil {
 		t.Fatalf("Expected no error, but got %s", err.Error())
 	}

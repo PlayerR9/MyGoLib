@@ -268,6 +268,30 @@ func AdvancedFieldsSplitter(sentence string, indentLevel int) ([][]string, error
 	return lines, nil
 }
 
+// Fields splits a string into fields.
+//
+// Returns:
+//   - []*String: The fields of the string.
+func Fields(str string) []string {
+	fields := make([]string, 0)
+	var builder strings.Builder
+
+	for _, r := range str {
+		if r == ' ' {
+			fields = append(fields, builder.String())
+			builder.Reset()
+		} else {
+			builder.WriteRune(r)
+		}
+	}
+
+	if builder.Len() > 0 {
+		fields = append(fields, builder.String())
+	}
+
+	return fields
+}
+
 // GenerateID generates a random ID of the specified size (in bytes).
 //
 // Parameters:

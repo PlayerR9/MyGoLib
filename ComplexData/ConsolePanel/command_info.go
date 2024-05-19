@@ -6,7 +6,6 @@ import (
 	"errors"
 
 	fs "github.com/PlayerR9/MyGoLib/Formatting/FString"
-	"github.com/gdamore/tcell"
 
 	cdd "github.com/PlayerR9/MyGoLib/CustomData/Document"
 
@@ -24,7 +23,8 @@ import (
 //
 // Returns:
 //   - error: An error if the command fails.
-type CommandCallbackFunc func(args map[string]any) error
+//   - any: The result of the command. (if any)
+type CommandCallbackFunc func(args map[string]any) (any, error)
 
 // NoCommandCallback is a default callback function for a console command
 // when no callback is provided.
@@ -35,8 +35,9 @@ type CommandCallbackFunc func(args map[string]any) error
 //
 // Returns:
 //   - error: nil
-func NoCommandCallback(args map[string]any) error {
-	return nil
+//   - any: nil
+func NoCommandCallback(args map[string]any) (any, error) {
+	return nil, nil
 }
 
 // CommandInfo represents a console command.
@@ -76,27 +77,27 @@ func (cci *CommandInfo) FString(trav *fs.Traversor) {
 
 	// Description:
 	if cci.description == nil {
-		trav.AddLines(tcell.StyleDefault, "Description: [No description provided]")
+		trav.AddLines("Description: [No description provided]")
 	} else {
-		trav.AddLines(tcell.StyleDefault, "Description:")
+		trav.AddLines("Description:")
 
 		cci.description.FString(trav.IncreaseIndent(1))
 	}
 
 	// Empty line
-	trav.EmptyLine(tcell.StyleDefault)
+	trav.EmptyLine()
 
 	// Flags:
 	if cci.flags.Size() == 0 {
-		trav.AddLines(tcell.StyleDefault, "Flags: None")
+		trav.AddLines("Flags: None")
 
 		trav.Apply()
 	} else {
-		trav.AddLines(tcell.StyleDefault, "Flags:")
+		trav.AddLines("Flags:")
 
 		for _, p := range cci.flags.GetEntries() {
-			trav.AppendStrings(tcell.StyleDefault, "", indent, "- ", p.First, ":")
-			trav.AddLines(tcell.StyleDefault)
+			trav.AppendStrings("", indent, "- ", p.First, ":")
+			trav.AddLines()
 
 			trav.Apply()
 

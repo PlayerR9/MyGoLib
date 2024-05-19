@@ -43,7 +43,8 @@ func NewParsedCommand(args map[string]any, callbackFunc CommandCallbackFunc) (*P
 // Execute executes the callback function for the parsed command.
 //
 // Returns:
+//   - any: The result of the callback function.
 //   - error: An error if the callback function fails.
-func (pc *ParsedCommand) Execute() error {
+func (pc *ParsedCommand) Execute() (any, error) {
 	return pc.callback(pc.args)
 }
