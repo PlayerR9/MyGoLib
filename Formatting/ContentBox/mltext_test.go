@@ -15,10 +15,7 @@ func TestWriteLines_ShortLines(t *testing.T) {
 		t.Fatalf("Expected no error, but got %s", err.Error())
 	}
 
-	table, err := cdd.NewDrawTable(18, 2)
-	if err != nil {
-		t.Fatalf("Expected no error, but got %s", err.Error())
-	}
+	table := cdd.NewDrawTable(18, 2)
 
 	cell := cdd.NewDtUnit(mlt, tcell.StyleDefault)
 
@@ -44,10 +41,7 @@ func TestWriteLines_LongLine(t *testing.T) {
 		t.Fatalf("Expected no error, but got %s", err.Error())
 	}
 
-	table, err := cdd.NewDrawTable(18, 1)
-	if err != nil {
-		t.Fatalf("Expected no error, but got %s", err.Error())
-	}
+	table := cdd.NewDrawTable(18, 1)
 
 	cell := cdd.NewDtUnit(mlt, tcell.StyleDefault)
 

@@ -75,8 +75,8 @@ func SplitIntoGroups[T any](slice []T, n int) ([][]T, error) {
 		return [][]T{slice}, nil
 	}
 
-	if err := ers.NewErrGT(0).ErrorIf(n); err != nil {
-		return nil, ers.NewErrInvalidParameter("n", err)
+	if n <= 0 {
+		return nil, ers.NewErrInvalidParameter("n", ers.NewErrGT(0))
 	}
 
 	groups := make([][]T, n)

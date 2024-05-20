@@ -15,8 +15,8 @@ import (
 //   - float64: The average of the elements.
 //   - error: An error of type *ErrInvalidParameter if the slice is empty.
 func AVG(elems []float64) (float64, error) {
-	if err := ers.NewErrEmpty(elems).ErrorIf(); err != nil {
-		return 0, ers.NewErrInvalidParameter("elems", err)
+	if len(elems) == 0 {
+		return 0, ers.NewErrInvalidParameter("elems", ers.NewErrEmpty(elems))
 	}
 
 	L := float64(len(elems))
@@ -39,8 +39,8 @@ func AVG(elems []float64) (float64, error) {
 //   - float64: The SQM of the elements.
 //   - error: An error of type *ErrInvalidParameter if the slice is empty.
 func SQM(elems []float64) (float64, error) {
-	if err := ers.NewErrEmpty(elems).ErrorIf(); err != nil {
-		return 0, ers.NewErrInvalidParameter("elems", err)
+	if len(elems) == 0 {
+		return 0, ers.NewErrInvalidParameter("elems", ers.NewErrEmpty(elems))
 	}
 
 	L := float64(len(elems))

@@ -160,3 +160,20 @@ func ApplyFunc[E, R any](elems []E, f uc.EvalOneFunc[E, R]) []HResult[R] {
 
 	return results
 }
+
+// ExtractResults extracts the results from the HResults.
+//
+// Parameters:
+//   - batch: The slice of HResults.
+//
+// Returns:
+//   - []T: The extracted results.
+func ExtractResults[T any](batch []HResult[T]) []T {
+	results := make([]T, len(batch))
+
+	for i, res := range batch {
+		results[i] = res.First
+	}
+
+	return results
+}

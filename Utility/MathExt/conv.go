@@ -41,8 +41,8 @@ func IsValidNumber(n []int, base int) bool {
 //   - []int: The number in the given base.
 //   - error: An error if the base is invalid.
 func DecToBase(n, base int) ([]int, error) {
-	if err := ers.NewErrGT(0).ErrorIf(base); err != nil {
-		return nil, ers.NewErrInvalidParameter("base", err)
+	if base <= 0 {
+		return nil, ers.NewErrInvalidParameter("base", ers.NewErrGT(0))
 	}
 
 	if n < 0 {
@@ -78,8 +78,8 @@ func DecToBase(n, base int) ([]int, error) {
 //   - []int: The sum of the two numbers.
 //   - error: An error if the base is invalid.
 func Add(n1, n2 []int, base int) ([]int, error) {
-	if err := ers.NewErrGT(0).ErrorIf(base); err != nil {
-		return nil, ers.NewErrInvalidParameter("base", err)
+	if base <= 0 {
+		return nil, ers.NewErrInvalidParameter("base", ers.NewErrGT(0))
 	}
 
 	if base == 1 {
@@ -133,8 +133,8 @@ func Add(n1, n2 []int, base int) ([]int, error) {
 //   - []int: The result of the subtraction.
 //   - error: An error if the base is invalid or the subtraction resulted in a negative number.
 func Subtract(n1, n2 []int, base int) ([]int, error) {
-	if err := ers.NewErrGT(0).ErrorIf(base); err != nil {
-		return nil, ers.NewErrInvalidParameter("base", err)
+	if base <= 0 {
+		return nil, ers.NewErrInvalidParameter("base", ers.NewErrGT(0))
 	}
 
 	if base == 1 {
@@ -197,8 +197,8 @@ func Subtract(n1, n2 []int, base int) ([]int, error) {
 //   - int: The decimal number.
 //   - error: An error if the base is invalid or the number is invalid for the given base.
 func BaseToDec(n []int, base int) (int, error) {
-	if err := ers.NewErrGT(0).ErrorIf(base); err != nil {
-		return 0, ers.NewErrInvalidParameter("base", err)
+	if base <= 0 {
+		return 0, ers.NewErrInvalidParameter("base", ers.NewErrGT(0))
 	}
 
 	if base == 1 {
@@ -208,8 +208,8 @@ func BaseToDec(n []int, base int) (int, error) {
 	result := 0
 
 	for i, digit := range n {
-		if err := ers.NewErrOutOfBounds(digit, 0, base).ErrorIf(); err != nil {
-			return 0, ers.NewErrAt(i, err)
+		if digit < 0 || digit >= base {
+			return 0, ers.NewErrOutOfBounds(digit, 0, base)
 		}
 
 		result += digit * int(math.Pow(float64(base), float64(i)))

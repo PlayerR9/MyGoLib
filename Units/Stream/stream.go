@@ -92,12 +92,10 @@ func (s *Stream[T]) IsEmpty() bool {
 // Behaviors:
 //   - Use qty -1 to get all items from 'from' to the end of the stream.
 func (s *Stream[T]) Get(from int, qty int) ([]T, error) {
-	if err := ers.NewErrGTE(0).ErrorIf(from); err != nil {
-		return nil, ers.NewErrInvalidParameter("from", err)
-	}
-
-	if err := ers.NewErrGTE(-1).ErrorIf(qty); err != nil {
-		return nil, ers.NewErrInvalidParameter("qty", err)
+	if from < 0 {
+		return nil, ers.NewErrInvalidParameter("from", ers.NewErrGTE(0))
+	} else if qty < -1 {
+		return nil, ers.NewErrInvalidParameter("qty", ers.NewErrGTE(-1))
 	}
 
 	if qty == 0 {

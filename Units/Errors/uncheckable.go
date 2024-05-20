@@ -46,23 +46,6 @@ func NewErrGT(value int) *ErrGT {
 	return &ErrGT{Value: value}
 }
 
-// ErrorIf returns the error if the target value is less than or equal to the
-// specified value.
-//
-// Parameters:
-//   - target: The value to check.
-//
-// Returns:
-//   - error: The error if the target value is less than or equal to the specified
-//     value, nil otherwise.
-func (e *ErrGT) ErrorIf(target int) error {
-	if target > e.Value {
-		return nil
-	} else {
-		return e
-	}
-}
-
 // ErrLT represents an error when a value is greater than or equal to a specified value.
 type ErrLT struct {
 	// Value is the value that caused the error.
@@ -98,23 +81,6 @@ func (e *ErrLT) Error() string {
 //   - *ErrLT: A pointer to the newly created ErrLT.
 func NewErrLT(value int) *ErrLT {
 	return &ErrLT{Value: value}
-}
-
-// ErrorIf returns the error if the target value is greater than or equal to the
-// specified value.
-//
-// Parameters:
-//   - target: The value to check.
-//
-// Returns:
-//   - error: The error if the target value is greater than or equal to the specified
-//     value, nil otherwise.
-func (e *ErrLT) ErrorIf(target int) error {
-	if target < e.Value {
-		return nil
-	} else {
-		return e
-	}
 }
 
 // ErrGTE represents an error when a value is less than a specified value.
@@ -154,22 +120,6 @@ func NewErrGTE(value int) *ErrGTE {
 	return &ErrGTE{Value: value}
 }
 
-// ErrorIf returns the error if the target value is less than the specified value.
-//
-// Parameters:
-//   - target: The value to check.
-//
-// Returns:
-//   - error: The error if the target value is less than the specified value, nil
-//     otherwise.
-func (e *ErrGTE) ErrorIf(target int) error {
-	if target >= e.Value {
-		return nil
-	} else {
-		return e
-	}
-}
-
 // ErrLTE represents an error when a value is greater than a specified value.
 type ErrLTE struct {
 	// Value is the value that caused the error.
@@ -205,22 +155,6 @@ func (e *ErrLTE) Error() string {
 //   - *ErrLTE: A pointer to the newly created ErrLTE.
 func NewErrLTE(value int) *ErrLTE {
 	return &ErrLTE{Value: value}
-}
-
-// ErrorIf returns the error if the target value is greater than the specified value.
-//
-// Parameters:
-//   - target: The value to check.
-//
-// Returns:
-//   - error: The error if the target value is greater than the specified value, nil
-//     otherwise.
-func (e *ErrLTE) ErrorIf(target int) error {
-	if target <= e.Value {
-		return nil
-	} else {
-		return e
-	}
 }
 
 // ErrInvalidValues represents an error when a value is in a list of invalid values.
@@ -295,25 +229,6 @@ func NewErrInvalidValues[T comparable](values []T) *ErrInvalidValues[T] {
 	return &ErrInvalidValues[T]{
 		Values: values,
 	}
-}
-
-// ErrorIf returns the error if the target value is in the list of invalid values.
-//
-// Parameters:
-//   - equals: A function that returns true if the target value is equal to the
-//     value in the list of invalid values.
-//
-// Returns:
-//   - error: The error if the target value is in the list of invalid values, nil
-//     otherwise.
-func (e *ErrInvalidValues[T]) ErrorIf(target T) error {
-	for _, v := range e.Values {
-		if v == target {
-			return e
-		}
-	}
-
-	return nil
 }
 
 // NewErrUnexpectedValue is a function that creates a new ErrInvalidValues error.
@@ -415,19 +330,4 @@ func (e *ErrNilValue) Error() string {
 //   - *ErrNilValue: The new ErrNilValue error.
 func NewErrNilValue() *ErrNilValue {
 	return &ErrNilValue{}
-}
-
-// ErrorIf returns the error if the target value is nil.
-//
-// Parameters:
-//   - target: The value to check.
-//
-// Returns:
-//   - error: The error if the target value is nil, nil otherwise.
-func (e *ErrNilValue) ErrorIf(target any) error {
-	if target == nil {
-		return e
-	} else {
-		return nil
-	}
 }

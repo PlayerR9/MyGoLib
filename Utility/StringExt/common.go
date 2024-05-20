@@ -9,7 +9,6 @@ import (
 	"encoding/hex"
 	"slices"
 
-	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
 	mext "github.com/PlayerR9/MyGoLib/Utility/MathExt"
 	slext "github.com/PlayerR9/MyGoLib/Utility/SliceExt"
 
@@ -120,13 +119,11 @@ func FindContentIndexes(openingToken, closingToken string, contentTokens []strin
 	result[0] = -1
 	result[1] = -1
 
-	if reason := ue.NewErrEmpty(openingToken).ErrorIf(); reason != nil {
-		err = ue.NewErrInvalidParameter("openingToken", reason)
+	if openingToken == "" {
+		err = ue.NewErrInvalidParameter("openingToken", ue.NewErrEmpty(openingToken))
 		return
-	}
-
-	if reason := ue.NewErrEmpty(closingToken).ErrorIf(); reason != nil {
-		err = ue.NewErrInvalidParameter("closingToken", reason)
+	} else if closingToken == "" {
+		err = ue.NewErrInvalidParameter("closingToken", ue.NewErrEmpty(closingToken))
 		return
 	}
 
@@ -314,8 +311,8 @@ func Fields(str string) []string {
 //     specified size.
 //   - The ID is returned as a hexadecimal string.
 func GenerateID(size int) (string, error) {
-	if err := ue.NewErrGT(0).ErrorIf(size); err != nil {
-		return "", ue.NewErrInvalidParameter("size", err)
+	if size < 1 {
+		return "", ue.NewErrInvalidParameter("size", ue.NewErrGT(0))
 	}
 
 	b := make([]byte, size) // 128 bits
@@ -344,8 +341,8 @@ func GenerateID(size int) (string, error) {
 //   - If the width is greater than the length of the string, spaces are added
 //     to the end of the string until the width is reached.
 func FitString(s string, width int) (string, error) {
-	if err := ue.NewErrGTE(0).ErrorIf(width); err != nil {
-		return "", ue.NewErrInvalidParameter("width", err)
+	if width < 0 {
+		return "", ue.NewErrInvalidParameter("width", ue.NewErrGTE(0))
 	}
 
 	len := len([]rune(s))
@@ -369,7 +366,7 @@ func FitString(s string, width int) (string, error) {
 // of lines needed to fit a given text within a specified width.
 //
 // Errors:
-//   - *ers.ErrInvalidParameter: If the width is less than or equal to 0.
+//   - *ue.ErrInvalidParameter: If the width is less than or equal to 0.
 //   - *ErrLinesGreaterThanWords: If the calculated number of lines is greater
 //     than the number of words in the text.
 //
@@ -390,9 +387,9 @@ func FitString(s string, width int) (string, error) {
 // It also returns the calculated number of lines when it errors out
 func CalculateNumberOfLines(text []string, width int) (int, error) {
 	if width <= 0 {
-		return 0, ers.NewErrInvalidParameter(
+		return 0, ue.NewErrInvalidParameter(
 			"width",
-			ers.NewErrGT(0),
+			ue.NewErrGT(0),
 		)
 	} else if len(text) == 0 {
 		return 0, nil
@@ -418,7 +415,7 @@ func CalculateNumberOfLines(text []string, width int) (int, error) {
 	//
 	// 	- $Tl - x$: For every split, the number of characters occupied by the
 	//    text is reduced as the space between the splitted fields is removed.
-	//    For example: "Hello World" has 11 characters. With one split, it becomes
+	//    For example: "Hello World" has 11 charactue. With one split, it becomes
 	//    "Hello" and "World", which has 5 and 5 characters respectively. The
 	//    total number of characters is 10, which is equal to 11 - 1.
 	//		- $x + 1$: The number of lines is equal to the number of splits plus one as
@@ -480,7 +477,7 @@ func CalculateNumberOfLines(text []string, width int) (int, error) {
 // equal width.
 //
 // Errors:
-//   - *ers.ErrInvalidParameter: If the input text is empty or the width is less than
+//   - *ue.ErrInvalidParameter: If the input text is empty or the width is less than
 //     or equal to 0.
 //   - *ErrLinesGreaterThanWords: If the number of lines needed to fit the text
 //     within the width is greater than the number of words in the text.
@@ -502,8 +499,8 @@ func CalculateNumberOfLines(text []string, width int) (int, error) {
 // If maxHeight is not provided, the function calculates the number of lines needed to fit
 // the text within the width using the CalculateNumberOfLines function.
 func SplitInEqualSizedLines(text []string, width, height int) (*TextSplit, error) {
-	if err := ers.NewErrEmpty(text).ErrorIf(); err != nil {
-		return nil, ers.NewErrInvalidParameter("text", err)
+	if len(text) == 0 {
+		return nil, ue.NewErrInvalidParameter("text", ue.NewErrEmpty(text))
 	}
 
 	if height == -1 {

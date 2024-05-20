@@ -21,15 +21,13 @@ type DrawTable struct {
 //
 // Returns:
 //   - *DrawTable: The new drawTable.
-//   - error: An error of type *ers.ErrInvalidParameter if the width or height
-//     are less than 0.
-func NewDrawTable(width, height int) (*DrawTable, error) {
-	table, err := cdt.NewTable[*dtCell](width, height)
-	if err != nil {
-		return nil, err
-	}
+//
+// Behaviors:
+//   - If the width or height is negative, the absolute value is used.
+func NewDrawTable(width, height int) *DrawTable {
+	table := cdt.NewTable[*dtCell](width, height)
 
-	return &DrawTable{table}, nil
+	return &DrawTable{table}
 }
 
 // GetLines returns each line of the drawTable as a string.

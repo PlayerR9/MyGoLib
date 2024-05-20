@@ -14,18 +14,6 @@ type ErrPanic struct {
 	Value any
 }
 
-// ErrorIf returns the error if the value is not nil.
-//
-// Returns:
-//   - error: The error if the value is not nil, nil otherwise.
-func (e *ErrPanic) ErrorIf() error {
-	if e.Value != nil {
-		return e
-	}
-
-	return nil
-}
-
 // Error is a method of the error interface.
 //
 // Returns:
@@ -57,22 +45,6 @@ type ErrOutOfBounds struct {
 
 	// Value is the value that caused the error.
 	Value int
-}
-
-// ErrorIf returns the error if the value is out of the specified range.
-//
-// Returns:
-//   - error: The error if the value is out of the specified range, nil otherwise.
-func (e *ErrOutOfBounds) ErrorIf() error {
-	if e.Value < e.LowerBound || (e.Value == e.LowerBound && !e.LowerInclusive) {
-		return e
-	}
-
-	if e.Value > e.UpperBound || (!e.UpperInclusive && e.Value == e.UpperBound) {
-		return e
-	}
-
-	return nil
 }
 
 // Error is a method of the error interface.
@@ -169,30 +141,6 @@ type ErrUnexpected struct {
 	Actual fmt.Stringer
 }
 
-// ErrorIf returns the error if the actual value is not one of the expected
-// values.
-//
-// Returns:
-//   - error: The error if the actual value is not one of the expected values,
-//     nil otherwise.
-func (e *ErrUnexpected) ErrorIf() error {
-	if len(e.Expected) == 0 {
-		return nil
-	} else if e.Actual == nil {
-		return e
-	}
-
-	actual := e.Actual.String()
-
-	for _, expected := range e.Expected {
-		if actual == expected {
-			return nil
-		}
-	}
-
-	return e
-}
-
 // Error is a method of the error interface.
 //
 // Returns:
@@ -264,25 +212,10 @@ type ErrEmpty[T any] struct {
 func (e *ErrEmpty[T]) Error() string {
 	var builder strings.Builder
 
-	builder.WriteString(com.StringOf(e.Value))
+	builder.WriteString(com.TypeOf(e.Value))
 	builder.WriteString(" must not be empty")
 
 	return builder.String()
-}
-
-// ErrorIf returns the error if the target value is empty.
-//
-// Parameters:
-//   - empty: A function that returns true if the target value is empty.
-//
-// Returns:
-//   - error: The error if the target value is empty, nil otherwise.
-func (e *ErrEmpty[T]) ErrorIf() error {
-	if com.IsEmpty(e) {
-		return e
-	} else {
-		return nil
-	}
 }
 
 // NewErrEmpty creates a new ErrEmpty error.
@@ -314,18 +247,6 @@ func (e *ErrNotComparable[T]) Error() string {
 	builder.WriteString(" does not support comparison")
 
 	return builder.String()
-}
-
-// ErrorIf returns the error if the target value is not comparable.
-//
-// Returns:
-//   - error: The error if the target value is not comparable, nil otherwise.
-func (e *ErrNotComparable[T]) ErrorIf() error {
-	if com.IsComparable(e.Value) {
-		return nil
-	} else {
-		return e
-	}
 }
 
 // NewErrNotComparable creates a new ErrNotComparable error.

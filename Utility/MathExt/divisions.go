@@ -21,8 +21,8 @@ import (
 //   - -1 and 1 are represented as [1: 1].
 //   - The resulting map does not contain any prime factor with a value of 1.
 func PrimeFactorization(inputNumber int) (map[int]int, error) {
-	if err := ers.NewErrUnexpectedValue(0).ErrorIf(inputNumber); err != nil {
-		return nil, ers.NewErrInvalidParameter("inputNumber", err)
+	if inputNumber == 0 {
+		return nil, ers.NewErrInvalidParameter("inputNumber", ers.NewErrUnexpectedValue(0))
 	}
 
 	if inputNumber == 1 || inputNumber == -1 {

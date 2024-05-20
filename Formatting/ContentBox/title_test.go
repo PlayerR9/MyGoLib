@@ -13,16 +13,13 @@ func TestTitle(t *testing.T) {
 		ExpectedLine string = " *** Test Title *** "
 	)
 
-	table, err := cdd.NewDrawTable(20, 1)
-	if err != nil {
-		t.Fatalf("Expected no error, but got %s", err.Error())
-	}
+	table := cdd.NewDrawTable(20, 1)
 
 	title := NewTitle(Title)
 
 	cell := cdd.NewDtUnit(title, tcell.StyleDefault)
 
-	err = cell.Draw(table, 0, 0)
+	err := cell.Draw(table, 0, 0)
 	if err != nil {
 		t.Fatalf("Expected no error, but got %s", err.Error())
 	}
@@ -79,14 +76,11 @@ func TestMiddleSplit(t *testing.T) {
 	for i, test := range tests {
 		title := NewTitle(test.title)
 
-		table, err := cdd.NewDrawTable(test.width, test.height)
-		if err != nil {
-			t.Fatalf("At test %d, expected no error, but got %s", i, err.Error())
-		}
+		table := cdd.NewDrawTable(test.width, test.height)
 
 		cell := cdd.NewDtUnit(title, tcell.StyleDefault)
 
-		err = cell.Draw(table, 0, 0)
+		err := cell.Draw(table, 0, 0)
 		if err != nil {
 			t.Fatalf("At test %d, expected no error, but got %s", i, err.Error())
 		}
@@ -113,14 +107,11 @@ func TestTitleTruncation(t *testing.T) {
 
 	title := NewTitle(Title)
 
-	table, err := cdd.NewDrawTable(13, 1)
-	if err != nil {
-		t.Fatalf("Expected no error, but got %s", err.Error())
-	}
+	table := cdd.NewDrawTable(13, 1)
 
 	cell := cdd.NewDtUnit(title, tcell.StyleDefault)
 
-	err = cell.Draw(table, 0, 0)
+	err := cell.Draw(table, 0, 0)
 	if err != nil {
 		t.Fatalf("Expected no error, but got %s", err.Error())
 	}
