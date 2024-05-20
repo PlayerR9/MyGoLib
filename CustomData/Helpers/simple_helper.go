@@ -5,62 +5,60 @@
 // implemented.
 package Helpers
 
-import (
-	uc "github.com/PlayerR9/MyGoLib/Units/Common"
-	cdp "github.com/PlayerR9/MyGoLib/Units/Pair"
-	slext "github.com/PlayerR9/MyGoLib/Utility/SliceExt"
-)
+// SimpleHelper is a type that represents the result of a function evaluation
+// that can either be successful or a failure.
+type SimpleHelper[T any] struct {
+	// result is the result of the function evaluation.
+	result T
 
-// HResult is a generic type that represents the result of a function
-// evaluation.
-type HResult[T any] cdp.Pair[T, error]
+	// reason is the error that occurred during the function evaluation.
+	reason error
+}
 
-// NewHResult creates a new HResult with the given result and reason.
+// NewSimpleHelper creates a new SimpleHelper with the given result and reason.
 //
 // Parameters:
 //   - result: The result of the function evaluation.
 //   - reason: The error that occurred during the function evaluation.
 //
 // Returns:
-//   - HResult: The new HResult.
-func NewHResult[T any](result T, reason error) HResult[T] {
-	return HResult[T]{
-		First:  result,
-		Second: reason,
+//   - SimpleHelper: The new SimpleHelper.
+func NewSimpleHelper[T any](result T, reason error) *SimpleHelper[T] {
+	return &SimpleHelper[T]{
+		result: result,
+		reason: reason,
 	}
 }
 
-// IsSuccess checks if the HResult is successful.
+/*
+// IsSuccess checks if the SimpleHelper is successful.
 //
 // Returns:
-//   - bool: True if the HResult is successful, false otherwise.
-func (hr HResult[T]) IsSuccess() bool {
-	return hr.Second == nil
+//   - bool: True if the SimpleHelper is successful, false otherwise.
+func (h *SimpleHelper[T]) IsSuccess() bool {
+	return h.Reason == nil
 }
 
-// DoIfSuccess executes a function if the HResult is successful.
+// DoIfSuccess executes a function if the SimpleHelper is successful.
 //
 // Parameters:
 //   - f: The function to execute.
-func (hr HResult[T]) DoIfSuccess(f uc.DoFunc[T]) {
-	if hr.Second != nil {
-		return
+func (h *SimpleHelper[T]) DoIfSuccess(f uc.DoFunc[T]) {
+	if h.Reason == nil {
+		f(h.Result)
 	}
-
-	f(hr.First)
 }
 
-// DoIfFailure executes a function if the HResult is a failure.
+// DoIfSuccess executes a function if the SimpleHelper is successful.
 //
 // Parameters:
 //   - f: The function to execute.
-func (hr HResult[T]) DoIfFailure(f uc.DualDoFunc[T, error]) {
-	if hr.Second == nil {
-		return
+func (h *SimpleHelper[T]) DoIfFailure(f uc.DoFunc[T]) {
+	if h.Reason != nil {
+		f(h.Result)
 	}
-
-	f(hr.First, hr.Second)
 }
+
 
 // EvaluateFunc evaluates a function and returns the result as an HResult.
 //
@@ -70,12 +68,12 @@ func (hr HResult[T]) DoIfFailure(f uc.DualDoFunc[T, error]) {
 //
 // Returns:
 //   - HResult: The result of the function evaluation.
-func EvaluateFunc[E, R any](elem E, f uc.EvalOneFunc[E, R]) HResult[R] {
+func EvaluateFunc[E, R any](elem E, f uc.EvalOneFunc[E, R]) SimpleHelper[R] {
 	res, err := f(elem)
 
-	return HResult[R]{
-		First:  res,
-		Second: err,
+	return SimpleHelper[R]{
+		Result: res,
+		Reason: err,
 	}
 }
 
@@ -88,22 +86,19 @@ func EvaluateFunc[E, R any](elem E, f uc.EvalOneFunc[E, R]) HResult[R] {
 //
 // Returns:
 //   - []HResult: The results of the function evaluation.
-func EvaluateMany[E, R any](elem E, f uc.EvalManyFunc[E, R]) []HResult[R] {
+func EvaluateMany[E, R any](elem E, f uc.EvalManyFunc[E, R]) []SimpleHelper[R] {
 	res, err := f(elem)
 
 	if len(res) == 0 {
-		return []HResult[R]{
-			{
-				First:  *new(R),
-				Second: err,
-			},
-		}
+		h := NewHResult(*new(R), err, 0.0) // TODO: Implement weight calculation
+
+		return []SimpleHelper[R]{h}
 	}
 
-	results := make([]HResult[R], len(res))
+	results := make([]SimpleHelper[R], len(res))
 
 	for i, r := range res {
-		results[i] = NewHResult(r, err)
+		results[i] = NewHResult(r, err, 0.0) // TODO: Implement weight calculation
 	}
 
 	return results
@@ -116,7 +111,7 @@ func EvaluateMany[E, R any](elem E, f uc.EvalManyFunc[E, R]) []HResult[R] {
 //
 // Returns:
 //   - []HResult: The filtered slice.
-func FilterOut[T any](batch []HResult[T]) []HResult[T] {
+func FilterOut[T any](batch []SimpleHelper[T]) []SimpleHelper[T] {
 	batch = slext.SliceFilter(batch, FilterNilHResult)
 
 	return batch
@@ -133,7 +128,7 @@ func FilterOut[T any](batch []HResult[T]) []HResult[T] {
 // Returns:
 //   - []HResult: The filtered slice.
 //   - bool: True if the slice was filtered, false otherwise.
-func FilterSuccessOrFail[T any](batch []HResult[T]) ([]HResult[T], bool) {
+func FilterSuccessOrFail[T any](batch []SimpleHelper[T]) ([]SimpleHelper[T], bool) {
 	return slext.SFSeparateEarly(batch, FilterNilHResult)
 }
 
@@ -146,16 +141,13 @@ func FilterSuccessOrFail[T any](batch []HResult[T]) ([]HResult[T], bool) {
 //
 // Returns:
 //   - []HResult: The results of the function application.
-func ApplyFunc[E, R any](elems []E, f uc.EvalOneFunc[E, R]) []HResult[R] {
-	results := make([]HResult[R], len(elems))
+func ApplyFunc[E, R any](elems []E, f uc.EvalOneFunc[E, R]) []SimpleHelper[R] {
+	results := make([]SimpleHelper[R], len(elems))
 
 	for i, elem := range elems {
 		res, err := f(elem)
 
-		results[i] = HResult[R]{
-			First:  res,
-			Second: err,
-		}
+		results[i] = NewHResult(res, err, 0.0) // TODO: Implement weight calculation
 	}
 
 	return results
@@ -168,12 +160,13 @@ func ApplyFunc[E, R any](elems []E, f uc.EvalOneFunc[E, R]) []HResult[R] {
 //
 // Returns:
 //   - []T: The extracted results.
-func ExtractResults[T any](batch []HResult[T]) []T {
+func ExtractResults[T any](batch []SimpleHelper[T]) []T {
 	results := make([]T, len(batch))
 
 	for i, res := range batch {
-		results[i] = res.First
+		results[i] = res.Result
 	}
 
 	return results
 }
+*/

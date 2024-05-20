@@ -1,9 +1,5 @@
 package SliceExt
 
-import (
-	cdp "github.com/PlayerR9/MyGoLib/Units/Pair"
-)
-
 // WeightFunc is a type that defines a function that assigns a weight to an element.
 //
 // Parameters:
@@ -12,23 +8,60 @@ import (
 // Returns:
 //   - float64: The weight of the element.
 //   - bool: True if the weight is valid, otherwise false.
-type WeightFunc[T any] func(elem T) (float64, bool)
+type WeightFunc[O any] func(elem O) (float64, bool)
 
-// WeightResult is a type that represents an element with its corresponding weight.
-type WeightResult[T any] cdp.Pair[T, float64]
+// Weighter is an interface that represents a type that can assign weights to elements.
+type Weighter[O any] interface {
+	// GetData returns the data of the element.
+	//
+	// Returns:
+	//   - O: The data of the element.
+	GetData() O
 
-// NewWeightResult creates a new WeightResult with the given weight and element.
+	// GetWeight returns the weight of the element.
+	//
+	// Returns:
+	//   - float64: The weight of the element.
+	GetWeight() float64
+}
+
+// WeightedElement is a type that represents an element with a weight.
+type WeightedElement[O any] struct {
+	// Elem is the element.
+	elem O
+
+	// Weight is the weight of the element.
+	weight float64
+}
+
+// GetData returns the data of the element.
+//
+// Returns:
+//   - O: The data of the element.
+func (we *WeightedElement[O]) GetData() O {
+	return we.elem
+}
+
+// GetWeight returns the weight of the element.
+//
+// Returns:
+//   - float64: The weight of the element.
+func (we *WeightedElement[O]) GetWeight() float64 {
+	return we.weight
+}
+
+// NewWeightedElement creates a new WeightedElement with the given element and weight.
 //
 // Parameters:
 //   - elem: The element.
 //   - weight: The weight of the element.
 //
 // Returns:
-//   - WeightResult[T]: The new WeightResult.
-func NewWeightResult[T any](elem T, weight float64) WeightResult[T] {
-	return WeightResult[T]{
-		Second: weight,
-		First:  elem,
+//   - *WeightedElement: The new WeightedElement.
+func NewWeightedElement[O any](elem O, weight float64) *WeightedElement[O] {
+	return &WeightedElement[O]{
+		elem:   elem,
+		weight: weight,
 	}
 }
 
@@ -40,17 +73,17 @@ func NewWeightResult[T any](elem T, weight float64) WeightResult[T] {
 //   - f: the weight function.
 //
 // Returns:
-//   - []WeightResult[T]: slice of elements with their corresponding weights.
+//   - []WeightResult[O]: slice of elements with their corresponding weights.
 //
 // Behaviors:
 //   - If S is empty or f is nil, the function returns nil.
 //   - If the weight function returns false, the element is not included in the result.
-func ApplyWeightFunc[T any](S []T, f WeightFunc[T]) []WeightResult[T] {
+func ApplyWeightFunc[O any](S []O, f WeightFunc[O]) []*WeightedElement[O] {
 	if len(S) == 0 || f == nil {
 		return nil
 	}
 
-	trimmed := make([]WeightResult[T], 0)
+	trimmed := make([]*WeightedElement[O], 0)
 
 	for _, e := range S {
 		weight, ok := f(e)
@@ -58,10 +91,7 @@ func ApplyWeightFunc[T any](S []T, f WeightFunc[T]) []WeightResult[T] {
 			continue
 		}
 
-		trimmed = append(trimmed, WeightResult[T]{
-			First:  e,
-			Second: weight,
-		})
+		trimmed = append(trimmed, NewWeightedElement(e, weight))
 	}
 
 	return trimmed
@@ -80,26 +110,28 @@ func ApplyWeightFunc[T any](S []T, f WeightFunc[T]) []WeightResult[T] {
 //   - If S is empty, the function returns a nil slice.
 //   - If multiple elements have the same maximum weight, they are all returned.
 //   - If S contains only one element, that element is returned.
-func FilterByPositiveWeight[T any](S []WeightResult[T]) []T {
+func FilterByPositiveWeight[T Weighter[O], O any](S []T) []O {
 	if len(S) == 0 {
 		return nil
 	}
 
-	maxWeight := S[0].Second
+	maxWeight := S[0].GetWeight()
 	indices := []int{0}
 
 	for i, e := range S[1:] {
-		if e.Second > maxWeight {
-			maxWeight = e.Second
+		currentWeight := e.GetWeight()
+
+		if currentWeight > maxWeight {
+			maxWeight = currentWeight
 			indices = []int{i + 1}
-		} else if e.Second == maxWeight {
+		} else if currentWeight == maxWeight {
 			indices = append(indices, i+1)
 		}
 	}
 
-	solution := make([]T, len(indices))
+	solution := make([]O, len(indices))
 	for i, index := range indices {
-		solution[i] = S[index].First
+		solution[i] = S[index].GetData()
 	}
 
 	return solution
@@ -118,26 +150,28 @@ func FilterByPositiveWeight[T any](S []WeightResult[T]) []T {
 //   - If S is empty, the function returns a nil slice.
 //   - If multiple elements have the same minimum weight, they are all returned.
 //   - If S contains only one element, that element is returned.
-func FilterByNegativeWeight[T any](S []WeightResult[T]) []T {
+func FilterByNegativeWeight[T Weighter[O], O any](S []T) []O {
 	if len(S) == 0 {
 		return nil
 	}
 
-	minWeight := S[0].Second
+	minWeight := S[0].GetWeight()
 	indices := []int{0}
 
 	for i, e := range S[1:] {
-		if e.Second < minWeight {
-			minWeight = e.Second
+		currentWeight := e.GetWeight()
+
+		if currentWeight < minWeight {
+			minWeight = currentWeight
 			indices = []int{i + 1}
-		} else if e.Second == minWeight {
+		} else if currentWeight == minWeight {
 			indices = append(indices, i+1)
 		}
 	}
 
-	solution := make([]T, len(indices))
+	solution := make([]O, len(indices))
 	for i, index := range indices {
-		solution[i] = S[index].First
+		solution[i] = S[index].GetData()
 	}
 
 	return solution
