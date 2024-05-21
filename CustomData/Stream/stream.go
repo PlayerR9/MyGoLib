@@ -1,54 +1,9 @@
 package Stream
 
 import (
+	ll "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
 	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
 )
-
-// Streamer is an interface for streams of items.
-type Streamer[T any] interface {
-	// Size returns the number of items in the stream.
-	//
-	// Returns:
-	//   - int: The number of items in the stream.
-	Size() int
-
-	// IsEmpty returns true if the stream is empty.
-	//
-	// Returns:
-	//   - bool: True if the stream is empty.
-	IsEmpty() bool
-
-	// Get returns qty of items from the stream starting from the given index.
-	//
-	// Parameters:
-	//   - from: The index of the first item to get.
-	//   - qty: The number of items to get.
-	//
-	// Returns:
-	//   - []T: The items from the stream.
-	//   - error: An error of type *ers.ErrInvalidParameter if from or qty is negative.
-	//
-	// Behaviors:
-	//   - If there are not enough items in the stream, no error is returned
-	// 	but the number of items returned will be less than qty.
-	Get(from int, qty int) ([]T, error)
-
-	// IsDone returns true if from + qty is greater than the number of items in the stream.
-	//
-	// Parameters:
-	//   - from: The index of the first item to check.
-	//   - qty: The number of items to check.
-	//
-	// Returns:
-	//   - bool: True if the stream has been fully consumed.
-	IsDone(from int, qty int) bool
-
-	// GetItems returns the items in the stream.
-	//
-	// Returns:
-	//   - []T: The items in the stream.
-	GetItems() []T
-}
 
 // Stream is a stream of items.
 //
@@ -61,6 +16,41 @@ type Stream[T any] struct {
 
 	// size is the number of items in the stream.
 	size int
+}
+
+// Iterator returns an iterator for the stream.
+//
+// Returns:
+//   - ll.Iterater[T]: An iterator for the stream.
+func (s *Stream[T]) Iterator() ll.Iterater[T] {
+	var builder ll.Builder[T]
+
+	for _, item := range s.items {
+		builder.Append(item)
+	}
+
+	return builder.Build()
+}
+
+// NewStream creates a new stream with the given items.
+//
+// Parameters:
+//   - items: The items to add to the stream.
+//
+// Returns:
+//   - Stream: The new stream.
+func NewStream[T any](items []T) *Stream[T] {
+	if items == nil {
+		return &Stream[T]{
+			items: []T{},
+			size:  0,
+		}
+	} else {
+		return &Stream[T]{
+			items: items,
+			size:  len(items),
+		}
+	}
 }
 
 // Size returns the number of items in the stream.
@@ -111,6 +101,26 @@ func (s *Stream[T]) Get(from int, qty int) ([]T, error) {
 	}
 }
 
+// GetOne returns the item at the given index.
+//
+// Parameters:
+//   - index: The index of the item to get.
+//
+// Returns:
+//   - T: The item at the given index.
+//   - error: An error if the index is negative or out of bounds.
+func (s *Stream[T]) GetOne(index int) (T, error) {
+	if index < 0 {
+		return *new(T), ers.NewErrInvalidParameter("index", ers.NewErrGTE(0))
+	}
+
+	if index >= s.size {
+		return *new(T), ers.NewErrInvalidParameter("index", ers.NewErrLT(s.size))
+	}
+
+	return s.items[index], nil
+}
+
 // IsDone returns true if from + qty is greater than the number of items in the stream.
 //
 // Returns:
@@ -129,25 +139,4 @@ func (s *Stream[T]) IsDone(from int, qty int) bool {
 //   - []T: The items in the stream.
 func (s *Stream[T]) GetItems() []T {
 	return s.items
-}
-
-// NewStream creates a new stream with the given items.
-//
-// Parameters:
-//   - items: The items to add to the stream.
-//
-// Returns:
-//   - Stream: The new stream.
-func NewStream[T any](items []T) *Stream[T] {
-	if items == nil {
-		return &Stream[T]{
-			items: []T{},
-			size:  0,
-		}
-	} else {
-		return &Stream[T]{
-			items: items,
-			size:  len(items),
-		}
-	}
 }

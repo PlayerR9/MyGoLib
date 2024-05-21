@@ -3,7 +3,7 @@ package ContentBox
 import (
 	"testing"
 
-	cdd "github.com/PlayerR9/MyGoLib/ComplexData/Display"
+	cdd "github.com/PlayerR9/MyGoLib/ComplexData/Display/Table"
 	"github.com/gdamore/tcell"
 )
 
@@ -17,9 +17,11 @@ func TestTitle(t *testing.T) {
 
 	title := NewTitle(Title)
 
-	cell := cdd.NewDtUnit(title, tcell.StyleDefault)
+	cell := cdd.NewColoredElement(title, tcell.StyleDefault)
 
-	err := cell.Draw(table, 0, 0)
+	x, y := 0, 0
+
+	err := cell.Draw(table, &x, &y)
 	if err != nil {
 		t.Fatalf("Expected no error, but got %s", err.Error())
 	}
@@ -78,9 +80,11 @@ func TestMiddleSplit(t *testing.T) {
 
 		table := cdd.NewDrawTable(test.width, test.height)
 
-		cell := cdd.NewDtUnit(title, tcell.StyleDefault)
+		cell := cdd.NewColoredElement(title, tcell.StyleDefault)
 
-		err := cell.Draw(table, 0, 0)
+		x, y := 0, 0
+
+		err := cell.Draw(table, &x, &y)
 		if err != nil {
 			t.Fatalf("At test %d, expected no error, but got %s", i, err.Error())
 		}
@@ -109,9 +113,11 @@ func TestTitleTruncation(t *testing.T) {
 
 	table := cdd.NewDrawTable(13, 1)
 
-	cell := cdd.NewDtUnit(title, tcell.StyleDefault)
+	cell := cdd.NewColoredElement(title, tcell.StyleDefault)
 
-	err := cell.Draw(table, 0, 0)
+	x, y := 0, 0
+
+	err := cell.Draw(table, &x, &y)
 	if err != nil {
 		t.Fatalf("Expected no error, but got %s", err.Error())
 	}

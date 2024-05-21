@@ -10,21 +10,33 @@ package Table
 //
 // Returns:
 //   - [][]T: The elements of the table with the boundaries fixed.
-//   - int: The y-coordinate with the boundaries fixed.
-func fixVerticalBoundaries[T any](maxHeight int, elems [][]T, y int) ([][]T, int) {
-	if y < 0 {
-		return elems[-y:], 0
-	} else if y >= maxHeight {
-		return elems[:maxHeight-y], maxHeight
+func fixVerticalBoundaries[T any](maxHeight int, elems [][]T, y *int) [][]T {
+	actualY := *y
+
+	if actualY < 0 {
+		newElems := elems[-actualY:]
+		*y = 0
+
+		return newElems
+	} else if actualY >= maxHeight {
+		newElems := elems[:maxHeight-actualY]
+		*y = maxHeight
+
+		return newElems
 	}
 
-	totalHeight := len(elems) + y
+	totalHeight := len(elems) + actualY
+	var newElems [][]T
 
 	if totalHeight <= maxHeight {
-		return elems, y
+		newElems = elems
+		y = &totalHeight
 	} else {
-		return elems[:maxHeight-y], maxHeight
+		newElems = elems[:maxHeight-actualY]
+		*y = maxHeight
 	}
+
+	return newElems
 }
 
 // fixHorizontalBoundaries is a helper function that fixes the horizontal boundaries
@@ -37,41 +49,46 @@ func fixVerticalBoundaries[T any](maxHeight int, elems [][]T, y int) ([][]T, int
 //
 // Returns:
 //   - [][]T: The elements of the table with the boundaries fixed.
-//   - int: The x-coordinate with the boundaries fixed.
-func fixHorizontalBoundaries[T any](maxWidth int, elems [][]T, x int) ([][]T, int) {
-	if x < 0 {
+func fixHorizontalBoundaries[T any](maxWidth int, elems [][]T, x *int) [][]T {
+	actualX := *x
+
+	if actualX < 0 {
 		for i, row := range elems {
-			if -x >= len(row) {
+			if -actualX >= len(row) {
 				elems[i] = nil
 			} else {
-				elems[i] = row[-x:]
+				elems[i] = row[-actualX:]
 			}
 		}
 
-		return elems, 0
-	} else if x >= maxWidth {
+		*x = 0
+
+		return elems
+	} else if actualX >= maxWidth {
 		for i, row := range elems {
-			if x >= len(row) {
+			if actualX >= len(row) {
 				elems[i] = nil
 			} else {
-				elems[i] = row[:maxWidth-x]
+				elems[i] = row[:maxWidth-actualX]
 			}
 		}
 
-		return elems, maxWidth
+		*x = maxWidth
+
+		return elems
 	}
 
 	for i, row := range elems {
-		totalWidth := len(row) + x
+		totalWidth := len(row) + actualX
 
 		if totalWidth < maxWidth {
 			continue
 		}
 
-		elems[i] = row[:maxWidth-x]
+		elems[i] = row[:maxWidth-actualX]
 	}
 
-	return elems, x
+	return elems
 }
 
 // FixBoundaries is a function that fixes the boundaries of a table of elements based
@@ -86,14 +103,12 @@ func fixHorizontalBoundaries[T any](maxWidth int, elems [][]T, x int) ([][]T, in
 //
 // Returns:
 //   - [][]T: The elements of the table with the boundaries fixed.
-//   - int: The x-coordinate with the boundaries fixed.
-//   - int: The y-coordinate with the boundaries fixed.
 //
 // Behaviors:
 //   - If maxWidth is less than 0, it is set to 0.
 //   - If maxHeight is less than 0, it is set to 0.
 //   - If elems is empty, nil is returned.
-func FixBoundaries[T any](maxWidth, maxHeight int, elems [][]T, x, y int) ([][]T, int, int) {
+func FixBoundaries[T any](maxWidth, maxHeight int, elems [][]T, x, y *int) [][]T {
 	if maxWidth < 0 {
 		maxWidth = 0
 	}
@@ -103,11 +118,13 @@ func FixBoundaries[T any](maxWidth, maxHeight int, elems [][]T, x, y int) ([][]T
 	}
 
 	if len(elems) == 0 {
-		return nil, 0, 0
+		*x, *y = 0, 0
+
+		return nil
 	}
 
-	elems, y = fixVerticalBoundaries(maxHeight, elems, y)
-	elems, x = fixHorizontalBoundaries(maxWidth, elems, x)
+	elems = fixVerticalBoundaries(maxHeight, elems, y)
+	elems = fixHorizontalBoundaries(maxWidth, elems, x)
 
-	return elems, x, y
+	return elems
 }

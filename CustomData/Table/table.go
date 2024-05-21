@@ -1,6 +1,7 @@
 package Table
 
 import (
+	ll "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
 	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
 )
 
@@ -16,6 +17,40 @@ type Table[T any] struct {
 
 	// height is the height of the table.
 	height int
+}
+
+// Iterator returns an iterator for the table. It iterates over the rows and columns
+// as if it were an array of elements of type T.
+//
+// Returns:
+//   - ll.Iterater[T]: An iterator for the table.
+//
+// Behaviors:
+//   - For efficiency, the iterator is procedural. It is not a generator.
+func (t *Table[T]) Iterator() ll.Iterater[T] {
+	var builder ll.Builder[[]T]
+
+	for _, row := range t.table {
+		builder.Append(row)
+	}
+
+	iter, err := ll.NewProceduralIterator(
+		builder.Build(),
+		func(row []T) ll.Iterater[T] {
+			var builder ll.Builder[T]
+
+			for _, cell := range row {
+				builder.Append(cell)
+			}
+
+			return builder.Build()
+		},
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	return iter
 }
 
 // NewDrawTable creates a new Table[T] with the given width and height.
@@ -122,21 +157,28 @@ func (dt *Table[T]) ClearTable() {
 // Behaviors:
 //   - Any value that would cause the sequence to be written outside the
 //     bounds of the table is ignored.
-func (dt *Table[T]) WriteVerticalSequence(x, y int, sequence []T) {
-	if len(sequence) == 0 || x < 0 || x >= dt.width || y >= dt.height {
+//   - The y-coordinate is updated to the next available cell after the
+//     sequence is written.
+func (dt *Table[T]) WriteVerticalSequence(x, y *int, sequence []T) {
+	actualX, actualY := *x, *y
+
+	if len(sequence) == 0 || actualX < 0 || actualX >= dt.width || actualY >= dt.height {
 		return
 	}
 
-	if y < 0 {
-		sequence = sequence[-y:]
-		y = 0
-	} else if y+len(sequence) > dt.height {
-		sequence = sequence[:dt.height-y]
+	if actualY < 0 {
+		sequence = sequence[-actualY:]
+
+		*y = 0
+	} else if actualY+len(sequence) > dt.height {
+		sequence = sequence[:dt.height-actualY]
 	}
 
 	for i, cell := range sequence {
-		dt.table[y+i][x] = cell
+		dt.table[actualY+i][actualX] = cell
 	}
+
+	*y += len(sequence)
 }
 
 // WriteHorizontalSequence writes a sequence of cells to the table
@@ -151,19 +193,26 @@ func (dt *Table[T]) WriteVerticalSequence(x, y int, sequence []T) {
 // Behaviors:
 //   - Any value that would cause the sequence to be written outside the
 //     bounds of the table is ignored.
-func (dt *Table[T]) WriteHorizontalSequence(x, y int, sequence []T) {
-	if len(sequence) == 0 || y < 0 || y >= dt.height || x >= dt.width {
+//   - The x-coordinate is updated to the next available cell after the
+//     sequence is written.
+func (dt *Table[T]) WriteHorizontalSequence(x, y *int, sequence []T) {
+	actualX, actualY := *x, *y
+
+	if len(sequence) == 0 || actualY < 0 || actualY >= dt.height || actualX >= dt.width {
 		return
 	}
 
-	if x < 0 {
-		sequence = sequence[-x:]
-		x = 0
-	} else if x+len(sequence) > dt.width {
-		sequence = sequence[:dt.width-x]
+	if actualX < 0 {
+		sequence = sequence[-actualX:]
+
+		*x = 0
+	} else if actualX+len(sequence) > dt.width {
+		sequence = sequence[:dt.width-actualX]
 	}
 
-	copy(dt.table[y][x:], sequence)
+	copy(dt.table[actualY][actualX:], sequence)
+
+	*x = actualX + len(sequence)
 }
 
 // GetFullTable returns the full table as a 2D slice of elements of type T.
@@ -202,4 +251,40 @@ func (dt *Table[T]) IsYInBounds(y int) error {
 	} else {
 		return nil
 	}
+}
+
+// WriteTableAt writes the given table to the table at the given coordinates.
+//
+// Parameters:
+//   - x: The x-coordinate to write the table at.
+//   - y: The y-coordinate to write the table at.
+//   - table: The table to write to the table.
+//
+// Behaviors:
+//   - If the table is nil, the function does nothing.
+//   - Any value that would cause the table to be written outside the bounds
+//     of the table is ignored.
+//   - The x and y coordinates are updated to the next available cell after
+//     the table is written.
+func (dt *Table[T]) WriteTableAt(table *Table[T], x, y *int) {
+	if table == nil {
+		return
+	}
+
+	offsetX, offsetY := 0, 0
+	X, Y := *x, *y
+
+	for offsetY < table.height && Y+offsetY < dt.height {
+		offsetX = 0
+
+		for offsetX < table.width && X+offsetX < dt.width {
+			dt.table[Y+offsetY][X+offsetX] = table.table[offsetY][offsetX]
+			offsetX++
+		}
+
+		offsetY++
+	}
+
+	*x += offsetX
+	*y += offsetY
 }

@@ -6,6 +6,7 @@ import (
 	sext "github.com/PlayerR9/MyGoLib/Utility/StringExt"
 )
 
+// MultiLineText is a unit that represents a multi-line text.
 type MultiLineText struct {
 	lines [][]string
 }

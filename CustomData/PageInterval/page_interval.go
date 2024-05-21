@@ -43,7 +43,7 @@ func (pi *PageInterval) String() string {
 // Returns:
 //   - itf.Iterater[int]: An iterator for iterating over the pages in the PageInterval.
 func (pi *PageInterval) Iterator() itf.Iterater[int] {
-	iter, err := itf.IteratorFromIterator(
+	iter, err := itf.NewProceduralIterator(
 		itf.IteratorFromSlice(pi.intervals),
 		PageRangeIterator,
 	)
@@ -375,7 +375,7 @@ func (pi *PageInterval) ReverseIterator() itf.Iterater[int] {
 
 	slices.Reverse(reversed)
 
-	iter, err := itf.IteratorFromIterator(
+	iter, err := itf.NewProceduralIterator(
 		itf.IteratorFromSlice(reversed),
 		func(pr *PageRange) itf.Iterater[int] {
 			var builder itf.Builder[int]

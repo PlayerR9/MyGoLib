@@ -3,7 +3,7 @@ package ContentBox
 import (
 	"testing"
 
-	cdd "github.com/PlayerR9/MyGoLib/ComplexData/Display"
+	cdd "github.com/PlayerR9/MyGoLib/ComplexData/Display/Table"
 	"github.com/gdamore/tcell"
 )
 
@@ -17,9 +17,11 @@ func TestWriteLines_ShortLines(t *testing.T) {
 
 	table := cdd.NewDrawTable(18, 2)
 
-	cell := cdd.NewDtUnit(mlt, tcell.StyleDefault)
+	cell := cdd.NewColoredElement(mlt, tcell.StyleDefault)
 
-	err = cell.Draw(table, 0, 0)
+	x, y := 0, 0
+
+	err = cell.Draw(table, &x, &y)
 	if err != nil {
 		t.Fatalf("Expected no error, but got %s", err.Error())
 	}
@@ -43,9 +45,11 @@ func TestWriteLines_LongLine(t *testing.T) {
 
 	table := cdd.NewDrawTable(18, 1)
 
-	cell := cdd.NewDtUnit(mlt, tcell.StyleDefault)
+	cell := cdd.NewColoredElement(mlt, tcell.StyleDefault)
 
-	err = cell.Draw(table, 0, 0)
+	x, y := 0, 0
+
+	err = cell.Draw(table, &x, &y)
 	if err != nil {
 		t.Fatalf("Expected no error, but got %s", err.Error())
 	}

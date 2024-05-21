@@ -1,16 +1,15 @@
-package Display
+package Table
 
 import (
 	"strings"
 
+	cdt "github.com/PlayerR9/MyGoLib/CustomData/Table"
 	"github.com/gdamore/tcell"
-
-	cdt "github.com/PlayerR9/MyGoLib/Units/Table"
 )
 
 // DrawTable represents a table of cells that can be drawn to the screen.
 type DrawTable struct {
-	*cdt.Table[*dtCell]
+	*cdt.Table[*ColoredUnit]
 }
 
 // NewDrawTable creates a new DrawTable with the given width and height.
@@ -25,7 +24,7 @@ type DrawTable struct {
 // Behaviors:
 //   - If the width or height is negative, the absolute value is used.
 func NewDrawTable(width, height int) *DrawTable {
-	table := cdt.NewTable[*dtCell](width, height)
+	table := cdt.NewTable[*ColoredUnit](width, height)
 
 	return &DrawTable{table}
 }
@@ -37,23 +36,36 @@ func NewDrawTable(width, height int) *DrawTable {
 //
 // Behaviors:
 //   - Any nil cells in the drawTable are represented by a space character.
+//   - The last line may not be full width.
 func (dt *DrawTable) GetLines() []string {
-	table := dt.GetFullTable()
+	width := dt.GetWidth()
+	iter := dt.Iterator()
 
-	lines := make([]string, 0, len(table))
+	var lines []string
 	var builder strings.Builder
 
-	for _, row := range table {
-		for _, cell := range row {
-			if cell != nil {
-				builder.WriteRune(cell.content)
-			} else {
-				builder.WriteRune(' ')
-			}
+	for count := 0; ; count++ {
+		if count == width {
+			lines = append(lines, builder.String())
+			builder.Reset()
+
+			count = 0
 		}
 
+		unit, err := iter.Consume()
+		if err != nil {
+			break
+		}
+
+		if unit != nil {
+			builder.WriteRune(unit.GetContent())
+		} else {
+			builder.WriteRune(' ')
+		}
+	}
+
+	if builder.Len() > 0 {
 		lines = append(lines, builder.String())
-		builder.Reset()
 	}
 
 	return lines
@@ -72,13 +84,14 @@ func (dt *DrawTable) GetLines() []string {
 // Behaviors:
 //   - This is just a convenience function that converts the string to a sequence
 //     of cells and calls WriteHorizontalSequence or WriteVerticalSequence.
-func (dt *DrawTable) WriteLineAt(x, y int, line string, style tcell.Style, isHorizontal bool) {
+//   - x and y are updated to the next available cell after the line is written.
+func (dt *DrawTable) WriteLineAt(x, y *int, line string, style tcell.Style, isHorizontal bool) {
 	runes := []rune(line)
 
-	sequence := make([]*dtCell, 0, len(runes))
+	sequence := make([]*ColoredUnit, 0, len(runes))
 
 	for _, r := range runes {
-		sequence = append(sequence, newDtCell(r, style))
+		sequence = append(sequence, NewColoredUnit(r, style))
 	}
 
 	if isHorizontal {

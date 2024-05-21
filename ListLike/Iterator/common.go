@@ -2,7 +2,6 @@ package Iterators
 
 import (
 	intf "github.com/PlayerR9/MyGoLib/Units/Common"
-	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
 )
 
 // Iterater is an interface that defines methods for an iterator over a
@@ -77,33 +76,4 @@ func IteratorFromValues[T any](values ...T) Iterater[T] {
 		values: &valuesCopy,
 		index:  0,
 	}
-}
-
-// IteratorFromIterator creates a new iterator over a collection of iterators
-// of type Iterater[T].
-// It uses the input iterator to iterate over the collection of iterators and
-// return the elements from each iterator in turn.
-//
-// Parameters:
-//   - source: The iterator over the collection of iterators to iterate over.
-//   - f: The transition function that takes an element of type E and returns
-//     an iterator.
-//
-// Return:
-//   - Iterater[T]: The new iterator over the collection of elements.
-//   - error: An error of type *ers.ErrInvalidParameter if the transition function
-//     is nil.
-func IteratorFromIterator[E, T any](source Iterater[E], f func(E) Iterater[T]) (Iterater[T], error) {
-	if f == nil {
-		return nil, ers.NewErrNilParameter("f")
-	}
-
-	iter := &ProceduralIterator[E, T]{
-		source:  source,
-		current: nil,
-	}
-
-	iter.transition = f
-
-	return iter, nil
 }
