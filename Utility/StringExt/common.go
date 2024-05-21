@@ -10,9 +10,10 @@ import (
 	"slices"
 
 	mext "github.com/PlayerR9/MyGoLib/Utility/MathExt"
-	slext "github.com/PlayerR9/MyGoLib/Utility/SliceExt"
 
 	ue "github.com/PlayerR9/MyGoLib/Units/Errors"
+	up "github.com/PlayerR9/MyGoLib/Units/Pair"
+	hlp "github.com/PlayerR9/MyGoLib/Utility/Helpers"
 )
 
 // ToUTF8Runes converts a string to a slice of runes.
@@ -600,7 +601,7 @@ func SplitInEqualSizedLines(text []string, width, height int) (*TextSplit, error
 	}
 
 	// 4.2. Calculate the SQM of each candidate and returns the ones with the lowest SQM.
-	weights := slext.ApplyWeightFunc(candidates, func(candidate *TextSplit) (float64, bool) {
+	weights := hlp.ApplyWeightFunc(candidates, func(candidate *TextSplit) (float64, bool) {
 		values := make([]float64, 0, candidate.GetHeight())
 
 		for _, line := range candidate.lines {
@@ -619,7 +620,7 @@ func SplitInEqualSizedLines(text []string, width, height int) (*TextSplit, error
 	}
 
 	// 4.3. Return the candidates with the lowest SQM.
-	candidates = slext.FilterByNegativeWeight(weights)
+	candidates = up.ExtractFirsts(hlp.FilterByNegativeWeight(weights))
 
 	// If we have more than one candidate, we have to choose one
 	// of them by following other criteria.
