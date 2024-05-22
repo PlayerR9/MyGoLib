@@ -97,8 +97,6 @@ type Seter[T any] interface {
 	Clear()
 
 	fmt.Stringer
-	uc.Equaler[Seter[T]]
-	uc.Copier
-	uc.Slicer[T]
-	ui.Iterable[T]
+	uc.Objecter
+	ui.Slicer[T]
 }

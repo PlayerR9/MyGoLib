@@ -101,8 +101,20 @@ func (s *LessSet[T]) Union(other *LessSet[T]) *LessSet[T] {
 		return s
 	}
 
+	elems := make([]T, len(s.elems))
+	copy(elems, s.elems)
+
+	for _, e := range other.elems {
+		pos, ok := uc.Find(elems, e)
+		if ok {
+			continue
+		}
+
+		elems = slices.Insert(elems, pos, e)
+	}
+
 	return &LessSet[T]{
-		elems: us.MergeUniqueFunc(s.elems, other.elems),
+		elems: elems,
 	}
 }
 
@@ -186,8 +198,20 @@ func (s *LessSet[T]) SymmetricDifference(other *LessSet[T]) *LessSet[T] {
 		}
 	}
 
+	elems := make([]T, len(diff1))
+	copy(elems, diff1)
+
+	for _, e := range diff2 {
+		pos, ok := uc.Find(elems, e)
+		if ok {
+			continue
+		}
+
+		elems = slices.Insert(elems, pos, e)
+	}
+
 	return &LessSet[T]{
-		elems: us.MergeUniqueFunc(diff1, diff2),
+		elems: elems,
 	}
 }
 
@@ -254,13 +278,22 @@ func (s *LessSet[T]) String() string {
 //
 // Returns:
 //   - bool: True if the sets are equal, false otherwise.
-func (s *LessSet[T]) Equals(other *LessSet[T]) bool {
-	if other == nil || len(s.elems) != len(other.elems) {
+func (s *LessSet[T]) Equals(other uc.Objecter) bool {
+	if other == nil {
+		return false
+	}
+
+	otherSet, ok := other.(*LessSet[T])
+	if !ok {
+		return false
+	}
+
+	if len(s.elems) != len(otherSet.elems) {
 		return false
 	}
 
 	for _, k := range s.elems {
-		if !other.HasElem(k) {
+		if !otherSet.HasElem(k) {
 			return false
 		}
 	}
@@ -272,7 +305,7 @@ func (s *LessSet[T]) Equals(other *LessSet[T]) bool {
 //
 // Returns:
 //   - *LessSet[T]: A copy of the set.
-func (s *LessSet[T]) Copy() uc.Copier {
+func (s *LessSet[T]) Copy() uc.Objecter {
 	newElems := make([]T, len(s.elems))
 	copy(newElems, s.elems)
 
@@ -294,21 +327,22 @@ func (s *LessSet[T]) Slice() []T {
 // Returns:
 //   - ui.Iterater[T]: An iterator for the set.
 func (s *LessSet[T]) Iterator() ui.Iterater[T] {
-	var builder ui.Builder[T]
-
-	for _, k := range s.elems {
-		builder.Append(k)
-	}
-
-	return builder.Build()
+	return ui.NewGenericIterator(s.elems)
 }
 
 // NewLessSet creates a new LessSet.
 //
 // Returns:
 //   - *LessSet: A new LessSet.
-func NewLessSet[T uc.Equaler[T]](elems []T) *LessSet[T] {
+func NewLessSet[T uc.Comparer[T]](elems []T) *LessSet[T] {
+	elems = us.UniquefyEquals(elems)
+	uc.Sort(elems)
+
 	return &LessSet[T]{
-		elems: us.RemoveDuplicatesFunc(elems),
+		elems: elems,
 	}
+}
+
+func (s *LessSet[T]) Find(elem T) (int, bool) {
+	return uc.Find(s.elems, elem)
 }

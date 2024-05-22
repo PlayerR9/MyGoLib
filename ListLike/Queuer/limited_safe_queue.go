@@ -5,9 +5,9 @@ import (
 	"strings"
 	"sync"
 
-	itf "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
+	itf "github.com/PlayerR9/MyGoLib/Units/Iterator"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
@@ -27,6 +27,11 @@ type LimitedSafeQueue[T any] struct {
 
 	// capacity is the maximum number of elements that the queue can hold.
 	capacity int
+}
+
+// Equals implements Common.Objecter.
+func (queue *LimitedSafeQueue[T]) Equals(other uc.Objecter) bool {
+	panic("unimplemented")
 }
 
 // NewLimitedSafeQueue is a function that creates and returns a new instance of a
@@ -208,7 +213,7 @@ func (queue *LimitedSafeQueue[T]) Iterator() itf.Iterater[T] {
 	var builder itf.Builder[T]
 
 	for node := queue.front; node != nil; node = node.Next() {
-		builder.Append(node.Value)
+		builder.Add(node.Value)
 	}
 
 	return builder.Build()
@@ -377,7 +382,7 @@ func (queue *LimitedSafeQueue[T]) Slice() []T {
 // Returns:
 //
 //   - itf.Copier: A copy of the queue.
-func (queue *LimitedSafeQueue[T]) Copy() uc.Copier {
+func (queue *LimitedSafeQueue[T]) Copy() uc.Objecter {
 	queue.frontMutex.RLock()
 	defer queue.frontMutex.RUnlock()
 

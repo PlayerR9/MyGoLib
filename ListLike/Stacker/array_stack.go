@@ -5,9 +5,9 @@ import (
 	"strconv"
 	"strings"
 
-	itf "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
+	itf "github.com/PlayerR9/MyGoLib/Units/Iterator"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
@@ -16,6 +16,11 @@ import (
 type ArrayStack[T any] struct {
 	// values is a slice of type T that stores the elements in the stack.
 	values []T
+}
+
+// Equals implements Common.Objecter.
+func (stack *ArrayStack[T]) Equals(other uc.Objecter) bool {
+	panic("unimplemented")
 }
 
 // NewArrayStack is a function that creates and returns a new instance of a
@@ -119,7 +124,7 @@ func (stack *ArrayStack[T]) Iterator() itf.Iterater[T] {
 	var builder itf.Builder[T]
 
 	for i := len(stack.values) - 1; i >= 0; i-- {
-		builder.Append(stack.values[i])
+		builder.Add(stack.values[i])
 	}
 
 	return builder.Build()
@@ -187,7 +192,7 @@ func (stack *ArrayStack[T]) Slice() []T {
 // Returns:
 //
 //   - itf.Copier: A copy of the stack.
-func (stack *ArrayStack[T]) Copy() uc.Copier {
+func (stack *ArrayStack[T]) Copy() uc.Objecter {
 	stackCopy := &ArrayStack[T]{
 		values: make([]T, len(stack.values)),
 	}

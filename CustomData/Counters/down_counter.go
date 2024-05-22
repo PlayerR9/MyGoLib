@@ -1,7 +1,8 @@
 package Counters
 
 import (
-	"fmt"
+	"strconv"
+	"strings"
 
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
@@ -18,6 +19,22 @@ type DownCounter struct {
 
 	// retreatCount is the number of times the counter has been retreated.
 	retreatCount int
+}
+
+// Equals implements Common.Objecter.
+func (c *DownCounter) Equals(other uc.Objecter) bool {
+	if other == nil {
+		return false
+	}
+
+	otherC, ok := other.(*DownCounter)
+	if !ok {
+		return false
+	}
+
+	return c.startingCount == otherC.startingCount &&
+		c.currentCount == otherC.currentCount &&
+		c.retreatCount == otherC.retreatCount
 }
 
 // IsDone checks if the DownCounter has reached zero.
@@ -104,10 +121,19 @@ func (c *DownCounter) GetInitialCount() int {
 // Returns:
 //   - string: A string representation of the DownCounter.
 func (c *DownCounter) String() string {
-	return fmt.Sprintf(
-		"DownCounter[startingCount=%d, currentCount=%d, retreatCount=%d, isDone=%t]",
-		c.startingCount, c.currentCount, c.retreatCount, c.IsDone(),
-	)
+	var builder strings.Builder
+
+	builder.WriteString("DownCounter[startingCount=")
+	builder.WriteString(strconv.Itoa(c.startingCount))
+	builder.WriteString(", currentCount=")
+	builder.WriteString(strconv.Itoa(c.currentCount))
+	builder.WriteString(", retreatCount=")
+	builder.WriteString(strconv.Itoa(c.retreatCount))
+	builder.WriteString(", isDone=")
+	builder.WriteString(strconv.FormatBool(c.IsDone()))
+	builder.WriteRune(']')
+
+	return builder.String()
 }
 
 // Reset resets the DownCounter to its initial state.
@@ -120,7 +146,7 @@ func (c *DownCounter) Reset() {
 //
 // Returns:
 //   - uc.Copier: A shallow copy of the DownCounter.
-func (c *DownCounter) Copy() uc.Copier {
+func (c *DownCounter) Copy() uc.Objecter {
 	return &DownCounter{c.startingCount, c.currentCount, c.retreatCount}
 }
 

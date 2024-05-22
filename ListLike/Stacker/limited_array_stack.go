@@ -5,9 +5,9 @@ import (
 	"strconv"
 	"strings"
 
-	itf "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
+	itf "github.com/PlayerR9/MyGoLib/Units/Iterator"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
@@ -19,6 +19,11 @@ type LimitedArrayStack[T any] struct {
 
 	// capacity is the maximum number of elements the stack can hold.
 	capacity int
+}
+
+// Equals implements Common.Objecter.
+func (stack *LimitedArrayStack[T]) Equals(other uc.Objecter) bool {
+	panic("unimplemented")
 }
 
 // NewLimitedArrayStack is a function that creates and returns a new instance of a
@@ -137,7 +142,7 @@ func (stack *LimitedArrayStack[T]) Iterator() itf.Iterater[T] {
 	var builder itf.Builder[T]
 
 	for i := len(stack.values) - 1; i >= 0; i-- {
-		builder.Append(stack.values[i])
+		builder.Add(stack.values[i])
 	}
 
 	return builder.Build()
@@ -217,7 +222,7 @@ func (stack *LimitedArrayStack[T]) Slice() []T {
 // Returns:
 //
 //   - itf.Copier: A copy of the stack.
-func (stack *LimitedArrayStack[T]) Copy() uc.Copier {
+func (stack *LimitedArrayStack[T]) Copy() uc.Objecter {
 	stackCopy := &LimitedArrayStack[T]{
 		values:   make([]T, len(stack.values)),
 		capacity: stack.capacity,

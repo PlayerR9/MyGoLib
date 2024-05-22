@@ -7,12 +7,24 @@ type Builder[T any] struct {
 	buffer []T
 }
 
-// Append is a method of the Builder type that appends an element to the buffer.
+// Add is a method of the Builder type that appends an element to the buffer.
 //
 // Parameters:
 //   - element: The element to append to the buffer.
-func (b *Builder[T]) Append(element T) {
+func (b *Builder[T]) Add(element T) {
 	b.buffer = append(b.buffer, element)
+}
+
+// AddMany is a method of the Builder type that appends multiple elements to the buffer.
+//
+// Parameters:
+//   - elements: The elements to append to the buffer.
+func (b *Builder[T]) AddMany(elements []T) {
+	if len(elements) == 0 {
+		return
+	}
+
+	b.buffer = append(b.buffer, elements...)
 }
 
 // Build creates a new iterator over the buffer of elements.
@@ -30,12 +42,16 @@ func (b *Builder[T]) Build() Iterater[T] {
 		index:  0,
 	}
 
-	b.buffer = make([]T, 0)
+	b.Clear()
 
 	return iter
 }
 
 // Clear is a method of the Builder type that removes all elements from the buffer.
 func (b *Builder[T]) Clear() {
-	b.buffer = make([]T, 0)
+	for i := 0; i < len(b.buffer); i++ {
+		b.buffer[i] = *new(T)
+	}
+
+	b.buffer = b.buffer[:0]
 }

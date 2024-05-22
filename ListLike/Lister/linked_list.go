@@ -4,9 +4,9 @@ import (
 	"strconv"
 	"strings"
 
-	itf "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
+	itf "github.com/PlayerR9/MyGoLib/Units/Iterator"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
@@ -19,6 +19,11 @@ type LinkedList[T any] struct {
 
 	// size is the current number of elements in the list.
 	size int
+}
+
+// Equals implements Common.Objecter.
+func (list *LinkedList[T]) Equals(other uc.Objecter) bool {
+	panic("unimplemented")
 }
 
 // NewLinkedList is a function that creates and returns a new instance of a
@@ -170,7 +175,7 @@ func (list *LinkedList[T]) Iterator() itf.Iterater[T] {
 	var builder itf.Builder[T]
 
 	for list_node := list.front; list_node != nil; list_node = list_node.Next() {
-		builder.Append(list_node.Value)
+		builder.Add(list_node.Value)
 	}
 
 	return builder.Build()
@@ -388,7 +393,7 @@ func (list *LinkedList[T]) Slice() []T {
 // Returns:
 //
 //   - itf.Copier: A copy of the list.
-func (list *LinkedList[T]) Copy() uc.Copier {
+func (list *LinkedList[T]) Copy() uc.Objecter {
 	listCopy := &LinkedList[T]{
 		size: list.size,
 	}

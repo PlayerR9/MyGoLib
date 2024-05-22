@@ -257,13 +257,22 @@ func (s *ComparableSet[T]) String() string {
 //
 // Returns:
 //   - bool: True if the sets are equal, false otherwise.
-func (s *ComparableSet[T]) Equals(other *ComparableSet[T]) bool {
-	if other == nil || len(s.elems) != len(other.elems) {
+func (s *ComparableSet[T]) Equals(other uc.Objecter) bool {
+	if other == nil {
+		return false
+	}
+
+	otherCs, ok := other.(*ComparableSet[T])
+	if !ok {
+		return false
+	}
+
+	if len(s.elems) != len(otherCs.elems) {
 		return false
 	}
 
 	for k := range s.elems {
-		_, ok := other.elems[k]
+		_, ok := otherCs.elems[k]
 		if !ok {
 			return false
 		}
@@ -276,7 +285,7 @@ func (s *ComparableSet[T]) Equals(other *ComparableSet[T]) bool {
 //
 // Returns:
 //   - *ComparableSet[T]: A copy of the set.
-func (s *ComparableSet[T]) Copy() uc.Copier {
+func (s *ComparableSet[T]) Copy() uc.Objecter {
 	newElems := make(map[T]bool)
 
 	for k := range s.elems {
@@ -313,8 +322,10 @@ func (s *ComparableSet[T]) Slice() []T {
 func (s *ComparableSet[T]) Iterator() ui.Iterater[T] {
 	var builder ui.Builder[T]
 
-	for k := range s.elems {
-		builder.Append(k)
+	for k, ok := range s.elems {
+		if ok {
+			builder.Add(k)
+		}
 	}
 
 	return builder.Build()

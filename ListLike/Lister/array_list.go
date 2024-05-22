@@ -4,9 +4,9 @@ import (
 	"strconv"
 	"strings"
 
-	itf "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
+	itf "github.com/PlayerR9/MyGoLib/Units/Iterator"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
@@ -15,6 +15,11 @@ import (
 type ArrayList[T any] struct {
 	// values is a slice of type T that stores the elements in the list.
 	values []T
+}
+
+// Equals implements Common.Objecter.
+func (list *ArrayList[T]) Equals(other uc.Objecter) bool {
+	panic("unimplemented")
 }
 
 // NewArrayList is a function that creates and returns a new instance of a
@@ -121,13 +126,7 @@ func (list *ArrayList[T]) Capacity() int {
 //
 //   - itf.Iterater[T]: An iterator for the list.
 func (list *ArrayList[T]) Iterator() itf.Iterater[T] {
-	var builder itf.Builder[T]
-
-	for _, v := range list.values {
-		builder.Append(v)
-	}
-
-	return builder.Build()
+	return itf.NewGenericIterator(list.values)
 }
 
 // Clear is a method of the ArrayList type. It is used to remove all elements from
@@ -247,7 +246,7 @@ func (list *ArrayList[T]) Slice() []T {
 // Returns:
 //
 //   - itf.Copier: A copy of the list.
-func (list *ArrayList[T]) Copy() uc.Copier {
+func (list *ArrayList[T]) Copy() uc.Objecter {
 	listCopy := &ArrayList[T]{
 		values: make([]T, len(list.values)),
 	}

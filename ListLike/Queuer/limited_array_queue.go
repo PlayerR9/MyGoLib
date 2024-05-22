@@ -4,9 +4,9 @@ import (
 	"strconv"
 	"strings"
 
-	itf "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
+	itf "github.com/PlayerR9/MyGoLib/Units/Iterator"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
@@ -18,6 +18,11 @@ type LimitedArrayQueue[T any] struct {
 
 	// capacity is the maximum number of elements the queue can hold.
 	capacity int
+}
+
+// Equals implements Common.Objecter.
+func (queue *LimitedArrayQueue[T]) Equals(other uc.Objecter) bool {
+	panic("unimplemented")
 }
 
 // NewLimitedArrayQueue is a function that creates and returns a new instance of a
@@ -131,13 +136,7 @@ func (queue *LimitedArrayQueue[T]) Capacity() int {
 //   - itf.Iterater[T]: An iterator that can be used to iterate over the elements
 //     in the queue.
 func (queue *LimitedArrayQueue[T]) Iterator() itf.Iterater[T] {
-	var builder itf.Builder[T]
-
-	for _, value := range queue.values {
-		builder.Append(value)
-	}
-
-	return builder.Build()
+	return itf.NewGenericIterator[T](queue.values)
 }
 
 // Clear is a method of the LimitedArrayQueue type. It is used to remove all the elements
@@ -212,7 +211,7 @@ func (queue *LimitedArrayQueue[T]) Slice() []T {
 // Returns:
 //
 //   - itf.Copier: A copy of the queue.
-func (queue *LimitedArrayQueue[T]) Copy() uc.Copier {
+func (queue *LimitedArrayQueue[T]) Copy() uc.Objecter {
 	queueCopy := &LimitedArrayQueue[T]{
 		values:   make([]T, len(queue.values)),
 		capacity: queue.capacity,

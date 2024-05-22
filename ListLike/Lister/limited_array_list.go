@@ -4,9 +4,9 @@ import (
 	"strconv"
 	"strings"
 
-	itf "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
+	itf "github.com/PlayerR9/MyGoLib/Units/Iterator"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
@@ -18,6 +18,11 @@ type LimitedArrayList[T any] struct {
 
 	// capacity is the maximum number of elements the list can hold.
 	capacity int
+}
+
+// Equals implements Common.Objecter.
+func (list *LimitedArrayList[T]) Equals(other uc.Objecter) bool {
+	panic("unimplemented")
 }
 
 // NewLimitedArrayList is a function that creates and returns a new instance of a
@@ -136,13 +141,7 @@ func (list *LimitedArrayList[T]) Capacity() int {
 //
 //   - itf.Iterater[T]: An iterator for the list.
 func (list *LimitedArrayList[T]) Iterator() itf.Iterater[T] {
-	var builder itf.Builder[T]
-
-	for _, v := range list.values {
-		builder.Append(v)
-	}
-
-	return builder.Build()
+	return itf.NewGenericIterator(list.values)
 }
 
 // Clear is a method of the LimitedArrayList type. It is used to remove all elements from
@@ -265,7 +264,7 @@ func (list *LimitedArrayList[T]) Slice() []T {
 // Returns:
 //
 //   - itf.Copier: A copy of the list.
-func (list *LimitedArrayList[T]) Copy() uc.Copier {
+func (list *LimitedArrayList[T]) Copy() uc.Objecter {
 	listCopy := &LimitedArrayList[T]{
 		values:   make([]T, len(list.values)),
 		capacity: list.capacity,

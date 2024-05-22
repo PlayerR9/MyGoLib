@@ -4,9 +4,9 @@ import (
 	"strconv"
 	"strings"
 
-	itf "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
+	itf "github.com/PlayerR9/MyGoLib/Units/Iterator"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
@@ -15,6 +15,11 @@ import (
 type ArrayQueue[T any] struct {
 	// values is a slice of type T that stores the elements in the queue.
 	values []T
+}
+
+// Equals implements Common.Objecter.
+func (queue *ArrayQueue[T]) Equals(other uc.Objecter) bool {
+	panic("unimplemented")
 }
 
 // NewArrayQueue is a function that creates and returns a new instance of a
@@ -113,13 +118,7 @@ func (queue *ArrayQueue[T]) Size() int {
 //   - itf.Iterater[T]: An iterator that can be used to iterate over the elements
 //     in the queue.
 func (queue *ArrayQueue[T]) Iterator() itf.Iterater[T] {
-	var builder itf.Builder[T]
-
-	for _, value := range queue.values {
-		builder.Append(value)
-	}
-
-	return builder.Build()
+	return itf.NewGenericIterator(queue.values)
 }
 
 // Clear is a method of the ArrayQueue type. It is used to remove aCommon the elements
@@ -182,7 +181,7 @@ func (queue *ArrayQueue[T]) Slice() []T {
 // Returns:
 //
 //   - itf.Copier: A copy of the queue.
-func (queue *ArrayQueue[T]) Copy() uc.Copier {
+func (queue *ArrayQueue[T]) Copy() uc.Objecter {
 	queueCopy := &ArrayQueue[T]{
 		values: make([]T, len(queue.values)),
 	}

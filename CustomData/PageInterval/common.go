@@ -1,7 +1,7 @@
 package PageInterval
 
 import (
-	itf "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
+	itf "github.com/PlayerR9/MyGoLib/Units/Iterator"
 )
 
 var (

@@ -5,9 +5,9 @@ import (
 	"strings"
 	"sync"
 
-	itf "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
+	itf "github.com/PlayerR9/MyGoLib/Units/Iterator"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
@@ -24,6 +24,11 @@ type SafeList[T any] struct {
 
 	// size is the current number of elements in the list.
 	size int
+}
+
+// Equals implements Common.Objecter.
+func (list *SafeList[T]) Equals(other uc.Objecter) bool {
+	panic("unimplemented")
 }
 
 // NewSafeList is a function that creates and returns a new instance of a
@@ -207,7 +212,7 @@ func (list *SafeList[T]) Iterator() itf.Iterater[T] {
 	var builder itf.Builder[T]
 
 	for node := list.front; node != nil; node = node.Next() {
-		builder.Append(node.Value)
+		builder.Add(node.Value)
 	}
 
 	return builder.Build()
@@ -467,7 +472,7 @@ func (list *SafeList[T]) Slice() []T {
 // Returns:
 //
 //   - itf.Copier: A copy of the list.
-func (list *SafeList[T]) Copy() uc.Copier {
+func (list *SafeList[T]) Copy() uc.Objecter {
 	list.frontMutex.RLock()
 	defer list.frontMutex.RUnlock()
 

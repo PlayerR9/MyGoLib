@@ -1,10 +1,11 @@
 package PageInterval
 
 import (
-	"fmt"
 	"slices"
+	"strconv"
+	"strings"
 
-	itf "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
+	itf "github.com/PlayerR9/MyGoLib/Units/Iterator"
 
 	cdp "github.com/PlayerR9/MyGoLib/Units/Pair"
 )
@@ -23,7 +24,15 @@ type PageRange cdp.Pair[int, int]
 // Returns:
 //   - string: The string representation of the PageRange.
 func (pr *PageRange) String() string {
-	return fmt.Sprintf("[%d : %d]", pr.First, pr.Second)
+	var builder strings.Builder
+
+	builder.WriteRune('[')
+	builder.WriteString(strconv.Itoa(pr.First))
+	builder.WriteString(" : ")
+	builder.WriteString(strconv.Itoa(pr.Second))
+	builder.WriteRune(']')
+
+	return builder.String()
 }
 
 // Iterator returns an iterator that iterates over the pages in the interval.
@@ -34,7 +43,7 @@ func (pr *PageRange) Iterator() itf.Iterater[int] {
 	var builder itf.Builder[int]
 
 	for page := pr.First; page <= pr.Second; page++ {
-		builder.Append(page)
+		builder.Add(page)
 	}
 
 	return builder.Build()

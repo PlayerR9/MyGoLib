@@ -1,10 +1,5 @@
 package Common
 
-import (
-	"fmt"
-	"strconv"
-)
-
 // Comparable is an interface that defines the behavior of a type that can be
 // compared with other values of the same type using the < and > operators.
 // The interface is implemented by the built-in types int, int8, int16, int32,
@@ -169,144 +164,71 @@ func CompareAny(a, b any) (int, bool) {
 	}
 }
 
-// StringOf converts any type to a string.
-//
-// Parameters:
-//   - elem: The element to convert to a string.
-//
-// Returns:
-//   - string: The string representation of the element.
-//
-// Behaviors:
-//   - String elements are returned as is.
-//   - fmt.Stringer elements have their String method called.
-//   - error elements have their Error method called.
-//   - []byte and []rune elements are converted to strings.
-//   - Other elements are converted to strings using fmt.Sprintf and the %v format.
-func StringOf(elem any) string {
-	if elem == nil {
-		return ""
-	}
-
-	switch elem := elem.(type) {
-	case int:
-		return strconv.FormatInt(int64(elem), 10)
-	case int8:
-		return strconv.FormatInt(int64(elem), 10)
-	case int16:
-		return strconv.FormatInt(int64(elem), 10)
-	case int32:
-		return strconv.FormatInt(int64(elem), 10)
-	case int64:
-		return strconv.FormatInt(elem, 10)
-	case uint:
-		return strconv.FormatUint(uint64(elem), 10)
-	case uint8:
-		return strconv.FormatUint(uint64(elem), 10)
-	case uint16:
-		return strconv.FormatUint(uint64(elem), 10)
-	case uint32:
-		return strconv.FormatUint(uint64(elem), 10)
-	case uint64:
-		return strconv.FormatUint(elem, 10)
-	case float32:
-		return strconv.FormatFloat(float64(elem), 'f', -1, 32)
-	case float64:
-		return strconv.FormatFloat(elem, 'f', -1, 64)
-	case bool:
-		return strconv.FormatBool(elem)
-	case string:
-		return elem
-	case fmt.Stringer:
-		return elem.String()
-	case error:
-		return elem.Error()
-	case []byte:
-		return string(elem)
-	case []rune:
-		return string(elem)
-	default:
-		return fmt.Sprintf("%v", elem)
-	}
-}
-
-// Equaler is an interface that defines a method to compare two objects
+// Comparer is an interface that defines a method to compare two objects
 // of the same type.
-type Equaler[T any] interface {
-	// Equals returns true if the object is equal to the other object.
+type Comparer[T any] interface {
+	// Compare returns a negative value if the object is less than the other object,
+	// zero if they are equal, and a positive value if the object is greater
+	// than the other object.
 	//
 	// Parameters:
-	// 	- other: The other object to compare to.
+	//   - other: The other object to compare to.
 	//
 	// Returns:
-	// 	- bool: True if the object is equal to the other object.
-	Equals(other T) bool
+	//   - int: The result of the comparison.
+	Compare(other T) int
+
+	Objecter
 }
 
-// EqualOf compares two objects of the same type. If any of the objects implements
-// the Equaler interface, the Equals method is called. Otherwise, the objects are
-// compared using the == operator. However, obj1 is always checked first.
+// CompareOf compares two objects of the same type. If any of the objects implements
+// the Comparer interface, the Compare method is called. Otherwise, the objects are
+// compared using the < and == operators.
 //
 // Parameters:
-//   - obj1: The first object to compare.
-//   - obj2: The second object to compare.
+//   - a: The first object to compare.
+//   - b: The second object to compare.
 //
 // Returns:
-//   - bool: True if the objects are equal, false otherwise.
+//   - int: The result of the comparison.
+func CompareOf(a, b any) (int, bool) {
+	if a == nil || b == nil {
+		return 0, false
+	}
+
+	switch a := a.(type) {
+	case Comparer[any]:
+		val2, ok := b.(Comparer[any])
+		if !ok {
+			return 0, false
+		}
+
+		return a.Compare(val2), true
+	default:
+		return CompareAny(a, b)
+	}
+}
+
+// IsComparable returns true if the value is comparable with other values of the
+// same type using the < and > operators or the Comparable interface.
 //
-// Behaviors:
-//   - Nil objects are always considered different.
-func EqualOf(obj1, obj2 any) bool {
-	if obj1 == nil || obj2 == nil {
+// Parameters:
+//   - value: The value to check.
+//
+// Returns:
+//   - bool: True if the value is comparable, false otherwise.
+func IsComparable(value any) bool {
+	if value == nil {
 		return false
 	}
 
-	switch a := obj1.(type) {
-	case Equaler[any]:
-		b, ok := obj2.(Equaler[any])
-		if !ok {
-			return false
-		} else {
-			return a.Equals(b)
-		}
+	switch value.(type) {
+	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64,
+		float32, float64, string:
+		return true
 	case Comparer[any]:
-		b, ok := obj2.(Comparer[any])
-		if !ok {
-			return false
-		} else {
-			return a.Compare(b) == 0
-		}
+		return true
 	default:
-		return obj1 == obj2
-	}
-}
-
-// Copier is an interface that provides a method to create a deep copy of an object.
-type Copier interface {
-	// Copy creates a shallow copy of the object.
-	//
-	// Returns:
-	//   - Copier: A shallow copy or a deep copy of the object.
-	Copy() Copier
-}
-
-// CopyOf creates a copy of the element by either calling the Copy method if the
-// element implements the Copier interface or returning the element as is.
-//
-// Parameters:
-//   - elem: The element to copy.
-//
-// Returns:
-//   - any: A copy of the element.
-func CopyOf(elem any) any {
-	if elem == nil {
-		return nil
-	}
-
-	switch elem := elem.(type) {
-	case Copier:
-		return elem.Copy()
-	default:
-		return elem
+		return false
 	}
 }

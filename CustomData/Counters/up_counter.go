@@ -1,7 +1,8 @@
 package Counters
 
 import (
-	"fmt"
+	"strconv"
+	"strings"
 
 	intf "github.com/PlayerR9/MyGoLib/Units/Common"
 	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
@@ -18,6 +19,22 @@ type UpCounter struct {
 
 	// retreatCount is the number of times the counter has been retreated.
 	retreatCount int
+}
+
+// Equals implements Common.Objecter.
+func (c *UpCounter) Equals(other intf.Objecter) bool {
+	if other == nil {
+		return false
+	}
+
+	otherC, ok := other.(*UpCounter)
+	if !ok {
+		return false
+	}
+
+	return c.upperLimit == otherC.upperLimit &&
+		c.currentCount == otherC.currentCount &&
+		c.retreatCount == otherC.retreatCount
 }
 
 // IsDone checks if the UpCounter has reached its upper limit.
@@ -105,10 +122,19 @@ func (c *UpCounter) GetInitialCount() int {
 // Returns:
 //   - string: A string representation of the UpCounter.
 func (c *UpCounter) String() string {
-	return fmt.Sprintf(
-		"UpCounter[upperLimit=%d, currentCount=%d, retreatCount=%d, isDone=%t]",
-		c.upperLimit, c.currentCount, c.retreatCount, c.IsDone(),
-	)
+	var builder strings.Builder
+
+	builder.WriteString("UpCounter[upperLimit=")
+	builder.WriteString(strconv.Itoa(c.upperLimit))
+	builder.WriteString(", currentCount=")
+	builder.WriteString(strconv.Itoa(c.currentCount))
+	builder.WriteString(", retreatCount=")
+	builder.WriteString(strconv.Itoa(c.retreatCount))
+	builder.WriteString(", isDone=")
+	builder.WriteString(strconv.FormatBool(c.IsDone()))
+	builder.WriteString("]")
+
+	return builder.String()
 }
 
 // Reset resets the UpCounter to its initial state.
@@ -121,7 +147,7 @@ func (c *UpCounter) Reset() {
 //
 // Returns:
 //   - intf.Copier: A shallow copy of the UpCounter.
-func (c *UpCounter) Copy() intf.Copier {
+func (c *UpCounter) Copy() intf.Objecter {
 	return &UpCounter{
 		upperLimit:   c.upperLimit,
 		currentCount: c.currentCount,

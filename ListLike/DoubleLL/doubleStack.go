@@ -3,9 +3,9 @@ package DoubleLL
 import (
 	"fmt"
 
-	itf "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
 	"github.com/PlayerR9/MyGoLib/ListLike/Stacker"
 	itff "github.com/PlayerR9/MyGoLib/Units/Common"
+	itf "github.com/PlayerR9/MyGoLib/Units/Iterator"
 
 	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
 )
@@ -23,6 +23,11 @@ type DoubleStack[T any] struct {
 	// auxStack represents the auxiliary stack that is used to store the elements
 	// that are popped from the main stack.
 	auxStack *Stacker.ArrayStack[T]
+}
+
+// Equals implements Common.Objecter.
+func (ds *DoubleStack[T]) Equals(other itff.Objecter) bool {
+	panic("unimplemented")
 }
 
 // Clear clears the double stack.
@@ -123,21 +128,12 @@ func (ds *DoubleStack[T]) Iterator() itf.Iterater[T] {
 	return ds.mainStack.Iterator()
 }
 
-// Slice returns a slice containing aCommon the elements in the double stack.
-//
-// Returns:
-//
-//   - []T: A slice containing aCommon the elements in the double stack.
-func (ds *DoubleStack[T]) Slice() []T {
-	return ds.mainStack.Slice()
-}
-
 // Copy returns a copy of the double stack.
 //
 // Returns:
 //
 //   - *DoubleStack: A pointer to a new double stack that is a copy of the original.
-func (ds *DoubleStack[T]) Copy() itff.Copier {
+func (ds *DoubleStack[T]) Copy() itff.Objecter {
 	return &DoubleStack[T]{
 		mainStack: ds.mainStack.Copy().(Stacker.Stacker[T]),
 		auxStack:  ds.auxStack.Copy().(*Stacker.ArrayStack[T]),

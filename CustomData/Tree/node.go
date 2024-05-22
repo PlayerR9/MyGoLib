@@ -22,6 +22,16 @@ type TreeNode[T any] struct {
 	children []*TreeNode[T]
 }
 
+// Equals implements Common.Objecter.
+func (t *TreeNode[T]) Equals(other intf.Objecter) bool {
+	panic("unimplemented")
+}
+
+// String implements Common.Objecter.
+func (t *TreeNode[T]) String() string {
+	panic("unimplemented")
+}
+
 // FString returns a formatted string representation of the node.
 //
 // Parameters:
@@ -48,7 +58,7 @@ func (t *TreeNode[T]) FString(trav *ffs.Traversor) {
 //   - This function is recursive.
 //   - The parent is not copied.
 //   - The data is shallow copied.
-func (n *TreeNode[T]) Copy() intf.Copier {
+func (n *TreeNode[T]) Copy() intf.Objecter {
 	node := &TreeNode[T]{
 		Data:     n.Data,
 		parent:   nil,

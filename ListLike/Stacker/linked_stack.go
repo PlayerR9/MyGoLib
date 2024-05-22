@@ -4,9 +4,9 @@ import (
 	"strconv"
 	"strings"
 
-	itf "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
+	itf "github.com/PlayerR9/MyGoLib/Units/Iterator"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
@@ -18,6 +18,11 @@ type LinkedStack[T any] struct {
 
 	// size is the current number of elements in the stack.
 	size int
+}
+
+// Equals implements Common.Objecter.
+func (stack *LinkedStack[T]) Equals(other uc.Objecter) bool {
+	panic("unimplemented")
 }
 
 // NewLinkedStack is a function that creates and returns a new instance of a
@@ -144,7 +149,7 @@ func (stack *LinkedStack[T]) Iterator() itf.Iterater[T] {
 	var builder itf.Builder[T]
 
 	for stack_node := stack.front; stack_node != nil; stack_node = stack_node.Next() {
-		builder.Append(stack_node.Value)
+		builder.Add(stack_node.Value)
 	}
 
 	return builder.Build()
@@ -277,7 +282,7 @@ func (stack *LinkedStack[T]) Slice() []T {
 // Returns:
 //
 //   - itf.Copier: A copy of the stack.
-func (stack *LinkedStack[T]) Copy() uc.Copier {
+func (stack *LinkedStack[T]) Copy() uc.Objecter {
 	stackCopy := &LinkedStack[T]{
 		size: stack.size,
 	}

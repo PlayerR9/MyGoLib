@@ -4,9 +4,9 @@ import (
 	"strconv"
 	"strings"
 
-	itf "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
+	itf "github.com/PlayerR9/MyGoLib/Units/Iterator"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
@@ -21,6 +21,11 @@ type LimitedLinkedStack[T any] struct {
 
 	// capacity is the maximum number of elements the stack can hold.
 	capacity int
+}
+
+// Equals implements Common.Objecter.
+func (stack *LimitedLinkedStack[T]) Equals(other uc.Objecter) bool {
+	panic("unimplemented")
 }
 
 // NewLimitedLinkedStack is a function that creates and returns a new instance of a
@@ -161,7 +166,7 @@ func (stack *LimitedLinkedStack[T]) Iterator() itf.Iterater[T] {
 	var builder itf.Builder[T]
 
 	for stack_node := stack.front; stack_node != nil; stack_node = stack_node.Next() {
-		builder.Append(stack_node.Value)
+		builder.Add(stack_node.Value)
 	}
 
 	return builder.Build()
@@ -306,7 +311,7 @@ func (stack *LimitedLinkedStack[T]) Slice() []T {
 // Returns:
 //
 //   - itf.Copier: A copy of the stack.
-func (stack *LimitedLinkedStack[T]) Copy() uc.Copier {
+func (stack *LimitedLinkedStack[T]) Copy() uc.Objecter {
 	stackCopy := &LimitedLinkedStack[T]{
 		size:     stack.size,
 		capacity: stack.capacity,

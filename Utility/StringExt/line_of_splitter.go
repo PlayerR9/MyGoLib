@@ -17,11 +17,21 @@ type lineOfSplitter struct {
 	len int
 }
 
+// Equals implements Common.Objecter.
+func (sl *lineOfSplitter) Equals(other intf.Objecter) bool {
+	panic("unimplemented")
+}
+
+// String implements Common.Objecter.
+func (sl *lineOfSplitter) String() string {
+	panic("unimplemented")
+}
+
 // Copy is a method of intf.Copier that creates a shallow copy of the SpltLine.
 //
 // Returns:
 //   - intf.Copier: A shallow copy of the SpltLine.
-func (sl *lineOfSplitter) Copy() intf.Copier {
+func (sl *lineOfSplitter) Copy() intf.Objecter {
 	newLine := make([]string, len(sl.line))
 	copy(newLine, sl.line)
 

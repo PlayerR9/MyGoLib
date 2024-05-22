@@ -16,6 +16,11 @@ type String struct {
 	length int
 }
 
+// Equals implements Common.Objecter.
+func (s *String) Equals(other com.Objecter) bool {
+	panic("unimplemented")
+}
+
 // String returns the content of the unit as a string.
 //
 // Returns:
@@ -28,7 +33,7 @@ func (s *String) String() string {
 //
 // Returns:
 //   - com.Copier: A copy of the unit.
-func (s *String) Copy() com.Copier {
+func (s *String) Copy() com.Objecter {
 	return &String{
 		content: s.content,
 		length:  s.length,

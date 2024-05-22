@@ -5,9 +5,9 @@ import (
 	"strings"
 	"sync"
 
-	itf "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
+	itf "github.com/PlayerR9/MyGoLib/Units/Iterator"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
@@ -24,6 +24,11 @@ type SafeQueue[T any] struct {
 
 	// size is the current number of elements in the queue.
 	size int
+}
+
+// Equals implements Common.Objecter.
+func (queue *SafeQueue[T]) Equals(other uc.Objecter) bool {
+	panic("unimplemented")
 }
 
 // NewSafeQueue is a function that creates and returns a new instance of a
@@ -190,7 +195,7 @@ func (queue *SafeQueue[T]) Iterator() itf.Iterater[T] {
 	var builder itf.Builder[T]
 
 	for node := queue.front; node != nil; node = node.Next() {
-		builder.Append(node.Value)
+		builder.Add(node.Value)
 	}
 
 	return builder.Build()
@@ -343,7 +348,7 @@ func (queue *SafeQueue[T]) Slice() []T {
 // Returns:
 //
 //   - itf.Copier: A copy of the queue.
-func (queue *SafeQueue[T]) Copy() uc.Copier {
+func (queue *SafeQueue[T]) Copy() uc.Objecter {
 	queue.frontMutex.RLock()
 	defer queue.frontMutex.RUnlock()
 

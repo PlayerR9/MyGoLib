@@ -4,9 +4,9 @@ import (
 	"strconv"
 	"strings"
 
-	itf "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
+	itf "github.com/PlayerR9/MyGoLib/Units/Iterator"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
@@ -19,6 +19,11 @@ type LinkedQueue[T any] struct {
 
 	// size is the current number of elements in the queue.
 	size int
+}
+
+// Equals implements Common.Objecter.
+func (queue *LinkedQueue[T]) Equals(other uc.Objecter) bool {
+	panic("unimplemented")
 }
 
 // NewLinkedQueue is a function that creates and returns a new instance of a
@@ -154,7 +159,7 @@ func (queue *LinkedQueue[T]) Iterator() itf.Iterater[T] {
 	var builder itf.Builder[T]
 
 	for queue_node := queue.front; queue_node != nil; queue_node = queue_node.Next() {
-		builder.Append(queue_node.Value)
+		builder.Add(queue_node.Value)
 	}
 
 	return builder.Build()
@@ -287,7 +292,7 @@ func (queue *LinkedQueue[T]) Slice() []T {
 // Returns:
 //
 //   - itf.Copier: A copy of the queue.
-func (queue *LinkedQueue[T]) Copy() uc.Copier {
+func (queue *LinkedQueue[T]) Copy() uc.Objecter {
 	queueCopy := &LinkedQueue[T]{
 		size: queue.size,
 	}

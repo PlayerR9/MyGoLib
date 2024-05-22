@@ -9,7 +9,7 @@ import (
 )
 
 // EqualSet is a set that uses the Equals method to compare elements.
-type EqualSet[T uc.Equaler[T]] struct {
+type EqualSet[T uc.Objecter] struct {
 	// elems is the slice of elements in the set.
 	elems []T
 }
@@ -80,7 +80,7 @@ func (s *EqualSet[T]) Remove(elem T) {
 		return
 	}
 
-	indexOf := us.Find(s.elems, elem)
+	indexOf := us.FindEquals(s.elems, elem)
 	if indexOf == -1 {
 		return
 	}
@@ -100,8 +100,27 @@ func (s *EqualSet[T]) Union(other *EqualSet[T]) *EqualSet[T] {
 		return s
 	}
 
+	elems := make([]T, len(s.elems))
+	copy(elems, s.elems)
+	limit := len(elems)
+
+	for _, e := range other.elems {
+		found := false
+
+		for i := 0; i < limit; i++ {
+			if elems[i].Equals(e) {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			elems = append(elems, e)
+		}
+	}
+
 	return &EqualSet[T]{
-		elems: us.MergeUniqueFunc(s.elems, other.elems),
+		elems: elems,
 	}
 }
 
@@ -186,7 +205,7 @@ func (s *EqualSet[T]) SymmetricDifference(other *EqualSet[T]) *EqualSet[T] {
 	}
 
 	return &EqualSet[T]{
-		elems: us.MergeUniqueFunc(diff1, diff2),
+		elems: us.MergeUniqueEquals(diff1, diff2),
 	}
 }
 
@@ -253,13 +272,22 @@ func (s *EqualSet[T]) String() string {
 //
 // Returns:
 //   - bool: True if the sets are equal, false otherwise.
-func (s *EqualSet[T]) Equals(other *EqualSet[T]) bool {
-	if other == nil || len(s.elems) != len(other.elems) {
+func (s *EqualSet[T]) Equals(other uc.Objecter) bool {
+	if other == nil {
+		return false
+	}
+
+	otherEs, ok := other.(*EqualSet[T])
+	if !ok {
+		return false
+	}
+
+	if len(s.elems) != len(otherEs.elems) {
 		return false
 	}
 
 	for _, k := range s.elems {
-		if !other.HasElem(k) {
+		if !otherEs.HasElem(k) {
 			return false
 		}
 	}
@@ -271,7 +299,7 @@ func (s *EqualSet[T]) Equals(other *EqualSet[T]) bool {
 //
 // Returns:
 //   - *EqualSet[T]: A copy of the set.
-func (s *EqualSet[T]) Copy() uc.Copier {
+func (s *EqualSet[T]) Copy() uc.Objecter {
 	newElems := make([]T, len(s.elems))
 	copy(newElems, s.elems)
 
@@ -293,21 +321,15 @@ func (s *EqualSet[T]) Slice() []T {
 // Returns:
 //   - ui.Iterater[T]: An iterator for the set.
 func (s *EqualSet[T]) Iterator() ui.Iterater[T] {
-	var builder ui.Builder[T]
-
-	for _, k := range s.elems {
-		builder.Append(k)
-	}
-
-	return builder.Build()
+	return ui.NewGenericIterator(s.elems)
 }
 
 // NewEqualSet creates a new EqualSet.
 //
 // Returns:
 //   - *EqualSet: A new EqualSet.
-func NewEqualSet[T uc.Equaler[T]](elems []T) *EqualSet[T] {
+func NewEqualSet[T uc.Objecter](elems []T) *EqualSet[T] {
 	return &EqualSet[T]{
-		elems: us.RemoveDuplicatesFunc(elems),
+		elems: us.UniquefyEquals(elems),
 	}
 }

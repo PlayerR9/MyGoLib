@@ -3,8 +3,6 @@
 package Counters
 
 import (
-	"fmt"
-
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 )
 
@@ -60,7 +58,5 @@ type Counter interface {
 	// Reset resets the counter to its initial state.
 	Reset()
 
-	fmt.Stringer
-
-	uc.Copier
+	uc.Objecter
 }

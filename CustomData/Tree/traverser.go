@@ -18,10 +18,10 @@ import (
 // Returns:
 //   - bool: True if the traversal should continue, otherwise false.
 //   - error: An error if the observation fails.
-type ObserverFunc[T any, I intf.Copier] func(data T, info I) (bool, error)
+type ObserverFunc[T any, I intf.Objecter] func(data T, info I) (bool, error)
 
 // helper is a helper struct for traversing the tree.
-type helper[T any, I intf.Copier] up.Pair[*TreeNode[T], I]
+type helper[T any, I intf.Objecter] up.Pair[*TreeNode[T], I]
 
 // newHelper creates a new helper.
 //
@@ -31,7 +31,7 @@ type helper[T any, I intf.Copier] up.Pair[*TreeNode[T], I]
 //
 // Returns:
 //   - *helper[T, I]: A pointer to the helper.
-func newHelper[T any, I intf.Copier](node *TreeNode[T], info I) *helper[T, I] {
+func newHelper[T any, I intf.Objecter](node *TreeNode[T], info I) *helper[T, I] {
 	return &helper[T, I]{
 		First:  node,
 		Second: info.Copy().(I),
@@ -39,7 +39,7 @@ func newHelper[T any, I intf.Copier](node *TreeNode[T], info I) *helper[T, I] {
 }
 
 // Traversor is a struct that traverses a tree.
-type Traversor[T any, I intf.Copier] struct {
+type Traversor[T any, I intf.Objecter] struct {
 	// The helper struct.
 	h *helper[T, I]
 
@@ -130,7 +130,7 @@ func (t *Traversor[T, I]) BFS() error {
 //
 // Returns:
 //   - Traversor[T, I]: The traversor.
-func Traverse[T any, I intf.Copier](tree *Tree[T], init I, f ObserverFunc[T, I]) *Traversor[T, I] {
+func Traverse[T any, I intf.Objecter](tree *Tree[T], init I, f ObserverFunc[T, I]) *Traversor[T, I] {
 	var root *TreeNode[T]
 
 	if tree == nil {
@@ -157,7 +157,7 @@ func Traverse[T any, I intf.Copier](tree *Tree[T], init I, f ObserverFunc[T, I])
 // Returns:
 //   - []T: The next elements.
 //   - error: An error if the next elements cannot be found.
-type NextsFunc[T any, I intf.Copier] func(elem T, info I) ([]T, error)
+type NextsFunc[T any, I intf.Objecter] func(elem T, info I) ([]T, error)
 
 // MakeTree creates a tree from the given element.
 //
@@ -167,7 +167,7 @@ type NextsFunc[T any, I intf.Copier] func(elem T, info I) ([]T, error)
 // Returns:
 //   - *Tree[T]: The tree created from the element.
 //   - error: An error if the tree cannot be created.
-func MakeTree[T any, I intf.Copier](elem T, info I, f NextsFunc[T, I]) (*Tree[T], error) {
+func MakeTree[T any, I intf.Objecter](elem T, info I, f NextsFunc[T, I]) (*Tree[T], error) {
 	// 1. Handle the first element
 	h := newHelper(newTreeNode(elem), info)
 
@@ -226,11 +226,21 @@ func MakeTree[T any, I intf.Copier](elem T, info I, f NextsFunc[T, I]) (*Tree[T]
 // NoInfo is a struct that contains no information.
 type NoInfo struct{}
 
+// Equals implements Common.Objecter.
+func (n *NoInfo) Equals(other intf.Objecter) bool {
+	panic("unimplemented")
+}
+
+// String implements Common.Objecter.
+func (n *NoInfo) String() string {
+	panic("unimplemented")
+}
+
 // Copy creates a copy of the NoInfo.
 //
 // Returns:
 //   - Copier: The copy of the NoInfo.
-func (n *NoInfo) Copy() intf.Copier {
+func (n *NoInfo) Copy() intf.Objecter {
 	return &NoInfo{}
 }
 

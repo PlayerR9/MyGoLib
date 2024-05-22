@@ -3,7 +3,7 @@ package Runner
 import (
 	"sync"
 
-	mext "github.com/PlayerR9/MyGoLib/Utility/MapExt"
+	mext "github.com/PlayerR9/MyGoLib/CustomData/OrderedMap"
 )
 
 // WaitAll is a function that waits for all Go routines in the batch to finish

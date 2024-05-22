@@ -1,8 +1,8 @@
 package Stream
 
 import (
-	ll "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
 	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
+	ll "github.com/PlayerR9/MyGoLib/Units/Iterator"
 )
 
 // Stream is a stream of items.
@@ -23,13 +23,7 @@ type Stream[T any] struct {
 // Returns:
 //   - ll.Iterater[T]: An iterator for the stream.
 func (s *Stream[T]) Iterator() ll.Iterater[T] {
-	var builder ll.Builder[T]
-
-	for _, item := range s.items {
-		builder.Append(item)
-	}
-
-	return builder.Build()
+	return ll.NewGenericIterator(s.items)
 }
 
 // NewStream creates a new stream with the given items.

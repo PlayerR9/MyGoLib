@@ -1,8 +1,86 @@
 package Iterators
 
-import (
-	intf "github.com/PlayerR9/MyGoLib/Units/Common"
-)
+// Slicer is an interface that provides a method to convert a data structure to a slice.
+type Slicer[T any] interface {
+	// The Slice method returns a slice containing all the elements in the data structure.
+	Slice() []T
+
+	Iterable[T]
+}
+
+// SliceOf converts any type to a slice of elements of the same type.
+//
+// Parameters:
+//   - elem: The element to convert to a slice.
+//
+// Returns:
+//   - []T: The slice representation of the element.
+//
+// Behaviors:
+//   - Nil elements are converted to nil slices.
+//   - Slice elements are returned as is.
+//   - Slicer elements have their Slice method called.
+//   - Other elements are converted to slices containing a single element.
+func SliceOf[T any](elem any) []T {
+	if elem == nil {
+		return nil
+	}
+
+	switch elem := elem.(type) {
+	case []T:
+		return elem
+	case Slicer[T]:
+		return elem.Slice()
+	default:
+		return []T{elem.(T)}
+	}
+}
+
+// Iterable is an interface that defines a method to get an iterator over a
+// collection of elements of type T. It is implemented by data structures that
+// can be iterated over.
+type Iterable[T any] interface {
+	Iterator() Iterater[T]
+}
+
+// IteratorOf converts any type to an iterator over elements of the same type.
+//
+// Parameters:
+//   - elem: The element to convert to an iterator.
+//
+// Returns:
+//   - Iterater[T]: The iterator over the element.
+//
+// Behaviors:
+//   - IF elem is nil, an empty iterator is returned.
+//   - IF elem -implements-> Iterater[T], the element is returned as is.
+//   - IF elem -implements-> Iterable[T], the element's Iterator method is called.
+//   - IF elem -implements-> []T, a new iterator over the slice is created.
+//   - ELSE, a new iterator over a single-element collection is created.
+func IteratorOf[T any](elem any) Iterater[T] {
+	if elem == nil {
+		var builder Builder[T]
+
+		return builder.Build()
+	}
+
+	switch elem := elem.(type) {
+	case Iterater[T]:
+		return elem
+	case Iterable[T]:
+		return elem.Iterator()
+	case []T:
+		return &GenericIterator[T]{
+			values: &elem,
+			index:  0,
+		}
+	default:
+		return &GenericIterator[T]{
+			values: &[]T{elem.(T)},
+			index:  0,
+		}
+	}
+}
 
 // Iterater is an interface that defines methods for an iterator over a
 // collection of elements of type T.
@@ -18,62 +96,4 @@ type Iterater[T any] interface {
 	// The Restart method resets the iterator to the beginning of the
 	// collection.
 	Restart()
-}
-
-// Iterable is an interface that defines a method to get an iterator over a
-// collection of elements of type T. It is implemented by data structures that
-// can be iterated over.
-type Iterable[T any] interface {
-	Iterator() Iterater[T]
-}
-
-// IteratorFromSlice creates a new iterator over a slice of elements of type T.
-//
-// Parameters:
-//   - values: The slice of elements to iterate over.
-//
-// Return:
-//   - Iterater[T]: A new iterator over the given slice of elements.
-func IteratorFromSlice[T any](values []T) Iterater[T] {
-	return &GenericIterator[T]{
-		values: &values,
-		index:  0,
-	}
-}
-
-// IteratorFromSlicer creates a new iterator over a data structure that implements
-// the Slicer interface. It uses the Slice method of the data structure to get the
-// slice of elements to iterate over.
-//
-// Parameters:
-//   - slicer: The data structure that implements the Slicer interface.
-//
-// Return:
-//   - Iterater[T]: A new iterator over the slice of elements returned by the slicer.
-func IteratorFromSlicer[T any](slicer intf.Slicer[T]) Iterater[T] {
-	elements := slicer.Slice()
-
-	return &GenericIterator[T]{
-		values: &elements,
-		index:  0,
-	}
-}
-
-// IteratorFromValues creates a new iterator over a variadic list of elements of
-// type T.
-//
-// Parameters:
-//   - values: The variadic list of elements to iterate over.
-//
-// Return:
-//   - Iterater[T]: The new iterator over the given elements.
-func IteratorFromValues[T any](values ...T) Iterater[T] {
-	// Create a copy of the values slice.
-	valuesCopy := make([]T, len(values))
-	copy(valuesCopy, values)
-
-	return &GenericIterator[T]{
-		values: &valuesCopy,
-		index:  0,
-	}
 }

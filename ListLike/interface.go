@@ -1,10 +1,8 @@
 package ListLike
 
 import (
-	"fmt"
-
-	itr "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
 	intf "github.com/PlayerR9/MyGoLib/Units/Common"
+	itr "github.com/PlayerR9/MyGoLib/Units/Iterator"
 )
 
 // ListLike is an interface that defines methods for a list data structure.
@@ -46,9 +44,5 @@ type ListLike[T any] interface {
 
 	itr.Iterable[T]
 
-	intf.Slicer[T]
-
-	intf.Copier
-
-	fmt.Stringer
+	intf.Objecter
 }

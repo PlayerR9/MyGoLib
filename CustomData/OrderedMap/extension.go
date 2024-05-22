@@ -1,4 +1,4 @@
-package MapExt
+package OrderedMap
 
 import (
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
@@ -324,7 +324,7 @@ func RemoveDuplicates[K comparable, V comparable](S map[K]V) map[K]V {
 //     occurrence is kept.
 //   - If there are less than two elements in the map, the function
 //     returns the original map.
-func RemoveDuplicatesFunc[K comparable, V uc.Equaler[V]](S map[K]V) map[K]V {
+func RemoveDuplicatesFunc[K comparable, V uc.Objecter](S map[K]V) map[K]V {
 	if len(S) < 2 {
 		return S
 	}
@@ -386,7 +386,7 @@ func KeyOfDuplicate[K, V comparable](S map[K]V) (K, bool) {
 // Returns:
 //   - K: key of the first duplicate element or a zero value if there are no duplicates.
 //   - bool: true if there are duplicates, otherwise false.
-func KeyOfDuplicateFunc[K comparable, V uc.Equaler[V]](S map[K]V) (K, bool) {
+func KeyOfDuplicateFunc[K comparable, V uc.Objecter](S map[K]V) (K, bool) {
 	if len(S) < 2 {
 		return *new(K), false
 	}
@@ -413,11 +413,35 @@ func KeyOfDuplicateFunc[K comparable, V uc.Equaler[V]](S map[K]V) (K, bool) {
 	return *new(K), false
 }
 
-func PurgeKeysNotIn[K comparable, V any](M map[K]V, validKeys []K) K {
-	allKeys := make([]K, 0, len(M))
-
-	for k := range M {
-		allKeys = append(allKeys, k)
+// PurgeKeysNotIn removes elements from the map whose keys are not in the validKeys slice.
+//
+// Parameters:
+//   - M: map of elements.
+//   - validKeys: slice of keys to keep.
+//
+// Returns:
+//   - map[K]V: map of elements with keys not in validKeys removed.
+//
+// Behavior:
+//   - If validKeys is empty, the function returns an empty map.
+//   - If M is empty, the function returns an empty map.
+func PurgeKeysNotIn[K comparable, V any](M map[K]V, validKeys []K) map[K]V {
+	if len(validKeys) == 0 {
+		return make(map[K]V)
+	} else if len(M) == 0 {
+		return make(map[K]V)
 	}
 
+	for _, key := range validKeys {
+		_, ok := M[key]
+		if !ok {
+			delete(M, key)
+		}
+
+		if len(M) == 0 {
+			break
+		}
+	}
+
+	return M
 }

@@ -1,7 +1,7 @@
 package Pair
 
 import (
-	"fmt"
+	"strings"
 
 	intf "github.com/PlayerR9/MyGoLib/Units/Common"
 )
@@ -21,7 +21,15 @@ type Pair[A any, B any] struct {
 // Returns:
 //   - string: The string representation of the pair.
 func (p *Pair[A, B]) String() string {
-	return fmt.Sprintf("(%s, %s)", intf.StringOf(p.First), intf.StringOf(p.Second))
+	var builder strings.Builder
+
+	builder.WriteRune('(')
+	builder.WriteString(intf.StringOf(p.First))
+	builder.WriteString(", ")
+	builder.WriteString(intf.StringOf(p.Second))
+	builder.WriteRune(')')
+
+	return builder.String()
 }
 
 // Copy returns a shallow or deep copy of the pair according to the function
@@ -29,7 +37,7 @@ func (p *Pair[A, B]) String() string {
 //
 // Returns:
 //   - intf.Copier: A shallow or deep copy of the pair.
-func (p *Pair[A, B]) Copy() intf.Copier {
+func (p *Pair[A, B]) Copy() intf.Objecter {
 	return &Pair[A, B]{
 		First:  intf.CopyOf(p.First).(A),
 		Second: intf.CopyOf(p.Second).(B),
@@ -44,8 +52,18 @@ func (p *Pair[A, B]) Copy() intf.Copier {
 //
 // Returns:
 //   - bool: True if the pair is equal to the other pair.
-func (p *Pair[A, B]) Equals(other *Pair[A, B]) bool {
-	return intf.EqualOf(p.First, other.First) && intf.EqualOf(p.Second, other.Second)
+func (p *Pair[A, B]) Equals(other intf.Objecter) bool {
+	if other == nil {
+		return false
+	}
+
+	otherPair, ok := other.(*Pair[A, B])
+	if !ok {
+		return false
+	}
+
+	return intf.EqualOf(p.First, otherPair.First) &&
+		intf.EqualOf(p.Second, otherPair.Second)
 }
 
 // Clean cleans the pair by first calling the intf.Clean() function on both the

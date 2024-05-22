@@ -4,9 +4,9 @@ import (
 	"strconv"
 	"strings"
 
-	itf "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
+	itf "github.com/PlayerR9/MyGoLib/Units/Iterator"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
@@ -22,6 +22,11 @@ type LimitedLinkedList[T any] struct {
 
 	// capacity is the maximum number of elements the list can hold.
 	capacity int
+}
+
+// Equals implements Common.Objecter.
+func (list *LimitedLinkedList[T]) Equals(other uc.Objecter) bool {
+	panic("unimplemented")
 }
 
 // NewLimitedLinkedList is a function that creates and returns a new instance of a
@@ -177,7 +182,7 @@ func (list *LimitedLinkedList[T]) Iterator() itf.Iterater[T] {
 	var builder itf.Builder[T]
 
 	for list_node := list.front; list_node != nil; list_node = list_node.Next() {
-		builder.Append(list_node.Value)
+		builder.Add(list_node.Value)
 	}
 
 	return builder.Build()
@@ -400,7 +405,7 @@ func (list *LimitedLinkedList[T]) Slice() []T {
 // Returns:
 //
 //   - itf.Copier: A copy of the list.
-func (list *LimitedLinkedList[T]) Copy() uc.Copier {
+func (list *LimitedLinkedList[T]) Copy() uc.Objecter {
 	listCopy := &LimitedLinkedList[T]{
 		size:     list.size,
 		capacity: list.capacity,

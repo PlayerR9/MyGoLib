@@ -6,8 +6,8 @@ import (
 	"slices"
 	"sort"
 
-	itf "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
 	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
+	itf "github.com/PlayerR9/MyGoLib/Units/Iterator"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 
 	fs "github.com/PlayerR9/MyGoLib/Formatting/Strings"
@@ -44,7 +44,7 @@ func (pi *PageInterval) String() string {
 //   - itf.Iterater[int]: An iterator for iterating over the pages in the PageInterval.
 func (pi *PageInterval) Iterator() itf.Iterater[int] {
 	iter, err := itf.NewProceduralIterator(
-		itf.IteratorFromSlice(pi.intervals),
+		itf.NewGenericIterator(pi.intervals),
 		PageRangeIterator,
 	)
 	if err != nil {
@@ -376,12 +376,12 @@ func (pi *PageInterval) ReverseIterator() itf.Iterater[int] {
 	slices.Reverse(reversed)
 
 	iter, err := itf.NewProceduralIterator(
-		itf.IteratorFromSlice(reversed),
+		itf.NewGenericIterator(reversed),
 		func(pr *PageRange) itf.Iterater[int] {
 			var builder itf.Builder[int]
 
 			for page := pr.Second; page >= pr.First; page-- {
-				builder.Append(page)
+				builder.Add(page)
 			}
 
 			return builder.Build()

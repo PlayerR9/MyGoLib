@@ -5,9 +5,9 @@ import (
 	"strings"
 	"sync"
 
-	itf "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
+	itf "github.com/PlayerR9/MyGoLib/Units/Iterator"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
@@ -27,6 +27,11 @@ type LimitedSafeList[T any] struct {
 
 	// capacity is the maximum number of elements that the list can hold.
 	capacity int
+}
+
+// Equals implements Common.Objecter.
+func (list *LimitedSafeList[T]) Equals(other uc.Objecter) bool {
+	panic("unimplemented")
 }
 
 // NewLimitedSafeList is a function that creates and returns a new instance of a
@@ -215,7 +220,7 @@ func (list *LimitedSafeList[T]) Iterator() itf.Iterater[T] {
 	var builder itf.Builder[T]
 
 	for node := list.front; node != nil; node = node.Next() {
-		builder.Append(node.Value)
+		builder.Add(node.Value)
 	}
 
 	return builder.Build()
@@ -479,7 +484,7 @@ func (list *LimitedSafeList[T]) Slice() []T {
 // Returns:
 //
 //   - uc.Copier: A copy of the list.
-func (list *LimitedSafeList[T]) Copy() uc.Copier {
+func (list *LimitedSafeList[T]) Copy() uc.Objecter {
 	list.frontMutex.RLock()
 	defer list.frontMutex.RUnlock()
 

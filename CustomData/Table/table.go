@@ -1,8 +1,8 @@
 package Table
 
 import (
-	ll "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
 	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
+	ll "github.com/PlayerR9/MyGoLib/Units/Iterator"
 )
 
 // Table[T] represents a table of cells that can be drawn to the screen.
@@ -28,22 +28,10 @@ type Table[T any] struct {
 // Behaviors:
 //   - For efficiency, the iterator is procedural. It is not a generator.
 func (t *Table[T]) Iterator() ll.Iterater[T] {
-	var builder ll.Builder[[]T]
-
-	for _, row := range t.table {
-		builder.Append(row)
-	}
-
 	iter, err := ll.NewProceduralIterator(
-		builder.Build(),
+		ll.NewGenericIterator(t.table),
 		func(row []T) ll.Iterater[T] {
-			var builder ll.Builder[T]
-
-			for _, cell := range row {
-				builder.Append(cell)
-			}
-
-			return builder.Build()
+			return ll.NewGenericIterator(row)
 		},
 	)
 	if err != nil {

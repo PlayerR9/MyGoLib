@@ -2,12 +2,13 @@ package OrderedMap
 
 import (
 	"slices"
+	"strings"
 
 	cdp "github.com/PlayerR9/MyGoLib/Units/Pair"
 
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 
-	ll "github.com/PlayerR9/MyGoLib/ListLike/Iterator"
+	ll "github.com/PlayerR9/MyGoLib/Units/Iterator"
 )
 
 // OrderedMap is a generic data structure that represents a sorted map.
@@ -19,11 +20,75 @@ type OrderedMap[K comparable, V any] struct {
 	keys []K
 }
 
-// Copy creates a deep copy of the sorted map.
+// Equals implements Common.Objecter.
+func (s *OrderedMap[K, V]) Equals(other uc.Objecter) bool {
+	if other == nil {
+		return false
+	}
+
+	otherMap, ok := other.(*OrderedMap[K, V])
+	if !ok {
+		return false
+	}
+
+	if len(s.keys) != len(otherMap.keys) {
+		return false
+	}
+
+	for key, value := range s.mapping {
+		val, ok := otherMap.mapping[key]
+		if !ok {
+			return false
+		}
+
+		if !uc.EqualOf(value, val) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// String implements Common.Objecter.
+func (s *OrderedMap[K, V]) String() string {
+	if len(s.keys) == 0 {
+		return "{}"
+	} else if len(s.keys) == 1 {
+		var builder strings.Builder
+
+		builder.WriteRune('{')
+		builder.WriteString(uc.StringOf(s.keys[0]))
+		builder.WriteString(" : ")
+		builder.WriteString(uc.StringOf(s.mapping[s.keys[0]]))
+		builder.WriteRune('}')
+
+		return builder.String()
+	}
+
+	var builder strings.Builder
+
+	builder.WriteRune('{')
+	builder.WriteString(uc.StringOf(s.keys[0]))
+	builder.WriteString(" : ")
+	builder.WriteString(uc.StringOf(s.mapping[s.keys[0]]))
+
+	for _, key := range s.keys[1:] {
+		builder.WriteString(", ")
+		builder.WriteString(uc.StringOf(key))
+		builder.WriteString(" : ")
+		builder.WriteString(uc.StringOf(s.mapping[key]))
+	}
+
+	builder.WriteRune('}')
+
+	return builder.String()
+}
+
+// Copy creates a shallow copy of the sorted map.
 //
 // Returns:
-//   - uc.Copier: A deep copy of the sorted map.
-func (s *OrderedMap[K, V]) Copy() uc.Copier {
+//   - uc.Copier: A shallow copy of the sorted map.
+func (s *OrderedMap[K, V]) Copy() uc.Objecter {
 	sCopy := &OrderedMap[K, V]{
 		mapping: make(map[K]V),
 		keys:    make([]K, len(s.keys)),
@@ -175,7 +240,7 @@ func (s *OrderedMap[K, V]) Delete(key K) {
 func (s *OrderedMap[K, V]) ModifyValueFunc(key K, f ModifyValueFunc[V]) error {
 	oldValue, ok := s.mapping[key]
 	if !ok {
-		return NewErrKeyNotFound(key)
+		return NewErrKeyNotFound()
 	}
 
 	newValue, err := f(oldValue)
@@ -213,7 +278,7 @@ func (s *OrderedMap[K, V]) Iterator() ll.Iterater[*cdp.Pair[K, V]] {
 	var builder ll.Builder[*cdp.Pair[K, V]]
 
 	for _, key := range s.keys {
-		builder.Append(cdp.NewPair(key, s.mapping[key]))
+		builder.Add(cdp.NewPair(key, s.mapping[key]))
 	}
 
 	return builder.Build()
