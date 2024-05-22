@@ -50,8 +50,8 @@ func (m *JSONManager[T]) Exists() (bool, error) {
 //
 // Returns:
 //   - JSONManager[T]: The new JSONManager.
-func NewJSONManager[T JSONEncoder](loc string) JSONManager[T] {
-	return JSONManager[T]{
+func NewJSONManager[T JSONEncoder](loc string) *JSONManager[T] {
+	return &JSONManager[T]{
 		loc: loc,
 	}
 }
