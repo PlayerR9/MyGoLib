@@ -3,7 +3,7 @@ package Helpers
 import (
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 	up "github.com/PlayerR9/MyGoLib/Units/Pair"
-	slext "github.com/PlayerR9/MyGoLib/Utility/SliceExt"
+	slext "github.com/PlayerR9/MyGoLib/Units/Slices"
 )
 
 // Helper is an interface that represents a helper.

@@ -412,3 +412,12 @@ func KeyOfDuplicateFunc[K comparable, V uc.Equaler[V]](S map[K]V) (K, bool) {
 
 	return *new(K), false
 }
+
+func PurgeKeysNotIn[K comparable, V any](M map[K]V, validKeys []K) K {
+	allKeys := make([]K, 0, len(M))
+
+	for k := range M {
+		allKeys = append(allKeys, k)
+	}
+
+}

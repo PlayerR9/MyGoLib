@@ -2,7 +2,7 @@ package Slices
 
 import (
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
-	slext "github.com/PlayerR9/MyGoLib/Utility/SliceExt"
+	slext "github.com/PlayerR9/MyGoLib/Units/Slices"
 )
 
 // DoWhile performs a do-while loop on a slice of elements.

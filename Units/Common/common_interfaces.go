@@ -157,32 +157,15 @@ func CompareAny(a, b any) (int, bool) {
 		} else {
 			return 0, true
 		}
+	case Comparer[any]:
+		otherB, ok := b.(Comparer[any])
+		if !ok {
+			return 0, false
+		}
+
+		return a.Compare(otherB), true
 	default:
 		return 0, false
-	}
-}
-
-// IsComparable returns true if the value is comparable with other values of the
-// same type using the < and > operators or the Comparable interface.
-//
-// Parameters:
-//   - value: The value to check.
-//
-// Returns:
-//   - bool: True if the value is comparable, false otherwise.
-func IsComparable(value any) bool {
-	if value == nil {
-		return false
-	}
-
-	switch value.(type) {
-	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64,
-		float32, float64, string:
-		return true
-	case Comparer[any]:
-		return true
-	default:
-		return false
 	}
 }
 
@@ -278,17 +261,24 @@ func EqualOf(obj1, obj2 any) bool {
 		return false
 	}
 
-	a, ok := obj1.(Equaler[any])
-	if ok {
-		return a.Equals(obj2)
+	switch a := obj1.(type) {
+	case Equaler[any]:
+		b, ok := obj2.(Equaler[any])
+		if !ok {
+			return false
+		} else {
+			return a.Equals(b)
+		}
+	case Comparer[any]:
+		b, ok := obj2.(Comparer[any])
+		if !ok {
+			return false
+		} else {
+			return a.Compare(b) == 0
+		}
+	default:
+		return obj1 == obj2
 	}
-
-	b, ok := obj2.(Equaler[any])
-	if ok {
-		return b.Equals(obj1)
-	}
-
-	return obj1 == obj2
 }
 
 // Copier is an interface that provides a method to create a deep copy of an object.

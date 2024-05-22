@@ -6,7 +6,7 @@ import (
 	tr "github.com/PlayerR9/MyGoLib/CustomData/Tree"
 	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
 
-	slext "github.com/PlayerR9/MyGoLib/Utility/SliceExt"
+	slext "github.com/PlayerR9/MyGoLib/Units/Slices"
 )
 
 // IsTextNodeSearch is a search criteria that matches text nodes.

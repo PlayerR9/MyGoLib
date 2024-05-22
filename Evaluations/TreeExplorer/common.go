@@ -1,8 +1,8 @@
 package TreeExplorer
 
 import (
+	slext "github.com/PlayerR9/MyGoLib/Units/Slices"
 	hlp "github.com/PlayerR9/MyGoLib/Utility/Helpers"
-	slext "github.com/PlayerR9/MyGoLib/Utility/SliceExt"
 )
 
 // FilterBranchesFunc is a function that filters branches.
