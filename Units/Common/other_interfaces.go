@@ -1,5 +1,7 @@
 package Common
 
+import "fmt"
+
 // Cleaner is an interface that provides a method to remove all the elements
 // from a data structure.
 type Cleaner interface {
@@ -93,5 +95,45 @@ func CompareOf(obj1, obj2 any) (int, bool) {
 		return obj1.Compare(val2), true
 	default:
 		return CompareAny(obj1, obj2)
+	}
+}
+
+// Runer is an interface that provides a method to get the runes of a string.
+type Runer interface {
+	// Runes returns the runes of the string.
+	//
+	// Returns:
+	//   - []rune: The runes of the string.
+	Runes() []rune
+}
+
+// RunesOf returns the runes of a string. If the string implements the Runer interface,
+// the Runes method is called. Otherwise, the string is converted to a slice of runes.
+//
+// Parameters:
+//   - str: The string to get the runes from.
+//
+// Returns:
+//   - []rune: The runes of the string.
+func RunesOf(str any) []rune {
+	if str == nil {
+		return nil
+	}
+
+	switch str := str.(type) {
+	case Runer:
+		return str.Runes()
+	case []rune:
+		return str
+	case string:
+		return []rune(str)
+	case []byte:
+		return []rune(string(str))
+	case error:
+		return []rune(str.Error())
+	case fmt.Stringer:
+		return []rune(str.String())
+	default:
+		return []rune(fmt.Sprintf("%v", str))
 	}
 }

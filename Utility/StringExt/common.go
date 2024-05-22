@@ -14,6 +14,8 @@ import (
 	ue "github.com/PlayerR9/MyGoLib/Units/Errors"
 	up "github.com/PlayerR9/MyGoLib/Units/Pair"
 	hlp "github.com/PlayerR9/MyGoLib/Utility/Helpers"
+
+	com "github.com/PlayerR9/MyGoLib/Units/Common"
 )
 
 // ToUTF8Runes converts a string to a slice of runes.
@@ -629,4 +631,61 @@ func SplitInEqualSizedLines(text []string, width, height int) (*TextSplit, error
 	// TODO: Choose the best candidate by following other criteria.
 
 	return candidates[0], nil
+}
+
+// StringToLines splits a string into lines.
+//
+// Parameters:
+//   - str: The string to split into lines.
+//
+// Returns:
+//   - []string: The lines of the string.
+func StringToLines(str string) []string {
+	lines := make([]string, 0)
+	var builder strings.Builder
+
+	for _, c := range str {
+		if c == '\n' {
+			lines = append(lines, builder.String())
+			builder.Reset()
+		} else {
+			builder.WriteRune(c)
+		}
+	}
+
+	if builder.Len() > 0 {
+		lines = append(lines, builder.String())
+	}
+
+	return lines
+}
+
+// StringToLines splits a string into lines.
+//
+// Parameters:
+//   - elem: The element to split into lines.
+//   - f: The function to execute on each rune to convert it to the desired type.
+//
+// Returns:
+//   - [][]O: The lines of the elements.
+//   - error: An error if it occurs during the conversion.
+func AnyToLines[I com.Runer, O any](elem I, f func(rune) (O, error)) ([][]O, error) {
+	lines := [][]O{make([]O, 0)}
+	lastLine := 0
+
+	for _, c := range elem.Runes() {
+		if c == '\n' {
+			lines = append(lines, make([]O, 0))
+			lastLine++
+		} else {
+			newO, err := f(c)
+			if err != nil {
+				return lines, err
+			}
+
+			lines[lastLine] = append(lines[lastLine], newO)
+		}
+	}
+
+	return lines, nil
 }
