@@ -36,9 +36,9 @@ type traversor[T any] struct {
 //
 // Returns:
 //   - Traversor[T, I]: The traversor.
-func newTraversor[T any](data T, init uc.Objecter) *traversor[T] {
+func newTraversor[T any](node *tr.TreeNode[T], init uc.Objecter) *traversor[T] {
 	t := &traversor[T]{
-		elem: tr.NewTreeNode(data),
+		elem: node,
 	}
 
 	if init != nil {
@@ -48,6 +48,39 @@ func newTraversor[T any](data T, init uc.Objecter) *traversor[T] {
 	}
 
 	return t
+}
+
+// getData returns the data of the traversor.
+//
+// Returns:
+//   - T: The data of the traversor.
+//   - bool: True if the data is valid, otherwise false.
+func (t *traversor[T]) getData() (T, bool) {
+	if t.elem == nil {
+		return *new(T), false
+	}
+
+	return t.elem.Data, true
+}
+
+// getInfo returns the info of the traversor.
+//
+// Returns:
+//   - uc.Objecter: The info of the traversor.
+func (t *traversor[T]) getInfo() uc.Objecter {
+	return t.info
+}
+
+// getChildren returns the children of the traversor.
+//
+// Returns:
+//   - []*tr.TreeNode[T]: The children of the traversor.
+func (t *traversor[T]) getChildren() []*tr.TreeNode[T] {
+	if t.elem == nil {
+		return nil
+	}
+
+	return t.elem.GetChildren()
 }
 
 // DFS traverses the tree in depth-first order.
@@ -62,7 +95,7 @@ func DFS[T any](tree *tr.Tree[T], init uc.Objecter, f ObserverFunc[T]) error {
 		return nil
 	}
 
-	S := Stacker.NewLinkedStack(newTraversor(tree.Root().Data, init))
+	S := Stacker.NewLinkedStack(newTraversor(tree.Root(), init))
 
 	for {
 		top, err := S.Pop()
@@ -70,23 +103,26 @@ func DFS[T any](tree *tr.Tree[T], init uc.Objecter, f ObserverFunc[T]) error {
 			break
 		}
 
-		ok, err := f(top.elem.Data, top.info)
+		topData, ok := top.getData()
+		if !ok {
+			panic("Missing data")
+		}
+		topInfo := top.getInfo()
+
+		ok, err = f(topData, topInfo)
 		if err != nil {
 			return err
-		}
-
-		if !ok {
+		} else if !ok {
 			continue
 		}
 
-		children := top.elem.GetChildren()
-
+		children := top.getChildren()
 		if len(children) == 0 {
 			continue
 		}
 
 		for _, child := range children {
-			newT := newTraversor(child.Data, top.info)
+			newT := newTraversor(child, topInfo)
 
 			err := S.Push(newT)
 			if err != nil {
@@ -110,7 +146,7 @@ func BFS[T any](tree *tr.Tree[T], init uc.Objecter, f ObserverFunc[T]) error {
 		return nil
 	}
 
-	Q := Queuer.NewLinkedQueue(newTraversor(tree.Root().Data, init))
+	Q := Queuer.NewLinkedQueue(newTraversor(tree.Root(), init))
 
 	for {
 		first, err := Q.Dequeue()
@@ -118,17 +154,26 @@ func BFS[T any](tree *tr.Tree[T], init uc.Objecter, f ObserverFunc[T]) error {
 			break
 		}
 
-		ok, err := f(first.elem.Data, first.info)
+		firstData, ok := first.getData()
+		if !ok {
+			panic("Missing data")
+		}
+		firstInfo := first.getInfo()
+
+		ok, err = f(firstData, firstInfo)
 		if err != nil {
 			return err
-		}
-
-		if !ok {
+		} else if !ok {
 			continue
 		}
 
-		for _, child := range first.elem.GetChildren() {
-			newT := newTraversor(child.Data, first.info)
+		children := first.getChildren()
+		if len(children) == 0 {
+			continue
+		}
+
+		for _, child := range children {
+			newT := newTraversor(child, firstInfo)
 
 			err := Q.Enqueue(newT)
 			if err != nil {

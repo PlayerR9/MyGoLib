@@ -63,12 +63,28 @@ func (b *Builder[T]) Build(elem T) (*tr.Tree[T], error) {
 		return nil, nil
 	}
 
-	// 1. Initialize the tree
+	// 1. Handle the root node
+	nexts, err := b.f(elem, b.info)
+	if err != nil {
+		return nil, err
+	}
+
 	tree := tr.NewTree(elem)
 
-	S := Stacker.NewLinkedStack(
-		newStackElement[T](nil, elem, b.info, b.f),
-	)
+	if len(nexts) == 0 {
+		return tree, nil
+	}
+
+	S := Stacker.NewLinkedStack[*stackElement[T]]()
+
+	for _, next := range nexts {
+		se := newStackElement(tree.Root(), next, b.info)
+
+		err := S.Push(se)
+		if err != nil {
+			panic(err)
+		}
+	}
 
 	for {
 		top, err := S.Pop()
@@ -76,7 +92,13 @@ func (b *Builder[T]) Build(elem T) (*tr.Tree[T], error) {
 			break
 		}
 
-		nexts, err := top.apply()
+		topData, ok := top.getData()
+		if !ok {
+			panic("Missing data")
+		}
+		topInfo := top.getInfo()
+
+		nexts, err := b.f(topData, topInfo)
 		if err != nil {
 			return nil, err
 		}
@@ -85,21 +107,15 @@ func (b *Builder[T]) Build(elem T) (*tr.Tree[T], error) {
 			continue
 		}
 
-		if top.prev != nil {
-			top.prev.AddChildren(top.elem)
-
-			// Update the leaves
-			tree.UpdateLeaves()
+		ok = top.linkToPrev()
+		if !ok {
+			panic("Cannot link to previous node")
 		}
 
-		for _, next := range nexts {
-			var se *stackElement[T]
+		topElem := top.getElem()
 
-			if b.info == nil {
-				se = newStackElement(top.elem, next, nil, b.f)
-			} else {
-				se = newStackElement(top.elem, next, top.info, b.f)
-			}
+		for _, next := range nexts {
+			se := newStackElement(topElem, next, topInfo)
 
 			err := S.Push(se)
 			if err != nil {
@@ -109,6 +125,8 @@ func (b *Builder[T]) Build(elem T) (*tr.Tree[T], error) {
 	}
 
 	b.Reset()
+
+	tree.RegenerateLeaves()
 
 	return tree, nil
 }

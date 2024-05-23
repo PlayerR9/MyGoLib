@@ -16,9 +16,6 @@ type stackElement[T any] struct {
 
 	// info is the info of the current node.
 	info uc.Objecter
-
-	// nextFunc is the function to get the next node.
-	nextFunc NextsFunc[T]
 }
 
 // newStackElement creates a new stack element.
@@ -29,11 +26,10 @@ type stackElement[T any] struct {
 //
 // Returns:
 //   - *stackElement[T, E]: A pointer to the stack element.
-func newStackElement[T any](prev *tr.TreeNode[T], data T, info uc.Objecter, nextFunc NextsFunc[T]) *stackElement[T] {
+func newStackElement[T any](prev *tr.TreeNode[T], data T, info uc.Objecter) *stackElement[T] {
 	se := &stackElement[T]{
-		prev:     prev,
-		elem:     tr.NewTreeNode(data),
-		nextFunc: nextFunc,
+		prev: prev,
+		elem: tr.NewTreeNode(data),
 	}
 
 	if info == nil {
@@ -45,15 +41,42 @@ func newStackElement[T any](prev *tr.TreeNode[T], data T, info uc.Objecter, next
 	return se
 }
 
-// apply applies the next function.
+// getData returns the data of the stack element.
 //
 // Returns:
-//   - []T: A slice of the next elements.
-//   - error: An error if the function fails.
-func (se *stackElement[T]) apply() ([]T, error) {
-	if se.nextFunc == nil {
-		return nil, nil
+//   - T: The data of the stack element.
+//   - bool: True if the data is valid, otherwise false.
+func (se *stackElement[T]) getData() (T, bool) {
+	if se.elem == nil {
+		return *new(T), false
 	}
 
-	return se.nextFunc(se.elem.Data, se.info)
+	return se.elem.Data, true
+}
+
+// getInfo returns the info of the stack element.
+//
+// Returns:
+//   - uc.Objecter: The info of the stack element.
+func (se *stackElement[T]) getInfo() uc.Objecter {
+	return se.info
+}
+
+// linkToPrev links the current node to the previous node.
+func (se *stackElement[T]) linkToPrev() bool {
+	if se.prev == nil {
+		return false
+	}
+
+	se.prev.AddChild(se.elem)
+
+	return true
+}
+
+// getElem returns the current node.
+//
+// Returns:
+//   - *tr.TreeNode[T]: The current node.
+func (se *stackElement[T]) getElem() *tr.TreeNode[T] {
+	return se.elem
 }
