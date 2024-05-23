@@ -1,7 +1,7 @@
 package TreeExplorer
 
 import (
-	tr "github.com/PlayerR9/MyGoLib/CustomData/Tree"
+	tr "github.com/PlayerR9/MyGoLib/TreeLike/Tree"
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
 )
@@ -184,7 +184,7 @@ func (te *TreeEvaluator[R, M, O]) Evaluate(matcher M, root O) error {
 func (te *TreeEvaluator[R, M, O]) GetBranches() ([][]*CurrentEval[O], error) {
 	if te.root == nil {
 		return nil, ers.NewErrInvalidUsage(
-			NewErrNilRoot(),
+			ers.NewErrNilValue(),
 			"must call TreeEvaluator.Evaluate() first",
 		)
 	}

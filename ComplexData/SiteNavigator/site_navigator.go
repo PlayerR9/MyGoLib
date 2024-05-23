@@ -3,9 +3,11 @@ package SiteNavigator
 import (
 	"golang.org/x/net/html"
 
-	tr "github.com/PlayerR9/MyGoLib/CustomData/Tree"
+	tlt "github.com/PlayerR9/MyGoLib/TreeLike/Traversor"
+	tr "github.com/PlayerR9/MyGoLib/TreeLike/Tree"
 	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
 
+	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 	slext "github.com/PlayerR9/MyGoLib/Units/Slices"
 )
 
@@ -31,6 +33,23 @@ func GetDirectChildren(node *html.Node) []*html.Node {
 	return children
 }
 
+var (
+	// GetChildrenFunc is a function that returns the children of an HTML node.
+	GetChildrenFunc tlt.NextsFunc[*html.Node] = func(elem *html.Node, info uc.Objecter) ([]*html.Node, error) {
+		if elem == nil {
+			return nil, ers.NewErrNilValue()
+		}
+
+		children := make([]*html.Node, 0)
+
+		for c := elem.FirstChild; c != nil; c = c.NextSibling {
+			children = append(children, c)
+		}
+
+		return children, nil
+	}
+)
+
 // HtmlTree is a struct that represents an HTML tree.
 type HtmlTree struct {
 	// The tree constructed from the HTML node.
@@ -49,22 +68,11 @@ type HtmlTree struct {
 // Errors:
 //   - *ers.ErrNilValue: If any html.Node is nil.
 func NewHtmlTree(root *html.Node) (*HtmlTree, error) {
-	tree, err := tr.NoInfoMakeTree(
-		root,
-		func(elem *html.Node) ([]*html.Node, error) {
-			if elem == nil {
-				return nil, ers.NewErrNilValue()
-			}
+	var builder tlt.Builder[*html.Node]
 
-			children := make([]*html.Node, 0)
+	builder.SetNextFunc(GetChildrenFunc)
 
-			for c := elem.FirstChild; c != nil; c = c.NextSibling {
-				children = append(children, c)
-			}
-
-			return children, nil
-		},
-	)
+	tree, err := builder.Build(root)
 	if err != nil {
 		return nil, err
 	}
@@ -119,17 +127,14 @@ func (t *HtmlTree) ExtractSpecificNode(matchFun slext.PredicateFilter[*html.Node
 func (t *HtmlTree) MatchNodes(matchFun slext.PredicateFilter[*html.Node]) []*html.Node {
 	solution := make([]*html.Node, 0)
 
-	err := tr.NoInfoTraverse(
-		t.tree,
-		func(node *html.Node) (bool, error) {
-			if !matchFun(node) {
-				return true, nil
-			}
+	err := tlt.BFS(t.tree, nil, func(node *html.Node, info uc.Objecter) (bool, error) {
+		if !matchFun(node) {
+			return true, nil
+		}
 
-			solution = append(solution, node)
-			return false, nil
-		},
-	).BFS()
+		solution = append(solution, node)
+		return false, nil
+	})
 	if err != nil {
 		panic(err)
 	}
@@ -153,17 +158,15 @@ func (t *HtmlTree) ExtractContentFromDocument(matchFun slext.PredicateFilter[*ht
 
 	var solution *html.Node = nil
 
-	err := tr.NoInfoTraverse(
-		t.tree,
-		func(node *html.Node) (bool, error) {
-			if !matchFun(node) {
-				return true, nil
-			}
+	err := tlt.DFS(t.tree, nil, func(node *html.Node, info uc.Objecter) (bool, error) {
+		if !matchFun(node) {
+			return true, nil
+		}
 
-			solution = node
-			return false, ers.NewErrNoError(nil)
-		},
-	).DFS()
+		solution = node
+		return false, nil
+	})
+
 	if err != nil {
 		panic(err)
 	}

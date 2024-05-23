@@ -1,24 +1,5 @@
 package TreeExplorer
 
-// ErrEmptyInput is an error that is returned when the input is empty.
-type ErrEmptyInput struct{}
-
-// Error returns the error message: "empty input".
-//
-// Returns:
-//  	- string: The error message.
-func (e *ErrEmptyInput) Error() string {
-	return "empty input"
-}
-
-// NewErrEmptyInput creates a new error of type *ErrEmptyInput.
-//
-// Returns:
-//  	- *ErrEmptyInput: The new error.
-func NewErrEmptyInput() *ErrEmptyInput {
-	return &ErrEmptyInput{}
-}
-
 // ErrAllMatchesFailed is an error that is returned when all matches
 // fail.
 type ErrAllMatchesFailed struct{}
@@ -37,25 +18,6 @@ func (e *ErrAllMatchesFailed) Error() string {
 //  	- *ErrAllMatchesFailed: The new error.
 func NewErrAllMatchesFailed() *ErrAllMatchesFailed {
 	return &ErrAllMatchesFailed{}
-}
-
-// ErrNilRoot is an error that is returned when the root is nil.
-type ErrNilRoot struct{}
-
-// Error returns the error message: "root is nil".
-//
-// Returns:
-//  	- string: The error message.
-func (e *ErrNilRoot) Error() string {
-	return "root is nil"
-}
-
-// NewErrNilRoot creates a new error of type *ErrNilRoot.
-//
-// Returns:
-//  	- *ErrNilRoot: The new error.
-func NewErrNilRoot() *ErrNilRoot {
-	return &ErrNilRoot{}
 }
 
 // ErrInvalidElement is an error that is returned when an invalid element

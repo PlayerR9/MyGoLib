@@ -43,7 +43,7 @@ func (t *Tree[T]) FString(trav *ffs.Traversor) {
 // Returns:
 //   - *Tree[T]: A pointer to the newly created tree.
 func NewTree[T any](data T) *Tree[T] {
-	root := newTreeNode(data)
+	root := NewTreeNode(data)
 
 	return &Tree[T]{
 		root:   root,
@@ -476,7 +476,7 @@ func (t *Tree[T]) replaceLeafWithTree(at int, children []T) {
 	// Make the subtree
 	leaf.children = make([]*TreeNode[T], 0, len(children))
 	for _, child := range children {
-		node := newTreeNode(child)
+		node := NewTreeNode(child)
 		node.parent = leaf
 
 		leaf.children = append(leaf.children, node)

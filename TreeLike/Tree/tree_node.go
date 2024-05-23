@@ -72,14 +72,14 @@ func (n *TreeNode[T]) Copy() intf.Objecter {
 	return node
 }
 
-// newTreeNode creates a new node with the given data.
+// NewTreeNode creates a new node with the given data.
 //
 // Parameters:
 //   - data: The value of the node.
 //
 // Returns:
 //   - *Node[T]: A pointer to the newly created node.
-func newTreeNode[T any](data T) *TreeNode[T] {
+func NewTreeNode[T any](data T) *TreeNode[T] {
 	return &TreeNode[T]{
 		Data:     data,
 		children: make([]*TreeNode[T], 0),
@@ -140,10 +140,18 @@ func (n *TreeNode[T]) Leaves() []*TreeNode[T] {
 // Returns:
 //   - *Tree[T]: A pointer to the tree.
 func (n *TreeNode[T]) ToTree() *Tree[T] {
-	return &Tree[T]{
-		root:   n,
-		leaves: n.Leaves(),
-		size:   n.Size(),
+	if len(n.children) == 0 {
+		return &Tree[T]{
+			root:   n,
+			leaves: []*TreeNode[T]{n},
+			size:   1,
+		}
+	} else {
+		return &Tree[T]{
+			root:   n,
+			leaves: n.Leaves(),
+			size:   n.Size(),
+		}
 	}
 }
 
