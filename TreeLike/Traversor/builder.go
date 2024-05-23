@@ -103,13 +103,13 @@ func (b *Builder[T]) Build(elem T) (*tr.Tree[T], error) {
 			return nil, err
 		}
 
-		if len(nexts) == 0 {
-			continue
-		}
-
 		ok = top.linkToPrev()
 		if !ok {
 			panic("Cannot link to previous node")
+		}
+
+		if len(nexts) == 0 {
+			continue
 		}
 
 		topElem := top.getElem()

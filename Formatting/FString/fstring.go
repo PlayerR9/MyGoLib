@@ -64,9 +64,17 @@ func (fs *FString) Traversor(indent *IndentConfig) *Traversor {
 
 	return &Traversor{
 		indent: indent,
-		lines:  &fs.lines,
+		source: fs,
 		buffer: make([]*cb.MultiLineText, 0),
 	}
+}
+
+func (fs *FString) addLine(mlt *cb.MultiLineText) {
+	if mlt == nil {
+		return
+	}
+
+	fs.lines = append(fs.lines, mlt)
 }
 
 func (fs *FString) GetLines() []*cb.MultiLineText {

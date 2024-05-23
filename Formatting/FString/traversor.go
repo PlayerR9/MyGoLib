@@ -11,8 +11,8 @@ type Traversor struct {
 	// The indentation configuration of the traversor.
 	indent *IndentConfig
 
-	// lines is the lines of the traversor.
-	lines *[]*cb.MultiLineText
+	// source is the source of the traversor.
+	source *FString
 
 	// buffer is the buffer of the traversor.
 	buffer []*cb.MultiLineText
@@ -39,7 +39,7 @@ func (trav *Traversor) IncreaseIndent(by int) *Traversor {
 
 	return &Traversor{
 		indent:   trav.indent.Increase(by),
-		lines:    trav.lines,                   // The lines are shared.
+		source:   trav.source,                  // The lines are shared.
 		buffer:   make([]*cb.MultiLineText, 0), // The buffer is reset.
 		halfLine: nil,                          // The half line is reset.
 	}
@@ -165,21 +165,16 @@ func (trav *Traversor) Apply() {
 
 	for _, line := range trav.buffer {
 		lines := line.GetLines()
-
-		for _, line := range lines {
-			line = indent + line
-		}
-
 		mlt := cb.NewMultiLineText()
 
 		for _, line := range lines {
-			err := mlt.AppendSentence(line)
+			err := mlt.AppendSentence(indent + line)
 			if err != nil {
 				panic(err)
 			}
 		}
 
-		*trav.lines = append(*trav.lines, mlt)
+		trav.source.addLine(mlt)
 	}
 
 	trav.buffer = trav.buffer[:0]
