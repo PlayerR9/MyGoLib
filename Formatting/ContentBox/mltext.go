@@ -47,7 +47,43 @@ func NewMultiLineText() *MultiLineText {
 	return mlt
 }
 
+// AppendRune appends a rune to the multi-line text.
+//
+// Parameters:
+//   - r: The rune to append.
+//
+// Behaviors:
+//   - If the rune is a newline, then a new line is created.
+func (mlt *MultiLineText) AppendRune(r rune) {
+	if r == '\n' {
+		mlt.lines = append(mlt.lines, []string{})
+		return
+	}
+
+	if len(mlt.lines) == 0 {
+		mlt.lines = append(mlt.lines, []string{})
+	}
+
+	mlt.lines[len(mlt.lines)-1] = append(mlt.lines[len(mlt.lines)-1], string(r))
+
+	return
+}
+
+// AppendSentence appends a sentence to the multi-line text.
+//
+// Parameters:
+//   - sentence: The sentence to append.
+//
+// Returns:
+//   - error: An error of type *Errors.ErrInvalidRuneAt if there is an invalid rune.
+//
+// Behaviors:
+//   - If the sentence is empty, then nothing is appended.
 func (mlt *MultiLineText) AppendSentence(sentence string) error {
+	if sentence == "" {
+		return nil
+	}
+
 	lines, err := sext.AdvancedFieldsSplitter(sentence, IndentLevel)
 	if err != nil {
 		return err

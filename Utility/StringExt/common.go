@@ -219,7 +219,7 @@ func AdvancedFieldsSplitter(sentence string, indentLevel int) ([][]string, error
 				lines = append(lines, words)
 			}
 
-			return lines, ue.NewErrAt(j, ue.NewErrInvalidRune(nil))
+			return lines, ue.NewErrAt(j, "character", ue.NewErrInvalidRune(nil))
 		}
 
 		switch char {

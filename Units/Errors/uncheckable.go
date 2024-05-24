@@ -331,3 +331,59 @@ func (e *ErrNilValue) Error() string {
 func NewErrNilValue() *ErrNilValue {
 	return &ErrNilValue{}
 }
+
+// ErrWhile represents an error that occurs while performing an operation.
+type ErrWhile struct {
+	// Operation is the operation that was being performed.
+	Operation string
+
+	// Reason is the reason for the error.
+	Reason error
+}
+
+// Error returns the error message: "error while <operation>: <reason>".
+//
+// Returns:
+//   - string: The error message.
+//
+// Behaviors:
+//   - If the reason is nil, the error message is "an error occurred while
+//     <operation>".
+func (e *ErrWhile) Error() string {
+	if e.Reason == nil {
+		return fmt.Sprintf("an error occurred while %s", e.Operation)
+	} else {
+		return fmt.Sprintf("error while %s: %s", e.Operation, e.Reason.Error())
+	}
+}
+
+// NewErrWhile creates a new ErrWhile error.
+//
+// Parameters:
+//   - operation: The operation that was being performed.
+//   - reason: The reason for the error.
+//
+// Returns:
+//   - *ErrWhile: A pointer to the newly created ErrWhile.
+func NewErrWhile(operation string, reason error) *ErrWhile {
+	return &ErrWhile{
+		Operation: operation,
+		Reason:    reason,
+	}
+}
+
+// Unwrap returns the reason for the error.
+//
+// Returns:
+//   - error: The reason for the error.
+func (e *ErrWhile) Unwrap() error {
+	return e.Reason
+}
+
+// ChangeReason changes the reason for the error.
+//
+// Parameters:
+//   - reason: The new reason for the error.
+func (e *ErrWhile) ChangeReason(reason error) {
+	e.Reason = reason
+}

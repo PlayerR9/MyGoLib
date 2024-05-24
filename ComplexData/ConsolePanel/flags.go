@@ -6,7 +6,8 @@ import (
 	"errors"
 
 	cdd "github.com/PlayerR9/MyGoLib/CustomData/Document"
-	fs "github.com/PlayerR9/MyGoLib/Formatting/FString"
+	ffs "github.com/PlayerR9/MyGoLib/Formatting/FString"
+	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
 	slext "github.com/PlayerR9/MyGoLib/Units/Slices"
 )
 
@@ -70,44 +71,41 @@ type FlagInfo struct {
 //		// <description>
 //
 //	Required: <Yes/No>
-func (cfi *FlagInfo) FString(trav *fs.Traversor) {
+func (cfi *FlagInfo) FString(trav *ffs.Traversor) error {
 	// Arguments:
 	values := make([]string, 0, len(cfi.args))
 	for _, arg := range cfi.args {
 		values = append(values, arg.String())
 	}
 
-	trav.AppendString("Arguments: ")
-	trav.AppendStrings(" ", values...)
-	trav.AddLines()
+	values = append([]string{"Arguments:"}, values...)
+
+	err := trav.AddJoinedLine(" ", values...)
+	if err != nil {
+		return err
+	}
 
 	// Empty line
 	trav.EmptyLine()
 
 	// Description:
-	if cfi.description == nil {
-		trav.AddLines("Description: [No description provided]")
-
-		trav.Apply()
-	} else {
-		trav.AddLines("Description:")
-
-		trav.Apply()
-
-		cfi.description.FString(trav.IncreaseIndent(1))
+	doc := cdd.NewDocumentPrinter("Description", cfi.description, "[No description provided]")
+	err = doc.FString(trav)
+	if err != nil {
+		return ers.NewErrWhile("FString printing description", err)
 	}
 
 	// Empty line
 	trav.EmptyLine()
 
 	// Required:
-	if cfi.required {
-		trav.AddLines("Required: Yes")
-	} else {
-		trav.AddLines("Required: No")
+	sp := ffs.NewSimplePrinter("Required", cfi.required, BoolFString)
+	err = sp.FString(trav)
+	if err != nil {
+		return err
 	}
 
-	trav.Apply()
+	return nil
 }
 
 // NewFlagInfo creates a new FlagInfo with the given name and

@@ -1,8 +1,6 @@
 package FString
 
 import (
-	"strings"
-
 	cb "github.com/PlayerR9/MyGoLib/Formatting/ContentBox"
 )
 
@@ -21,20 +19,6 @@ const (
 type FString struct {
 	// lines is the lines of the formatted string.
 	lines []*cb.MultiLineText
-}
-
-// String returns the string representation of the traversor.
-//
-// Returns:
-//   - string: The string representation of the traversor.
-func (fs *FString) String() string {
-	values := make([]string, 0, len(fs.lines))
-
-	for _, line := range fs.lines {
-		values = append(values, line.GetLines()...)
-	}
-
-	return strings.Join(values, "\n")
 }
 
 // NewFString creates a new formatted string.
@@ -63,12 +47,17 @@ func (fs *FString) Traversor(indent *IndentConfig) *Traversor {
 	}
 
 	return &Traversor{
-		indent: indent,
-		source: fs,
-		buffer: make([]*cb.MultiLineText, 0),
+		indent:    indent,
+		source:    fs,
+		indentStr: indent.String(),
+		halfLine:  nil,
 	}
 }
 
+// addLine is a private function that adds a line to the formatted string.
+//
+// Parameters:
+//   - mlt: The line to add.
 func (fs *FString) addLine(mlt *cb.MultiLineText) {
 	if mlt == nil {
 		return
@@ -77,6 +66,10 @@ func (fs *FString) addLine(mlt *cb.MultiLineText) {
 	fs.lines = append(fs.lines, mlt)
 }
 
+// GetLines returns the lines of the formatted string.
+//
+// Returns:
+//   - []*MultiLineText: The lines of the formatted string.
 func (fs *FString) GetLines() []*cb.MultiLineText {
 	return fs.lines
 }

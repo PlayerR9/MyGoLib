@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 )
 
 // AndString concatenates a list of strings using commas and the word "and" before the last string.
@@ -75,48 +77,6 @@ func OrString(vals ...string) string {
 	}
 }
 
-// GetOrdinalSuffix returns the ordinal suffix for a given integer.
-//
-// Parameters:
-//
-//   - number: The integer for which to get the ordinal suffix.
-//
-// Returns:
-//
-//   - string: The ordinal suffix for the number.
-//
-// For example, for the number 1, the function returns "1st"; for the number 2,
-// it returns "2nd"; and so on.
-func GetOrdinalSuffix(number int) string {
-	var builder strings.Builder
-
-	builder.WriteString(strconv.Itoa(number))
-
-	if number < 0 {
-		number = -number
-	}
-
-	lastTwoDigits := number % 100
-	lastDigit := lastTwoDigits % 10
-
-	if lastTwoDigits >= 11 && lastTwoDigits <= 13 {
-		builder.WriteString("th")
-	} else {
-		switch lastDigit {
-		case 1:
-			builder.WriteString("st")
-		case 2:
-			builder.WriteString("nd")
-		case 3:
-			builder.WriteString("rd")
-		default:
-			builder.WriteString("th")
-		}
-	}
-
-	return builder.String()
-}
-
 // DateStringer prints the date in the format "1st January, 2006".
 //
 // Parameters:
@@ -129,7 +89,7 @@ func GetOrdinalSuffix(number int) string {
 func DateStringer(date time.Time) string {
 	var builder strings.Builder
 
-	builder.WriteString(GetOrdinalSuffix(date.Day()))
+	builder.WriteString(uc.GetOrdinalSuffix(date.Day()))
 	builder.WriteRune(' ')
 	builder.WriteString(date.Month().String())
 	builder.WriteString(", ")

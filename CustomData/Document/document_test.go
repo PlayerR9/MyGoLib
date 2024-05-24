@@ -2,7 +2,6 @@ package Document
 
 import (
 	"fmt"
-	"strings"
 	"testing"
 
 	ffs "github.com/PlayerR9/MyGoLib/Formatting/FString"
@@ -15,7 +14,11 @@ func TestFString(t *testing.T) {
 
 	doc.FString(trav.Traversor(nil))
 
-	expected := strings.Split(trav.String(), "\n")
+	expected := make([]string, 0)
+
+	for _, line := range trav.GetLines() {
+		expected = append(expected, line.GetLines()...)
+	}
 
 	var builder ffs.Builder
 

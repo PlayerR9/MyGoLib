@@ -31,10 +31,13 @@ func (d *Document) Tmp() []string {
 //
 // Returns:
 //   - []string: The formatted string representation of the document.
-func (d *Document) FString(trav *ffs.Traversor) {
-	trav.AddLines(d.lines...)
+func (d *Document) FString(trav *ffs.Traversor) error {
+	err := trav.AddLines(d.lines)
+	if err != nil {
+		return err
+	}
 
-	trav.Apply()
+	return nil
 }
 
 // NewDocument creates a new document.

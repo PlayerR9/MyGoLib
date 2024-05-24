@@ -3,64 +3,48 @@ package Console
 import (
 	"errors"
 	"fmt"
-	"strings"
 
-	cdm "github.com/PlayerR9/MyGoLib/CustomData/OrderedMap"
+	cdom "github.com/PlayerR9/MyGoLib/CustomData/OrderedMap"
 )
 
 const (
+	// HelpOpcode is the opcode for the help command.
 	HelpOpcode string = "help"
 )
 
+// CommandInfo represents a console command.
 type Console struct {
-	commandMap *cdm.OrderedMap[string, *CommandInfo]
+	// commandMap is a map of command opcodes to CommandInfo.
+	commandMap *cdom.OrderedMap[string, *CommandInfo]
 }
 
+// NewConsole is a function that creates a new console.
+//
+// Returns:
+//   - *Console: The new console.
 func NewConsole() *Console {
 	console := &Console{
-		commandMap: cdm.NewOrderedMap[string, *CommandInfo](),
+		commandMap: cdom.NewOrderedMap[string, *CommandInfo](),
 	}
 
-	helpCommand := func(flagMap map[string]any) (any, error) {
-		lines := []string{
-			"Here are the commands you can use:",
-		}
-
-		var builder strings.Builder
-
-		iter := console.commandMap.Iterator()
-
-		for {
-			entry, err := iter.Consume()
-			if err != nil {
-				break
-			}
-
-			builder.WriteString(entry.First)
-			builder.WriteRune(' ')
-			builder.WriteRune(':')
-			builder.WriteRune(' ')
-			builder.WriteString(entry.Second.description)
-
-			lines = append(lines, builder.String())
-			builder.Reset()
-		}
-
-		return strings.Join(lines, "\n"), nil
+	helpCommand, err := MakeHelpCommand(console)
+	if err != nil {
+		panic(err)
 	}
 
 	console.commandMap.AddEntry(
 		HelpOpcode,
-		NewCommandInfo(
-			"Display the help message",
-			helpCommand,
-			[]string{},
-		),
+		helpCommand,
 	)
 
 	return console
 }
 
+// AddCommand adds a command to the console.
+//
+// Parameters:
+//   - name: The name of the command.
+//   - info: The information about the command.
 func (c *Console) AddCommand(name string, info *CommandInfo) {
 	if name == HelpOpcode {
 		return
@@ -69,20 +53,28 @@ func (c *Console) AddCommand(name string, info *CommandInfo) {
 	c.commandMap.AddEntry(name, info)
 }
 
+// ParseArgs parses the arguments for a command.
+//
+// Parameters:
+//   - args: A slice of strings representing the arguments passed to the command.
+//
+// Returns:
+//   - *ParsedCommand: The parsed command.
+//   - error: An error if the command fails.
 func (c *Console) ParseArgs(args []string) (*ParsedCommand, error) {
-	if len(args) < 2 {
-		return nil, errors.New("invalid command")
+	if len(args) == 0 {
+		return nil, errors.New("missing command name")
 	}
 
-	cInfo, ok := c.commandMap.GetEntry(args[1])
+	cInfo, ok := c.commandMap.GetEntry(args[0])
 	if !ok {
-		return nil, fmt.Errorf("%q is not a valid command", args[1])
+		return nil, fmt.Errorf("command %q does not exist", args[0])
 	}
 
-	flagMap, err := cInfo.ParseArgs(args[2:])
+	flagMap, err := cInfo.ParseArgs(args[1:])
 	if err != nil {
 		return nil, err
 	}
 
-	return NewParsedCommand(args[1], flagMap, cInfo.fn), nil
+	return NewParsedCommand(args[0], flagMap, cInfo.fn), nil
 }

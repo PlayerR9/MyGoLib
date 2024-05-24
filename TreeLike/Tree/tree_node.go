@@ -39,14 +39,17 @@ func (t *TreeNode[T]) String() string {
 //
 // Returns:
 //   - []string: A slice of strings that represent the node.
-func (t *TreeNode[T]) FString(trav *ffs.Traversor) {
-	trav.AddLines(intf.StringOf(t.Data))
-
-	trav.Apply()
+func (t *TreeNode[T]) FString(trav *ffs.Traversor) error {
+	err := trav.AddLine(intf.StringOf(t.Data))
+	if err != nil {
+		return err
+	}
 
 	for _, child := range t.children {
 		child.FString(trav.IncreaseIndent(1))
 	}
+
+	return nil
 }
 
 // Copy returns a deep copy of the node.

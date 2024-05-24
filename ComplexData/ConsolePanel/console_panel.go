@@ -57,56 +57,34 @@ type ConsolePanel struct {
 //		- <command 2>:
 //	   	// <description>
 //		// ...
-func (cns *ConsolePanel) FString(trav *fs.Traversor) {
-	indent := trav.GetIndent()
-
+func (cns *ConsolePanel) FString(trav *fs.Traversor) error {
 	// Usage:
-	trav.AppendStrings(" ", "Usage:", cns.ExecutableName, "<command> [flags]")
-	trav.AddLines()
+	err := trav.AddJoinedLine(" ", "Usage:", cns.ExecutableName, "<command>", "[flags]")
+	if err != nil {
+		return err
+	}
 
 	// Empty line
 	trav.EmptyLine()
 
 	// Description:
-	if cns.description == nil {
-		trav.AddLines("Description: [No description provided]")
-
-		trav.Apply()
-	} else {
-		trav.AddLines("Description:")
-
-		trav.Apply()
-
-		cns.description.FString(trav.IncreaseIndent(1))
+	doc := cdd.NewDocumentPrinter("Description", cns.description, "[No description provided]")
+	err = doc.FString(trav)
+	if err != nil {
+		return ers.NewErrWhile("FString printing description", err)
 	}
 
 	// Empty line
 	trav.EmptyLine()
 
 	// Commands:
-	if cns.commandMap.Size() == 0 {
-		trav.AddLines("Commands: None")
-
-		trav.Apply()
-	} else {
-		trav.AddLines("Commands:")
-
-		iter := cns.commandMap.Iterator()
-
-		for {
-			entry, err := iter.Consume()
-			if err != nil {
-				break
-			}
-
-			trav.AppendStrings("", indent, "- ", entry.First, ":")
-			trav.AddLines()
-
-			trav.Apply()
-
-			entry.Second.FString(trav.IncreaseIndent(2))
-		}
+	printer := sm.NewOrderedMapPrinter("Commands", cns.commandMap, "command", "no commands")
+	err = printer.FString(trav)
+	if err != nil {
+		return ers.NewErrWhile("FString printing commands", err)
 	}
+
+	return nil
 }
 
 // NewConsolePanel creates a new ConsolePanel with the provided executable name.

@@ -14,36 +14,6 @@ type IndentConfig struct {
 	InitialLevel int
 }
 
-// String is a method of fmt.Stringer interface.
-//
-// Returns:
-//   - string: A string representation of the indentation configuration.
-func (c *IndentConfig) String() string {
-	return strings.Repeat(c.Indentation, c.InitialLevel)
-}
-
-// Increase is a method that increases the indentation level of the configuration.
-//
-// Parameters:
-//   - by: The amount by which to increase the indentation level.
-//
-// Returns:
-//   - *IndentConfig: A pointer to the new indentation configuration.
-//
-// Behaviors:
-//   - If by is negative, it is converted to a positive value.
-func (config *IndentConfig) Increase(by int) *IndentConfig {
-	if by < 0 {
-		by *= -1
-	}
-
-	return &IndentConfig{
-		Indentation:  config.Indentation,
-		InitialLevel: config.InitialLevel + by,
-		IgnoreFirst:  config.IgnoreFirst,
-	}
-}
-
 // NewIndentConfig is a function that creates a new indentation configuration.
 //
 // Parameters:
@@ -73,6 +43,36 @@ func NewIndentConfig(indentation string, initialLevel int, ignoreFirst bool) *In
 	}
 
 	return config
+}
+
+// String is a method of fmt.Stringer interface.
+//
+// Returns:
+//   - string: A string representation of the indentation configuration.
+func (c *IndentConfig) String() string {
+	return strings.Repeat(c.Indentation, c.InitialLevel)
+}
+
+// Increase is a method that increases the indentation level of the configuration.
+//
+// Parameters:
+//   - by: The amount by which to increase the indentation level.
+//
+// Returns:
+//   - *IndentConfig: A pointer to the new indentation configuration.
+//
+// Behaviors:
+//   - If by is negative, it is converted to a positive value.
+func (config *IndentConfig) Increase(by int) *IndentConfig {
+	if by < 0 {
+		by *= -1
+	}
+
+	return &IndentConfig{
+		Indentation:  config.Indentation,
+		InitialLevel: config.InitialLevel + by,
+		IgnoreFirst:  config.IgnoreFirst,
+	}
 }
 
 func (config *IndentConfig) apply(values []string) []string {

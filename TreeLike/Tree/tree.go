@@ -27,12 +27,25 @@ type Tree[T any] struct {
 //
 // Returns:
 //   - []string: A slice of strings that represent the tree.
-func (t *Tree[T]) FString(trav *ffs.Traversor) {
+func (t *Tree[T]) FString(trav *ffs.Traversor) error {
 	if t.root == nil {
-		return
+		return nil
 	}
 
-	t.root.FString(trav)
+	fstr := ffs.NewFString()
+
+	newTrav := fstr.Traversor(ffs.NewIndentConfig("| ", 0, false))
+
+	err := t.root.FString(newTrav)
+	if err != nil {
+		return err
+	}
+
+	for _, line := range fstr.GetLines() {
+		trav.AddMultiline(line)
+	}
+
+	return nil
 }
 
 // NewTree creates a new tree with the given root.

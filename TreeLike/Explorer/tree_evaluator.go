@@ -126,7 +126,7 @@ func (te *TreeEvaluator[R, M, O]) Evaluate(matcher M, root O) error {
 
 	matches, err := te.matcher.Match(0)
 	if err != nil {
-		return ers.NewErrAt(0, err)
+		return ers.NewErrAt(0, "position", err)
 	}
 
 	te.addMatchLeaves(te.root, matches)
@@ -193,7 +193,7 @@ func (te *TreeEvaluator[R, M, O]) GetBranches() ([][]*CurrentEval[O], error) {
 
 	branches, invalidTokIndex := filterInvalidBranches(tokenBranches)
 	if invalidTokIndex != -1 {
-		return branches, ers.NewErrAt(invalidTokIndex, NewErrInvalidElement())
+		return branches, ers.NewErrAt(invalidTokIndex, "token", NewErrInvalidElement())
 	}
 
 	var err error

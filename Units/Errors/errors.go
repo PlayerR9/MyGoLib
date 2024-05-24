@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+
+	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 )
 
 // ErrNoError represents an error when no error occurs.
@@ -305,6 +307,9 @@ type ErrAt struct {
 	// Index is the index where the error occurred.
 	Index int
 
+	// Name is the name of the index.
+	Name string
+
 	// Reason is the reason for the error.
 	Reason error
 }
@@ -317,10 +322,31 @@ type ErrAt struct {
 // Returns:
 //   - string: The error message.
 func (e *ErrAt) Error() string {
-	if e.Reason == nil {
-		return fmt.Sprintf("something went wrong at index %d", e.Index)
+	var builder strings.Builder
+
+	var name string
+
+	if e.Name != "" {
+		builder.WriteString(e.Name)
 	} else {
-		return fmt.Sprintf("at index %d: %s", e.Index, e.Reason.Error())
+		name = "index"
+	}
+
+	builder.WriteString(uc.GetOrdinalSuffix(e.Index))
+	builder.WriteRune(' ')
+
+	if name == "" {
+		builder.WriteString("index")
+	} else {
+		builder.WriteString(name)
+	}
+
+	position := builder.String()
+
+	if e.Reason == nil {
+		return fmt.Sprintf("something went wrong at the %s", position)
+	} else {
+		return fmt.Sprintf("at the %s: %s", position, e.Reason.Error())
 	}
 }
 
@@ -345,13 +371,15 @@ func (e *ErrAt) ChangeReason(reason error) {
 //
 // Parameters:
 //   - index: The index where the error occurred.
+//   - name: The name of the index.
 //   - reason: The reason for the error.
 //
 // Returns:
 //   - *ErrAt: A pointer to the newly created ErrAt.
-func NewErrAt(index int, reason error) *ErrAt {
+func NewErrAt(index int, name string, reason error) *ErrAt {
 	return &ErrAt{
 		Index:  index,
+		Name:   name,
 		Reason: reason,
 	}
 }

@@ -73,45 +73,25 @@ type CommandInfo struct {
 //		- <flag 2>:
 //	   	// <description>
 //		// ...
-func (cci *CommandInfo) FString(trav *fs.Traversor) {
-	indent := trav.GetIndent()
-
+func (cci *CommandInfo) FString(trav *fs.Traversor) error {
 	// Description:
-	if cci.description == nil {
-		trav.AddLines("Description: [No description provided]")
-	} else {
-		trav.AddLines("Description:")
-
-		cci.description.FString(trav.IncreaseIndent(1))
+	doc := cdd.NewDocumentPrinter("Description", cci.description, "[No description provided]")
+	err := doc.FString(trav)
+	if err != nil {
+		return ers.NewErrWhile("FString printing description", err)
 	}
 
 	// Empty line
 	trav.EmptyLine()
 
 	// Flags:
-	if cci.flags.Size() == 0 {
-		trav.AddLines("Flags: None")
-
-		trav.Apply()
-	} else {
-		trav.AddLines("Flags:")
-
-		iter := cci.flags.Iterator()
-
-		for {
-			entry, err := iter.Consume()
-			if err != nil {
-				break
-			}
-
-			trav.AppendStrings("", indent, "- ", entry.First, ":")
-			trav.AddLines()
-
-			trav.Apply()
-
-			entry.Second.FString(trav.IncreaseIndent(2))
-		}
+	printer := sm.NewOrderedMapPrinter("Flags", cci.flags, "flag", "no flags")
+	err = printer.FString(trav)
+	if err != nil {
+		return ers.NewErrWhile("FString printing flags", err)
 	}
+
+	return nil
 }
 
 // NewCommandInfo creates a new CommandInfo with the
