@@ -1,4 +1,4 @@
-package ContentBox
+package Sections
 
 import (
 	"testing"

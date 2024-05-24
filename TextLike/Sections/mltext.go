@@ -1,4 +1,4 @@
-package ContentBox
+package Sections
 
 import (
 	"strings"
@@ -39,6 +39,10 @@ func (mlt *MultiLineText) Runes(width, height int) ([][]rune, error) {
 	return cb.Runes(width, height)
 }
 
+// NewMultiLineText creates a new multi-line text.
+//
+// Returns:
+//   - *MultiLineText: The new multi-line text.
 func NewMultiLineText() *MultiLineText {
 	mlt := &MultiLineText{
 		lines: make([][]string, 0),
@@ -65,8 +69,6 @@ func (mlt *MultiLineText) AppendRune(r rune) {
 	}
 
 	mlt.lines[len(mlt.lines)-1] = append(mlt.lines[len(mlt.lines)-1], string(r))
-
-	return
 }
 
 // AppendSentence appends a sentence to the multi-line text.
@@ -94,10 +96,18 @@ func (mlt *MultiLineText) AppendSentence(sentence string) error {
 	return nil
 }
 
+// IsEmpty returns whether the multi-line text is empty.
+//
+// Returns:
+//   - bool: Whether the multi-line text is empty.
 func (mlt *MultiLineText) IsEmpty() bool {
 	return len(mlt.lines) == 0
 }
 
+// GetLines returns the lines of the multi-line text.
+//
+// Returns:
+//   - []string: The lines of the multi-line text.
 func (mlt *MultiLineText) GetLines() []string {
 	if len(mlt.lines) == 0 {
 		return nil
@@ -106,7 +116,7 @@ func (mlt *MultiLineText) GetLines() []string {
 	lines := make([]string, 0, len(mlt.lines))
 
 	for _, line := range mlt.lines {
-		lines = append(lines, strings.Join(line, ""))
+		lines = append(lines, strings.Join(line, " "))
 	}
 
 	return lines

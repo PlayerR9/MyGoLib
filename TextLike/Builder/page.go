@@ -1,4 +1,116 @@
-package Document
+package Builder
+
+import (
+	ffs "github.com/PlayerR9/MyGoLib/Formatting/FString"
+	ui "github.com/PlayerR9/MyGoLib/Units/Iterator"
+)
+
+// PageBuilder is a type that represents a page of a document.
+type PageBuilder struct {
+	// sections are the sections of the page.
+	sections []*SectionBuilder
+
+	// lastSection is the last section of the page.
+	lastSection int
+}
+
+// Accept is a function that accepts the current section and
+// creates a new section.
+func (p *PageBuilder) Accept() {
+	if p.lastSection != -1 {
+		p.sections[p.lastSection].Accept()
+	}
+
+	p.sections = append(p.sections, NewSection())
+	p.lastSection++
+}
+
+// AddString adds a string to the page.
+//
+// Parameters:
+//   - str: The string to add.
+//
+// Behaviors:
+//   - If the string is empty, it is not added.
+func (p *PageBuilder) AddString(str string) {
+	if str == "" {
+		return
+	}
+
+	if p.lastSection == -1 {
+		p.sections = append(p.sections, NewSection())
+		p.lastSection = 0
+	}
+
+	p.sections[p.lastSection].AddString(str)
+}
+
+// AddRune adds a rune to the page.
+//
+// Parameters:
+//   - r: The rune to add.
+func (p *PageBuilder) AddRune(r rune) {
+	if p.lastSection == -1 {
+		p.sections = append(p.sections, NewSection())
+		p.lastSection = 0
+	}
+
+	p.sections[p.lastSection].AddRune(r)
+}
+
+// AcceptWord is a function that accepts the current in-progress word
+// and creates a new word.
+func (p *PageBuilder) AcceptWord() {
+	if p.lastSection != -1 {
+		p.sections[p.lastSection].AcceptWord()
+	}
+}
+
+// Finalize is a function that finalizes the page.
+func (p *PageBuilder) Finalize() {
+	if p.lastSection == -1 {
+		return
+	}
+
+	p.sections[p.lastSection].Finalize()
+}
+
+// FString is a function that prints the page.
+//
+// Parameters:
+//   - trav: The traversor to use for printing.
+//
+// Returns:
+//   - error: An error if the printing fails.
+func (p *PageBuilder) FString(trav *ffs.Traversor) error {
+	for _, section := range p.sections {
+		err := section.FString(trav)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// Iterator is a function that returns an iterator for the page.
+//
+// Returns:
+//   - ui.Iterater[*SectionBuilder]: The iterator for the page.
+func (p *PageBuilder) Iterator() ui.Iterater[*SectionBuilder] {
+	return ui.NewGenericIterator(p.sections)
+}
+
+// NewPage creates a new page.
+//
+// Returns:
+//   - *Page: The new page.
+func NewPage() *PageBuilder {
+	return &PageBuilder{
+		sections:    make([]*SectionBuilder, 0),
+		lastSection: -1,
+	}
+}
 
 /*
 import (
