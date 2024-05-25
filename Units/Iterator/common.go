@@ -70,12 +70,12 @@ func IteratorOf[T any](elem any) Iterater[T] {
 	case Iterable[T]:
 		return elem.Iterator()
 	case []T:
-		return &GenericIterator[T]{
+		return &SimpleIterator[T]{
 			values: &elem,
 			index:  0,
 		}
 	default:
-		return &GenericIterator[T]{
+		return &SimpleIterator[T]{
 			values: &[]T{elem.(T)},
 			index:  0,
 		}

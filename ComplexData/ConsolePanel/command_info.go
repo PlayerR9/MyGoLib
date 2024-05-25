@@ -6,9 +6,9 @@ import (
 	"errors"
 	"fmt"
 
-	fs "github.com/PlayerR9/MyGoLib/Formatting/FString"
+	fsp "github.com/PlayerR9/MyGoLib/FString/Printer"
 
-	cdd "github.com/PlayerR9/MyGoLib/CustomData/Document"
+	fsd "github.com/PlayerR9/MyGoLib/FString/Document"
 
 	sm "github.com/PlayerR9/MyGoLib/CustomData/OrderedMap"
 
@@ -44,7 +44,7 @@ func NoCommandCallback(args map[string]any) (any, error) {
 // CommandInfo represents a console command.
 type CommandInfo struct {
 	// description is the documentation of the command.
-	description *cdd.Document
+	description *fsd.Document
 
 	// flags is a slice of FlagInfo representing the flags accepted by
 	// the command.
@@ -73,20 +73,22 @@ type CommandInfo struct {
 //		- <flag 2>:
 //	   	// <description>
 //		// ...
-func (cci *CommandInfo) FString(trav *fs.Traversor) error {
+func (cci *CommandInfo) FString(trav *fsp.Traversor) error {
 	// Description:
-	doc := cdd.NewDocumentPrinter("Description", cci.description, "[No description provided]")
-	err := doc.FString(trav)
-	if err != nil {
-		return ers.NewErrWhile("FString printing description", err)
-	}
+	/*
+		doc := fsd.NewDocumentPrinter("Description", cci.description, "[No description provided]")
+		err := doc.FString(trav)
+		if err != nil {
+			return ers.NewErrWhile("FString printing description", err)
+		}
+	*/
 
 	// Empty line
 	trav.EmptyLine()
 
 	// Flags:
 	printer := sm.NewOrderedMapPrinter("Flags", cci.flags, "flag", "no flags")
-	err = printer.FString(trav)
+	err := printer.FString(trav)
 	if err != nil {
 		return ers.NewErrWhile("FString printing flags", err)
 	}
@@ -106,7 +108,7 @@ func (cci *CommandInfo) FString(trav *fs.Traversor) error {
 //
 // Behaviors:
 //   - If callback is nil, NoCommandCallback is used.
-func NewCommandInfo(description *cdd.Document, callback CommandCallbackFunc) *CommandInfo {
+func NewCommandInfo(description *fsd.Document, callback CommandCallbackFunc) *CommandInfo {
 	inf := &CommandInfo{
 		description: description,
 		flags:       sm.NewOrderedMap[string, *FlagInfo](),
@@ -222,8 +224,8 @@ func (inf *CommandInfo) Parse(args []string) (*ParsedCommand, error) {
 // GetDescription returns the description of a CommandInfo.
 //
 // Returns:
-//   - *cdd.Document: The description of the CommandInfo.
-func (inf *CommandInfo) GetDescription() *cdd.Document {
+//   - *fsd.Document: The description of the CommandInfo.
+func (inf *CommandInfo) GetDescription() *fsd.Document {
 	return inf.description
 }
 

@@ -1,9 +1,8 @@
 package Console
 
 import (
-	cdd "github.com/PlayerR9/MyGoLib/CustomData/Document"
-	ffs "github.com/PlayerR9/MyGoLib/Formatting/FString"
-	ue "github.com/PlayerR9/MyGoLib/Units/Errors"
+	fsd "github.com/PlayerR9/MyGoLib/FString/Document"
+	fsp "github.com/PlayerR9/MyGoLib/FString/Printer"
 )
 
 // ConsoleFunc is a function type that represents a callback
@@ -21,7 +20,7 @@ type ConsoleFunc func(flagMap map[string]any) (any, error)
 // CommandInfo represents a console command.
 type CommandInfo struct {
 	// description is the documentation of the command.
-	description *cdd.Document
+	description *fsd.Document
 
 	// args is a slice of string representing the arguments accepted by
 	// the command. Order matters.
@@ -54,39 +53,45 @@ type CommandInfo struct {
 // Behaviors:
 //   - <description> is printed according to the DocumentPrinter.
 //   - If trav is nil, the function will do nothing.
-func (inf *CommandInfo) FString(trav *ffs.Traversor) error {
+func (inf *CommandInfo) FString(trav *fsp.Traversor) error {
 	if trav == nil {
 		return nil
 	}
 
-	docPrinter := cdd.NewDocumentPrinter(
-		"Description",
-		inf.description,
-		"[No description available]",
-	)
-	err := docPrinter.FString(trav)
-	if err != nil {
-		return ue.NewErrWhile("printing the command description", err)
-	}
+	/*
+
+		docPrinter := fsd.NewDocumentPrinter(
+			"Description",
+			inf.description,
+			"[No description available]",
+		)
+		err := docPrinter.FString(trav)
+		if err != nil {
+			return ue.NewErrWhile("printing the command description", err)
+		}
+	*/
 
 	trav.EmptyLine()
 
-	err = trav.AppendString("Arguments:")
+	err := trav.AppendString("Arguments:")
 	if err != nil {
 		return err
 	}
 
 	if len(inf.args) == 0 {
-		trav.AppendRune(' ')
+		err := trav.AppendRune(' ')
+		if err != nil {
+			return err
+		}
 
 		err = trav.AppendString("[No arguments available]")
 		if err != nil {
 			return err
 		}
 
-		trav.AcceptHalfLine()
+		trav.AcceptLine()
 	} else {
-		trav.AcceptHalfLine()
+		trav.AcceptLine()
 
 		err := trav.AddJoinedLine(" ", inf.args...)
 		if err != nil {
@@ -107,7 +112,7 @@ func (inf *CommandInfo) FString(trav *ffs.Traversor) error {
 //
 // Returns:
 //   - *CommandInfo: The new command info.
-func NewCommandInfo(description *cdd.Document, fn ConsoleFunc, args []string) *CommandInfo {
+func NewCommandInfo(description *fsd.Document, fn ConsoleFunc, args []string) *CommandInfo {
 	return &CommandInfo{
 		description: description,
 		fn:          fn,

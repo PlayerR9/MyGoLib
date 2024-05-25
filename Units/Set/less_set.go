@@ -327,7 +327,7 @@ func (s *LessSet[T]) Slice() []T {
 // Returns:
 //   - ui.Iterater[T]: An iterator for the set.
 func (s *LessSet[T]) Iterator() ui.Iterater[T] {
-	return ui.NewGenericIterator(s.elems)
+	return ui.NewSimpleIterator(s.elems)
 }
 
 // NewLessSet creates a new LessSet.

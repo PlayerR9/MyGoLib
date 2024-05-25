@@ -1,28 +1,84 @@
-package Builder
+package Printer
 
 import (
-	ffs "github.com/PlayerR9/MyGoLib/Formatting/FString"
-	ui "github.com/PlayerR9/MyGoLib/Units/Iterator"
+	tls "github.com/PlayerR9/MyGoLib/FString/Section"
 )
 
-// PageBuilder is a type that represents a page of a document.
-type PageBuilder struct {
+// pageBuilder is a type that represents a page of a document.
+type pageBuilder struct {
 	// sections are the sections of the page.
-	sections []*SectionBuilder
+	sections []tls.Sectioner
 
-	// lastSection is the last section of the page.
-	lastSection int
+	// buffer is the buffer of the page.
+	buffer *sectionBuilder
 }
 
-// Accept is a function that accepts the current section and
-// creates a new section.
-func (p *PageBuilder) Accept() {
-	if p.lastSection != -1 {
-		p.sections[p.lastSection].Accept()
+// NewPage creates a new page.
+//
+// Returns:
+//   - *Page: The new page.
+func NewPage() *pageBuilder {
+	return &pageBuilder{
+		sections: make([]tls.Sectioner, 0),
+		buffer:   nil,
+	}
+}
+
+// AcceptLine is a function that accepts the current in-progress line
+// (if any).
+func (p *pageBuilder) AcceptLine() {
+	if p.buffer == nil {
+		return
 	}
 
-	p.sections = append(p.sections, NewSection())
-	p.lastSection++
+	p.buffer.Accept()
+}
+
+// IsFirstOfLine is a function that checks if the current buffer is the first of the line.
+//
+// Returns:
+//   - bool: True if the current buffer is the first of the line.
+func (p *pageBuilder) IsFirstOfLine() bool {
+	if p.buffer == nil {
+		return true
+	}
+
+	return p.buffer.IsFirstOfLine()
+}
+
+// Accept is a function that accepts the current in-progress buffer
+// by converting it to the specified section type. Lastly, the section
+// is added to the page.
+//
+// Parameters:
+//   - sectionType: The section type to convert the buffer to.
+//
+// Returns:
+//   - error: An error if the buffer could not be converted to the section type.
+//
+// Behaviors:
+//   - Even when the buffer is empty, the section is still added to the page.
+//     To avoid this, use the Finalize function.
+func (p *pageBuilder) Accept(sectionType tls.Sectioner) error {
+	if p.buffer != nil {
+		p.buffer.AcceptWord()
+	} else {
+		p.buffer = newSectionBuilder()
+	}
+
+	// Convert the buffer to a section
+	err := sectionType.FromTextBlock(p.buffer.GetWords())
+	if err != nil {
+		return err
+	}
+
+	// Add the section to the page
+	p.sections = append(p.sections, sectionType)
+
+	// Reset the buffer
+	p.buffer = nil
+
+	return nil
 }
 
 // AddString adds a string to the page.
@@ -32,67 +88,76 @@ func (p *PageBuilder) Accept() {
 //
 // Behaviors:
 //   - If the string is empty, it is not added.
-func (p *PageBuilder) AddString(str string) {
+func (p *pageBuilder) AddString(str string) {
 	if str == "" {
 		return
 	}
 
-	if p.lastSection == -1 {
-		p.sections = append(p.sections, NewSection())
-		p.lastSection = 0
+	if p.buffer == nil {
+		p.buffer = newSectionBuilder()
 	}
 
-	p.sections[p.lastSection].AddString(str)
+	p.buffer.AddString(str)
 }
 
 // AddRune adds a rune to the page.
 //
 // Parameters:
 //   - r: The rune to add.
-func (p *PageBuilder) AddRune(r rune) {
-	if p.lastSection == -1 {
-		p.sections = append(p.sections, NewSection())
-		p.lastSection = 0
+func (p *pageBuilder) AddRune(r rune) {
+	if p.buffer == nil {
+		p.buffer = newSectionBuilder()
 	}
 
-	p.sections[p.lastSection].AddRune(r)
+	p.buffer.AddRune(r)
 }
 
 // AcceptWord is a function that accepts the current in-progress word
-// and creates a new word.
-func (p *PageBuilder) AcceptWord() {
-	if p.lastSection != -1 {
-		p.sections[p.lastSection].AcceptWord()
-	}
-}
-
-// Finalize is a function that finalizes the page.
-func (p *PageBuilder) Finalize() {
-	if p.lastSection == -1 {
+// if any.
+func (p *pageBuilder) AcceptWord() {
+	if p.buffer == nil {
 		return
 	}
 
-	p.sections[p.lastSection].Finalize()
+	p.buffer.AcceptWord()
 }
 
-// FString is a function that prints the page.
+// Finalize is a function that finalizes the page by converting the buffer
+// to the specified section type and adding it to the page.
 //
 // Parameters:
-//   - trav: The traversor to use for printing.
+//   - sectionType: The section type to convert the buffer to.
 //
 // Returns:
-//   - error: An error if the printing fails.
-func (p *PageBuilder) FString(trav *ffs.Traversor) error {
-	for _, section := range p.sections {
-		err := section.FString(trav)
-		if err != nil {
-			return err
-		}
+//   - error: An error if the buffer could not be converted to the section type.
+//
+// Behaviors:
+//   - If the buffer is empty, the function does nothing.
+func (p *pageBuilder) Finalize(sectionType tls.Sectioner) error {
+	if p.buffer == nil {
+		return nil
 	}
+
+	p.buffer.AcceptWord()
+
+	// Convert the buffer to a section
+	err := sectionType.FromTextBlock(p.buffer.GetWords())
+	if err != nil {
+		return err
+	}
+
+	// Add the section to the page
+	p.sections = append(p.sections, sectionType)
+
+	// Reset the buffer
+	p.buffer = nil
 
 	return nil
 }
 
+//////////////////////////////////////////////////////////////
+
+/*
 // Iterator is a function that returns an iterator for the page.
 //
 // Returns:
@@ -100,17 +165,7 @@ func (p *PageBuilder) FString(trav *ffs.Traversor) error {
 func (p *PageBuilder) Iterator() ui.Iterater[*SectionBuilder] {
 	return ui.NewGenericIterator(p.sections)
 }
-
-// NewPage creates a new page.
-//
-// Returns:
-//   - *Page: The new page.
-func NewPage() *PageBuilder {
-	return &PageBuilder{
-		sections:    make([]*SectionBuilder, 0),
-		lastSection: -1,
-	}
-}
+*/
 
 /*
 import (

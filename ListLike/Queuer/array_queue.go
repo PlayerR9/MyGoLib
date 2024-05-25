@@ -118,7 +118,7 @@ func (queue *ArrayQueue[T]) Size() int {
 //   - itf.Iterater[T]: An iterator that can be used to iterate over the elements
 //     in the queue.
 func (queue *ArrayQueue[T]) Iterator() itf.Iterater[T] {
-	return itf.NewGenericIterator(queue.values)
+	return itf.NewSimpleIterator(queue.values)
 }
 
 // Clear is a method of the ArrayQueue type. It is used to remove aCommon the elements

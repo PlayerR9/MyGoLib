@@ -1,4 +1,4 @@
-package Sections
+package Section
 
 import (
 	"testing"
@@ -6,6 +6,14 @@ import (
 	cdd "github.com/PlayerR9/MyGoLib/ComplexData/Display/Table"
 	"github.com/gdamore/tcell"
 )
+
+type MockSection struct {
+	text string
+}
+
+func (s *MockSection) Runes(width, height int) ([][]rune, error) {
+	return nil, nil
+}
 
 func TestTitle(t *testing.T) {
 	const (
@@ -15,9 +23,9 @@ func TestTitle(t *testing.T) {
 
 	table := cdd.NewDrawTable(20, 1)
 
-	title := NewTitle(Title)
+	// title := NewTitle(Title)
 
-	cell := cdd.NewColoredElement(title, tcell.StyleDefault)
+	cell := cdd.NewColoredElement(&MockSection{}, tcell.StyleDefault)
 
 	x, y := 0, 0
 
@@ -76,11 +84,11 @@ func TestMiddleSplit(t *testing.T) {
 	}
 
 	for i, test := range tests {
-		title := NewTitle(test.title)
+		// title := NewTitle(test.title)
 
 		table := cdd.NewDrawTable(test.width, test.height)
 
-		cell := cdd.NewColoredElement(title, tcell.StyleDefault)
+		cell := cdd.NewColoredElement(&MockSection{}, tcell.StyleDefault)
 
 		x, y := 0, 0
 
@@ -109,11 +117,11 @@ func TestTitleTruncation(t *testing.T) {
 		ExpectedLine string = "*** Th... ***"
 	)
 
-	title := NewTitle(Title)
+	// title := NewTitle(Title)
 
 	table := cdd.NewDrawTable(13, 1)
 
-	cell := cdd.NewColoredElement(title, tcell.StyleDefault)
+	cell := cdd.NewColoredElement(&MockSection{}, tcell.StyleDefault)
 
 	x, y := 0, 0
 

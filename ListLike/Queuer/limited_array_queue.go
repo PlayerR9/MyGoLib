@@ -136,7 +136,7 @@ func (queue *LimitedArrayQueue[T]) Capacity() int {
 //   - itf.Iterater[T]: An iterator that can be used to iterate over the elements
 //     in the queue.
 func (queue *LimitedArrayQueue[T]) Iterator() itf.Iterater[T] {
-	return itf.NewGenericIterator[T](queue.values)
+	return itf.NewSimpleIterator[T](queue.values)
 }
 
 // Clear is a method of the LimitedArrayQueue type. It is used to remove all the elements

@@ -1,4 +1,4 @@
-package Sections
+package Section
 
 import (
 	"fmt"
@@ -10,7 +10,7 @@ import (
 
 const (
 	// Hellip defines the string to be used as an ellipsis when the content
-	// of the ContentBox is truncated.
+	// of the MultilineText is truncated.
 	// It is set to "...", which is the standard representation of an ellipsis
 	// in text.
 	Hellip string = "..."
@@ -20,28 +20,57 @@ const (
 	HellipLen int = len(Hellip)
 
 	// Space defines the string to be used as a space when writing content
-	// into the ContentBox.
+	// into the MultilineText.
 	// It is set to " ", which is the standard representation of a space in
 	// text.
 	Space string = " "
 
 	// FieldSpacing defines the number of spaces between each field (word)
-	// when they are written into the ContentBox.
+	// when they are written into the MultilineText.
 	// It is set to 1, meaning there will be one spaces between each field.
 	FieldSpacing int = 1
 
 	// IndentLevel defines the number of spaces used for indentation when
-	// writing content into the ContentBox.
+	// writing content into the MultilineText.
 	// It is set to 2, meaning there will be two spaces at the start of each
 	// new line of content.
 	IndentLevel int = 3
 )
 
-// ContentBox represents a box that contains content.
-type ContentBox struct {
+// MultilineText represents a box that contains content.
+type MultilineText struct {
 	// lines is a two-dimensional slice of strings representing the content
 	// of the box.
 	lines [][]string
+}
+
+// FromTextBlock sets the content of the MultilineText to the specified
+// two-dimensional slice of strings.
+//
+// Parameters:
+//   - lines - a two-dimensional slice of strings representing the content
+//     of the MultilineText.
+//
+// Returns:
+//   - error - an error if the content could not be set.
+func (mlt *MultilineText) FromTextBlock(lines [][]string) error {
+	if len(lines) == 0 {
+		mlt.lines = [][]string{{}}
+
+		return nil
+	}
+
+	mlt.lines = lines
+
+	return nil
+}
+
+// GetRawContent returns the raw content of the MultilineText.
+//
+// Returns:
+//   - [][]string - the raw content of the MultilineText.
+func (mlt *MultilineText) GetRawContent() [][]string {
+	return mlt.lines
 }
 
 // Runes returns the content of the unit as a 2D slice of runes
@@ -62,8 +91,8 @@ type ContentBox struct {
 //     converted to runes. However, out of bounds or other issues should not error.
 //     Instead, the content should be drawn as much as possible before unable to be
 //     drawn.
-func (cb *ContentBox) Runes(width, height int) ([][]rune, error) {
-	tss, err := cb.forceApply(width, height)
+func (mlt *MultilineText) ApplyRender(width, height int) ([]*Render, error) {
+	tss, err := mlt.forceApply(width, height)
 	if err != nil {
 		return nil, err
 	}
@@ -79,38 +108,32 @@ func (cb *ContentBox) Runes(width, height int) ([][]rune, error) {
 		}
 	}
 
-	runeTable := make([][]rune, 0)
+	var renders []*Render
 
+	var runeTable [][]rune
 	yCoord := 0
 
 	for _, ts := range tss {
 		currentHeight := ts.GetHeight()
 
-		shouldExit := currentHeight+yCoord > tableHeight
-		if shouldExit {
-			return runeTable, nil
+		canRenderMore := currentHeight+yCoord <= tableHeight
+		if !canRenderMore {
+			renders = append(renders, NewRender(runeTable))
+
+			runeTable = nil
+			yCoord = 0
+		} else {
+			runeTable = append(runeTable, ts.GetRunes()...)
+
+			yCoord += currentHeight
 		}
-
-		runeTable = append(runeTable, ts.GetRunes()...)
-
-		yCoord += currentHeight
 	}
 
-	return runeTable, nil
-}
-
-// NewContentBox creates a new ContentBox with the specified lines of content.
-//
-// Parameters:
-//   - lines - a two-dimensional slice of strings representing the content of the box.
-//   - style - the style to be used when writing the content into the box.
-//
-// Returns:
-//   - *ContentBox - a pointer to the created ContentBox.
-func NewContentBox(lines [][]string) *ContentBox {
-	return &ContentBox{
-		lines: lines,
+	if runeTable != nil {
+		renders = append(renders, NewRender(runeTable))
 	}
+
+	return renders, nil
 }
 
 // processLine processes a line of text represented by a slice of fields.
@@ -133,7 +156,7 @@ func NewContentBox(lines [][]string) *ContentBox {
 //   - *sext.TextSplit - the updated TextSplitter.
 //   - bool - a boolean indicating whether the text was truncated.
 //   - error - an error if the text could not be processed.
-func (cb *ContentBox) processLine(isFirst bool, maxWidth int, ts *sext.TextSplit, words []string) (*sext.TextSplit, bool, error) {
+func (mlt *MultilineText) processLine(isFirst bool, maxWidth int, ts *sext.TextSplit, words []string) (*sext.TextSplit, bool, error) {
 	if !isFirst {
 		maxWidth -= IndentLevel
 	}
@@ -222,7 +245,7 @@ func (cb *ContentBox) processLine(isFirst bool, maxWidth int, ts *sext.TextSplit
 // The function returns a pointer to the created TextSplitter
 // and an error. If no errors occur during the creation of the
 // TextSplitter, the error is nil.
-func (cb *ContentBox) createTextSplitter(lines [][]string, maxWidth, maxHeight int) (*sext.TextSplit, error) {
+func (mlt *MultilineText) createTextSplitter(lines [][]string, maxWidth, maxHeight int) (*sext.TextSplit, error) {
 	ts, err := sext.NewTextSplit(maxWidth, maxHeight)
 	if err != nil {
 		return nil, fmt.Errorf("could not create TextSplitter: %s", err.Error())
@@ -230,7 +253,7 @@ func (cb *ContentBox) createTextSplitter(lines [][]string, maxWidth, maxHeight i
 
 	possibleNewLine := false
 
-	ts, possibleNewLine, err = cb.processLine(true, maxWidth, ts, lines[0])
+	ts, possibleNewLine, err = mlt.processLine(true, maxWidth, ts, lines[0])
 	if err != nil {
 		return nil, err
 	}
@@ -251,7 +274,7 @@ func (cb *ContentBox) createTextSplitter(lines [][]string, maxWidth, maxHeight i
 			continue
 		}
 
-		ts, possibleNewLine, err = cb.processLine(false, maxWidth, ts, line)
+		ts, possibleNewLine, err = mlt.processLine(false, maxWidth, ts, line)
 		if err != nil {
 			return nil, fmt.Errorf("could not process line: %s", err.Error())
 		}
@@ -260,7 +283,7 @@ func (cb *ContentBox) createTextSplitter(lines [][]string, maxWidth, maxHeight i
 	return ts, nil
 }
 
-// apply takes a maximum width and height, and applies the content of the ContentBox
+// apply takes a maximum width and height, and applies the content of the MultilineText
 // to the specified width and height. It splits the content into lines of the specified
 // width, and optimizes the text if possible.
 //
@@ -271,13 +294,13 @@ func (cb *ContentBox) createTextSplitter(lines [][]string, maxWidth, maxHeight i
 // Returns:
 //   - []*sext.TextSplit - a slice of TextSplit objects representing the optimized content.
 //   - error - an error if the content could not be applied.
-func (cb *ContentBox) forceApply(maxWidth, maxHeight int) ([]*sext.TextSplit, error) {
-	finalTs := make([]*sext.TextSplit, 0, len(cb.lines))
+func (mlt *MultilineText) forceApply(maxWidth, maxHeight int) ([]*sext.TextSplit, error) {
+	finalTs := make([]*sext.TextSplit, 0, len(mlt.lines))
 
-	for _, line := range cb.lines {
+	for _, line := range mlt.lines {
 		sentences := [][]string{line}
 
-		ts, err := cb.createTextSplitter(sentences, maxWidth, maxHeight)
+		ts, err := mlt.createTextSplitter(sentences, maxWidth, maxHeight)
 		if err != nil {
 			return nil, err
 		}

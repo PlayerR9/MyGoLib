@@ -126,7 +126,7 @@ func (list *ArrayList[T]) Capacity() int {
 //
 //   - itf.Iterater[T]: An iterator for the list.
 func (list *ArrayList[T]) Iterator() itf.Iterater[T] {
-	return itf.NewGenericIterator(list.values)
+	return itf.NewSimpleIterator(list.values)
 }
 
 // Clear is a method of the ArrayList type. It is used to remove all elements from

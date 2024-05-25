@@ -1,7 +1,7 @@
 package Tree
 
 import (
-	ffs "github.com/PlayerR9/MyGoLib/Formatting/FString"
+	fsp "github.com/PlayerR9/MyGoLib/FString/Printer"
 	"github.com/PlayerR9/MyGoLib/ListLike/Queuer"
 	"github.com/PlayerR9/MyGoLib/ListLike/Stacker"
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
@@ -27,22 +27,21 @@ type Tree[T any] struct {
 //
 // Returns:
 //   - []string: A slice of strings that represent the tree.
-func (t *Tree[T]) FString(trav *ffs.Traversor) error {
+func (t *Tree[T]) FString(trav *fsp.Traversor) error {
 	if t.root == nil {
 		return nil
 	}
 
-	fstr := ffs.NewFString()
+	form := fsp.NewFormatter(
+		fsp.NewIndentConfig("| ", 0),
+		nil,
+		nil,
+		nil,
+	)
 
-	newTrav := fstr.Traversor(ffs.NewIndentConfig("| ", 0, false))
-
-	err := t.root.FString(newTrav)
+	err := form.Apply(trav, t.root)
 	if err != nil {
 		return err
-	}
-
-	for _, line := range fstr.GetLines() {
-		trav.AddMultiline(line)
 	}
 
 	return nil

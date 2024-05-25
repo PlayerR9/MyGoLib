@@ -1,45 +1,6 @@
-package Builder
+package Document
 
-import (
-	ffs "github.com/PlayerR9/MyGoLib/Formatting/FString"
-)
-
-type Documenter interface {
-	// Accept is a function that accepts the current in-progress subsection
-	// and creates a new subsection.
-	Accept()
-
-	// AddString adds a string to the subsection.
-	//
-	// Parameters:
-	//   - str: The string to add.
-	//
-	// Behaviors:
-	//   - If the string is empty, it is not added.
-	AddString(str string)
-
-	// AddRune adds a rune to the subsection.
-	//
-	// Parameters:
-	//   - r: The rune to add.
-	AddRune(r rune)
-
-	// AcceptWord is a function that accepts the current in-progress word
-	// and creates a new word.
-	AcceptWord()
-
-	// Finalize is a function that finalizes the document. (i.e., accept without adding anything)
-	Finalize()
-
-	// FString is a function that prints the document.
-	//
-	// Parameters:
-	//   - trav: The traversor to use for printing.
-	//
-	// Returns:
-	//   - error: An error if the printing fails.
-}
-
+/*
 // DocumentPrinter is a type that represents a printer for a document.
 type DocumentPrinter struct {
 	// The name of the document.
@@ -115,3 +76,4 @@ func NewDocumentPrinter(name string, doc *DocumentBuilder, ifEmpty string) *Docu
 		IfEmpty: ifEmpty,
 	}
 }
+*/

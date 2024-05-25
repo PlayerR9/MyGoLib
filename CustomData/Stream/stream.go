@@ -23,7 +23,7 @@ type Stream[T any] struct {
 // Returns:
 //   - ll.Iterater[T]: An iterator for the stream.
 func (s *Stream[T]) Iterator() ll.Iterater[T] {
-	return ll.NewGenericIterator(s.items)
+	return ll.NewSimpleIterator(s.items)
 }
 
 // NewStream creates a new stream with the given items.

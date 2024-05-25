@@ -1,4 +1,4 @@
-package Sections
+package Section
 
 import (
 	"fmt"
@@ -35,7 +35,7 @@ type Title struct {
 //
 // Returns:
 //   - error: An error if the title could not be drawn.
-func (t *Title) Runes(width, height int) ([][]rune, error) {
+func (t *Title) ApplyRender(width, height int) ([]*Render, error) {
 	// 1. Generate the full title
 	var fullTitle string
 
@@ -60,18 +60,57 @@ func (t *Title) Runes(width, height int) ([][]rune, error) {
 	}
 
 	// 3. Write the lines with centered alignment
-	runeTable := make([][]rune, 0)
+	var renders []*Render
+
+	var runeTable [][]rune
+	yCoord := 0
 
 	for i := 0; i < len(lines); i++ {
 		startPos := (width - utf8.RuneCountInString(lines[i])) / 2
 
-		row := make([]rune, width)
-		copy(row[startPos:], []rune(lines[i]))
+		if yCoord < height {
+			row := make([]rune, width)
+			copy(row[startPos:], []rune(lines[i]))
 
-		runeTable = append(runeTable, row)
+			runeTable = append(runeTable, row)
+		} else {
+			renders = append(renders, NewRender(runeTable))
+
+			runeTable = nil
+			yCoord = 0
+		}
 	}
 
-	return runeTable, nil
+	if runeTable != nil {
+		renders = append(renders, NewRender(runeTable))
+	}
+
+	return renders, nil
+}
+
+// GetRawContent returns the raw content of the Title.
+//
+// Returns:
+//   - [][]string: The raw content of the Title.
+func (t *Title) GetRawContent() [][]string {
+	// 1. Generate the full title
+	var fullTitle string
+
+	if t.subtitle == "" {
+		fullTitle = t.title
+	} else {
+		var builder strings.Builder
+
+		builder.WriteString(t.title)
+		builder.WriteRune(' ')
+		builder.WriteRune('-')
+		builder.WriteRune(' ')
+		builder.WriteString(t.subtitle)
+
+		fullTitle = builder.String()
+	}
+
+	return [][]string{{fullTitle}}
 }
 
 // NewTitle creates a new Title with the given title and a style.

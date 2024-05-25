@@ -6,8 +6,8 @@ import (
 	"errors"
 	"fmt"
 
-	cdd "github.com/PlayerR9/MyGoLib/CustomData/Document"
-	fs "github.com/PlayerR9/MyGoLib/Formatting/FString"
+	fsd "github.com/PlayerR9/MyGoLib/FString/Document"
+	fsp "github.com/PlayerR9/MyGoLib/FString/Printer"
 
 	sm "github.com/PlayerR9/MyGoLib/CustomData/OrderedMap"
 	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
@@ -27,7 +27,7 @@ type ConsolePanel struct {
 	ExecutableName string
 
 	// description is the documentation of the executable.
-	description *cdd.Document
+	description *fsd.Document
 
 	// commandMap is a map of command opcodes to CommandInfo.
 	commandMap *sm.OrderedMap[string, *CommandInfo]
@@ -57,7 +57,7 @@ type ConsolePanel struct {
 //		- <command 2>:
 //	   	// <description>
 //		// ...
-func (cns *ConsolePanel) FString(trav *fs.Traversor) error {
+func (cns *ConsolePanel) FString(trav *fsp.Traversor) error {
 	// Usage:
 	err := trav.AddJoinedLine(" ", "Usage:", cns.ExecutableName, "<command>", "[flags]")
 	if err != nil {
@@ -67,12 +67,14 @@ func (cns *ConsolePanel) FString(trav *fs.Traversor) error {
 	// Empty line
 	trav.EmptyLine()
 
-	// Description:
-	doc := cdd.NewDocumentPrinter("Description", cns.description, "[No description provided]")
-	err = doc.FString(trav)
-	if err != nil {
-		return ers.NewErrWhile("FString printing description", err)
-	}
+	/*
+		// Description:
+		doc := fsd.NewDocumentPrinter("Description", cns.description, "[No description provided]")
+		err = doc.FString(trav)
+		if err != nil {
+			return ers.NewErrWhile("FString printing description", err)
+		}
+	*/
 
 	// Empty line
 	trav.EmptyLine()
@@ -94,7 +96,7 @@ func (cns *ConsolePanel) FString(trav *fs.Traversor) error {
 //
 // Returns:
 //   - *ConsolePanel: A pointer to the created ConsolePanel.
-func NewConsolePanel(execName string, description *cdd.Document) *ConsolePanel {
+func NewConsolePanel(execName string, description *fsd.Document) *ConsolePanel {
 	cp := &ConsolePanel{
 		ExecutableName: execName,
 		description:    description,
@@ -103,17 +105,22 @@ func NewConsolePanel(execName string, description *cdd.Document) *ConsolePanel {
 		height:         DefaultHeight,
 	}
 
-	// Add the help command
-	helpCommandInfo := NewCommandInfo(
-		cdd.NewDocument("Displays help information for the console."),
-		func(args map[string]any) (any, error) {
-			if len(args) == 0 {
-				trav := fs.NewFString()
+	f := func(args map[string]any) (any, error) {
+		if len(args) == 0 {
+			printer := fsp.NewPrinter(fsp.DefaultFormatter)
 
-				cp.FString(trav.Traversor(nil))
+			err := fsp.ApplyFormat(printer, cp)
+			if err != nil {
+				return nil, fmt.Errorf("error printing console panel: %w", err)
+			}
 
-				lines := trav.GetLines()
+			doc, err := printer.MakeDocument()
+			if err != nil {
+				return nil, fmt.Errorf("error making document: %w", err)
+			}
 
+			return doc, nil
+			/*
 				runeTable := make([][]rune, 0)
 
 				for _, line := range lines {
@@ -126,20 +133,32 @@ func NewConsolePanel(execName string, description *cdd.Document) *ConsolePanel {
 				}
 
 				return runeTable, nil
+			*/
+		}
+
+		runeTable := make([][]rune, 0)
+
+		for opcode := range args {
+			command, ok := cp.GetCommand(opcode)
+			if !ok {
+				return nil, NewErrCommandNotFound(opcode)
 			}
 
-			runeTable := make([][]rune, 0)
+			printer := fsp.NewPrinter(fsp.DefaultFormatter)
 
-			for opcode := range args {
-				command, ok := cp.GetCommand(opcode)
-				if !ok {
-					return nil, NewErrCommandNotFound(opcode)
-				}
+			err := fsp.ApplyFormat(printer, command)
+			if err != nil {
+				return nil, fmt.Errorf("error printing command %q: %w", opcode, err)
+			}
 
-				trav := fs.NewFString()
+			doc, err := printer.MakeDocument()
+			if err != nil {
+				return nil, fmt.Errorf("error making document: %w", err)
+			}
 
-				command.FString(trav.Traversor(nil))
+			return doc, nil
 
+			/*
 				mlts := trav.GetLines()
 
 				for _, mlt := range mlts {
@@ -150,10 +169,16 @@ func NewConsolePanel(execName string, description *cdd.Document) *ConsolePanel {
 
 					runeTable = append(runeTable, rt...)
 				}
-			}
+			*/
+		}
 
-			return runeTable, nil
-		},
+		return runeTable, nil
+	}
+
+	// Add the help command
+	helpCommandInfo := NewCommandInfo(
+		fsd.NewDocument("Displays help information for the console."),
+		f,
 	)
 
 	cp.commandMap.AddEntry("help", helpCommandInfo)
@@ -183,7 +208,7 @@ func (cp *ConsolePanel) AddCommand(opcode string, info *CommandInfo) *ConsolePan
 
 	addSpecificHelp := func(info *CommandInfo) (*CommandInfo, error) {
 		newInfo := NewFlagInfo(false, nil, nil).SetDescription(
-			cdd.NewDocument(
+			fsd.NewDocument(
 				fmt.Sprintf("Displays the help information for the %q command.", opcode),
 			),
 		)

@@ -1,9 +1,9 @@
 package Console
 
 import (
-	cdd "github.com/PlayerR9/MyGoLib/CustomData/Document"
 	cdom "github.com/PlayerR9/MyGoLib/CustomData/OrderedMap"
-	ffs "github.com/PlayerR9/MyGoLib/Formatting/FString"
+	fsd "github.com/PlayerR9/MyGoLib/FString/Document"
+	fsp "github.com/PlayerR9/MyGoLib/FString/Printer"
 	ue "github.com/PlayerR9/MyGoLib/Units/Errors"
 )
 
@@ -26,28 +26,37 @@ func MakeHelpCommand(console *Console) (*CommandInfo, error) {
 	}
 
 	fn := func(flagMap map[string]any) (any, error) {
-		printer := ffs.NewFString()
-
-		trav := printer.Traversor(ffs.NewIndentConfig("   ", 0, false))
-
 		mip := cdom.NewOrderedMapPrinter(
 			"Here's a list of all the available commands:",
 			console.commandMap,
 			"Command",
 			"[No commands available]",
 		)
-		err := mip.FString(trav)
+
+		form := fsp.NewFormatter(
+			fsp.NewIndentConfig("   ", 0),
+			nil,
+			nil,
+			nil,
+		)
+
+		printer := fsp.NewPrinter(form)
+
+		err := fsp.ApplyFormat(printer, mip)
 		if err != nil {
 			return nil, ue.NewErrWhile("printing the command list", err)
 		}
 
-		lines := printer.GetLines()
+		doc, err := printer.MakeDocument()
+		if err != nil {
+			return nil, ue.NewErrWhile("making the document", err)
+		}
 
-		return lines, nil
+		return doc, nil
 	}
 
 	return NewCommandInfo(
-		cdd.NewDocument("Display the help message."),
+		fsd.NewDocument("Display the help message."),
 		fn,
 		[]string{},
 	), nil

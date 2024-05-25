@@ -2,22 +2,27 @@
 // collections of elements in a generic and procedural manner.
 package Iterators
 
-import "fmt"
+import (
+	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
+)
 
-// ProceduralIterator is a struct that allows iterating over a collection of iterators
+// DynamicIterator is a struct that allows iterating over a collection of iterators
 // of type Iterater[T].
 // The major difference between this and the GenericIterator is that this iterator is
 // designed to iterate over a collection of elements in a progressive manner; reducing
 // the need to store the entire collection in memory.
-type ProceduralIterator[E Iterable[T], T any] struct {
+type DynamicIterator[E, T any] struct {
 	// The iterator over the collection of iterators.
 	source Iterater[E]
 
 	// The current iterator in the collection.
 	current *SimpleIterator[T]
+
+	// Transition function between iterators.
+	transition func(E) *SimpleIterator[T]
 }
 
-// Consume is a method of the ProceduralIterator type that advances the
+// Consume is a method of the DynamicIterator type that advances the
 // iterator to the next element in the collection and returns the current
 // element.
 //
@@ -28,7 +33,7 @@ type ProceduralIterator[E Iterable[T], T any] struct {
 // Returns:
 //   - T: The current element in the collection.
 //   - error: An error if it is not possible to consume the next element.
-func (iter *ProceduralIterator[E, T]) Consume() (T, error) {
+func (iter *DynamicIterator[E, T]) Consume() (T, error) {
 	if iter.source == nil {
 		return *new(T), NewErrNotInitialized()
 	}
@@ -45,21 +50,14 @@ func (iter *ProceduralIterator[E, T]) Consume() (T, error) {
 		return *new(T), NewErrExhaustedIter()
 	}
 
-	newIter := next1.Iterator()
-
-	var ok bool
-
-	iter.current, ok = newIter.(*SimpleIterator[T])
-	if !ok {
-		return *new(T), fmt.Errorf("could not convert iterator to *SimpleIterator")
-	}
+	iter.current = iter.transition(next1)
 
 	return iter.current.Consume()
 }
 
-// Restart is a method of the ProceduralIterator type that resets the
+// Restart is a method of the DynamicIterator type that resets the
 // iterator to the beginning of the collection.
-func (iter *ProceduralIterator[E, T]) Restart() {
+func (iter *DynamicIterator[E, T]) Restart() {
 	iter.current = nil
 	iter.source.Restart()
 }
@@ -71,12 +69,24 @@ func (iter *ProceduralIterator[E, T]) Restart() {
 //
 // Parameters:
 //   - source: The iterator over the collection of iterators to iterate over.
+//   - f: The transition function that takes an element of type E and returns
+//     an iterator.
 //
 // Return:
 //   - Iterater[T]: The new iterator over the collection of elements.
-func NewProceduralIterator[E Iterable[T], T any](source Iterater[E]) *ProceduralIterator[E, T] {
-	return &ProceduralIterator[E, T]{
+//   - error: An error of type *ers.ErrInvalidParameter if the transition function
+//     is nil.
+func NewDynamicIterator[E, T any](source Iterater[E], f func(E) *SimpleIterator[T]) (*DynamicIterator[E, T], error) {
+	if f == nil {
+		return nil, ers.NewErrNilParameter("f")
+	}
+
+	iter := &DynamicIterator[E, T]{
 		source:  source,
 		current: nil,
 	}
+
+	iter.transition = f
+
+	return iter, nil
 }

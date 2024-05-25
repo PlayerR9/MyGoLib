@@ -5,9 +5,8 @@ package ConsolePanel
 import (
 	"errors"
 
-	cdd "github.com/PlayerR9/MyGoLib/CustomData/Document"
-	ffs "github.com/PlayerR9/MyGoLib/Formatting/FString"
-	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
+	fsd "github.com/PlayerR9/MyGoLib/FString/Document"
+	fsp "github.com/PlayerR9/MyGoLib/FString/Printer"
 	slext "github.com/PlayerR9/MyGoLib/Units/Slices"
 )
 
@@ -46,7 +45,7 @@ type FlagInfo struct {
 	args []*Argument
 
 	// description is the documentation of the flag.
-	description *cdd.Document
+	description *fsd.Document
 
 	// required is a boolean indicating whether the flag is required.
 	required bool
@@ -71,7 +70,7 @@ type FlagInfo struct {
 //		// <description>
 //
 //	Required: <Yes/No>
-func (cfi *FlagInfo) FString(trav *ffs.Traversor) error {
+func (cfi *FlagInfo) FString(trav *fsp.Traversor) error {
 	// Arguments:
 	values := make([]string, 0, len(cfi.args))
 	for _, arg := range cfi.args {
@@ -88,18 +87,20 @@ func (cfi *FlagInfo) FString(trav *ffs.Traversor) error {
 	// Empty line
 	trav.EmptyLine()
 
-	// Description:
-	doc := cdd.NewDocumentPrinter("Description", cfi.description, "[No description provided]")
-	err = doc.FString(trav)
-	if err != nil {
-		return ers.NewErrWhile("FString printing description", err)
-	}
+	/*
+		// Description:
+		doc := fsd.NewDocumentPrinter("Description", cfi.description, "[No description provided]")
+		err = doc.FString(trav)
+		if err != nil {
+			return ers.NewErrWhile("FString printing description", err)
+		}
+	*/
 
 	// Empty line
 	trav.EmptyLine()
 
 	// Required:
-	sp := ffs.NewSimplePrinter("Required", cfi.required, BoolFString)
+	sp := fsp.NewSimplePrinter("Required", cfi.required, BoolFString)
 	err = sp.FString(trav)
 	if err != nil {
 		return err
@@ -155,7 +156,7 @@ func (inf *FlagInfo) IsRequired() bool {
 //
 // Returns:
 //   - *FlagInfo: A pointer to the FlagInfo. This allows for chaining.
-func (cfi *FlagInfo) SetDescription(description *cdd.Document) *FlagInfo {
+func (cfi *FlagInfo) SetDescription(description *fsd.Document) *FlagInfo {
 	cfi.description = description
 
 	return cfi

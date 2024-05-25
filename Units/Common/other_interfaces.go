@@ -2,6 +2,15 @@ package Common
 
 import "fmt"
 
+// Copier is an interface that provides a method to create a copy of an element.
+type Copier interface {
+	// Copy creates a copy of the element.
+	//
+	// Returns:
+	//   - Copier: The copy of the element.
+	Copy() Copier
+}
+
 // Cleaner is an interface that provides a method to remove all the elements
 // from a data structure.
 type Cleaner interface {

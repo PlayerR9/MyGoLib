@@ -141,7 +141,7 @@ func (list *LimitedArrayList[T]) Capacity() int {
 //
 //   - itf.Iterater[T]: An iterator for the list.
 func (list *LimitedArrayList[T]) Iterator() itf.Iterater[T] {
-	return itf.NewGenericIterator(list.values)
+	return itf.NewSimpleIterator(list.values)
 }
 
 // Clear is a method of the LimitedArrayList type. It is used to remove all elements from

@@ -43,15 +43,9 @@ func (pi *PageInterval) String() string {
 // Returns:
 //   - itf.Iterater[int]: An iterator for iterating over the pages in the PageInterval.
 func (pi *PageInterval) Iterator() itf.Iterater[int] {
-	iter, err := itf.NewProceduralIterator(
-		itf.NewGenericIterator(pi.intervals),
-		PageRangeIterator,
+	return itf.NewProceduralIterator(
+		itf.NewSimpleIterator(pi.intervals),
 	)
-	if err != nil {
-		panic(err)
-	}
-
-	return iter
 }
 
 // PageCount is a method of the PageInterval type that returns the total number
@@ -375,9 +369,9 @@ func (pi *PageInterval) ReverseIterator() itf.Iterater[int] {
 
 	slices.Reverse(reversed)
 
-	iter, err := itf.NewProceduralIterator(
-		itf.NewGenericIterator(reversed),
-		func(pr *PageRange) itf.Iterater[int] {
+	iter, err := itf.NewDynamicIterator(
+		itf.NewSimpleIterator(reversed),
+		func(pr *PageRange) *itf.SimpleIterator[int] {
 			var builder itf.Builder[int]
 
 			for page := pr.Second; page >= pr.First; page-- {

@@ -321,7 +321,7 @@ func (s *EqualSet[T]) Slice() []T {
 // Returns:
 //   - ui.Iterater[T]: An iterator for the set.
 func (s *EqualSet[T]) Iterator() ui.Iterater[T] {
-	return ui.NewGenericIterator(s.elems)
+	return ui.NewSimpleIterator(s.elems)
 }
 
 // NewEqualSet creates a new EqualSet.

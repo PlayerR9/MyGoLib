@@ -2,9 +2,9 @@
 // collections of elements in a generic and procedural manner.
 package Iterators
 
-// GenericIterator is a struct that allows iterating over a slice of
+// SimpleIterator is a struct that allows iterating over a slice of
 // elements of any type.
-type GenericIterator[T any] struct {
+type SimpleIterator[T any] struct {
 	// The slice of elements.
 	values *[]T
 
@@ -23,7 +23,7 @@ type GenericIterator[T any] struct {
 // Returns:
 //   - T: The current element in the collection.
 //   - error: An error if it is not possible to consume the next element.
-func (iter *GenericIterator[T]) Consume() (T, error) {
+func (iter *SimpleIterator[T]) Consume() (T, error) {
 	if iter.values == nil {
 		return *new(T), NewErrNotInitialized()
 	} else if iter.index >= len(*iter.values) {
@@ -39,11 +39,11 @@ func (iter *GenericIterator[T]) Consume() (T, error) {
 
 // Restart is a method of the GenericIterator type that resets the iterator to the
 // beginning of the collection.
-func (iter *GenericIterator[T]) Restart() {
+func (iter *SimpleIterator[T]) Restart() {
 	iter.index = 0
 }
 
-// NewGenericIterator creates a new iterator over a slice of elements of type T.
+// NewSimpleIterator creates a new iterator over a slice of elements of type T.
 //
 // Parameters:
 //   - values: The slice of elements to iterate over.
@@ -55,12 +55,12 @@ func (iter *GenericIterator[T]) Restart() {
 //   - If values is nil, the iterator is initialized with an empty slice.
 //   - Modifications to the slice of elements after creating the iterator will
 //     affect the values seen by the iterator.
-func NewGenericIterator[T any](values []T) *GenericIterator[T] {
+func NewSimpleIterator[T any](values []T) *SimpleIterator[T] {
 	if len(values) == 0 {
 		values = make([]T, 0)
 	}
 
-	return &GenericIterator[T]{
+	return &SimpleIterator[T]{
 		values: &values,
 		index:  0,
 	}

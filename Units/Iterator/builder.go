@@ -32,12 +32,12 @@ func (b *Builder[T]) AddMany(elements []T) {
 // It clears the buffer after creating the iterator.
 //
 // Returns:
-//   - Iterater[T]: The new iterator.
-func (b *Builder[T]) Build() Iterater[T] {
+//   - *SimpleIterator[T]: The new iterator.
+func (b *Builder[T]) Build() *SimpleIterator[T] {
 	bufferCopy := make([]T, len(b.buffer))
 	copy(bufferCopy, b.buffer)
 
-	iter := &GenericIterator[T]{
+	iter := &SimpleIterator[T]{
 		values: &bufferCopy,
 		index:  0,
 	}

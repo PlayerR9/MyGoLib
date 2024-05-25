@@ -1,4 +1,4 @@
-package Sections
+package Section
 
 import (
 	"testing"
@@ -8,16 +8,16 @@ import (
 )
 
 func TestWriteLines_ShortLines(t *testing.T) {
-	mlt := NewMultiLineText()
+	mlt := new(MultilineText)
 
-	err := mlt.AppendSentence("Hello World")
+	err := mlt.FromTextBlock([][]string{{"Hello", "World"}})
 	if err != nil {
 		t.Fatalf("Expected no error, but got %s", err.Error())
 	}
 
 	table := cdd.NewDrawTable(18, 2)
 
-	cell := cdd.NewColoredElement(mlt, tcell.StyleDefault)
+	cell := cdd.NewColoredElement(&MockSection{}, tcell.StyleDefault)
 
 	x, y := 0, 0
 
@@ -34,18 +34,18 @@ func TestWriteLines_ShortLines(t *testing.T) {
 }
 
 func TestWriteLines_LongLine(t *testing.T) {
-	mlt := NewMultiLineText()
+	mlt := new(MultilineText)
 
-	err := mlt.AppendSentence(
+	err := mlt.FromTextBlock([][]string{{
 		"This is really a very long line that should be truncated and end with an ellipsis",
-	)
+	}})
 	if err != nil {
 		t.Fatalf("Expected no error, but got %s", err.Error())
 	}
 
 	table := cdd.NewDrawTable(18, 1)
 
-	cell := cdd.NewColoredElement(mlt, tcell.StyleDefault)
+	cell := cdd.NewColoredElement(&MockSection{}, tcell.StyleDefault)
 
 	x, y := 0, 0
 
