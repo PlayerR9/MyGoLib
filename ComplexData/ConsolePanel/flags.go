@@ -5,8 +5,7 @@ package ConsolePanel
 import (
 	"errors"
 
-	fsd "github.com/PlayerR9/MyGoLib/FString/Document"
-	fsp "github.com/PlayerR9/MyGoLib/FString/Printer"
+	fss "github.com/PlayerR9/MyGoLib/Formatting/FString"
 	slext "github.com/PlayerR9/MyGoLib/Units/Slices"
 )
 
@@ -45,7 +44,7 @@ type FlagInfo struct {
 	args []*Argument
 
 	// description is the documentation of the flag.
-	description *fsd.Document
+	description [][]string
 
 	// required is a boolean indicating whether the flag is required.
 	required bool
@@ -70,7 +69,7 @@ type FlagInfo struct {
 //		// <description>
 //
 //	Required: <Yes/No>
-func (cfi *FlagInfo) FString(trav *fsp.Traversor) error {
+func (cfi *FlagInfo) FString(trav *fss.Traversor) error {
 	// Arguments:
 	values := make([]string, 0, len(cfi.args))
 	for _, arg := range cfi.args {
@@ -100,8 +99,17 @@ func (cfi *FlagInfo) FString(trav *fsp.Traversor) error {
 	trav.EmptyLine()
 
 	// Required:
-	sp := fsp.NewSimplePrinter("Required", cfi.required, BoolFString)
-	err = sp.FString(trav)
+	err = trav.AppendString("Required: ")
+	if err != nil {
+		return err
+	}
+
+	if cfi.required {
+		err = trav.AppendString("Yes")
+	} else {
+		err = trav.AppendString("No")
+	}
+
 	if err != nil {
 		return err
 	}
@@ -156,7 +164,7 @@ func (inf *FlagInfo) IsRequired() bool {
 //
 // Returns:
 //   - *FlagInfo: A pointer to the FlagInfo. This allows for chaining.
-func (cfi *FlagInfo) SetDescription(description *fsd.Document) *FlagInfo {
+func (cfi *FlagInfo) SetDescription(description [][]string) *FlagInfo {
 	cfi.description = description
 
 	return cfi

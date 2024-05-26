@@ -3,7 +3,7 @@ package Section
 import (
 	"testing"
 
-	cdd "github.com/PlayerR9/MyGoLib/ComplexData/Display/Table"
+	cdd "github.com/PlayerR9/MyGoLib/Display/Table"
 	"github.com/gdamore/tcell"
 )
 

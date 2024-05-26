@@ -1,7 +1,7 @@
 package Tree
 
 import (
-	fsp "github.com/PlayerR9/MyGoLib/FString/Printer"
+	fsp "github.com/PlayerR9/MyGoLib/Formatting/FString"
 	"github.com/PlayerR9/MyGoLib/ListLike/Queuer"
 	"github.com/PlayerR9/MyGoLib/ListLike/Stacker"
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
@@ -34,12 +34,9 @@ func (t *Tree[T]) FString(trav *fsp.Traversor) error {
 
 	form := fsp.NewFormatter(
 		fsp.NewIndentConfig("| ", 0),
-		nil,
-		nil,
-		nil,
 	)
 
-	err := form.Apply(trav, t.root)
+	err := fsp.ApplyForm(form, trav, t.root)
 	if err != nil {
 		return err
 	}

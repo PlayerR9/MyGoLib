@@ -3,13 +3,14 @@ package Document
 import (
 	"fmt"
 
+	fss "github.com/PlayerR9/MyGoLib/Display/Section"
+	ue "github.com/PlayerR9/MyGoLib/Units/Errors"
 	ut "github.com/PlayerR9/MyGoLib/Units/Tray"
 )
 
-// Document is a type that represents a document.
-type Document struct {
-	// pages are the pages of the document.
-	pages *ut.DynamicTray[*Page, *RenderedPage]
+// DocumentViewer is a type that represents a document.
+type DocumentViewer struct {
+	*ut.DynamicTray[*Page, *RenderedPage]
 }
 
 /*
@@ -42,23 +43,39 @@ func (d *Document) RenderAllPages() error {
 }
 */
 
-func NewDocument(strs ...string) *Document {
-	f := func(page *Page) *ut.SimpleTray[*RenderedPage] {
-		renders, err := page.View()
-		if err != nil {
-			panic(fmt.Errorf("could not view page: %w", err))
+// MakeDocument creates a new document.
+//
+// Parameters:
+//   - rawPages: The raw pages to add to the document.
+//
+// Returns:
+//   - *Document: A pointer to the newly created document.
+func MakeDocument(rawPages [][][][]string) (*DocumentViewer, error) {
+	var pages []*Page
+
+	for _, rawPage := range rawPages {
+		page := NewPage()
+
+		for i, rawSection := range rawPage {
+			mlt := new(fss.MultilineText)
+
+			err := mlt.FromTextBlock(rawSection)
+			if err != nil {
+				return nil, ue.NewErrAt(i, "section", err)
+			}
+
+			page.AddSection(mlt)
 		}
 
-		return ut.NewSimpleTray(renders)
+		pages = append(pages, page)
 	}
 
-	doc := &Document{
-		pages: ut.NewDynamicTray(make([]*Page, 0), f),
-	}
+	iter := ut.NewDynamicTray(
+		pages,
+		PageRenderTransition,
+	)
 
-	fmt.Println(doc)
-
-	panic("do not implement. This is just to make the code compile")
+	return &DocumentViewer{iter}, nil
 }
 
 /*
@@ -158,3 +175,12 @@ func (d *Document) AddLine(sentences ...string) *Document {
 }
 
 */
+
+func PageRenderTransition(page *Page) *ut.SimpleTray[*RenderedPage] {
+	renders, err := page.View()
+	if err != nil {
+		panic(fmt.Errorf("could not view page: %w", err))
+	}
+
+	return ut.NewSimpleTray(renders)
+}

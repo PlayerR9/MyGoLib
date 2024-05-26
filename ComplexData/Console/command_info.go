@@ -1,8 +1,7 @@
 package Console
 
 import (
-	fsd "github.com/PlayerR9/MyGoLib/FString/Document"
-	fsp "github.com/PlayerR9/MyGoLib/FString/Printer"
+	fsp "github.com/PlayerR9/MyGoLib/Formatting/FString"
 )
 
 // ConsoleFunc is a function type that represents a callback
@@ -20,7 +19,7 @@ type ConsoleFunc func(flagMap map[string]any) (any, error)
 // CommandInfo represents a console command.
 type CommandInfo struct {
 	// description is the documentation of the command.
-	description *fsd.Document
+	description [][]string
 
 	// args is a slice of string representing the arguments accepted by
 	// the command. Order matters.
@@ -112,7 +111,7 @@ func (inf *CommandInfo) FString(trav *fsp.Traversor) error {
 //
 // Returns:
 //   - *CommandInfo: The new command info.
-func NewCommandInfo(description *fsd.Document, fn ConsoleFunc, args []string) *CommandInfo {
+func NewCommandInfo(description [][]string, fn ConsoleFunc, args []string) *CommandInfo {
 	return &CommandInfo{
 		description: description,
 		fn:          fn,

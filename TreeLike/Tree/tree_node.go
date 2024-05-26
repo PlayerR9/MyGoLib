@@ -6,7 +6,7 @@ import (
 	"github.com/PlayerR9/MyGoLib/ListLike/Stacker"
 	slext "github.com/PlayerR9/MyGoLib/Units/Slices"
 
-	fsp "github.com/PlayerR9/MyGoLib/FString/Printer"
+	fsp "github.com/PlayerR9/MyGoLib/Formatting/FString"
 	intf "github.com/PlayerR9/MyGoLib/Units/Common"
 )
 
@@ -45,7 +45,7 @@ func (t *TreeNode[T]) FString(trav *fsp.Traversor) error {
 		return err
 	}
 
-	err = fsp.ApplyMany(
+	err = fsp.ApplyFormMany(
 		trav.GetConfig(
 			fsp.WithIncreasedIndent(),
 		),

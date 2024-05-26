@@ -1,6 +1,8 @@
-package Printer
+package FString
 
 import (
+	"strings"
+
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 )
 
@@ -19,6 +21,11 @@ var (
 	// DefaultSeparatorConfig is the default separator configuration.
 	DefaultSeparatorConfig *SeparatorConfig = NewSeparator(DefaultSeparator, false)
 )
+
+// Configer is an interface that defines the behavior of a type that can be copied.
+type Configer interface {
+	uc.Copier
+}
 
 // IndentConfig is a type that represents the configuration for indentation.
 type IndentConfig struct {
@@ -70,6 +77,22 @@ func NewIndentConfig(str string, initialLevel int) *IndentConfig {
 	return config
 }
 
+// GetIndentation is a method that returns the applied indentation.
+//
+// Returns:
+//   - string: The applied indentation.
+func (c *IndentConfig) GetIndentation() string {
+	return strings.Repeat(c.str, c.level)
+}
+
+// GetIndentStr is a method that returns the indentation string.
+//
+// Returns:
+//   - string: The indentation string.
+func (c *IndentConfig) GetIndentStr() string {
+	return c.str
+}
+
 // SeparatorConfig is a type that represents the configuration for separators.
 type SeparatorConfig struct {
 	// str is the string that is used as a separator.
@@ -118,6 +141,9 @@ type DelimiterConfig struct {
 
 	// isInline specifies whether the delimiter should be inline.
 	isInline bool
+
+	// left specifies whether the delimiter is on the left side.
+	left bool
 }
 
 // Copy is a method of uc.Copier interface.
@@ -128,6 +154,7 @@ func (c *DelimiterConfig) Copy() uc.Copier {
 	return &DelimiterConfig{
 		str:      c.str,
 		isInline: c.isInline,
+		left:     c.left,
 	}
 }
 
@@ -144,10 +171,11 @@ func (c *DelimiterConfig) Copy() uc.Copier {
 //   - ==DelimiterConfig==
 //   - Value: ""
 //   - Inline: true
-func NewDelimiterConfig(str string, isInline bool) *DelimiterConfig {
+func NewDelimiterConfig(str string, isInline, left bool) *DelimiterConfig {
 	return &DelimiterConfig{
 		str:      str,
 		isInline: isInline,
+		left:     left,
 	}
 }
 

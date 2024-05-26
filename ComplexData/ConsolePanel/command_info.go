@@ -6,9 +6,7 @@ import (
 	"errors"
 	"fmt"
 
-	fsp "github.com/PlayerR9/MyGoLib/FString/Printer"
-
-	fsd "github.com/PlayerR9/MyGoLib/FString/Document"
+	fss "github.com/PlayerR9/MyGoLib/Formatting/FString"
 
 	sm "github.com/PlayerR9/MyGoLib/CustomData/OrderedMap"
 
@@ -44,7 +42,7 @@ func NoCommandCallback(args map[string]any) (any, error) {
 // CommandInfo represents a console command.
 type CommandInfo struct {
 	// description is the documentation of the command.
-	description *fsd.Document
+	description [][]string
 
 	// flags is a slice of FlagInfo representing the flags accepted by
 	// the command.
@@ -73,7 +71,7 @@ type CommandInfo struct {
 //		- <flag 2>:
 //	   	// <description>
 //		// ...
-func (cci *CommandInfo) FString(trav *fsp.Traversor) error {
+func (cci *CommandInfo) FString(trav *fss.Traversor) error {
 	// Description:
 	/*
 		doc := fsd.NewDocumentPrinter("Description", cci.description, "[No description provided]")
@@ -108,7 +106,7 @@ func (cci *CommandInfo) FString(trav *fsp.Traversor) error {
 //
 // Behaviors:
 //   - If callback is nil, NoCommandCallback is used.
-func NewCommandInfo(description *fsd.Document, callback CommandCallbackFunc) *CommandInfo {
+func NewCommandInfo(description [][]string, callback CommandCallbackFunc) *CommandInfo {
 	inf := &CommandInfo{
 		description: description,
 		flags:       sm.NewOrderedMap[string, *FlagInfo](),
@@ -225,7 +223,7 @@ func (inf *CommandInfo) Parse(args []string) (*ParsedCommand, error) {
 //
 // Returns:
 //   - *fsd.Document: The description of the CommandInfo.
-func (inf *CommandInfo) GetDescription() *fsd.Document {
+func (inf *CommandInfo) GetDescription() [][]string {
 	return inf.description
 }
 

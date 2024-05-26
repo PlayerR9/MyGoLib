@@ -5,10 +5,22 @@ import (
 )
 
 func TestFString(t *testing.T) {
-	doc := NewDocument("Hello", "World")
+	builder := NewBuilder()
 
-	// FIXME: This test is not complete.
-	t.Fatalf("Expected no error, but got %v", doc)
+	err := builder.AddLine("Hello")
+	if err != nil {
+		t.Fatalf("Expected no error, but got %s", err.Error())
+	}
+
+	err = builder.AddLine("World")
+	if err != nil {
+		t.Fatalf("Expected no error, but got %s", err.Error())
+	}
+
+	_, err = builder.Build()
+	if err != nil {
+		t.Fatalf("Expected no error, but got %s", err.Error())
+	}
 
 	/*
 		expected := make([]string, 0)

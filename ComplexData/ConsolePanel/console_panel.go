@@ -6,8 +6,7 @@ import (
 	"errors"
 	"fmt"
 
-	fsd "github.com/PlayerR9/MyGoLib/FString/Document"
-	fsp "github.com/PlayerR9/MyGoLib/FString/Printer"
+	fss "github.com/PlayerR9/MyGoLib/Formatting/FString"
 
 	sm "github.com/PlayerR9/MyGoLib/CustomData/OrderedMap"
 	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
@@ -27,7 +26,7 @@ type ConsolePanel struct {
 	ExecutableName string
 
 	// description is the documentation of the executable.
-	description *fsd.Document
+	description [][]string
 
 	// commandMap is a map of command opcodes to CommandInfo.
 	commandMap *sm.OrderedMap[string, *CommandInfo]
@@ -57,7 +56,7 @@ type ConsolePanel struct {
 //		- <command 2>:
 //	   	// <description>
 //		// ...
-func (cns *ConsolePanel) FString(trav *fsp.Traversor) error {
+func (cns *ConsolePanel) FString(trav *fss.Traversor) error {
 	// Usage:
 	err := trav.AddJoinedLine(" ", "Usage:", cns.ExecutableName, "<command>", "[flags]")
 	if err != nil {
@@ -96,7 +95,7 @@ func (cns *ConsolePanel) FString(trav *fsp.Traversor) error {
 //
 // Returns:
 //   - *ConsolePanel: A pointer to the created ConsolePanel.
-func NewConsolePanel(execName string, description *fsd.Document) *ConsolePanel {
+func NewConsolePanel(execName string, description [][]string) *ConsolePanel {
 	cp := &ConsolePanel{
 		ExecutableName: execName,
 		description:    description,
@@ -107,19 +106,16 @@ func NewConsolePanel(execName string, description *fsd.Document) *ConsolePanel {
 
 	f := func(args map[string]any) (any, error) {
 		if len(args) == 0 {
-			printer := fsp.NewPrinter(fsp.DefaultFormatter)
+			printer := fss.NewPrinter(fss.DefaultFormatter)
 
-			err := fsp.ApplyFormat(printer, cp)
+			err := fss.Apply(printer, cp)
 			if err != nil {
-				return nil, fmt.Errorf("error printing console panel: %w", err)
+				return nil, fmt.Errorf("error applying console panel: %w", err)
 			}
 
-			doc, err := printer.MakeDocument()
-			if err != nil {
-				return nil, fmt.Errorf("error making document: %w", err)
-			}
+			doc := printer.GetPages()
 
-			return doc, nil
+			return fss.Stringfy(doc), nil
 			/*
 				runeTable := make([][]rune, 0)
 
@@ -144,19 +140,16 @@ func NewConsolePanel(execName string, description *fsd.Document) *ConsolePanel {
 				return nil, NewErrCommandNotFound(opcode)
 			}
 
-			printer := fsp.NewPrinter(fsp.DefaultFormatter)
+			printer := fss.NewPrinter(fss.DefaultFormatter)
 
-			err := fsp.ApplyFormat(printer, command)
+			err := fss.Apply(printer, command)
 			if err != nil {
-				return nil, fmt.Errorf("error printing command %q: %w", opcode, err)
+				return nil, fmt.Errorf("error applying command %q: %w", opcode, err)
 			}
 
-			doc, err := printer.MakeDocument()
-			if err != nil {
-				return nil, fmt.Errorf("error making document: %w", err)
-			}
+			doc := printer.GetPages()
 
-			return doc, nil
+			return fss.Stringfy(doc), nil
 
 			/*
 				mlts := trav.GetLines()
@@ -176,8 +169,13 @@ func NewConsolePanel(execName string, description *fsd.Document) *ConsolePanel {
 	}
 
 	// Add the help command
+	doc, err := fss.Println(fss.DefaultFormatter, "Displays help information for the console.")
+	if err != nil {
+		panic(err)
+	}
+
 	helpCommandInfo := NewCommandInfo(
-		fsd.NewDocument("Displays help information for the console."),
+		fss.Stringfy(doc),
 		f,
 	)
 
@@ -207,11 +205,12 @@ func (cp *ConsolePanel) AddCommand(opcode string, info *CommandInfo) *ConsolePan
 	cp.commandMap.AddEntry(opcode, info)
 
 	addSpecificHelp := func(info *CommandInfo) (*CommandInfo, error) {
-		newInfo := NewFlagInfo(false, nil, nil).SetDescription(
-			fsd.NewDocument(
-				fmt.Sprintf("Displays the help information for the %q command.", opcode),
-			),
-		)
+		doc, err := fss.Println(fss.DefaultFormatter, "Displays the help information for the %q command.", opcode)
+		if err != nil {
+			return nil, err
+		}
+
+		newInfo := NewFlagInfo(false, nil, nil).SetDescription(fss.Stringfy(doc))
 
 		return info.AddFlag(opcode, newInfo), nil
 	}

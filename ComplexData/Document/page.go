@@ -4,7 +4,16 @@ import (
 	"errors"
 	"fmt"
 
-	fss "github.com/PlayerR9/MyGoLib/FString/Section"
+	fss "github.com/PlayerR9/MyGoLib/Display/Section"
+	ffs "github.com/PlayerR9/MyGoLib/Formatting/FString"
+)
+
+const (
+	// DefaultPageWidth is the default width of a page.
+	DefaultPageWidth int = 80
+
+	// DefaultPageHeight is the default height of a page.
+	DefaultPageHeight int = 24
 )
 
 // Page is a type that represents a page of a document.
@@ -17,6 +26,29 @@ type Page struct {
 
 	// height is the height of the page.
 	height int
+}
+
+// FString implements the FStringer interface.
+func (p *Page) FString(trav *ffs.Traversor) error {
+	if trav == nil {
+		return nil
+	}
+
+	return nil
+}
+
+func NewPage() *Page {
+	return &Page{
+		sections: make([]fss.Sectioner, 0),
+		width:    DefaultPageWidth,
+		height:   DefaultPageHeight,
+	}
+}
+
+func (p *Page) AddSection(section fss.Sectioner) *Page {
+	p.sections = append(p.sections, section)
+
+	return p
 }
 
 func (p *Page) View() ([]*RenderedPage, error) {

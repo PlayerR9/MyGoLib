@@ -1,8 +1,6 @@
-package Printer
+package FString
 
 import (
-	"fmt"
-
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 )
 
@@ -32,64 +30,12 @@ type FStringFunc[T any] func(trav *Traversor, elem T) error
 var (
 	// ArrayLikeFormat is the default options for an array-like object.
 	// [1, 2, 3]
-	ArrayLikeFormat *Formatter = NewFormatter(
-		nil,
-		NewDelimiterConfig("[", false),
-		NewDelimiterConfig("]", false),
+	ArrayLikeFormat FormatConfig = NewFormatter(
+		NewDelimiterConfig("[", false, true),
+		NewDelimiterConfig("]", false, false),
 		NewSeparator(DefaultSeparator, false),
 	)
 )
-
-// AdvancedFields extracts the fields in a similar way to strings.Fields, but with more
-// advanced formatting.
-//
-// Parameters:
-//   - str: The string to extract the fields from.
-//
-// Returns:
-//   - []string: The fields in the string.
-//   - error: An error if the extraction fails.
-//
-// Behaviors:
-//   - The function uses a Printer to extract the fields.
-//   - The function uses the default options for the Printer.
-//   - The function returns the fields in the order they appear in the string.
-func AdvancedFields(str string) ([]string, error) {
-	printer := NewPrinter(nil)
-
-	err := ApplyFormatFunc(printer, str, func(trav *Traversor, str string) error {
-		err := trav.AppendString(str)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	})
-	if err != nil {
-		return nil, fmt.Errorf("error applying format: %w", err)
-	}
-
-	rawPages, err := printer.GetRaw()
-	if err != nil {
-		return nil, fmt.Errorf("error getting raw pages: %w", err)
-	}
-
-	var fields [][]string
-
-	for _, rp := range rawPages {
-		for _, line := range rp {
-			fields = append(fields, line.GetRawContent()...)
-		}
-	}
-
-	res := make([]string, 0)
-
-	for _, field := range fields {
-		res = append(res, field...)
-	}
-
-	return res, nil
-}
 
 //////////////////////////////////////////////////////////////
 

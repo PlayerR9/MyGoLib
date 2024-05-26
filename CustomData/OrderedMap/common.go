@@ -1,7 +1,7 @@
 package OrderedMap
 
 import (
-	fsp "github.com/PlayerR9/MyGoLib/FString/Printer"
+	fsp "github.com/PlayerR9/MyGoLib/Formatting/FString"
 	ue "github.com/PlayerR9/MyGoLib/Units/Errors"
 	ui "github.com/PlayerR9/MyGoLib/Units/Iterator"
 	up "github.com/PlayerR9/MyGoLib/Units/Pair"
@@ -71,9 +71,13 @@ func (mip *MapIterPrinter[T]) FString(trav *fsp.Traversor) error {
 			return err
 		}
 
-		err = trav.GetConfig(
-			fsp.WithIncreasedIndent(),
-		).Apply(trav, entry.Second)
+		err = fsp.ApplyForm(
+			trav.GetConfig(
+				fsp.WithIncreasedIndent(),
+			),
+			trav,
+			entry.Second,
+		)
 		if err != nil {
 			return ue.NewErrAt(at+1, mip.Name, err)
 		}
@@ -159,9 +163,13 @@ func (p *OrderedMapPrinter[T]) FString(trav *fsp.Traversor) error {
 
 		mip := NewMapIterPrinter(p.ValueName, p.Map.Iterator())
 
-		err := trav.GetConfig(
-			fsp.WithIncreasedIndent(),
-		).Apply(trav, mip)
+		err := fsp.ApplyForm(
+			trav.GetConfig(
+				fsp.WithIncreasedIndent(),
+			),
+			trav,
+			mip,
+		)
 		if err != nil {
 			return err
 		}
