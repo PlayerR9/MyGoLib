@@ -22,12 +22,12 @@ func (g *Graph[T]) remapVertices(pos int) {
 	}
 }
 
-type Graph[T uc.Comparer[T]] struct {
+type Graph[T uc.Comparer] struct {
 	vertices *uos.Slice[*Vertex[T]]
 	edges    map[int]map[int]bool
 }
 
-func NewGraph[T uc.Comparer[T]]() *Graph[T] {
+func NewGraph[T uc.Comparer]() *Graph[T] {
 	return &Graph[T]{
 		vertices: uos.NewSlice[*Vertex[T]](nil),
 		edges:    make(map[int]map[int]bool),

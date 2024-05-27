@@ -81,6 +81,9 @@ type Traversor struct {
 	// hasIndent is a flag that indicates if the traversor has indentation.
 	hasIndent bool
 
+	// leftConfig is the configuration for the left symbol of the traversor.
+	leftConfig *DelimiterConfig
+
 	// source is the buffer of the traversor.
 	source *buffer
 
@@ -103,25 +106,27 @@ func (trav *Traversor) Cleanup() {
 //   - *Traversor: The new traversor.
 func newTraversor(config FormatConfig, source *buffer) *Traversor {
 	trav := &Traversor{
-		config: config,
-		source: source, // shared source
-		form:   config,
+		config:      config,
+		source:      source, // shared source
+		form:        config,
+		hasIndent:   false,
+		indentation: "",
+		indentStr:   "",
+		leftConfig:  nil,
 	}
 
 	indentConfig, ok := config[ConfInd_Idx].(*IndentConfig)
-	if !ok {
-		panic(fmt.Errorf("invalid configuration type for indentation: %T", config[ConfInd_Idx]))
-	}
-
-	if indentConfig == nil {
-		trav.hasIndent = false
-		trav.indentation = ""
-	} else {
+	if ok && indentConfig != nil {
 		trav.indentation = indentConfig.GetIndentation()
 		trav.hasIndent = true
+
+		trav.indentStr = indentConfig.str
 	}
 
-	trav.indentStr = indentConfig.str
+	leftConfig, ok := config[ConfDelL_Idx].(*DelimiterConfig)
+	if ok && leftConfig != nil && leftConfig.left {
+		trav.leftConfig = leftConfig
+	}
 
 	return trav
 }
@@ -131,7 +136,14 @@ func newTraversor(config FormatConfig, source *buffer) *Traversor {
 // of the line.
 func (trav *Traversor) writeIndent() {
 	if trav.hasIndent && trav.source.isFirstOfLine() {
-		trav.source.writeIndent(trav.indentStr)
+		trav.source.forceWriteString(trav.indentStr)
+	}
+}
+
+// writeLeftSymbol writes the left symbol of the traversor to the source.
+func (trav *Traversor) writeLeftSymbol() {
+	if trav.source.isFirstOfLine() {
+		trav.source.forceWriteString(trav.leftConfig.str)
 	}
 }
 
@@ -144,6 +156,10 @@ func (trav *Traversor) writeIndent() {
 //   - error: An error if the rune could not be appended.
 func (trav *Traversor) writeRune(r rune) error {
 	trav.writeIndent()
+
+	if trav.leftConfig != nil {
+		trav.writeLeftSymbol()
+	}
 
 	switch r {
 	case utf8.RuneError:
@@ -166,6 +182,10 @@ func (trav *Traversor) writeRune(r rune) error {
 //   - error: An error if the string could not be appended.
 func (trav *Traversor) writeString(str string) error {
 	trav.writeIndent()
+
+	if trav.leftConfig != nil {
+		trav.writeLeftSymbol()
+	}
 
 	if str == "" {
 		return nil
@@ -197,6 +217,10 @@ func (trav *Traversor) writeLine(line string) error {
 	trav.source.acceptLine() // Accept the current line if any.
 
 	trav.writeIndent()
+
+	if trav.leftConfig != nil {
+		trav.writeLeftSymbol()
+	}
 
 	if line == "" {
 		trav.source.writeEmptyLine()
@@ -417,6 +441,10 @@ func (trav *Traversor) EmptyLine() {
 
 	trav.writeIndent()
 
+	if trav.leftConfig != nil {
+		trav.writeLeftSymbol()
+	}
+
 	trav.source.acceptLine() // Accept the line.
 }
 
@@ -559,7 +587,13 @@ func (trav *Traversor) GetConfig(options ...ConfigOption) FormatConfig {
 	var configCopy FormatConfig
 
 	for i := 0; i < 4; i++ {
-		configCopy[i] = trav.config[i].Copy()
+		conf := trav.config[i]
+
+		if conf == nil {
+			configCopy[i] = nil
+		} else {
+			configCopy[i] = conf.Copy()
+		}
 	}
 
 	for _, option := range options {

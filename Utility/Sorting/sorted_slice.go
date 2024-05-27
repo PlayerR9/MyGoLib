@@ -5,7 +5,7 @@ import (
 )
 
 // Slice is a slice that uses the Compare method to compare elements.
-type Slice[T uc.Comparer[T]] struct {
+type Slice[T uc.Comparer] struct {
 	// elems is the slice of elements in the sorted slice.
 	elems []T
 }
@@ -17,7 +17,7 @@ type Slice[T uc.Comparer[T]] struct {
 //
 // Returns:
 //   - *Slice[T]: The new sorted slice.
-func NewSlice[T uc.Comparer[T]](elems []T) *Slice[T] {
+func NewSlice[T uc.Comparer](elems []T) *Slice[T] {
 	if len(elems) == 0 {
 		return &Slice[T]{elems: make([]T, 0)}
 	} else {

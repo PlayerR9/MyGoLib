@@ -238,8 +238,8 @@ func (b *buffer) isFirstOfLine() bool {
 	return b.buff == nil || b.buff.isFirstOfLine()
 }
 
-// writeIndent is a private function that writes the indentation to the formatted string.
-func (b *buffer) writeIndent(str string) {
+// forceWriteString is a private function that writes the indentation to the formatted string.
+func (b *buffer) forceWriteString(str string) {
 	if str == "" {
 		return
 	}

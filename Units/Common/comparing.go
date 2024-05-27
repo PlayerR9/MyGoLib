@@ -152,8 +152,8 @@ func CompareAny(a, b any) (int, bool) {
 		} else {
 			return 0, true
 		}
-	case Comparer[any]:
-		otherB, ok := b.(Comparer[any])
+	case Comparer:
+		otherB, ok := b.(Comparer)
 		if !ok {
 			return 0, false
 		}
@@ -166,7 +166,7 @@ func CompareAny(a, b any) (int, bool) {
 
 // Comparer is an interface that defines a method to compare two objects
 // of the same type.
-type Comparer[T any] interface {
+type Comparer interface {
 	// Compare returns a negative value if the object is less than the other object,
 	// zero if they are equal, and a positive value if the object is greater
 	// than the other object.
@@ -176,7 +176,7 @@ type Comparer[T any] interface {
 	//
 	// Returns:
 	//   - int: The result of the comparison.
-	Compare(other T) int
+	Compare(other Comparer) int
 
 	Objecter
 }
@@ -197,8 +197,8 @@ func CompareOf(a, b any) (int, bool) {
 	}
 
 	switch a := a.(type) {
-	case Comparer[any]:
-		val2, ok := b.(Comparer[any])
+	case Comparer:
+		val2, ok := b.(Comparer)
 		if !ok {
 			return 0, false
 		}
@@ -226,7 +226,7 @@ func IsComparable(value any) bool {
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64,
 		float32, float64, string:
 		return true
-	case Comparer[any]:
+	case Comparer:
 		return true
 	default:
 		return false

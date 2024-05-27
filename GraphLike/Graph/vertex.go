@@ -4,7 +4,7 @@ import (
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 )
 
-type Vertex[T uc.Comparer[T]] struct {
+type Vertex[T uc.Comparer] struct {
 	value T
 
 	isInitial bool
@@ -31,12 +31,17 @@ func (v *Vertex[T]) Equals(other uc.Objecter) bool {
 		v.isFinal == otherV.isFinal
 }
 
-func (v *Vertex[T]) Compare(other *Vertex[T]) int {
+func (v *Vertex[T]) Compare(other uc.Comparer) int {
 	if other == nil {
 		return 1
 	}
 
-	return v.value.Compare(other.value)
+	otherV, ok := other.(*Vertex[T])
+	if !ok {
+		return 1
+	}
+
+	return v.value.Compare(otherV.value)
 }
 
 func (v *Vertex[T]) Copy() uc.Objecter {
@@ -47,7 +52,7 @@ func (v *Vertex[T]) Copy() uc.Objecter {
 	}
 }
 
-func NewVertex[T uc.Comparer[T]](value T) *Vertex[T] {
+func NewVertex[T uc.Comparer](value T) *Vertex[T] {
 	return &Vertex[T]{
 		value:     value,
 		isInitial: false,

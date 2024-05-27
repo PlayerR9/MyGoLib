@@ -45,7 +45,7 @@ func Clean(elem any) {
 //   - The slice must be sorted in ascending order.
 //   - If the element is not found, the index is the position where the element should be inserted
 //     to maintain the order of the slice.
-func Find[T Comparer[T]](S []T, elem T) (int, bool) {
+func Find[T Comparer](S []T, elem T) (int, bool) {
 	if len(S) == 0 {
 		return 0, false
 	}
@@ -76,7 +76,7 @@ func Find[T Comparer[T]](S []T, elem T) (int, bool) {
 // Behaviors:
 //   - This function uses the Quick Sort algorithm to sort the slice.
 //   - The elements in the slice must implement the Comparer interface.
-func Sort[T Comparer[T]](S []T) {
+func Sort[T Comparer](S []T) {
 	if len(S) < 2 {
 		return
 	}
@@ -93,7 +93,7 @@ func Sort[T Comparer[T]](S []T) {
 //
 // Behaviors:
 //   - This function sorts the slice in ascending order.
-func sortQuick[T Comparer[T]](S []T, l, r int) {
+func sortQuick[T Comparer](S []T, l, r int) {
 	if l < r {
 		p := partition(S, l, r)
 		sortQuick(S, l, p-1)
@@ -110,7 +110,7 @@ func sortQuick[T Comparer[T]](S []T, l, r int) {
 //
 // Returns:
 //   - int: The index of the pivot element.
-func partition[T Comparer[T]](S []T, l, r int) int {
+func partition[T Comparer](S []T, l, r int) int {
 	pivot := S[r]
 	i := l
 

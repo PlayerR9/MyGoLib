@@ -17,33 +17,33 @@ import (
 //   - bool: true if the edge exists, otherwise false.
 type WeightFunc[T uc.Objecter] func(from, to T) (float64, bool)
 
-// WeightedGraph represents a graph.
-type WeightedGraph[T uc.Objecter] struct {
-	// Vertices in the graph.
-	Vertices []T
+// Graph represents a graph.
+type Graph[T uc.Objecter] struct {
+	// vertices in the graph.
+	vertices []T
 
-	// Edges in the graph.
-	Edges [][]*float64
+	// edges in the graph.
+	edges [][]*float64
 }
 
-// NewWeightedGraph creates a new graph with the given vertices.
+// NewGraph creates a new graph with the given vertices.
 //
 // Parameters:
 //   - vertices: vertices in the graph.
 //
 // Returns:
 //   - *WeightedGraph: the new graph.
-func NewWeightedGraph[T uc.Objecter](vertices []T, f WeightFunc[T]) *WeightedGraph[T] {
+func NewGraph[T uc.Objecter](vertices []T, f WeightFunc[T]) *Graph[T] {
 	if len(vertices) == 0 {
-		return &WeightedGraph[T]{
-			Vertices: make([]T, 0),
-			Edges:    make([][]*float64, 0),
+		return &Graph[T]{
+			vertices: make([]T, 0),
+			edges:    make([][]*float64, 0),
 		}
 	}
 
-	g := &WeightedGraph[T]{
-		Vertices: vertices,
-		Edges:    make([][]*float64, 0, len(vertices)),
+	g := &Graph[T]{
+		vertices: vertices,
+		edges:    make([][]*float64, 0, len(vertices)),
 	}
 
 	for _, from := range vertices {
@@ -58,7 +58,7 @@ func NewWeightedGraph[T uc.Objecter](vertices []T, f WeightFunc[T]) *WeightedGra
 			}
 		}
 
-		g.Edges = append(g.Edges, edge)
+		g.edges = append(g.edges, edge)
 	}
 
 	return g
@@ -71,8 +71,8 @@ func NewWeightedGraph[T uc.Objecter](vertices []T, f WeightFunc[T]) *WeightedGra
 //
 // Returns:
 //   - int: the index of the element, or -1 if not found.
-func (g *WeightedGraph[T]) IndexOf(elem T) int {
-	for i, x := range g.Vertices {
+func (g *Graph[T]) IndexOf(elem T) int {
+	for i, x := range g.vertices {
 		if x.Equals(elem) {
 			return i
 		}
@@ -88,7 +88,7 @@ func (g *WeightedGraph[T]) IndexOf(elem T) int {
 //
 // Returns:
 //   - []T: the adjacent vertices.
-func (g *WeightedGraph[T]) AdjacentOf(from T) []T {
+func (g *Graph[T]) AdjacentOf(from T) []T {
 	index := g.IndexOf(from)
 	if index == -1 {
 		return nil
@@ -96,9 +96,9 @@ func (g *WeightedGraph[T]) AdjacentOf(from T) []T {
 
 	adj := make([]T, 0)
 
-	for j, distance := range g.Edges[index] {
+	for j, distance := range g.edges[index] {
 		if distance != nil {
-			adj = append(adj, g.Vertices[j])
+			adj = append(adj, g.vertices[j])
 		}
 	}
 
@@ -114,11 +114,52 @@ func (g *WeightedGraph[T]) AdjacentOf(from T) []T {
 // Returns:
 //   - *WeightedGraphTree: the tree of the graph.
 //   - error: an error if the tree creation fails.
-func (g *WeightedGraph[T]) MakeTree(root T, info uc.Objecter, f tlt.NextsFunc[T]) (*tr.Tree[T], error) {
+func (g *Graph[T]) MakeTree(root T, info uc.Objecter, f tlt.NextsFunc[T]) (*tr.Tree[T], error) {
 	var builder tlt.Builder[T]
 
 	builder.SetInfo(info)
 	builder.SetNextFunc(f)
 
 	return builder.Build(root)
+}
+
+// GetVertices returns the vertices in the graph.
+//
+// Returns:
+//   - []T: the vertices.
+func (g *Graph[T]) GetVertices() []T {
+	return g.vertices
+}
+
+// GetEdges returns the edges in the graph.
+//
+// Returns:
+//   - [][]*float64: the edges.
+func (g *Graph[T]) GetEdges() [][]*float64 {
+	return g.edges
+}
+
+// GetEdge returns the weight of the edge between the given vertices.
+//
+// Parameters:
+//   - from: the source vertex.
+//   - to: the destination vertex.
+//
+// Returns:
+//   - float64: the weight of the edge.
+//   - bool: true if the edge exists, otherwise false.
+func (g *Graph[T]) GetEdge(from, to T) (float64, bool) {
+	i := g.IndexOf(from)
+	j := g.IndexOf(to)
+
+	if i == -1 || j == -1 {
+		return 0, false
+	}
+
+	w := g.edges[i][j]
+	if w == nil {
+		return 0, false
+	}
+
+	return *w, true
 }

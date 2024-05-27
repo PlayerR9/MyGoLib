@@ -10,7 +10,7 @@ import (
 )
 
 // LessSet is a set that uses the Equals method to compare elements.
-type LessSet[T uc.Comparer[T]] struct {
+type LessSet[T uc.Comparer] struct {
 	// elems is the slice of elements in the set.
 	elems []T
 }
@@ -334,7 +334,7 @@ func (s *LessSet[T]) Iterator() ui.Iterater[T] {
 //
 // Returns:
 //   - *LessSet: A new LessSet.
-func NewLessSet[T uc.Comparer[T]](elems []T) *LessSet[T] {
+func NewLessSet[T uc.Comparer](elems []T) *LessSet[T] {
 	elems = us.UniquefyEquals(elems)
 	uc.Sort(elems)
 

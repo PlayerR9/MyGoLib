@@ -66,6 +66,13 @@ func EqualOf(a, b any) bool {
 	}
 
 	switch a := a.(type) {
+	case Comparer:
+		otherB, ok := b.(Comparer)
+		if !ok {
+			return false
+		}
+
+		return a.Compare(otherB) == 0
 	case Objecter:
 		otherB, ok := b.(Objecter)
 		if !ok {
@@ -73,13 +80,6 @@ func EqualOf(a, b any) bool {
 		}
 
 		return a.Equals(otherB)
-	case Comparer[any]:
-		otherB, ok := b.(Comparer[any])
-		if !ok {
-			return false
-		}
-
-		return a.Compare(otherB) == 0
 	default:
 		return a == b
 	}
