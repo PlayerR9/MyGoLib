@@ -26,7 +26,7 @@ type ConsolePanel struct {
 	ExecutableName string
 
 	// description is the documentation of the executable.
-	description [][]string
+	description []string
 
 	// commandMap is a map of command opcodes to CommandInfo.
 	commandMap *sm.OrderedMap[string, *CommandInfo]
@@ -95,7 +95,7 @@ func (cns *ConsolePanel) FString(trav *fss.Traversor) error {
 //
 // Returns:
 //   - *ConsolePanel: A pointer to the created ConsolePanel.
-func NewConsolePanel(execName string, description [][]string) *ConsolePanel {
+func NewConsolePanel(execName string, description []string) *ConsolePanel {
 	cp := &ConsolePanel{
 		ExecutableName: execName,
 		description:    description,

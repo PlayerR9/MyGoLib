@@ -1,6 +1,8 @@
 package FString
 
 import (
+	"strings"
+
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 )
 
@@ -36,6 +38,24 @@ var (
 		NewSeparator(DefaultSeparator, false),
 	)
 )
+
+// FStringArray generates a formatted string representation of an array-like object.
+//
+// Parameters:
+//   - format: The format to use for printing.
+//   - values: The values to print.
+//
+// Returns:
+//   - string: The formatted string.
+//   - error: An error if the printing fails.
+func FStringArray(format FormatConfig, values []string) (string, error) {
+	doc, err := Print(format, values...)
+	if err != nil {
+		return "", err
+	}
+
+	return strings.Join(Stringfy(doc), "\f"), nil
+}
 
 //////////////////////////////////////////////////////////////
 

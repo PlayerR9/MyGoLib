@@ -44,7 +44,7 @@ type FlagInfo struct {
 	args []*Argument
 
 	// description is the documentation of the flag.
-	description [][]string
+	description []string
 
 	// required is a boolean indicating whether the flag is required.
 	required bool
@@ -164,7 +164,7 @@ func (inf *FlagInfo) IsRequired() bool {
 //
 // Returns:
 //   - *FlagInfo: A pointer to the FlagInfo. This allows for chaining.
-func (cfi *FlagInfo) SetDescription(description [][]string) *FlagInfo {
+func (cfi *FlagInfo) SetDescription(description []string) *FlagInfo {
 	cfi.description = description
 
 	return cfi

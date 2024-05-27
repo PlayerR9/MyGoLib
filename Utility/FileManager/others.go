@@ -153,3 +153,31 @@ func SplitPath(filePath string) []string {
 
 	return parts
 }
+
+// CreateAll creates a file and all directories in the path if they do not exist.
+//
+// Parameters:
+//   - loc: A string representing the path to the file.
+//   - perm: An os.FileMode representing the permissions to set on the file.
+//
+// Returns:
+//   - *os.File: A pointer to the created file.
+//   - error: An error if it fails to create the file or directories.
+//
+// Remember to close the file after using it.
+// For perm, use 0644 for read/write permissions.
+func CreateAll(loc string, perm os.FileMode) (*os.File, error) {
+	dir := filepath.Dir(loc)
+
+	err := os.MkdirAll(dir, perm)
+	if err != nil {
+		return nil, err
+	}
+
+	file, err := os.Create(loc)
+	if err != nil {
+		return nil, err
+	}
+
+	return file, nil
+}

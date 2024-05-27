@@ -138,11 +138,15 @@ func (sb *sectionBuilder) isFirstOfLine() bool {
 
 // accept is a function that accepts the current word and
 // creates a new line.
-func (sb *sectionBuilder) accept() {
+func (sb *sectionBuilder) accept(delim string) {
 	sb.mu.Lock()
 	defer sb.mu.Unlock()
 
 	if sb.buff.Len() > 0 {
+		if delim != "" {
+			sb.buff.WriteString(delim)
+		}
+
 		sb.lines[sb.lastLine] = append(sb.lines[sb.lastLine], sb.buff.String())
 		sb.buff.Reset()
 	}
@@ -153,12 +157,16 @@ func (sb *sectionBuilder) accept() {
 
 // accept is a function that accepts the current word and
 // creates a new line.
-func (sb *sectionBuilder) mayAccept() {
+func (sb *sectionBuilder) mayAccept(delim string) {
 	sb.mu.Lock()
 	defer sb.mu.Unlock()
 
 	if sb.buff.Len() == 0 {
 		return
+	}
+
+	if delim != "" {
+		sb.buff.WriteString(delim)
 	}
 
 	sb.lines[sb.lastLine] = append(sb.lines[sb.lastLine], sb.buff.String())
@@ -429,20 +437,20 @@ func (b *buffer) acceptWord() {
 }
 
 // acceptLine is a private function that accepts the current line of the formatted string.
-func (b *buffer) acceptLine() {
+func (b *buffer) acceptLine(delim string) {
 	if b.buff != nil {
-		b.buff.mayAccept()
+		b.buff.mayAccept(delim)
 	}
 }
 
 // writeEmptyLine is a private function that accepts the current line
 // regardless of the whether the line is empty or not.
-func (b *buffer) writeEmptyLine() {
+func (b *buffer) writeEmptyLine(delim string) {
 	if b.buff == nil {
 		b.buff = newSectionBuilder()
 	}
 
-	b.buff.accept()
+	b.buff.accept(delim)
 }
 
 // finalize is a private function that finalizes the buffer.

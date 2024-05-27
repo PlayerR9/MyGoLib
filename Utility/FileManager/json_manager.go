@@ -101,7 +101,7 @@ func (m *JSONManager[T]) CreateEmpty() error {
 		return err
 	}
 
-	f, err := os.Create(m.loc)
+	f, err := CreateAll(m.loc, 0644)
 	if err != nil {
 		return err
 	}

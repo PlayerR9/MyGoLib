@@ -427,15 +427,15 @@ func Fprintln(form FormatConfig, a ...interface{}) ([][][][]string, error) {
 // Stringify converts a formatted string to a string.
 //
 // Parameters:
-//   - sol: The formatted string.
+//   - doc: The formatted string.
 //
 // Returns:
 //   - [][]string: The stringified formatted string.
-func Stringfy(sol [][][][]string) [][]string {
-	var pages [][]string
+func Stringfy(doc [][][][]string) []string {
+	var pages []string
 
-	for _, page := range sol {
-		var contents []string
+	for _, page := range doc {
+		var sections []string
 
 		for _, section := range page {
 			var lines []string
@@ -444,10 +444,10 @@ func Stringfy(sol [][][][]string) [][]string {
 				lines = append(lines, strings.Join(line, " "))
 			}
 
-			contents = append(contents, strings.Join(lines, "\n"))
+			sections = append(sections, strings.Join(lines, "\n"))
 		}
 
-		pages = append(pages, contents)
+		pages = append(pages, strings.Join(sections, "\n"))
 	}
 
 	return pages

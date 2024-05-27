@@ -84,6 +84,9 @@ type Traversor struct {
 	// leftConfig is the configuration for the left symbol of the traversor.
 	leftConfig *DelimiterConfig
 
+	// rightDelim is the right delimiter of the traversor.
+	rightDelim string
+
 	// source is the buffer of the traversor.
 	source *buffer
 
@@ -113,6 +116,7 @@ func newTraversor(config FormatConfig, source *buffer) *Traversor {
 		indentation: "",
 		indentStr:   "",
 		leftConfig:  nil,
+		rightDelim:  "",
 	}
 
 	indentConfig, ok := config[ConfInd_Idx].(*IndentConfig)
@@ -126,6 +130,11 @@ func newTraversor(config FormatConfig, source *buffer) *Traversor {
 	leftConfig, ok := config[ConfDelL_Idx].(*DelimiterConfig)
 	if ok && leftConfig != nil && leftConfig.left {
 		trav.leftConfig = leftConfig
+	}
+
+	rightConfig, ok := config[ConfDelR_Idx].(*DelimiterConfig)
+	if ok && rightConfig != nil && !rightConfig.left {
+		trav.rightDelim = rightConfig.str
 	}
 
 	return trav
@@ -205,12 +214,12 @@ func (trav *Traversor) writeString(str string) error {
 // Behaviors:
 //   - If line is empty, then an empty line is added to the source.
 func (trav *Traversor) writeLine(line string) error {
-	trav.source.acceptLine() // Accept the current line if any.
+	trav.source.acceptLine(trav.rightDelim) // Accept the current line if any.
 
 	trav.writeIndent()
 
 	if line == "" {
-		trav.source.writeEmptyLine()
+		trav.source.writeEmptyLine(trav.rightDelim)
 	} else {
 		runes, err := checkString(line)
 		if err != nil {
@@ -220,7 +229,7 @@ func (trav *Traversor) writeLine(line string) error {
 		trav.source.writeRunes(runes)
 	}
 
-	trav.source.acceptLine() // Accept the line.
+	trav.source.acceptLine(trav.rightDelim) // Accept the line.
 
 	return nil
 }
@@ -336,7 +345,7 @@ func (trav *Traversor) AcceptLine() {
 		return
 	}
 
-	trav.source.acceptLine()
+	trav.source.acceptLine(trav.rightDelim)
 }
 
 // AddLine adds a line to the traversor. If there is any in-progress line, then the line is
@@ -424,11 +433,11 @@ func (trav *Traversor) EmptyLine() {
 		return
 	}
 
-	trav.source.acceptLine() // Accept the current line if any.
+	trav.source.acceptLine(trav.rightDelim) // Accept the current line if any.
 
 	trav.writeIndent()
 
-	trav.source.acceptLine() // Accept the line.
+	trav.source.acceptLine(trav.rightDelim) // Accept the line.
 }
 
 // Write implements the io.Writer interface for the traversor.

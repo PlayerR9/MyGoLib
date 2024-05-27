@@ -128,3 +128,20 @@ func StringsJoiner[T fmt.Stringer](values []T, sep string) string {
 
 	return strings.Join(stringValues, sep)
 }
+
+// ArrayFormatter formats a list of strings as an array.
+//
+// Parameters:
+//   - values: The list of strings to format.
+//
+// Returns:
+//   - string: The formatted array.
+func ArrayFormatter(values []string) string {
+	var builder strings.Builder
+
+	builder.WriteRune('[')
+	builder.WriteString(strings.Join(values, ", "))
+	builder.WriteRune(']')
+
+	return builder.String()
+}

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
-	"path/filepath"
 )
 
 // FileWriter represents a file writer that can be used to write to files.
@@ -70,14 +69,7 @@ func (fw *FileWriter) Create(perm fs.FileMode) error {
 		return nil
 	}
 
-	dir := filepath.Dir(fw.loc)
-
-	err := os.MkdirAll(dir, perm)
-	if err != nil {
-		return err
-	}
-
-	file, err := os.Create(fw.loc)
+	file, err := CreateAll(fw.loc, perm)
 	if err != nil {
 		return err
 	}

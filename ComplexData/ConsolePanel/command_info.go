@@ -42,7 +42,7 @@ func NoCommandCallback(args map[string]any) (any, error) {
 // CommandInfo represents a console command.
 type CommandInfo struct {
 	// description is the documentation of the command.
-	description [][]string
+	description []string
 
 	// flags is a slice of FlagInfo representing the flags accepted by
 	// the command.
@@ -106,7 +106,7 @@ func (cci *CommandInfo) FString(trav *fss.Traversor) error {
 //
 // Behaviors:
 //   - If callback is nil, NoCommandCallback is used.
-func NewCommandInfo(description [][]string, callback CommandCallbackFunc) *CommandInfo {
+func NewCommandInfo(description []string, callback CommandCallbackFunc) *CommandInfo {
 	inf := &CommandInfo{
 		description: description,
 		flags:       sm.NewOrderedMap[string, *FlagInfo](),
@@ -223,7 +223,7 @@ func (inf *CommandInfo) Parse(args []string) (*ParsedCommand, error) {
 //
 // Returns:
 //   - *fsd.Document: The description of the CommandInfo.
-func (inf *CommandInfo) GetDescription() [][]string {
+func (inf *CommandInfo) GetDescription() []string {
 	return inf.description
 }
 
