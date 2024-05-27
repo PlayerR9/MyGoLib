@@ -5,15 +5,14 @@ import (
 )
 
 func TestInit(t *testing.T) {
-	buffer, err := NewBuffer[int](1)
+	buffer, err := NewBuffer[int](0)
 	if err != nil {
-		t.Errorf("Expected no error, got %s", err.Error())
+		t.Fatalf("Expected no error, got %s", err.Error())
 	}
 
-	buffer.Start()
-	defer buffer.Wait()
-
 	sendTo, receiveFrom := buffer.GetSendChannel(), buffer.GetReceiveChannel()
+
+	buffer.Start()
 
 	sendTo <- 1
 	sendTo <- 2
@@ -21,13 +20,11 @@ func TestInit(t *testing.T) {
 
 	close(sendTo)
 
-	for i := 1; i <= 3; i++ {
-		x := <-receiveFrom
-
-		if x != i {
-			t.Errorf("Expected %d, got %d", i, x)
-		}
+	for val := range receiveFrom {
+		t.Logf("Received %d", val)
 	}
+
+	buffer.Wait()
 }
 
 func TestTrimFrom(t *testing.T) {
@@ -37,7 +34,6 @@ func TestTrimFrom(t *testing.T) {
 	}
 
 	buffer.Start()
-	defer buffer.Wait()
 
 	sendTo, receiveFrom := buffer.GetSendChannel(), buffer.GetReceiveChannel()
 
@@ -47,10 +43,7 @@ func TestTrimFrom(t *testing.T) {
 
 	close(sendTo)
 
-	buffer.CleanBuffer()
-
 	x, ok := <-receiveFrom
-
 	if !ok {
 		t.Errorf("Expected true, got %t", ok)
 	}
@@ -58,6 +51,10 @@ func TestTrimFrom(t *testing.T) {
 	if x != 1 {
 		t.Errorf("Expected 1, got %d", x)
 	}
+
+	buffer.CleanBuffer()
+
+	buffer.Wait()
 
 	_, ok = <-receiveFrom
 

@@ -2,8 +2,6 @@ package RWSafe
 
 import (
 	"sync"
-
-	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 )
 
 // Locker is a struct that represents a locker.
@@ -45,7 +43,7 @@ func (l *Locker) ModifyCond(cond bool) {
 //
 // Parameters:
 //   - do: The function to execute when the condition is true.
-func (l *Locker) WaitForCond(do uc.RoutineFunc) {
+func (l *Locker) WaitForCond(do func(cond bool)) {
 	l.signal.L.Lock()
 	defer l.signal.L.Unlock()
 
@@ -54,5 +52,5 @@ func (l *Locker) WaitForCond(do uc.RoutineFunc) {
 	}
 
 	// Make use of the condition variable.
-	do()
+	do(l.cond)
 }

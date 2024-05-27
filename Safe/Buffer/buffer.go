@@ -6,6 +6,7 @@ import (
 
 	"github.com/PlayerR9/MyGoLib/ListLike/Queuer"
 
+	rws "github.com/PlayerR9/MyGoLib/Safe/RWSafe"
 	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
 )
 
@@ -34,7 +35,7 @@ type Buffer[T any] struct {
 	isNotEmptyOrClosed *sync.Cond
 
 	// A boolean indicating whether the Buffer is closed.
-	isClosed bool
+	isClosed *rws.RWSafe[bool]
 }
 
 // NewBuffer creates a new Buffer instance.
@@ -63,7 +64,7 @@ func NewBuffer[T any](bufferSize int) (*Buffer[T], error) {
 	if bufferSize < 0 {
 		return nil, ers.NewErrInvalidParameter(
 			"bufferSize",
-			fmt.Errorf("value (%d) cannot be negative", bufferSize),
+			ers.NewErrGTE(0),
 		)
 	}
 
@@ -71,7 +72,7 @@ func NewBuffer[T any](bufferSize int) (*Buffer[T], error) {
 		q:                  Queuer.NewSafeQueue[T](),
 		sendTo:             make(chan T, bufferSize),
 		receiveFrom:        make(chan T, bufferSize),
-		isClosed:           false,
+		isClosed:           rws.NewRWSafe(false),
 		isNotEmptyOrClosed: sync.NewCond(new(sync.Mutex)),
 	}
 
@@ -85,8 +86,9 @@ func (b *Buffer[T]) Start() {
 	b.once.Do(func() {
 		b.wg.Add(2)
 
-		go b.listenForIncomingMessages()
 		go b.sendMessagesFromBuffer()
+		go b.listenForIncomingMessages()
+
 	})
 }
 
@@ -117,17 +119,18 @@ func (b *Buffer[T]) GetReceiveChannel() <-chan T {
 func (b *Buffer[T]) listenForIncomingMessages() {
 	defer b.wg.Done()
 
-	for msg := range b.receiveFrom {
-		b.q.Enqueue(msg)
+	for msg := range b.sendTo {
+		fmt.Println(msg)
 
-		b.isNotEmptyOrClosed.Signal()
+		b.q.Enqueue(msg)
+		b.isNotEmptyOrClosed.Broadcast()
 	}
 
 	b.isNotEmptyOrClosed.L.Lock()
-	b.isClosed = true
+	b.isClosed.Set(true)
 	b.isNotEmptyOrClosed.L.Unlock()
 
-	b.isNotEmptyOrClosed.Signal()
+	b.isNotEmptyOrClosed.Broadcast()
 }
 
 // sendMessagesFromBuffer is a method of the Buffer type that sends
@@ -137,32 +140,36 @@ func (b *Buffer[T]) listenForIncomingMessages() {
 func (b *Buffer[T]) sendMessagesFromBuffer() {
 	defer b.wg.Done()
 
-	for isClosed := false; !isClosed; {
+	for {
 		b.isNotEmptyOrClosed.L.Lock()
-		for b.q.IsEmpty() && !b.isClosed {
+		for !b.isClosed.Get() && b.q.IsEmpty() {
 			b.isNotEmptyOrClosed.Wait()
 		}
 
-		if b.isClosed {
-			isClosed = true
-		} else {
-			msg, err := b.q.Dequeue()
-			if err == nil {
-				b.sendTo <- msg
-			}
+		msg, err := b.q.Dequeue()
+
+		if err == nil {
+			b.receiveFrom <- msg
+		}
+
+		if b.isClosed.Get() {
+			b.isNotEmptyOrClosed.L.Unlock()
+			break
 		}
 
 		b.isNotEmptyOrClosed.L.Unlock()
 	}
 
-	for !b.q.IsEmpty() {
+	for {
 		msg, err := b.q.Dequeue()
-		if err == nil {
-			b.sendTo <- msg
+		if err != nil {
+			break
 		}
+
+		b.receiveFrom <- msg
 	}
 
-	close(b.sendTo)
+	close(b.receiveFrom)
 }
 
 // CleanBuffer removes all elements from the Buffer, effectively resetting
@@ -173,6 +180,8 @@ func (b *Buffer[T]) sendMessagesFromBuffer() {
 // This method is safe for concurrent use by multiple goroutines.
 func (b *Buffer[T]) CleanBuffer() {
 	b.q.Clear()
+
+	b.isNotEmptyOrClosed.Broadcast()
 }
 
 // Wait is a method of the Buffer type that waits for all goroutines
@@ -185,5 +194,5 @@ func (b *Buffer[T]) Wait() {
 
 // Close is a method of the Buffer type that closes the Buffer.
 func (b *Buffer[T]) Close() {
-	close(b.receiveFrom)
+	close(b.sendTo)
 }

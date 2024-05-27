@@ -19,12 +19,25 @@ type Debugger struct {
 	debugMode bool
 
 	wg sync.WaitGroup
+
+	once sync.Once
 }
 
 func NewDebugger(logger *log.Logger) *Debugger {
-	return &Debugger{
+	dbg := &Debugger{
 		logger: logger,
 	}
+
+	buffer, err := sfb.NewBuffer[*PrintMessage](1)
+	if err != nil {
+		panic(err)
+	}
+
+	dbg.msgBuffer = buffer
+	dbg.receiveChan = buffer.GetReceiveChannel()
+	dbg.sendChan = buffer.GetSendChannel()
+
+	return dbg
 }
 
 func (d *Debugger) ToggleDebugMode(active bool) {
@@ -62,29 +75,17 @@ func (d *Debugger) stdoutListener() {
 }
 
 func (d *Debugger) Start() {
-	if d.msgBuffer != nil {
-		// Already started
-		return
-	}
+	d.once.Do(func() {
+		d.msgBuffer.Start()
 
-	buffer, err := sfb.NewBuffer[*PrintMessage](1)
-	if err != nil {
-		panic(err)
-	}
+		d.wg.Add(1)
 
-	d.msgBuffer = buffer
-	d.receiveChan = d.msgBuffer.GetReceiveChannel()
-	d.sendChan = d.msgBuffer.GetSendChannel()
-
-	d.msgBuffer.Start()
-
-	d.wg.Add(1)
-
-	if d.logger == nil {
-		go d.stdoutListener()
-	} else {
-		go d.loggerListener()
-	}
+		if d.logger == nil {
+			go d.stdoutListener()
+		} else {
+			go d.loggerListener()
+		}
+	})
 }
 
 func (d *Debugger) Close() {
@@ -134,4 +135,14 @@ func (d *Debugger) Print(v ...interface{}) {
 	}
 
 	d.sendChan <- NewPrintMessage(PM_Print, "", v...)
+}
+
+func (d *Debugger) Write(p []byte) (n int, err error) {
+	if !d.debugMode || d.sendChan == nil {
+		return 0, nil
+	}
+
+	d.sendChan <- NewPrintMessage(PM_Print, "", p)
+
+	return len(p), nil
 }

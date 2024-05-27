@@ -82,7 +82,7 @@ func (m *JSONManager[T]) Load() error {
 // Returns:
 //   - error: An error if there was an issue saving the data.
 func (m *JSONManager[T]) Save() error {
-	data, err := json.Marshal(m)
+	data, err := json.MarshalIndent(m.Data, "", "  ")
 	if err != nil {
 		return err
 	}
@@ -96,7 +96,7 @@ func (m *JSONManager[T]) Save() error {
 // Returns:
 //   - error: An error if there was an issue creating the empty file.
 func (m *JSONManager[T]) CreateEmpty() error {
-	data, err := json.Marshal(m.Data.Empty())
+	data, err := json.MarshalIndent(m.Data.Empty(), "", "  ")
 	if err != nil {
 		return err
 	}
