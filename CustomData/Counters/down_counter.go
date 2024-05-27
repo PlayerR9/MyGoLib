@@ -22,7 +22,7 @@ type DownCounter struct {
 }
 
 // Equals implements Common.Objecter.
-func (c *DownCounter) Equals(other uc.Objecter) bool {
+func (c *DownCounter) Equals(other uc.Equaler) bool {
 	if other == nil {
 		return false
 	}
@@ -146,7 +146,7 @@ func (c *DownCounter) Reset() {
 //
 // Returns:
 //   - uc.Copier: A shallow copy of the DownCounter.
-func (c *DownCounter) Copy() uc.Objecter {
+func (c *DownCounter) Copy() uc.Copier {
 	return &DownCounter{c.startingCount, c.currentCount, c.retreatCount}
 }
 

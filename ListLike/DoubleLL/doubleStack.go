@@ -25,11 +25,6 @@ type DoubleStack[T any] struct {
 	auxStack *Stacker.ArrayStack[T]
 }
 
-// Equals implements Common.Objecter.
-func (ds *DoubleStack[T]) Equals(other itff.Objecter) bool {
-	panic("unimplemented")
-}
-
 // Clear clears the double stack.
 func (ds *DoubleStack[T]) Clear() {
 	ds.mainStack.Clear()
@@ -99,16 +94,10 @@ func (ds *DoubleStack[T]) Size() int {
 	return ds.mainStack.Size()
 }
 
-// String is a method of fmt.Stringer interface.
-//
-// It should only be used for debugging and logging purposes.
-//
-// Returns:
-//
-//   - string: A string representation of the double stack.
-func (ds *DoubleStack[T]) String() string {
-	return fmt.Sprintf("DoubleStack[mainStack:%s, auxStack:%s]",
-		ds.mainStack.String(), ds.auxStack.String())
+// GoString implements the fmt.GoStringer interface.
+func (ds *DoubleStack[T]) GoString() string {
+	return fmt.Sprintf("DoubleStack[mainStack=%s, auxStack=%s]",
+		ds.mainStack.GoString(), ds.auxStack.GoString())
 }
 
 // CutNilValues is a method that removes aCommon nil values from the double stack.
@@ -133,7 +122,7 @@ func (ds *DoubleStack[T]) Iterator() itf.Iterater[T] {
 // Returns:
 //
 //   - *DoubleStack: A pointer to a new double stack that is a copy of the original.
-func (ds *DoubleStack[T]) Copy() itff.Objecter {
+func (ds *DoubleStack[T]) Copy() itff.Copier {
 	return &DoubleStack[T]{
 		mainStack: ds.mainStack.Copy().(Stacker.Stacker[T]),
 		auxStack:  ds.auxStack.Copy().(*Stacker.ArrayStack[T]),

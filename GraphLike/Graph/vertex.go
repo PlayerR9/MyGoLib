@@ -16,7 +16,7 @@ func (v *Vertex[T]) String() string {
 	panic("unimplemented")
 }
 
-func (v *Vertex[T]) Equals(other uc.Objecter) bool {
+func (v *Vertex[T]) Equals(other uc.Equaler) bool {
 	if other == nil {
 		return false
 	}
@@ -44,7 +44,7 @@ func (v *Vertex[T]) Compare(other uc.Comparer) int {
 	return v.value.Compare(otherV.value)
 }
 
-func (v *Vertex[T]) Copy() uc.Objecter {
+func (v *Vertex[T]) Copy() uc.Copier {
 	return &Vertex[T]{
 		value:     v.value.Copy().(T),
 		isInitial: v.isInitial,

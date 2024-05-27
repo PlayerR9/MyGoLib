@@ -26,11 +26,6 @@ type SafeList[T any] struct {
 	size int
 }
 
-// Equals implements Common.Objecter.
-func (list *SafeList[T]) Equals(other uc.Objecter) bool {
-	panic("unimplemented")
-}
-
 // NewSafeList is a function that creates and returns a new instance of a
 // SafeList.
 //
@@ -260,13 +255,8 @@ func (list *SafeList[T]) IsFull() bool {
 	return false
 }
 
-// String is a method of the SafeList type. It returns a string representation of
-// the list including information about its size, capacity, and elements.
-//
-// Returns:
-//
-//   - string: A string representation of the list.
-func (list *SafeList[T]) String() string {
+// GoString implements the fmt.GoStringer interface.
+func (list *SafeList[T]) GoString() string {
 	list.frontMutex.RLock()
 	defer list.frontMutex.RUnlock()
 
@@ -472,7 +462,7 @@ func (list *SafeList[T]) Slice() []T {
 // Returns:
 //
 //   - itf.Copier: A copy of the list.
-func (list *SafeList[T]) Copy() uc.Objecter {
+func (list *SafeList[T]) Copy() uc.Copier {
 	list.frontMutex.RLock()
 	defer list.frontMutex.RUnlock()
 

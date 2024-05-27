@@ -20,11 +20,6 @@ type LimitedArrayList[T any] struct {
 	capacity int
 }
 
-// Equals implements Common.Objecter.
-func (list *LimitedArrayList[T]) Equals(other uc.Objecter) bool {
-	panic("unimplemented")
-}
-
 // NewLimitedArrayList is a function that creates and returns a new instance of a
 // LimitedArrayList.
 //
@@ -159,13 +154,8 @@ func (list *LimitedArrayList[T]) IsFull() bool {
 	return list.capacity <= len(list.values)
 }
 
-// String is a method of the LimitedArrayList type. It returns a string representation of
-// the list with information about its size, capacity, and elements.
-//
-// Returns:
-//
-//   - string: A string representation of the list.
-func (list *LimitedArrayList[T]) String() string {
+// GoString implements the fmt.GoStringer interface.
+func (list *LimitedArrayList[T]) GoString() string {
 	values := make([]string, 0, len(list.values))
 	for _, v := range list.values {
 		values = append(values, uc.StringOf(v))
@@ -264,7 +254,7 @@ func (list *LimitedArrayList[T]) Slice() []T {
 // Returns:
 //
 //   - itf.Copier: A copy of the list.
-func (list *LimitedArrayList[T]) Copy() uc.Objecter {
+func (list *LimitedArrayList[T]) Copy() uc.Copier {
 	listCopy := &LimitedArrayList[T]{
 		values:   make([]T, len(list.values)),
 		capacity: list.capacity,

@@ -21,11 +21,6 @@ type LinkedQueue[T any] struct {
 	size int
 }
 
-// Equals implements Common.Objecter.
-func (queue *LinkedQueue[T]) Equals(other uc.Objecter) bool {
-	panic("unimplemented")
-}
-
 // NewLinkedQueue is a function that creates and returns a new instance of a
 // LinkedQueue.
 //
@@ -189,13 +184,8 @@ func (queue *LinkedQueue[T]) Clear() {
 	queue.size = 0
 }
 
-// String is a method of the LinkedQueue type. It is used to return a string
-// representation of the queue including its size, capacity, and elements.
-//
-// Returns:
-//
-//   - string: A string representation of the queue.
-func (queue *LinkedQueue[T]) String() string {
+// GoString implements the fmt.GoStringer interface.
+func (queue *LinkedQueue[T]) GoString() string {
 	values := make([]string, 0, queue.size)
 	for queue_node := queue.front; queue_node != nil; queue_node = queue_node.Next() {
 		values = append(values, uc.StringOf(queue_node.Value))
@@ -292,7 +282,7 @@ func (queue *LinkedQueue[T]) Slice() []T {
 // Returns:
 //
 //   - itf.Copier: A copy of the queue.
-func (queue *LinkedQueue[T]) Copy() uc.Objecter {
+func (queue *LinkedQueue[T]) Copy() uc.Copier {
 	queueCopy := &LinkedQueue[T]{
 		size: queue.size,
 	}

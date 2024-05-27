@@ -68,7 +68,7 @@ func (t *TreeNode[T]) FString(trav *fsp.Traversor) error {
 //   - This function is recursive.
 //   - The parent is not copied.
 //   - The data is shallow copied.
-func (n *TreeNode[T]) Copy() intf.Objecter {
+func (n *TreeNode[T]) Copy() intf.Copier {
 	node := &TreeNode[T]{
 		Data:     n.Data,
 		parent:   nil,

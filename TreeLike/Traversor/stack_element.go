@@ -35,7 +35,7 @@ func newStackElement[T any](prev *tr.TreeNode[T], data T, info uc.Objecter) *sta
 	if info == nil {
 		se.info = nil
 	} else {
-		se.info = info.Copy()
+		se.info = info.Copy().(uc.Objecter)
 	}
 
 	return se

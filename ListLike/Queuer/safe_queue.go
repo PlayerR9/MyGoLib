@@ -26,11 +26,6 @@ type SafeQueue[T any] struct {
 	size int
 }
 
-// Equals implements Common.Objecter.
-func (queue *SafeQueue[T]) Equals(other uc.Objecter) bool {
-	panic("unimplemented")
-}
-
 // NewSafeQueue is a function that creates and returns a new instance of a
 // SafeQueue.
 //
@@ -231,9 +226,8 @@ func (queue *SafeQueue[T]) Clear() {
 	queue.size = 0
 }
 
-// String is a method of the SafeQueue type. It returns a string representation of
-// the queue, including its size, capacity, and the elements it contains.
-func (queue *SafeQueue[T]) String() string {
+// GoString implements the fmt.GoStringer interface.
+func (queue *SafeQueue[T]) GoString() string {
 	queue.frontMutex.RLock()
 	defer queue.frontMutex.RUnlock()
 
@@ -348,7 +342,7 @@ func (queue *SafeQueue[T]) Slice() []T {
 // Returns:
 //
 //   - itf.Copier: A copy of the queue.
-func (queue *SafeQueue[T]) Copy() uc.Objecter {
+func (queue *SafeQueue[T]) Copy() uc.Copier {
 	queue.frontMutex.RLock()
 	defer queue.frontMutex.RUnlock()
 

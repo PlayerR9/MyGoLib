@@ -21,11 +21,6 @@ type LimitedArrayStack[T any] struct {
 	capacity int
 }
 
-// Equals implements Common.Objecter.
-func (stack *LimitedArrayStack[T]) Equals(other uc.Objecter) bool {
-	panic("unimplemented")
-}
-
 // NewLimitedArrayStack is a function that creates and returns a new instance of a
 // LimitedArrayStack.
 //
@@ -164,13 +159,8 @@ func (stack *LimitedArrayStack[T]) IsFull() (isFull bool) {
 	return len(stack.values) == stack.capacity
 }
 
-// String is a method of the LimitedArrayStack type. It is used to return a string representation
-// of the stack, including its capacity and the elements it contains.
-//
-// Returns:
-//
-//   - string: A string representation of the stack.
-func (stack *LimitedArrayStack[T]) String() string {
+// GoString implements the fmt.GoStringer interface.
+func (stack *LimitedArrayStack[T]) GoString() string {
 	values := make([]string, 0, len(stack.values))
 	for _, value := range stack.values {
 		values = append(values, uc.StringOf(value))
@@ -222,7 +212,7 @@ func (stack *LimitedArrayStack[T]) Slice() []T {
 // Returns:
 //
 //   - itf.Copier: A copy of the stack.
-func (stack *LimitedArrayStack[T]) Copy() uc.Objecter {
+func (stack *LimitedArrayStack[T]) Copy() uc.Copier {
 	stackCopy := &LimitedArrayStack[T]{
 		values:   make([]T, len(stack.values)),
 		capacity: stack.capacity,

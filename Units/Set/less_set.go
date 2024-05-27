@@ -278,7 +278,7 @@ func (s *LessSet[T]) String() string {
 //
 // Returns:
 //   - bool: True if the sets are equal, false otherwise.
-func (s *LessSet[T]) Equals(other uc.Objecter) bool {
+func (s *LessSet[T]) Equals(other uc.Equaler) bool {
 	if other == nil {
 		return false
 	}
@@ -305,7 +305,7 @@ func (s *LessSet[T]) Equals(other uc.Objecter) bool {
 //
 // Returns:
 //   - *LessSet[T]: A copy of the set.
-func (s *LessSet[T]) Copy() uc.Objecter {
+func (s *LessSet[T]) Copy() uc.Copier {
 	newElems := make([]T, len(s.elems))
 	copy(newElems, s.elems)
 

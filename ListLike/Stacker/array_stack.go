@@ -18,11 +18,6 @@ type ArrayStack[T any] struct {
 	values []T
 }
 
-// Equals implements Common.Objecter.
-func (stack *ArrayStack[T]) Equals(other uc.Objecter) bool {
-	panic("unimplemented")
-}
-
 // NewArrayStack is a function that creates and returns a new instance of a
 // ArrayStack.
 //
@@ -136,13 +131,8 @@ func (stack *ArrayStack[T]) Clear() {
 	stack.values = make([]T, 0)
 }
 
-// String is a method of the ArrayStack type. It is used to return a string representation
-// of the stack, including its capacity and the elements it contains.
-//
-// Returns:
-//
-//   - string: A string representation of the stack.
-func (stack *ArrayStack[T]) String() string {
+// GoString implements the fmt.GoStringer interface.
+func (stack *ArrayStack[T]) GoString() string {
 	values := make([]string, 0, len(stack.values))
 	for _, value := range stack.values {
 		values = append(values, uc.StringOf(value))
@@ -192,7 +182,7 @@ func (stack *ArrayStack[T]) Slice() []T {
 // Returns:
 //
 //   - itf.Copier: A copy of the stack.
-func (stack *ArrayStack[T]) Copy() uc.Objecter {
+func (stack *ArrayStack[T]) Copy() uc.Copier {
 	stackCopy := &ArrayStack[T]{
 		values: make([]T, len(stack.values)),
 	}

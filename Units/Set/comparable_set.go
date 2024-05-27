@@ -257,7 +257,7 @@ func (s *ComparableSet[T]) String() string {
 //
 // Returns:
 //   - bool: True if the sets are equal, false otherwise.
-func (s *ComparableSet[T]) Equals(other uc.Objecter) bool {
+func (s *ComparableSet[T]) Equals(other uc.Equaler) bool {
 	if other == nil {
 		return false
 	}
@@ -285,7 +285,7 @@ func (s *ComparableSet[T]) Equals(other uc.Objecter) bool {
 //
 // Returns:
 //   - *ComparableSet[T]: A copy of the set.
-func (s *ComparableSet[T]) Copy() uc.Objecter {
+func (s *ComparableSet[T]) Copy() uc.Copier {
 	newElems := make(map[T]bool)
 
 	for k := range s.elems {

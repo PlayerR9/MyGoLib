@@ -21,11 +21,6 @@ type LinkedList[T any] struct {
 	size int
 }
 
-// Equals implements Common.Objecter.
-func (list *LinkedList[T]) Equals(other uc.Objecter) bool {
-	panic("unimplemented")
-}
-
 // NewLinkedList is a function that creates and returns a new instance of a
 // LinkedList.
 //
@@ -217,13 +212,8 @@ func (list *LinkedList[T]) IsFull() bool {
 	return false
 }
 
-// String is a method of the LinkedList type. It returns a string representation of
-// the list with information about its size, capacity, and elements.
-//
-// Returns:
-//
-//   - string: A string representation of the list.
-func (list *LinkedList[T]) String() string {
+// GoString implements the fmt.GoStringer interface.
+func (list *LinkedList[T]) GoString() string {
 	values := make([]string, 0, list.size)
 	for list_node := list.front; list_node != nil; list_node = list_node.Next() {
 		values = append(values, uc.StringOf(list_node.Value))
@@ -393,7 +383,7 @@ func (list *LinkedList[T]) Slice() []T {
 // Returns:
 //
 //   - itf.Copier: A copy of the list.
-func (list *LinkedList[T]) Copy() uc.Objecter {
+func (list *LinkedList[T]) Copy() uc.Copier {
 	listCopy := &LinkedList[T]{
 		size: list.size,
 	}

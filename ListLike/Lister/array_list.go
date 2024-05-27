@@ -17,11 +17,6 @@ type ArrayList[T any] struct {
 	values []T
 }
 
-// Equals implements Common.Objecter.
-func (list *ArrayList[T]) Equals(other uc.Objecter) bool {
-	panic("unimplemented")
-}
-
 // NewArrayList is a function that creates and returns a new instance of a
 // ArrayList.
 //
@@ -144,13 +139,8 @@ func (list *ArrayList[T]) IsFull() (isFull bool) {
 	return false
 }
 
-// String is a method of the ArrayList type. It returns a string representation of
-// the list with information about its size, capacity, and elements.
-//
-// Returns:
-//
-//   - string: A string representation of the list.
-func (list *ArrayList[T]) String() string {
+// GoString implements the fmt.GoStringer interface.
+func (list *ArrayList[T]) GoString() string {
 	values := make([]string, 0, len(list.values))
 	for _, element := range list.values {
 		values = append(values, uc.StringOf(element))
@@ -246,7 +236,7 @@ func (list *ArrayList[T]) Slice() []T {
 // Returns:
 //
 //   - itf.Copier: A copy of the list.
-func (list *ArrayList[T]) Copy() uc.Objecter {
+func (list *ArrayList[T]) Copy() uc.Copier {
 	listCopy := &ArrayList[T]{
 		values: make([]T, len(list.values)),
 	}

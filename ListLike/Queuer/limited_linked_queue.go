@@ -24,11 +24,6 @@ type LimitedLinkedQueue[T any] struct {
 	capacity int
 }
 
-// Equals implements Common.Objecter.
-func (queue *LimitedLinkedQueue[T]) Equals(other uc.Objecter) bool {
-	panic("unimplemented")
-}
-
 // NewLimitedLinkedQueue is a function that creates and returns a new instance of a
 // LimitedLinkedQueue.
 //
@@ -210,13 +205,8 @@ func (queue *LimitedLinkedQueue[T]) IsFull() bool {
 	return queue.size >= queue.capacity
 }
 
-// String is a method of the LimitedLinkedQueue type. It is used to return a string
-// representation of the queue including its size, capacity, and elements.
-//
-// Returns:
-//
-//   - string: A string representation of the queue.
-func (queue *LimitedLinkedQueue[T]) String() string {
+// GoString implements the fmt.GoStringer interface.
+func (queue *LimitedLinkedQueue[T]) GoString() string {
 	values := make([]string, 0, queue.size)
 	for queue_node := queue.front; queue_node != nil; queue_node = queue_node.Next() {
 		values = append(values, uc.StringOf(queue_node.Value))
@@ -315,7 +305,7 @@ func (queue *LimitedLinkedQueue[T]) Slice() []T {
 // Returns:
 //
 //   - itf.Copier: A copy of the queue.
-func (queue *LimitedLinkedQueue[T]) Copy() uc.Objecter {
+func (queue *LimitedLinkedQueue[T]) Copy() uc.Copier {
 	queueCopy := &LimitedLinkedQueue[T]{
 		size:     queue.size,
 		capacity: queue.capacity,

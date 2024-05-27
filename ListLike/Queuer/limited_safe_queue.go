@@ -29,11 +29,6 @@ type LimitedSafeQueue[T any] struct {
 	capacity int
 }
 
-// Equals implements Common.Objecter.
-func (queue *LimitedSafeQueue[T]) Equals(other uc.Objecter) bool {
-	panic("unimplemented")
-}
-
 // NewLimitedSafeQueue is a function that creates and returns a new instance of a
 // LimitedSafeQueue.
 //
@@ -263,9 +258,8 @@ func (queue *LimitedSafeQueue[T]) IsFull() (isFull bool) {
 	return queue.size >= queue.capacity
 }
 
-// String is a method of the LimitedSafeQueue type. It returns a string representation of
-// the queue, including its size, capacity, and the elements it contains.
-func (queue *LimitedSafeQueue[T]) String() string {
+// GoString implements the fmt.GoStringer interface.
+func (queue *LimitedSafeQueue[T]) GoString() string {
 	queue.frontMutex.RLock()
 	defer queue.frontMutex.RUnlock()
 
@@ -382,7 +376,7 @@ func (queue *LimitedSafeQueue[T]) Slice() []T {
 // Returns:
 //
 //   - itf.Copier: A copy of the queue.
-func (queue *LimitedSafeQueue[T]) Copy() uc.Objecter {
+func (queue *LimitedSafeQueue[T]) Copy() uc.Copier {
 	queue.frontMutex.RLock()
 	defer queue.frontMutex.RUnlock()
 

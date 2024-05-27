@@ -29,11 +29,6 @@ type LimitedSafeList[T any] struct {
 	capacity int
 }
 
-// Equals implements Common.Objecter.
-func (list *LimitedSafeList[T]) Equals(other uc.Objecter) bool {
-	panic("unimplemented")
-}
-
 // NewLimitedSafeList is a function that creates and returns a new instance of a
 // LimitedSafeList.
 //
@@ -268,13 +263,8 @@ func (list *LimitedSafeList[T]) IsFull() (isFull bool) {
 	return list.capacity <= list.size
 }
 
-// String is a method of the LimitedSafeList type. It returns a string representation of
-// the list including information about its size, capacity, and elements.
-//
-// Returns:
-//
-//   - string: A string representation of the list.
-func (list *LimitedSafeList[T]) String() string {
+// GoString implements the fmt.GoStringer interface.
+func (list *LimitedSafeList[T]) GoString() string {
 	list.frontMutex.RLock()
 	defer list.frontMutex.RUnlock()
 
@@ -484,7 +474,7 @@ func (list *LimitedSafeList[T]) Slice() []T {
 // Returns:
 //
 //   - uc.Copier: A copy of the list.
-func (list *LimitedSafeList[T]) Copy() uc.Objecter {
+func (list *LimitedSafeList[T]) Copy() uc.Copier {
 	list.frontMutex.RLock()
 	defer list.frontMutex.RUnlock()
 

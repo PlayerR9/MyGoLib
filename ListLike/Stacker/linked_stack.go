@@ -20,11 +20,6 @@ type LinkedStack[T any] struct {
 	size int
 }
 
-// Equals implements Common.Objecter.
-func (stack *LinkedStack[T]) Equals(other uc.Objecter) bool {
-	panic("unimplemented")
-}
-
 // NewLinkedStack is a function that creates and returns a new instance of a
 // LinkedStack.
 //
@@ -178,14 +173,8 @@ func (stack *LinkedStack[T]) Clear() {
 	stack.size = 0
 }
 
-// String is a method of the LinkedStack type. It is used to return a string
-// representation of the stack, which includes the size, capacity, and elements
-// in the stack.
-//
-// Returns:
-//
-//   - string: A string representation of the stack.
-func (stack *LinkedStack[T]) String() string {
+// GoString implements the fmt.GoStringer interface.
+func (stack *LinkedStack[T]) GoString() string {
 	values := make([]string, 0, stack.size)
 	for stack_node := stack.front; stack_node != nil; stack_node = stack_node.Next() {
 		values = append(values, uc.StringOf(stack_node.Value))
@@ -282,7 +271,7 @@ func (stack *LinkedStack[T]) Slice() []T {
 // Returns:
 //
 //   - itf.Copier: A copy of the stack.
-func (stack *LinkedStack[T]) Copy() uc.Objecter {
+func (stack *LinkedStack[T]) Copy() uc.Copier {
 	stackCopy := &LinkedStack[T]{
 		size: stack.size,
 	}

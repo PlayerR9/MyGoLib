@@ -272,7 +272,7 @@ func (s *EqualSet[T]) String() string {
 //
 // Returns:
 //   - bool: True if the sets are equal, false otherwise.
-func (s *EqualSet[T]) Equals(other uc.Objecter) bool {
+func (s *EqualSet[T]) Equals(other uc.Equaler) bool {
 	if other == nil {
 		return false
 	}
@@ -299,7 +299,7 @@ func (s *EqualSet[T]) Equals(other uc.Objecter) bool {
 //
 // Returns:
 //   - *EqualSet[T]: A copy of the set.
-func (s *EqualSet[T]) Copy() uc.Objecter {
+func (s *EqualSet[T]) Copy() uc.Copier {
 	newElems := make([]T, len(s.elems))
 	copy(newElems, s.elems)
 

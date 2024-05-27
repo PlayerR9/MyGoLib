@@ -42,7 +42,7 @@ func newTraversor[T any](node *tr.TreeNode[T], init uc.Objecter) *traversor[T] {
 	}
 
 	if init != nil {
-		t.info = init.Copy()
+		t.info = init.Copy().(uc.Objecter)
 	} else {
 		t.info = nil
 	}

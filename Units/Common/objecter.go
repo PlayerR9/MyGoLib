@@ -5,23 +5,12 @@ import (
 	"strconv"
 )
 
+// Objecter is an interface that defines the behavior of an object that can be
+// copied, compared, and converted to a string.
 type Objecter interface {
-	// Copy creates a shallow copy of the object.
-	//
-	// Returns:
-	//   - Objecter: A shallow copy or a deep copy of the object.
-	Copy() Objecter
-
-	// Equals returns true if the object is equal to the other object.
-	//
-	// Parameters:
-	// 	- other: The other object to compare to.
-	//
-	// Returns:
-	// 	- bool: True if the object is equal to the other object.
-	Equals(other Objecter) bool
-
 	fmt.Stringer
+	Copier
+	Equaler
 }
 
 // CopyOf creates a copy of the element by either calling the Copy method if the

@@ -135,15 +135,14 @@ func newTraversor(config FormatConfig, source *buffer) *Traversor {
 // the traversor has indentation and the traversor is at the first
 // of the line.
 func (trav *Traversor) writeIndent() {
-	if trav.hasIndent && trav.source.isFirstOfLine() {
-		trav.source.forceWriteString(trav.indentStr)
-	}
-}
-
-// writeLeftSymbol writes the left symbol of the traversor to the source.
-func (trav *Traversor) writeLeftSymbol() {
 	if trav.source.isFirstOfLine() {
-		trav.source.forceWriteString(trav.leftConfig.str)
+		if trav.hasIndent {
+			trav.source.forceWriteString(trav.indentStr)
+		}
+
+		if trav.leftConfig != nil {
+			trav.source.forceWriteString(trav.leftConfig.str)
+		}
 	}
 }
 
@@ -156,10 +155,6 @@ func (trav *Traversor) writeLeftSymbol() {
 //   - error: An error if the rune could not be appended.
 func (trav *Traversor) writeRune(r rune) error {
 	trav.writeIndent()
-
-	if trav.leftConfig != nil {
-		trav.writeLeftSymbol()
-	}
 
 	switch r {
 	case utf8.RuneError:
@@ -182,10 +177,6 @@ func (trav *Traversor) writeRune(r rune) error {
 //   - error: An error if the string could not be appended.
 func (trav *Traversor) writeString(str string) error {
 	trav.writeIndent()
-
-	if trav.leftConfig != nil {
-		trav.writeLeftSymbol()
-	}
 
 	if str == "" {
 		return nil
@@ -217,10 +208,6 @@ func (trav *Traversor) writeLine(line string) error {
 	trav.source.acceptLine() // Accept the current line if any.
 
 	trav.writeIndent()
-
-	if trav.leftConfig != nil {
-		trav.writeLeftSymbol()
-	}
 
 	if line == "" {
 		trav.source.writeEmptyLine()
@@ -440,10 +427,6 @@ func (trav *Traversor) EmptyLine() {
 	trav.source.acceptLine() // Accept the current line if any.
 
 	trav.writeIndent()
-
-	if trav.leftConfig != nil {
-		trav.writeLeftSymbol()
-	}
 
 	trav.source.acceptLine() // Accept the line.
 }

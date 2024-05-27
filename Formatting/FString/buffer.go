@@ -151,6 +151,23 @@ func (sb *sectionBuilder) accept() {
 	sb.lastLine++
 }
 
+// accept is a function that accepts the current word and
+// creates a new line.
+func (sb *sectionBuilder) mayAccept() {
+	sb.mu.Lock()
+	defer sb.mu.Unlock()
+
+	if sb.buff.Len() == 0 {
+		return
+	}
+
+	sb.lines[sb.lastLine] = append(sb.lines[sb.lastLine], sb.buff.String())
+	sb.buff.Reset()
+
+	sb.lines = append(sb.lines, []string{})
+	sb.lastLine++
+}
+
 // acceptWord is a function that accepts the current in-progress word
 // and resets the builder.
 func (sb *sectionBuilder) acceptWord() {
@@ -414,7 +431,7 @@ func (b *buffer) acceptWord() {
 // acceptLine is a private function that accepts the current line of the formatted string.
 func (b *buffer) acceptLine() {
 	if b.buff != nil {
-		b.buff.accept()
+		b.buff.mayAccept()
 	}
 }
 

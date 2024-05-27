@@ -30,7 +30,7 @@ func (s *LessMap[K, V]) String() string {
 //
 // Returns:
 //   - uc.Copier: A deep copy of the sorted map.
-func (s *LessMap[K, V]) Copy() uc.Objecter {
+func (s *LessMap[K, V]) Copy() uc.Copier {
 	keysCopy := make([]K, 0, len(s.keys))
 	for _, key := range s.keys {
 		keysCopy = append(keysCopy, key.Copy().(K))

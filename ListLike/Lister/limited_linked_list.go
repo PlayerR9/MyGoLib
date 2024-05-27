@@ -24,11 +24,6 @@ type LimitedLinkedList[T any] struct {
 	capacity int
 }
 
-// Equals implements Common.Objecter.
-func (list *LimitedLinkedList[T]) Equals(other uc.Objecter) bool {
-	panic("unimplemented")
-}
-
 // NewLimitedLinkedList is a function that creates and returns a new instance of a
 // LimitedLinkedList.
 //
@@ -224,13 +219,8 @@ func (list *LimitedLinkedList[T]) IsFull() bool {
 	return list.size >= list.capacity
 }
 
-// String is a method of the LimitedLinkedList type. It returns a string representation of
-// the list with information about its size, capacity, and elements.
-//
-// Returns:
-//
-//   - string: A string representation of the list.
-func (list *LimitedLinkedList[T]) String() string {
+// GoString implements the fmt.GoStringer interface.
+func (list *LimitedLinkedList[T]) GoString() string {
 	values := make([]string, 0, list.size)
 
 	for list_node := list.front; list_node != nil; list_node = list_node.Next() {
@@ -405,7 +395,7 @@ func (list *LimitedLinkedList[T]) Slice() []T {
 // Returns:
 //
 //   - itf.Copier: A copy of the list.
-func (list *LimitedLinkedList[T]) Copy() uc.Objecter {
+func (list *LimitedLinkedList[T]) Copy() uc.Copier {
 	listCopy := &LimitedLinkedList[T]{
 		size:     list.size,
 		capacity: list.capacity,

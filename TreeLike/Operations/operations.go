@@ -14,7 +14,7 @@ type InfPrinter struct {
 }
 
 // Equals implements Common.Objecter.
-func (i *InfPrinter) Equals(other uc.Objecter) bool {
+func (i *InfPrinter) Equals(other uc.Equaler) bool {
 	panic("unimplemented")
 }
 
@@ -23,7 +23,7 @@ func (i *InfPrinter) String() string {
 	panic("unimplemented")
 }
 
-func (i *InfPrinter) Copy() uc.Objecter {
+func (i *InfPrinter) Copy() uc.Copier {
 	return &InfPrinter{
 		indentLevel: i.indentLevel,
 	}

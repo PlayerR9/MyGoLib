@@ -1,6 +1,8 @@
 package ListLike
 
 import (
+	"fmt"
+
 	intf "github.com/PlayerR9/MyGoLib/Units/Common"
 	itr "github.com/PlayerR9/MyGoLib/Units/Iterator"
 )
@@ -44,5 +46,6 @@ type ListLike[T any] interface {
 
 	itr.Iterable[T]
 
-	intf.Objecter
+	intf.Copier
+	fmt.GoStringer
 }

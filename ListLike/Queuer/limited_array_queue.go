@@ -20,11 +20,6 @@ type LimitedArrayQueue[T any] struct {
 	capacity int
 }
 
-// Equals implements Common.Objecter.
-func (queue *LimitedArrayQueue[T]) Equals(other uc.Objecter) bool {
-	panic("unimplemented")
-}
-
 // NewLimitedArrayQueue is a function that creates and returns a new instance of a
 // LimitedArrayQueue.
 //
@@ -155,13 +150,8 @@ func (queue *LimitedArrayQueue[T]) IsFull() bool {
 	return len(queue.values) >= queue.capacity
 }
 
-// String is a method of the LimitedArrayQueue type. It returns a string representation of
-// the queue, including its capacity and the elements it contains.
-//
-// Returns:
-//
-//   - string: A string representation of the queue.
-func (queue *LimitedArrayQueue[T]) String() string {
+// GoString implements the fmt.GoStringer interface.
+func (queue *LimitedArrayQueue[T]) GoString() string {
 	values := make([]string, 0, len(queue.values))
 	for _, value := range queue.values {
 		values = append(values, uc.StringOf(value))
@@ -211,7 +201,7 @@ func (queue *LimitedArrayQueue[T]) Slice() []T {
 // Returns:
 //
 //   - itf.Copier: A copy of the queue.
-func (queue *LimitedArrayQueue[T]) Copy() uc.Objecter {
+func (queue *LimitedArrayQueue[T]) Copy() uc.Copier {
 	queueCopy := &LimitedArrayQueue[T]{
 		values:   make([]T, len(queue.values)),
 		capacity: queue.capacity,

@@ -23,11 +23,6 @@ type LimitedLinkedStack[T any] struct {
 	capacity int
 }
 
-// Equals implements Common.Objecter.
-func (stack *LimitedLinkedStack[T]) Equals(other uc.Objecter) bool {
-	panic("unimplemented")
-}
-
 // NewLimitedLinkedStack is a function that creates and returns a new instance of a
 // LimitedLinkedStack.
 //
@@ -205,14 +200,8 @@ func (stack *LimitedLinkedStack[T]) IsFull() bool {
 	return stack.size >= stack.capacity
 }
 
-// String is a method of the LimitedLinkedStack type. It is used to return a string
-// representation of the stack, which includes the size, capacity, and elements
-// in the stack.
-//
-// Returns:
-//
-//   - string: A string representation of the stack.
-func (stack *LimitedLinkedStack[T]) String() string {
+// GoString implements the fmt.GoStringer interface.
+func (stack *LimitedLinkedStack[T]) GoString() string {
 	values := make([]string, 0, stack.size)
 	for stack_node := stack.front; stack_node != nil; stack_node = stack_node.Next() {
 		values = append(values, uc.StringOf(stack_node.Value))
@@ -311,7 +300,7 @@ func (stack *LimitedLinkedStack[T]) Slice() []T {
 // Returns:
 //
 //   - itf.Copier: A copy of the stack.
-func (stack *LimitedLinkedStack[T]) Copy() uc.Objecter {
+func (stack *LimitedLinkedStack[T]) Copy() uc.Copier {
 	stackCopy := &LimitedLinkedStack[T]{
 		size:     stack.size,
 		capacity: stack.capacity,

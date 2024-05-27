@@ -22,7 +22,7 @@ type UpCounter struct {
 }
 
 // Equals implements Common.Objecter.
-func (c *UpCounter) Equals(other intf.Objecter) bool {
+func (c *UpCounter) Equals(other intf.Equaler) bool {
 	if other == nil {
 		return false
 	}
@@ -147,7 +147,7 @@ func (c *UpCounter) Reset() {
 //
 // Returns:
 //   - intf.Copier: A shallow copy of the UpCounter.
-func (c *UpCounter) Copy() intf.Objecter {
+func (c *UpCounter) Copy() intf.Copier {
 	return &UpCounter{
 		upperLimit:   c.upperLimit,
 		currentCount: c.currentCount,

@@ -21,7 +21,7 @@ type OrderedMap[K comparable, V any] struct {
 }
 
 // Equals implements Common.Objecter.
-func (s *OrderedMap[K, V]) Equals(other uc.Objecter) bool {
+func (s *OrderedMap[K, V]) Equals(other uc.Equaler) bool {
 	if other == nil {
 		return false
 	}
@@ -88,7 +88,7 @@ func (s *OrderedMap[K, V]) String() string {
 //
 // Returns:
 //   - uc.Copier: A shallow copy of the sorted map.
-func (s *OrderedMap[K, V]) Copy() uc.Objecter {
+func (s *OrderedMap[K, V]) Copy() uc.Copier {
 	sCopy := &OrderedMap[K, V]{
 		mapping: make(map[K]V),
 		keys:    make([]K, len(s.keys)),

@@ -37,7 +37,7 @@ func (p *Pair[A, B]) String() string {
 //
 // Returns:
 //   - intf.Copier: A shallow or deep copy of the pair.
-func (p *Pair[A, B]) Copy() intf.Objecter {
+func (p *Pair[A, B]) Copy() intf.Copier {
 	return &Pair[A, B]{
 		First:  intf.CopyOf(p.First).(A),
 		Second: intf.CopyOf(p.Second).(B),
@@ -52,7 +52,7 @@ func (p *Pair[A, B]) Copy() intf.Objecter {
 //
 // Returns:
 //   - bool: True if the pair is equal to the other pair.
-func (p *Pair[A, B]) Equals(other intf.Objecter) bool {
+func (p *Pair[A, B]) Equals(other intf.Equaler) bool {
 	if other == nil {
 		return false
 	}

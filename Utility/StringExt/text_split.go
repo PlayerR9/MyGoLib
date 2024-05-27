@@ -20,21 +20,11 @@ type TextSplit struct {
 	maxHeight int
 }
 
-// Equals implements Common.Objecter.
-func (ts *TextSplit) Equals(other intf.Objecter) bool {
-	panic("unimplemented")
-}
-
-// String implements Common.Objecter.
-func (ts *TextSplit) String() string {
-	panic("unimplemented")
-}
-
 // Copy is a method of intf.Copier that creates a shallow copy of the TextSplit.
 //
 // Returns:
 //   - intf.Copier: A shallow copy of the TextSplit.
-func (ts *TextSplit) Copy() intf.Objecter {
+func (ts *TextSplit) Copy() intf.Copier {
 	newTs := &TextSplit{
 		maxWidth:  ts.maxWidth,
 		lines:     make([]*lineOfSplitter, 0, ts.maxHeight),
