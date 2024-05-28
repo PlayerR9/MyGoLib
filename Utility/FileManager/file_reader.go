@@ -11,6 +11,9 @@ import (
 type FileReader struct {
 	// loc is the location of the file.
 	loc string
+
+	// file is the file that is being read.
+	file *os.File
 }
 
 // GetLocation returns the location of the file.
@@ -40,7 +43,51 @@ func NewFileReader(loc string) *FileReader {
 //   - bool: A boolean indicating whether the file exists.
 //   - error: An error if one occurred while checking the file.
 func (fr *FileReader) Exists() (bool, error) {
+	if fr.file != nil {
+		return true, nil
+	}
+
 	return fileExists(fr.loc)
+}
+
+// Open opens the file at the location for reading. It closes the file if it is
+// already open.
+//
+// Returns:
+//   - error: An error if one occurred while opening the file.
+func (fr *FileReader) Open() error {
+	if fr.file != nil {
+		err := fr.file.Close()
+		if err != nil {
+			return fmt.Errorf("could not close file: %w", err)
+		}
+	}
+
+	file, err := os.Open(fr.loc)
+	if err != nil {
+		return fmt.Errorf("could not open file: %w", err)
+	}
+
+	fr.file = file
+	return nil
+}
+
+// Close closes the file that is being read.
+//
+// Returns:
+//   - error: An error if one occurred while closing the file.
+func (fr *FileReader) Close() error {
+	if fr.file == nil {
+		return nil
+	}
+
+	err := fr.file.Close()
+	if err != nil {
+		return fmt.Errorf("could not close file: %w", err)
+	}
+
+	fr.file = nil
+	return nil
 }
 
 // ReadFile reads the content of a file from the provided path and returns
@@ -58,25 +105,21 @@ func (fr *FileReader) Exists() (bool, error) {
 //   - The function reads the entire file into memory.
 //   - If an error occurs, the function returns the error and an empty string.
 func (fr *FileReader) Read() (string, error) {
-	// 1. Open the file
-	file, err := os.Open(fr.loc)
-	if err != nil {
-		return "", fmt.Errorf("could not open file: %w", err)
+	if fr.file == nil {
+		return "", errors.New("file is not open")
 	}
-	defer file.Close()
 
-	// 2. Read the file
-	fileInfo, err := file.Stat()
+	info, err := fr.file.Stat()
 	if err != nil {
 		return "", fmt.Errorf("could not get file information: %w", err)
 	}
 
-	fileSize := fileInfo.Size()
+	fileSize := info.Size()
 	buffer := make([]byte, fileSize)
 
-	_, err = file.Read(buffer)
+	_, err = fr.file.Read(buffer)
 	if err != nil {
-		panic(errors.New("buffer size is not equal to file size"))
+		return "", fmt.Errorf("could not read file: %w", err)
 	}
 
 	return string(buffer), nil
@@ -95,18 +138,38 @@ func (fr *FileReader) Read() (string, error) {
 //   - If an error occurs, the function returns the error and the lines read up
 //     to that point.
 func (fr *FileReader) Lines() ([]string, error) {
-	f, err := os.Open(fr.loc)
-	if err != nil {
-		return nil, err
+	if fr.file == nil {
+		return nil, errors.New("file is not open")
 	}
-	defer f.Close()
 
 	var lines []string
-	scanner := bufio.NewScanner(f)
+	scanner := bufio.NewScanner(fr.file)
 
 	for scanner.Scan() {
 		lines = append(lines, scanner.Text())
 	}
 
 	return lines, scanner.Err()
+}
+
+// Create creates a new file at the location.
+//
+// Returns:
+//   - error: An error if one occurred while creating the file.
+func (fr *FileReader) Create() error {
+	if fr.file != nil {
+		err := fr.file.Close()
+		if err != nil {
+			return fmt.Errorf("could not close file: %w", err)
+		}
+	}
+
+	file, err := CreateAll(fr.loc, 0644)
+	if err != nil {
+		return err
+	}
+
+	fr.file = file
+
+	return nil
 }

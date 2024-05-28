@@ -147,6 +147,27 @@ func (fw *FileWriter) AppendLine(content string) error {
 	return nil
 }
 
+// EmptyLine appends an empty line to the file.
+//
+// Returns:
+//   - error: An error if one occurred while writing to the file.
+//
+// Errors:
+//   - *ErrFileNotOpen: If the file is not open.
+//   - error: If any other case.
+func (fw *FileWriter) EmptyLine() error {
+	if fw.file == nil {
+		return NewErrFileNotOpen()
+	}
+
+	_, err := fw.file.WriteString("\n")
+	if err != nil {
+		return fmt.Errorf("could not write to file: %w", err)
+	}
+
+	return nil
+}
+
 // Clear clears the contents of the file.
 //
 // Returns:
