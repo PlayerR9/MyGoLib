@@ -127,7 +127,7 @@ func (t *HtmlTree) ExtractSpecificNode(matchFun slext.PredicateFilter[*html.Node
 func (t *HtmlTree) MatchNodes(matchFun slext.PredicateFilter[*html.Node]) []*html.Node {
 	solution := make([]*html.Node, 0)
 
-	err := tlt.BFS(t.tree, nil, func(node *html.Node, info uc.Objecter) (bool, error) {
+	err := tlt.BFS(t.tree, nil, func(node *html.Node, info uc.Copier) (bool, error) {
 		if !matchFun(node) {
 			return true, nil
 		}
@@ -158,7 +158,7 @@ func (t *HtmlTree) ExtractContentFromDocument(matchFun slext.PredicateFilter[*ht
 
 	var solution *html.Node = nil
 
-	err := tlt.DFS(t.tree, nil, func(node *html.Node, info uc.Objecter) (bool, error) {
+	err := tlt.DFS(t.tree, nil, func(node *html.Node, info uc.Copier) (bool, error) {
 		if !matchFun(node) {
 			return true, nil
 		}

@@ -13,16 +13,6 @@ type InfPrinter struct {
 	indentLevel int
 }
 
-// Equals implements Common.Objecter.
-func (i *InfPrinter) Equals(other uc.Equaler) bool {
-	panic("unimplemented")
-}
-
-// String implements Common.Objecter.
-func (i *InfPrinter) String() string {
-	panic("unimplemented")
-}
-
 func (i *InfPrinter) Copy() uc.Copier {
 	return &InfPrinter{
 		indentLevel: i.indentLevel,
@@ -43,7 +33,7 @@ func PrintTree[T any](tree *tr.Tree[T]) []string {
 	var lines []string
 	var builder strings.Builder
 
-	f := func(elem T, obj uc.Objecter) (bool, error) {
+	f := func(elem T, obj uc.Copier) (bool, error) {
 		inf, ok := obj.(*InfPrinter)
 		if !ok {
 			return false, fmt.Errorf("invalid objecter type: %T", obj)

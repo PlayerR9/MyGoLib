@@ -223,6 +223,25 @@ func (p *Printer) Cleanup() {
 	p.buff = nil
 }
 
+// PrintFString prints a formatted string.
+//
+// Parameters:
+//   - form: The formatter to use.
+//   - elem: The element to print.
+//
+// Returns:
+//   - [][][][]string: The pages of the formatted string.
+func PrintFString[T FStringer](form FormatConfig, elem T) ([][][][]string, error) {
+	p := NewPrinter(form)
+
+	err := Apply(p, elem)
+	if err != nil {
+		return nil, err
+	}
+
+	return p.GetPages(), nil
+}
+
 // Printc prints a character.
 //
 // Parameters:

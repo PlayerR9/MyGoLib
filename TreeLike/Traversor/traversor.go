@@ -17,7 +17,7 @@ import (
 // Returns:
 //   - bool: True if the traversal should continue, otherwise false.
 //   - error: An error if the observation fails.
-type ObserverFunc[T any] func(data T, info uc.Objecter) (bool, error)
+type ObserverFunc[T any] func(data T, info uc.Copier) (bool, error)
 
 // traversor is a struct that traverses a tree.
 type traversor[T any] struct {
@@ -25,7 +25,7 @@ type traversor[T any] struct {
 	elem *tr.TreeNode[T]
 
 	// info is the info of the current node.
-	info uc.Objecter
+	info uc.Copier
 }
 
 // newTraversor creates a new traversor for the tree.
@@ -36,13 +36,13 @@ type traversor[T any] struct {
 //
 // Returns:
 //   - Traversor[T, I]: The traversor.
-func newTraversor[T any](node *tr.TreeNode[T], init uc.Objecter) *traversor[T] {
+func newTraversor[T any](node *tr.TreeNode[T], init uc.Copier) *traversor[T] {
 	t := &traversor[T]{
 		elem: node,
 	}
 
 	if init != nil {
-		t.info = init.Copy().(uc.Objecter)
+		t.info = init.Copy()
 	} else {
 		t.info = nil
 	}
@@ -67,7 +67,7 @@ func (t *traversor[T]) getData() (T, bool) {
 //
 // Returns:
 //   - uc.Objecter: The info of the traversor.
-func (t *traversor[T]) getInfo() uc.Objecter {
+func (t *traversor[T]) getInfo() uc.Copier {
 	return t.info
 }
 
@@ -90,7 +90,7 @@ func (t *traversor[T]) getChildren() []*tr.TreeNode[T] {
 //
 // Returns:
 //   - error: An error if the traversal fails.
-func DFS[T any](tree *tr.Tree[T], init uc.Objecter, f ObserverFunc[T]) error {
+func DFS[T any](tree *tr.Tree[T], init uc.Copier, f ObserverFunc[T]) error {
 	if f == nil || tree == nil {
 		return nil
 	}
@@ -141,7 +141,7 @@ func DFS[T any](tree *tr.Tree[T], init uc.Objecter, f ObserverFunc[T]) error {
 //
 // Returns:
 //   - error: An error if the traversal fails.
-func BFS[T any](tree *tr.Tree[T], init uc.Objecter, f ObserverFunc[T]) error {
+func BFS[T any](tree *tr.Tree[T], init uc.Copier, f ObserverFunc[T]) error {
 	if f == nil || tree == nil {
 		return nil
 	}
