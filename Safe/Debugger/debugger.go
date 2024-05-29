@@ -69,7 +69,7 @@ func (d *Debugger) loggerListener() {
 	defer d.wg.Done()
 
 	for msg := range d.receiveChan {
-		switch msg := (msg).(type) {
+		switch msg := msg.(type) {
 		case *PrintMessage:
 			d.logger.Print(msg.v...)
 		case *PrintfMessage:
@@ -87,7 +87,7 @@ func (d *Debugger) stdoutListener() {
 	defer d.wg.Done()
 
 	for msg := range d.receiveChan {
-		switch msg := (msg).(type) {
+		switch msg := msg.(type) {
 		case *PrintMessage:
 			fmt.Print(msg.v...)
 		case *PrintfMessage:

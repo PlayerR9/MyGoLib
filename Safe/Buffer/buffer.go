@@ -1,7 +1,6 @@
 package Buffer
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/PlayerR9/MyGoLib/ListLike/Queuer"
@@ -120,8 +119,6 @@ func (b *Buffer[T]) listenForIncomingMessages() {
 	defer b.wg.Done()
 
 	for msg := range b.sendTo {
-		fmt.Println(msg)
-
 		b.q.Enqueue(msg)
 		b.isNotEmptyOrClosed.Broadcast()
 	}

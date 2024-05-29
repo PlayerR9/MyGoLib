@@ -2,10 +2,11 @@
 package Censoring
 
 import (
-	"fmt"
+	"path/filepath"
 	"slices"
 	"strings"
 
+	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 	slext "github.com/PlayerR9/MyGoLib/Units/Slices"
 )
 
@@ -14,9 +15,6 @@ import (
 type Builder struct {
 	// The FilterFuncs used to determine whether each value should be censored
 	filters []slext.PredicateFilter[string]
-
-	// The string used to join the values together
-	sep rune
 
 	// The strings to be censored
 	values []string
@@ -39,7 +37,7 @@ type Builder struct {
 //   - string: The censored or uncensored content of the Builder.
 func (b *Builder) String() string {
 	if !b.IsCensored() {
-		return strings.Join(b.values, string(b.sep))
+		return filepath.Join(b.values...)
 	}
 
 	censoredValues := make([]string, 0, len(b.values))
@@ -60,7 +58,7 @@ func (b *Builder) String() string {
 		}
 	}
 
-	return strings.Join(censoredValues, string(b.sep))
+	return filepath.Join(censoredValues...)
 }
 
 // BuilderOption is a function type that modifies the properties of a Builder.
@@ -95,19 +93,6 @@ func WithMode(mode CensorValue) BuilderOption {
 	}
 }
 
-// WithSeparator returns a BuilderOption that sets the separator of a Builder.
-//
-// Parameters:
-//   - sep: The separator to be set.
-//
-// Returns:
-//   - BuilderOption: A function that modifies the separator of a Builder.
-func WithSeparator(sep rune) BuilderOption {
-	return func(b *Builder) {
-		b.sep = sep
-	}
-}
-
 // WithFilters returns a BuilderOption that sets the filters of a Builder.
 //
 // Parameters:
@@ -137,6 +122,8 @@ func WithValues(values ...any) BuilderOption {
 		stringValues := make([]string, 0, len(values))
 
 		for _, value := range values {
+			var str string
+
 			switch x := value.(type) {
 			case *Builder:
 				if x == nil {
@@ -146,22 +133,12 @@ func WithValues(values ...any) BuilderOption {
 
 				// Partial application to get the
 				// uncensored string representation
-				var str string
-
 				x.Apply(func(s string) { str = s })
-
-				stringValues = append(stringValues, str)
-			case Builder:
-				// Partial application to get the
-				// uncensored string representation
-				var str string
-
-				x.Apply(func(s string) { str = s })
-
-				stringValues = append(stringValues, str)
 			default:
-				stringValues = append(stringValues, fmt.Sprintf("%v", value))
+				str = uc.StringOf(value)
 			}
+
+			stringValues = append(stringValues, str)
 		}
 
 		b.values = stringValues
@@ -186,21 +163,10 @@ func (ctx *Context) Make(options ...BuilderOption) *Builder {
 		label:   DefaultCensorLabel,
 		filters: make([]slext.PredicateFilter[string], 0),
 		values:  make([]string, 0),
-		sep:     ' ',
 	}
 
 	for _, option := range options {
 		option(builder)
-	}
-
-	var fields []string
-
-	for i := 0; i < len(builder.values); i += len(fields) {
-		fields = strings.FieldsFunc(builder.values[i], func(r rune) bool {
-			return r == rune(builder.sep)
-		})
-
-		builder.values = append(builder.values[:i], append(fields, builder.values[i+1:]...)...)
 	}
 
 	return builder
@@ -228,5 +194,7 @@ func (b *Builder) IsCensored() CensorValue {
 // Parameters:
 //   - f: The function to be applied to the non-censored string.
 func (b *Builder) Apply(f func(s string)) {
-	f(strings.Join(b.values, string(b.sep)))
+	path := filepath.Join(b.values...)
+
+	f(path)
 }

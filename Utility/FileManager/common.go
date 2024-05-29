@@ -35,7 +35,7 @@ type fileHandler struct {
 //   - *fileHandler: A pointer to the newly created fileHandler.
 func newFileHandler(loc string, dirPerm, filePerm os.FileMode, flag int) *fileHandler {
 	return &fileHandler{
-		loc:      loc,
+		loc:      filepath.Clean(loc),
 		file:     nil,
 		dirPerm:  dirPerm,
 		filePerm: filePerm,
