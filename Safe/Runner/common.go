@@ -23,6 +23,7 @@ func WaitAll(batch map[string]*HandlerSimple) map[string]error {
 
 	// 2. Initialize all error channels.
 	errChans := make(map[string]<-chan error)
+	var mu sync.RWMutex
 
 	for k, h := range batch {
 		errChans[k] = h.GetErrChannel()
@@ -44,7 +45,9 @@ func WaitAll(batch map[string]*HandlerSimple) map[string]error {
 			defer wg.Done()
 
 			for err := range errChan {
+				mu.Lock()
 				errs[k] = err
+				mu.Unlock()
 			}
 		}(k, errChan)
 	}

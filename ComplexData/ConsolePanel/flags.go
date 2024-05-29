@@ -86,14 +86,37 @@ func (cfi *FlagInfo) FString(trav *fss.Traversor) error {
 	// Empty line
 	trav.EmptyLine()
 
-	/*
-		// Description:
-		doc := fsd.NewDocumentPrinter("Description", cfi.description, "[No description provided]")
-		err = doc.FString(trav)
+	err = trav.AppendString("Description:")
+	if err != nil {
+		return err
+	}
+
+	if len(cfi.description) == 0 {
+		err = trav.AppendRune(' ')
 		if err != nil {
-			return ers.NewErrWhile("FString printing description", err)
+			return err
 		}
-	*/
+
+		err := trav.AppendString("[No description provided]")
+		if err != nil {
+			return err
+		}
+
+		trav.AcceptLine()
+	} else {
+		trav.AcceptLine()
+
+		err = fss.ApplyForm(
+			trav.GetConfig(
+				fss.WithIncreasedIndent(),
+			),
+			trav,
+			&descriptionPrinter{cfi.description},
+		)
+		if err != nil {
+			return err
+		}
+	}
 
 	// Empty line
 	trav.EmptyLine()
@@ -132,9 +155,9 @@ func (cfi *FlagInfo) FString(trav *fss.Traversor) error {
 // Behaviors:
 //   - Any nil arguments are filtered out.
 //   - If 'callback' is nil, a default callback is used that returns nil without error.
-func NewFlagInfo(isRequired bool, callback FlagCallbackFunc, args ...*Argument) *FlagInfo {
+func NewFlagInfo(isRequired bool, description []string, callback FlagCallbackFunc, args ...*Argument) *FlagInfo {
 	flag := &FlagInfo{
-		description: nil,
+		description: description,
 		required:    isRequired,
 	}
 
@@ -155,19 +178,6 @@ func NewFlagInfo(isRequired bool, callback FlagCallbackFunc, args ...*Argument) 
 //   - bool: A boolean indicating whether the FlagInfo is required.
 func (inf *FlagInfo) IsRequired() bool {
 	return inf.required
-}
-
-// SetDescription sets the description of a FlagInfo.
-//
-// Parameters:
-//   - description: The description of the FlagInfo.
-//
-// Returns:
-//   - *FlagInfo: A pointer to the FlagInfo. This allows for chaining.
-func (cfi *FlagInfo) SetDescription(description []string) *FlagInfo {
-	cfi.description = description
-
-	return cfi
 }
 
 // Parse parses the provided arguments into a map of parsed arguments.

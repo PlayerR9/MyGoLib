@@ -41,6 +41,9 @@ func NoCommandCallback(args map[string]any) (any, error) {
 
 // CommandInfo represents a console command.
 type CommandInfo struct {
+	// name is the name of the command.
+	name string
+
 	// description is the documentation of the command.
 	description []string
 
@@ -72,21 +75,49 @@ type CommandInfo struct {
 //	   	// <description>
 //		// ...
 func (cci *CommandInfo) FString(trav *fss.Traversor) error {
+	if trav == nil {
+		return nil
+	}
+
 	// Description:
-	/*
-		doc := fsd.NewDocumentPrinter("Description", cci.description, "[No description provided]")
-		err := doc.FString(trav)
+	err := trav.AppendString("Description:")
+	if err != nil {
+		return err
+	}
+
+	if len(cci.description) == 0 {
+		err = trav.AppendRune(' ')
 		if err != nil {
-			return ers.NewErrWhile("FString printing description", err)
+			return err
 		}
-	*/
+
+		err := trav.AppendString("[No description provided]")
+		if err != nil {
+			return err
+		}
+
+		trav.AcceptLine()
+	} else {
+		trav.AcceptLine()
+
+		err = fss.ApplyForm(
+			trav.GetConfig(
+				fss.WithIncreasedIndent(),
+			),
+			trav,
+			&descriptionPrinter{cci.description},
+		)
+		if err != nil {
+			return err
+		}
+	}
 
 	// Empty line
 	trav.EmptyLine()
 
 	// Flags:
 	printer := sm.NewOrderedMapPrinter("Flags", cci.flags, "flag", "no flags")
-	err := printer.FString(trav)
+	err = printer.FString(trav)
 	if err != nil {
 		return ers.NewErrWhile("FString printing flags", err)
 	}
@@ -98,6 +129,7 @@ func (cci *CommandInfo) FString(trav *fss.Traversor) error {
 // provided command name and callback function.
 //
 // Parameters:
+//   - name: The name of the command.
 //   - description: The description of the command.
 //   - callback: The function to call when the command is executed.
 //
@@ -106,8 +138,9 @@ func (cci *CommandInfo) FString(trav *fss.Traversor) error {
 //
 // Behaviors:
 //   - If callback is nil, NoCommandCallback is used.
-func NewCommandInfo(description []string, callback CommandCallbackFunc) *CommandInfo {
+func NewCommandInfo(name string, description []string, callback CommandCallbackFunc) *CommandInfo {
 	inf := &CommandInfo{
+		name:        name,
 		description: description,
 		flags:       sm.NewOrderedMap[string, *FlagInfo](),
 	}
@@ -164,10 +197,7 @@ func (inf *CommandInfo) Parse(args []string) (*ParsedCommand, error) {
 			return nil, errors.New("no flags expected")
 		}
 
-		command, err := NewParsedCommand(make(map[string]any), inf.callback)
-		if err != nil {
-			panic(err)
-		}
+		command := newParsedCommand(inf.name, make(map[string]any), inf.callback)
 
 		return command, nil
 	}
@@ -211,10 +241,7 @@ func (inf *CommandInfo) Parse(args []string) (*ParsedCommand, error) {
 		}
 	}
 
-	command, err := NewParsedCommand(argsMap, inf.callback)
-	if err != nil {
-		panic(err)
-	}
+	command := newParsedCommand(inf.name, argsMap, inf.callback)
 
 	return command, nil
 }

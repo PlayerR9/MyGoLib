@@ -499,7 +499,7 @@ func WithIncreasedIndent() ConfigOption {
 	return func(f FormatConfig) {
 		config, ok := f[ConfInd_Idx].(*IndentConfig)
 		if !ok {
-			panic(fmt.Errorf("invalid configuration type for indentation: %T", f[ConfInd_Idx]))
+			return
 		}
 
 		if config != nil {

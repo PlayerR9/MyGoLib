@@ -2,12 +2,11 @@
 // console command flags.
 package ConsolePanel
 
-import (
-	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
-)
-
 // ParsedCommand represents a parsed console command.
 type ParsedCommand struct {
+	// name is the name of the command.
+	name string
+
 	// args is the arguments passed to the command.
 	args map[string]any
 
@@ -15,29 +14,31 @@ type ParsedCommand struct {
 	callback CommandCallbackFunc
 }
 
-// NewParsedCommand creates a new ParsedCommand with the provided name, arguments,
+// newParsedCommand creates a new ParsedCommand with the provided name, arguments,
 // and callback function.
 //
 // Parameters:
+//   - name: The name of the command.
 //   - args: A map of string keys to any values representing the arguments passed
 //     to the command.
 //   - callbackFunc: The function to call when the command is used.
 //
 // Returns:
 //   - *ParsedCommand: A pointer to the new ParsedCommand.
-//   - error: An error of type *ers.ErrInvalidParameter if the callbackFunc is nil.
-//
-// Behaviors:
-//   - If callbackFunc is nil, NoCommandCallback is used.
-func NewParsedCommand(args map[string]any, callbackFunc CommandCallbackFunc) (*ParsedCommand, error) {
-	if callbackFunc == nil {
-		return nil, ers.NewErrNilParameter("callbackFunc")
-	}
-
+func newParsedCommand(name string, args map[string]any, callbackFunc CommandCallbackFunc) *ParsedCommand {
 	return &ParsedCommand{
+		name:     name,
 		args:     args,
 		callback: callbackFunc,
-	}, nil
+	}
+}
+
+// GetName returns the name of the command.
+//
+// Returns:
+//   - string: The name of the command.
+func (pc *ParsedCommand) GetName() string {
+	return pc.name
 }
 
 // Execute executes the callback function for the parsed command.

@@ -66,9 +66,41 @@ func (cns *ConsolePanel) FString(trav *fss.Traversor) error {
 	// Empty line
 	trav.EmptyLine()
 
+	err = trav.AppendString("Description:")
+	if err != nil {
+		return err
+	}
+
+	if len(cns.description) == 0 {
+		err = trav.AppendRune(' ')
+		if err != nil {
+			return err
+		}
+
+		err := trav.AppendString("[No description provided]")
+		if err != nil {
+			return err
+		}
+
+		trav.AcceptLine()
+	} else {
+		trav.AcceptLine()
+
+		err = fss.ApplyForm(
+			trav.GetConfig(
+				fss.WithIncreasedIndent(),
+			),
+			trav,
+			&descriptionPrinter{cns.description},
+		)
+		if err != nil {
+			return err
+		}
+	}
+
 	/*
 		// Description:
-		doc := fsd.NewDocumentPrinter("Description", cns.description, "[No description provided]")
+		doc := fsd.NewDocumentPrinter("Description", cns.description, )
 		err = doc.FString(trav)
 		if err != nil {
 			return ers.NewErrWhile("FString printing description", err)
@@ -167,6 +199,7 @@ func NewConsolePanel(execName string, description []string) *ConsolePanel {
 	}
 
 	helpCommandInfo := NewCommandInfo(
+		HelpOpcode,
 		fss.Stringfy(doc),
 		f,
 	)
@@ -189,22 +222,22 @@ func NewConsolePanel(execName string, description []string) *ConsolePanel {
 //   - If opcode is either an empty string or "help", the command is not added.
 //   - If info is nil, the command is not added.
 //   - If the opcode already exists, the existing command is replaced with the new one.
-func (cp *ConsolePanel) AddCommand(opcode string, info *CommandInfo) *ConsolePanel {
-	if info == nil || opcode == "" || opcode == "help" {
+func (cp *ConsolePanel) AddCommand(info *CommandInfo) *ConsolePanel {
+	if info == nil || info.name == "" || info.name == HelpOpcode {
 		return cp
 	}
 
-	cp.commandMap.AddEntry(opcode, info)
+	cp.commandMap.AddEntry(info.name, info)
 
 	addSpecificHelp := func(info *CommandInfo) (*CommandInfo, error) {
-		doc, err := fss.Sprintln(fss.DefaultFormatter, "Displays the help information for the %q command.", opcode)
+		doc, err := fss.Sprintln(fss.DefaultFormatter, "Displays the help information for the %q command.", info.name)
 		if err != nil {
 			return nil, err
 		}
 
-		newInfo := NewFlagInfo(false, nil, nil).SetDescription(fss.Stringfy(doc))
+		newInfo := NewFlagInfo(false, fss.Stringfy(doc), nil, nil)
 
-		return info.AddFlag(opcode, newInfo), nil
+		return info.AddFlag(info.name, newInfo), nil
 	}
 
 	err := cp.commandMap.ModifyValueFunc("help", addSpecificHelp)
