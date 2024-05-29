@@ -14,16 +14,23 @@ const (
 
 // CommandInfo represents a console command.
 type Console struct {
+	// name is the name of the console.
+	name string
+
 	// commandMap is a map of command opcodes to CommandInfo.
 	commandMap *cdom.OrderedMap[string, *CommandInfo]
 }
 
 // NewConsole is a function that creates a new console.
 //
+// Parameters:
+//   - name: The name of the console.
+//
 // Returns:
 //   - *Console: The new console.
-func NewConsole() *Console {
+func NewConsole(name string) *Console {
 	console := &Console{
+		name:       name,
 		commandMap: cdom.NewOrderedMap[string, *CommandInfo](),
 	}
 
@@ -43,9 +50,13 @@ func NewConsole() *Console {
 // AddCommand adds a command to the console.
 //
 // Parameters:
-//   - name: The name of the command.
 //   - info: The information about the command.
-func (c *Console) AddCommand(name string, info *CommandInfo) {
+func (c *Console) AddCommand(info *CommandInfo) {
+	if info == nil {
+		return
+	}
+
+	name := info.GetName()
 	if name == HelpOpcode {
 		return
 	}

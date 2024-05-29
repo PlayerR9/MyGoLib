@@ -12,6 +12,19 @@ type SimpleIterator[T any] struct {
 	index int // 0 means not initialized
 }
 
+// Size is a method of the GenericIterator type that returns the number of
+// elements in the collection.
+//
+// Returns:
+//   - int: The number of elements in the collection.
+func (iter *SimpleIterator[T]) Size() int {
+	if iter.values == nil {
+		return 0
+	}
+
+	return len(*iter.values)
+}
+
 // Consume is a method of the GenericIterator type that advances the
 // iterator to the next element in the collection and returns the current
 // element.

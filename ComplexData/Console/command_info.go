@@ -1,7 +1,10 @@
 package Console
 
 import (
+	cdom "github.com/PlayerR9/MyGoLib/CustomData/OrderedMap"
 	fsp "github.com/PlayerR9/MyGoLib/Formatting/FString"
+
+	ue "github.com/PlayerR9/MyGoLib/Units/Errors"
 )
 
 // ConsoleFunc is a function type that represents a callback
@@ -18,12 +21,15 @@ type ConsoleFunc func(flagMap map[string]any) (any, error)
 
 // CommandInfo represents a console command.
 type CommandInfo struct {
+	// name is the name of the command.
+	name string
+
 	// description is the documentation of the command.
 	description []string
 
 	// args is a slice of string representing the arguments accepted by
 	// the command. Order matters.
-	args []string
+	args *cdom.OrderedMap[string, *Flag]
 
 	// fn is the function to call when the command is executed.
 	fn ConsoleFunc
@@ -77,26 +83,30 @@ func (inf *CommandInfo) FString(trav *fsp.Traversor) error {
 		return err
 	}
 
-	if len(inf.args) == 0 {
-		err := trav.AppendRune(' ')
-		if err != nil {
-			return err
-		}
-
+	if inf.args.Size() == 0 {
 		err = trav.AppendString("[No arguments available]")
 		if err != nil {
 			return err
 		}
-
-		trav.AcceptLine()
 	} else {
 		trav.AcceptLine()
 
-		err := trav.AddJoinedLine(" ", inf.args...)
-		if err != nil {
-			return err
+		iter := inf.args.Iterator()
+
+		for count := 0; ; count++ {
+			item, err := iter.Consume()
+			if err != nil {
+				break
+			}
+
+			err = item.Second.FString(trav)
+			if err != nil {
+				return ue.NewErrWhileAt("printing", count+1, "argument", err)
+			}
 		}
 	}
+
+	trav.AcceptLine()
 
 	return nil
 }
@@ -104,19 +114,34 @@ func (inf *CommandInfo) FString(trav *fsp.Traversor) error {
 // NewCommandInfo is a function that creates a new command info.
 //
 // Parameters:
+//   - name: The name of the command.
 //   - description: The description of the command.
 //   - fn: The function to call when the command is executed.
-//   - args: A slice of string representing the arguments accepted by
-//     the command. Order matters.
+//   - args: A slice of Flag representing the arguments accepted by the command.
 //
 // Returns:
 //   - *CommandInfo: The new command info.
-func NewCommandInfo(description []string, fn ConsoleFunc, args []string) *CommandInfo {
-	return &CommandInfo{
+func NewCommandInfo(name string, description []string, fn ConsoleFunc, args ...*Flag) *CommandInfo {
+	ci := &CommandInfo{
+		name:        name,
 		description: description,
 		fn:          fn,
-		args:        args,
+		args:        cdom.NewOrderedMap[string, *Flag](),
 	}
+
+	for _, arg := range args {
+		ci.args.AddEntry(arg.name, arg)
+	}
+
+	return ci
+}
+
+// GetName returns the name of the command.
+//
+// Returns:
+//   - string: The name of the command.
+func (inf *CommandInfo) GetName() string {
+	return inf.name
 }
 
 // ParseArgs is a function that parses the arguments for a command.
@@ -135,16 +160,29 @@ func NewCommandInfo(description []string, fn ConsoleFunc, args []string) *Comman
 func (inf *CommandInfo) ParseArgs(args []string) (map[string]any, error) {
 	flagMap := make(map[string]any)
 
-	for i, arg := range inf.args {
-		if i >= len(args) {
-			return nil, NewErrMissingArgument(arg)
+	iter := inf.args.Iterator()
+	size := iter.Size()
+
+	for count := 0; ; count++ {
+		if count >= size {
+			return nil, NewErrMissingArgument(args[count])
 		}
 
-		flagMap[arg] = args[i]
+		item, err := iter.Consume()
+		if err != nil {
+			break
+		}
+
+		sol, err := item.Second.parsingFunc(args[count])
+		if err != nil {
+			return nil, ue.NewErrWhileAt("parsing", count+1, "argument", err)
+		}
+
+		flagMap[item.First] = sol
 	}
 
-	if len(args) > len(inf.args) {
-		return nil, NewErrArgumentNotRecognized(args[len(inf.args)])
+	if len(args) > size {
+		return nil, NewErrArgumentNotRecognized(args[size])
 	}
 
 	return flagMap, nil

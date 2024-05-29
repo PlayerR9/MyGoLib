@@ -387,3 +387,83 @@ func (e *ErrWhile) Unwrap() error {
 func (e *ErrWhile) ChangeReason(reason error) {
 	e.Reason = reason
 }
+
+// ErrWhileAt represents an error that occurs while performing an operation at a specific index.
+type ErrWhileAt struct {
+	// Index is the index where the error occurred.
+	Index int
+
+	// Element is the element where the index is pointing to.
+	Element string
+
+	// Operation is the operation that was being performed.
+	Operation string
+
+	// Reason is the reason for the error.
+	Reason error
+}
+
+// Error returns the error message: "while <operation> <index> <element>: <reason>".
+//
+// Returns:
+//   - string: The error message.
+//
+// Behaviors:
+//   - If the reason is nil, the error message is "an error occurred while
+//     <operation> at index <index>".
+func (e *ErrWhileAt) Error() string {
+	var builder strings.Builder
+
+	if e.Reason == nil {
+		builder.WriteString("an error occurred ")
+	}
+
+	builder.WriteString("while ")
+	builder.WriteString(e.Operation)
+	builder.WriteRune(' ')
+	builder.WriteString(com.GetOrdinalSuffix(e.Index))
+	builder.WriteRune(' ')
+	builder.WriteString(e.Element)
+
+	if e.Reason != nil {
+		builder.WriteString(": ")
+		builder.WriteString(e.Reason.Error())
+	}
+
+	return builder.String()
+}
+
+// NewErrWhileAt creates a new ErrWhileAt error.
+//
+// Parameters:
+//   - operation: The operation that was being performed.
+//   - index: The index where the error occurred.
+//   - elem: The element where the index is pointing to.
+//   - reason: The reason for the error.
+//
+// Returns:
+//   - *ErrWhileAt: A pointer to the newly created ErrWhileAt.
+func NewErrWhileAt(operation string, index int, elem string, reason error) *ErrWhileAt {
+	return &ErrWhileAt{
+		Index:     index,
+		Operation: operation,
+		Element:   elem,
+		Reason:    reason,
+	}
+}
+
+// Unwrap returns the reason for the error.
+//
+// Returns:
+//   - error: The reason for the error.
+func (e *ErrWhileAt) Unwrap() error {
+	return e.Reason
+}
+
+// ChangeReason changes the reason for the error.
+//
+// Parameters:
+//   - reason: The new reason for the error.
+func (e *ErrWhileAt) ChangeReason(reason error) {
+	e.Reason = reason
+}

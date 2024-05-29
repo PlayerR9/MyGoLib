@@ -17,6 +17,29 @@ type ProceduralIterator[E Iterable[T], T any] struct {
 	current *SimpleIterator[T]
 }
 
+// Size is a method of the ProceduralIterator type that returns the number of
+// elements in the collection.
+//
+// Size is evaluated by summing the sizes of the current iterator and the source
+// iterator. Of course, this is just an estimate of the total number of elements
+// in the collection.
+//
+// Returns:
+//   - int: The number of elements in the collection.
+func (iter *ProceduralIterator[E, T]) Size() int {
+	var count int
+
+	if iter.current != nil {
+		count += iter.current.Size()
+	}
+
+	if iter.source != nil {
+		count += iter.source.Size()
+	}
+
+	return count
+}
+
 // Consume is a method of the ProceduralIterator type that advances the
 // iterator to the next element in the collection and returns the current
 // element.

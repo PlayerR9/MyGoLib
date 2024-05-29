@@ -85,6 +85,12 @@ func IteratorOf[T any](elem any) Iterater[T] {
 // Iterater is an interface that defines methods for an iterator over a
 // collection of elements of type T.
 type Iterater[T any] interface {
+	// Size returns the number of elements in the collection.
+	//
+	// Returns:
+	//  - int: The number of elements in the collection.
+	Size() int
+
 	// The Consume method advances the iterator to the next element in the
 	// collection and returns the current element.
 	//

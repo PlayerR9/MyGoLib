@@ -25,6 +25,14 @@ func MakeHelpCommand(console *Console) (*CommandInfo, error) {
 	}
 
 	fn := func(flagMap map[string]any) (any, error) {
+		printer := ffs.NewStdPrinter(ffs.NewFormatter())
+		trav := printer.TraversorOf()
+
+		err := trav.AddJoinedLine(" ", "Usage:", console.name, "<command>", "[flags]")
+		if err != nil {
+			return nil, err
+		}
+
 		mip := cdom.NewOrderedMapPrinter(
 			"Here's a list of all the available commands:",
 			console.commandMap,
@@ -32,10 +40,14 @@ func MakeHelpCommand(console *Console) (*CommandInfo, error) {
 			"[No commands available]",
 		)
 
-		doc, err := ffs.SprintFString(ffs.NewFormatter(), mip)
+		err = mip.FString(trav)
 		if err != nil {
-			return nil, ue.NewErrWhile("printing the command list", err)
+			return nil, err
 		}
+
+		trav.Clean()
+
+		doc := printer.GetPages()
 
 		return ffs.Stringfy(doc), nil
 	}
@@ -46,8 +58,8 @@ func MakeHelpCommand(console *Console) (*CommandInfo, error) {
 	}
 
 	return NewCommandInfo(
+		HelpOpcode,
 		ffs.Stringfy(doc),
 		fn,
-		[]string{},
 	), nil
 }
