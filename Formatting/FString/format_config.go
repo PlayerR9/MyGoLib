@@ -6,6 +6,8 @@ import (
 	ue "github.com/PlayerR9/MyGoLib/Units/Errors"
 )
 
+/////////////////////////////////////////////////
+
 var (
 	// DefaultFormatter is the default formatter.
 	//

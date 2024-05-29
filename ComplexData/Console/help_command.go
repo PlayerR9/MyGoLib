@@ -32,19 +32,15 @@ func MakeHelpCommand(console *Console) (*CommandInfo, error) {
 			"[No commands available]",
 		)
 
-		printer := ffs.NewPrinter(ffs.NewFormatter())
-
-		err := ffs.Apply(printer, mip)
+		doc, err := ffs.SprintFString(ffs.NewFormatter(), mip)
 		if err != nil {
-			return nil, ue.NewErrWhile("applying the command list", err)
+			return nil, ue.NewErrWhile("printing the command list", err)
 		}
-
-		doc := printer.GetPages()
 
 		return ffs.Stringfy(doc), nil
 	}
 
-	doc, err := ffs.Println(ffs.DefaultFormatter, "Display the help message.")
+	doc, err := ffs.Sprintln(ffs.DefaultFormatter, "Display the help message.")
 	if err != nil {
 		return nil, err
 	}

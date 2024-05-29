@@ -15,7 +15,7 @@ type stackElement[T any] struct {
 	elem *tr.TreeNode[T]
 
 	// info is the info of the current node.
-	info uc.Objecter
+	info uc.Copier
 }
 
 // newStackElement creates a new stack element.
@@ -26,7 +26,7 @@ type stackElement[T any] struct {
 //
 // Returns:
 //   - *stackElement[T, E]: A pointer to the stack element.
-func newStackElement[T any](prev *tr.TreeNode[T], data T, info uc.Objecter) *stackElement[T] {
+func newStackElement[T any](prev *tr.TreeNode[T], data T, info uc.Copier) *stackElement[T] {
 	se := &stackElement[T]{
 		prev: prev,
 		elem: tr.NewTreeNode(data),
@@ -35,7 +35,7 @@ func newStackElement[T any](prev *tr.TreeNode[T], data T, info uc.Objecter) *sta
 	if info == nil {
 		se.info = nil
 	} else {
-		se.info = info.Copy().(uc.Objecter)
+		se.info = info.Copy()
 	}
 
 	return se
@@ -58,7 +58,7 @@ func (se *stackElement[T]) getData() (T, bool) {
 //
 // Returns:
 //   - uc.Objecter: The info of the stack element.
-func (se *stackElement[T]) getInfo() uc.Objecter {
+func (se *stackElement[T]) getInfo() uc.Copier {
 	return se.info
 }
 

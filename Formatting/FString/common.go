@@ -6,6 +6,37 @@ import (
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 )
 
+// Stringify converts a formatted string to a string.
+//
+// Parameters:
+//   - doc: The formatted string.
+//
+// Returns:
+//   - [][]string: The stringified formatted string.
+func Stringfy(doc [][][][]string) []string {
+	var pages []string
+
+	for _, page := range doc {
+		var sections []string
+
+		for _, section := range page {
+			var lines []string
+
+			for _, line := range section {
+				lines = append(lines, strings.Join(line, " "))
+			}
+
+			sections = append(sections, strings.Join(lines, "\n"))
+		}
+
+		pages = append(pages, strings.Join(sections, "\n"))
+	}
+
+	return pages
+}
+
+/////////////////////////////////////////////////
+
 // FStringer is an interface that defines the behavior of a type that can be
 // converted to a string representation.
 type FStringer interface {
@@ -49,7 +80,7 @@ var (
 //   - string: The formatted string.
 //   - error: An error if the printing fails.
 func FStringArray(format FormatConfig, values []string) (string, error) {
-	doc, err := Print(format, values...)
+	doc, err := Sprint(format, values...)
 	if err != nil {
 		return "", err
 	}

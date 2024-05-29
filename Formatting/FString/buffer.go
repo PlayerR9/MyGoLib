@@ -8,6 +8,8 @@ import (
 	ue "github.com/PlayerR9/MyGoLib/Units/Errors"
 )
 
+/////////////////////////////////////////////////
+
 // checkString is a private function that checks a string for invalid runes.
 //
 // Parameters:
@@ -57,7 +59,7 @@ type sectionBuilder struct {
 }
 
 // Cleanup implements the Cleanup interface method.
-func (sb *sectionBuilder) Cleanup() {
+func (sb *sectionBuilder) Clean() {
 	sb.mu.Lock()
 	defer sb.mu.Unlock()
 
@@ -225,11 +227,11 @@ type buffer struct {
 }
 
 // Cleanup implements the Cleanup interface method.
-func (b *buffer) Cleanup() {
+func (b *buffer) Clean() {
 	// pages are the pages of the buffer.
 	for i := 0; i < len(b.pages); i++ {
 		for j := 0; j < len(b.pages[i]); j++ {
-			b.pages[i][j].Cleanup()
+			b.pages[i][j].Clean()
 			b.pages[i][j] = nil
 		}
 
@@ -238,7 +240,7 @@ func (b *buffer) Cleanup() {
 
 	b.pages = nil
 
-	b.buff.Cleanup()
+	b.buff.Clean()
 	b.buff = nil
 }
 
@@ -252,6 +254,30 @@ func newBuffer() *buffer {
 		buff:     nil,
 		lastPage: 0,
 	}
+}
+
+// getPages returns the pages of the StdPrinter.
+//
+// Returns:
+//   - [][][][]string: The pages of the StdPrinter.
+func (b *buffer) getPages() [][][][]string {
+	b.finalize()
+
+	pages := b.pages
+
+	allStrings := make([][][][]string, 0, len(pages))
+
+	for _, page := range pages {
+		sectionLines := make([][][]string, 0)
+
+		for _, section := range page {
+			sectionLines = append(sectionLines, section.getLines())
+		}
+
+		allStrings = append(allStrings, sectionLines)
+	}
+
+	return allStrings
 }
 
 // isFirstOfLine is a private function that returns true if the current position is the first

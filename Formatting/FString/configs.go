@@ -6,6 +6,8 @@ import (
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 )
 
+/////////////////////////////////////////////////
+
 const (
 	// DefaultIndentation is the default indentation string.
 	DefaultIndentation string = "   "

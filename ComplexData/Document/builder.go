@@ -8,7 +8,7 @@ import (
 // Builder is a type that represents a builder for creating formatted strings.
 type Builder struct {
 	// printer is the printer used by the builder.
-	printer *fsp.Printer
+	printer *fsp.StdPrinter
 
 	// Traversor is the traversor used by the builder.
 	*fsp.Traversor
@@ -19,13 +19,13 @@ type Builder struct {
 // Returns:
 //   - *Builder: A pointer to the new builder.
 func NewBuilder() *Builder {
-	printer := fsp.NewPrinterFromConfig(
+	printer := fsp.NewStdPrinterFromConfig(
 		fsp.NewIndentConfig("   ", 0),
 	)
 
 	return &Builder{
 		printer:   printer,
-		Traversor: printer.GetTraversor(),
+		Traversor: printer.TraversorOf(),
 	}
 }
 
@@ -73,12 +73,12 @@ func (b *Builder) Build() (*DocumentViewer, error) {
 
 // Reset is a function that resets the builder.
 func (b *Builder) Reset() {
-	b.printer.Cleanup()
-	b.Traversor.Cleanup()
+	b.printer.Clean()
+	b.Traversor.Clean()
 
-	b.printer = fsp.NewPrinterFromConfig(
+	b.printer = fsp.NewStdPrinterFromConfig(
 		fsp.NewIndentConfig("   ", 0),
 	)
 
-	b.Traversor = b.printer.GetTraversor()
+	b.Traversor = b.printer.TraversorOf()
 }

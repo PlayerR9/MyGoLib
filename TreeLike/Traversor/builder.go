@@ -10,7 +10,7 @@ import (
 // Builder is a struct that builds a tree.
 type Builder[T any] struct {
 	// info is the info of the builder.
-	info uc.Objecter
+	info uc.Copier
 
 	// f is the next function.
 	f NextsFunc[T]
@@ -20,7 +20,7 @@ type Builder[T any] struct {
 //
 // Parameters:
 //   - info: The info to set.
-func (b *Builder[T]) SetInfo(info uc.Objecter) {
+func (b *Builder[T]) SetInfo(info uc.Copier) {
 	b.info = info
 }
 
@@ -33,7 +33,7 @@ func (b *Builder[T]) SetInfo(info uc.Objecter) {
 // Returns:
 //   - []T: A slice of the next elements.
 //   - error: An error if the function fails.
-type NextsFunc[T any] func(elem T, info uc.Objecter) ([]T, error)
+type NextsFunc[T any] func(elem T, info uc.Copier) ([]T, error)
 
 // SetNextFunc sets the next function of the builder.
 //

@@ -8,6 +8,8 @@ import (
 	ue "github.com/PlayerR9/MyGoLib/Units/Errors"
 )
 
+/////////////////////////////////////////////////
+
 const (
 	// NBSP is the non-breaking space rune.
 	NBSP rune = '\u00A0'
@@ -95,7 +97,7 @@ type Traversor struct {
 }
 
 // Cleanup implements the Cleaner interface.
-func (trav *Traversor) Cleanup() {
+func (trav *Traversor) Clean() {
 	trav.source = nil
 }
 

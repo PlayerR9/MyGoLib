@@ -35,7 +35,7 @@ func GetDirectChildren(node *html.Node) []*html.Node {
 
 var (
 	// GetChildrenFunc is a function that returns the children of an HTML node.
-	GetChildrenFunc tlt.NextsFunc[*html.Node] = func(elem *html.Node, info uc.Objecter) ([]*html.Node, error) {
+	GetChildrenFunc tlt.NextsFunc[*html.Node] = func(elem *html.Node, info uc.Copier) ([]*html.Node, error) {
 		if elem == nil {
 			return nil, ers.NewErrNilValue()
 		}

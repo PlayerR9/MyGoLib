@@ -188,3 +188,12 @@ func (fw *FileWriter) Clear() error {
 
 	return nil
 }
+
+// Write implements the io.Writer interface for the FileWriter.
+func (fw *FileWriter) Write(p []byte) (n int, err error) {
+	if fw.file == nil {
+		return 0, NewErrFileNotOpen()
+	}
+
+	return fw.file.Write(p)
+}

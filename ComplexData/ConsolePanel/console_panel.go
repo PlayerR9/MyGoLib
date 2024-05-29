@@ -106,14 +106,10 @@ func NewConsolePanel(execName string, description []string) *ConsolePanel {
 
 	f := func(args map[string]any) (any, error) {
 		if len(args) == 0 {
-			printer := fss.NewPrinter(fss.DefaultFormatter)
-
-			err := fss.Apply(printer, cp)
+			doc, err := fss.SprintFString(fss.DefaultFormatter, cp)
 			if err != nil {
-				return nil, fmt.Errorf("error applying console panel: %w", err)
+				return nil, fmt.Errorf("error printing console panel: %w", err)
 			}
-
-			doc := printer.GetPages()
 
 			return fss.Stringfy(doc), nil
 			/*
@@ -140,14 +136,10 @@ func NewConsolePanel(execName string, description []string) *ConsolePanel {
 				return nil, NewErrCommandNotFound(opcode)
 			}
 
-			printer := fss.NewPrinter(fss.DefaultFormatter)
-
-			err := fss.Apply(printer, command)
+			doc, err := fss.SprintFString(fss.DefaultFormatter, command)
 			if err != nil {
-				return nil, fmt.Errorf("error applying command %q: %w", opcode, err)
+				return nil, fmt.Errorf("error printing command %q: %w", opcode, err)
 			}
-
-			doc := printer.GetPages()
 
 			return fss.Stringfy(doc), nil
 
@@ -169,7 +161,7 @@ func NewConsolePanel(execName string, description []string) *ConsolePanel {
 	}
 
 	// Add the help command
-	doc, err := fss.Println(fss.DefaultFormatter, "Displays help information for the console.")
+	doc, err := fss.Sprintln(fss.DefaultFormatter, "Displays help information for the console.")
 	if err != nil {
 		panic(err)
 	}
@@ -205,7 +197,7 @@ func (cp *ConsolePanel) AddCommand(opcode string, info *CommandInfo) *ConsolePan
 	cp.commandMap.AddEntry(opcode, info)
 
 	addSpecificHelp := func(info *CommandInfo) (*CommandInfo, error) {
-		doc, err := fss.Println(fss.DefaultFormatter, "Displays the help information for the %q command.", opcode)
+		doc, err := fss.Sprintln(fss.DefaultFormatter, "Displays the help information for the %q command.", opcode)
 		if err != nil {
 			return nil, err
 		}
