@@ -161,16 +161,15 @@ func (inf *CommandInfo) ParseArgs(args []string) (map[string]any, error) {
 	flagMap := make(map[string]any)
 
 	iter := inf.args.Iterator()
-	size := iter.Size()
 
 	for count := 0; ; count++ {
-		if count >= size {
-			return nil, NewErrMissingArgument(args[count])
-		}
-
 		item, err := iter.Consume()
 		if err != nil {
 			break
+		}
+
+		if count >= len(args) {
+			return nil, NewErrMissingArgument(item.First)
 		}
 
 		sol, err := item.Second.parsingFunc(args[count])
@@ -180,6 +179,8 @@ func (inf *CommandInfo) ParseArgs(args []string) (map[string]any, error) {
 
 		flagMap[item.First] = sol
 	}
+
+	size := iter.Size()
 
 	if len(args) > size {
 		return nil, NewErrArgumentNotRecognized(args[size])

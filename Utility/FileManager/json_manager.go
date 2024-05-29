@@ -2,6 +2,7 @@ package FileManager
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 )
 
@@ -14,7 +15,7 @@ type JSONEncoder interface {
 	//
 	// Returns:
 	//   - JSONEncoder: The default values of the data.
-	Empty() JSONEncoder
+	Empty() json.Marshaler
 }
 
 // JSONManager is a manager for saving and loading data to and from a JSON file.
@@ -22,37 +23,41 @@ type JSONManager[T JSONEncoder] struct {
 	// Data is the data to save and load.
 	Data T
 
-	// loc is the location to the JSON file.
-	loc string
+	*fileHandler
 }
 
-// GetLocation returns the path to the JSON file.
-//
-// Returns:
-//   - string: The path to the JSON file.
-func (m *JSONManager[T]) GetLocation() string {
-	return m.loc
-}
+// Create implements the FileManager interface.
+func (m *JSONManager[T]) Create() error {
+	err := m.fileHandler.Create()
+	if err != nil {
+		return err
+	}
 
-// Exists checks if the JSON file exists.
-//
-// Returns:
-//   - bool: True if the file exists, false otherwise.
-//   - error: An error if there was an issue checking if the file exists.
-func (m *JSONManager[T]) Exists() (bool, error) {
-	return fileExists(m.loc)
+	data, err := json.MarshalIndent(m.Data.Empty(), "", "  ")
+	if err != nil {
+		return err
+	}
+
+	_, err = m.file.Write(data)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // NewJSONManager creates a new JSONManager.
 //
 // Parameters:
 //   - loc: The path to the JSON file.
+//   - dirPerm: The permissions for the directory.
+//   - filePerm: The permissions for the file.
 //
 // Returns:
 //   - JSONManager[T]: The new JSONManager.
-func NewJSONManager[T JSONEncoder](loc string) *JSONManager[T] {
+func NewJSONManager[T JSONEncoder](loc string, dirPerm, filePerm os.FileMode) *JSONManager[T] {
 	return &JSONManager[T]{
-		loc: loc,
+		fileHandler: newFileHandler(loc, dirPerm, filePerm, os.O_RDWR),
 	}
 }
 
@@ -69,9 +74,27 @@ func (m *JSONManager[T]) ChangePath(path string) {
 // Returns:
 //   - error: An error if there was an issue loading the data.
 func (m *JSONManager[T]) Load() error {
-	data, err := os.ReadFile(m.loc)
+	if m.file == nil {
+		// Open the file if it is not already open
+		err := m.fileHandler.Open()
+		if err != nil {
+			return err
+		}
+
+		return json.Unmarshal(nil, m)
+	}
+
+	info, err := m.file.Stat()
 	if err != nil {
-		return err
+		return fmt.Errorf("could not get file info: %w", err)
+	}
+
+	size := info.Size()
+	data := make([]byte, size)
+
+	_, err = m.file.Read(data)
+	if err != nil {
+		return fmt.Errorf("could not read file: %w", err)
 	}
 
 	return json.Unmarshal(data, m)
@@ -82,39 +105,28 @@ func (m *JSONManager[T]) Load() error {
 // Returns:
 //   - error: An error if there was an issue saving the data.
 func (m *JSONManager[T]) Save() error {
+	if m.file == nil {
+		// Create the file if it does not exist
+		err := m.fileHandler.Create()
+		if err != nil {
+			return err
+		}
+	}
+
 	data, err := json.MarshalIndent(m.Data, "", "  ")
 	if err != nil {
 		return err
 	}
 
-	return os.WriteFile(m.loc, data, 0644)
-}
-
-// CreateEmpty creates an empty JSON file with the default values of the data.
-// If the file already exists, it will overwrite the file.
-//
-// Returns:
-//   - error: An error if there was an issue creating the empty file.
-func (m *JSONManager[T]) CreateEmpty() error {
-	data, err := json.MarshalIndent(m.Data.Empty(), "", "  ")
+	err = m.file.Truncate(0)
 	if err != nil {
-		return err
+		return fmt.Errorf("could not truncate file: %w", err)
 	}
 
-	f, err := CreateAll(m.loc, 0644)
+	_, err = m.file.WriteAt(data, 0)
 	if err != nil {
-		return err
+		return fmt.Errorf("could not write to file: %w", err)
 	}
-	defer f.Close()
 
-	_, err = f.Write(data)
-	return err
-}
-
-// Delete deletes the JSON file. No operation is performed if the file does not exist.
-//
-// Returns:
-//   - error: An error if there was an issue deleting the file.
-func (m *JSONManager[T]) Delete() error {
-	return os.Remove(m.loc)
+	return nil
 }

@@ -134,6 +134,61 @@ func ApplyFormMany[T FStringer](form FormatConfig, trav *Traversor, elems []T) e
 	return nil
 }
 
+// ApplyFormFunc is a function that applies the format to an element.
+//
+// Parameters:
+//   - form: The formatter to use for formatting.
+//   - trav: The traversor to use for formatting.
+//   - elem: The element to format.
+//
+// Returns:
+//   - error: An error if the formatting fails.
+//
+// Behaviors:
+//   - If the traversor is nil, the function does nothing.
+func ApplyFormFunc[T FStringer](form FormatConfig, trav *Traversor, elem T, f FStringFunc[T]) error {
+	if trav == nil {
+		// Do nothing if the traversor is nil.
+		return nil
+	}
+
+	err := f(newTraversor(form, trav.source), elem)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// ApplyFormManyFunc is a function that applies the format to multiple elements at once.
+//
+// Parameters:
+//   - form: The formatter to use for formatting.
+//   - trav: The traversor to use for formatting.
+//   - elems: The elements to format.
+//
+// Returns:
+//   - error: An error if type Errors.ErrAt if the formatting fails on
+//     a specific element.
+//
+// Behaviors:
+//   - If the traversor is nil, the function does nothing.
+func ApplyFormManyFunc[T FStringer](form FormatConfig, trav *Traversor, elems []T, f FStringFunc[T]) error {
+	if trav == nil || len(elems) == 0 {
+		// Do nothing if the traversor is nil or if there are no elements.
+		return nil
+	}
+
+	for i, elem := range elems {
+		err := f(newTraversor(form, trav.source), elem)
+		if err != nil {
+			return ue.NewErrAt(i+1, "FStringer element", err)
+		}
+	}
+
+	return nil
+}
+
 // MergeForm is a function that merges the given formatter with the current one;
 // prioritizing the values of the first formatter.
 //

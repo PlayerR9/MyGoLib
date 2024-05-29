@@ -34,16 +34,19 @@ import (
 //	    log.Fatal(err)
 //	}
 //	fmt.Println(file_path) // Output: /path/to/destination/file.mp3
-func MediaDownloader(dest, url string) (string, error) {
+func MediaDownloader(dest, url string, force bool) (string, error) {
 	// Extract the name of the file from the URL
 	fields := strings.Split(url, "/")
 	filePath := path.Join(dest, fields[len(fields)-1])
 
-	exists, err := fileExists(filePath)
-	if err != nil {
-		return "", fmt.Errorf("could not check if file exists: %w", err)
-	} else if exists {
-		return filePath, nil // Do nothing
+	_, err := os.Stat(dest)
+	if err == nil {
+		if !force {
+			// Do nothing
+			return filePath, nil
+		}
+	} else if !os.IsNotExist(err) {
+		return "", fmt.Errorf("could not check if directory exists: %w", err)
 	}
 
 	resp, err := http.Get(url)
@@ -152,32 +155,4 @@ func SplitPath(filePath string) []string {
 	slices.Reverse(parts)
 
 	return parts
-}
-
-// CreateAll creates a file and all directories in the path if they do not exist.
-//
-// Parameters:
-//   - loc: A string representing the path to the file.
-//   - perm: An os.FileMode representing the permissions to set on the file.
-//
-// Returns:
-//   - *os.File: A pointer to the created file.
-//   - error: An error if it fails to create the file or directories.
-//
-// Remember to close the file after using it.
-// For perm, use 0644 for read/write permissions.
-func CreateAll(loc string, perm os.FileMode) (*os.File, error) {
-	dir := filepath.Dir(loc)
-
-	err := os.MkdirAll(dir, perm)
-	if err != nil {
-		return nil, err
-	}
-
-	file, err := os.Create(loc)
-	if err != nil {
-		return nil, err
-	}
-
-	return file, nil
 }

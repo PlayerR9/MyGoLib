@@ -77,9 +77,6 @@ type Traversor struct {
 	// on the left side of the traversor.
 	indentation string
 
-	// indentStr is the string that is used for indentation.
-	indentStr string
-
 	// hasIndent is a flag that indicates if the traversor has indentation.
 	hasIndent bool
 
@@ -116,7 +113,6 @@ func newTraversor(config FormatConfig, source *buffer) *Traversor {
 		form:        config,
 		hasIndent:   false,
 		indentation: "",
-		indentStr:   "",
 		leftConfig:  nil,
 		rightDelim:  "",
 	}
@@ -125,8 +121,6 @@ func newTraversor(config FormatConfig, source *buffer) *Traversor {
 	if ok && indentConfig != nil {
 		trav.indentation = indentConfig.GetIndentation()
 		trav.hasIndent = true
-
-		trav.indentStr = indentConfig.str
 	}
 
 	leftConfig, ok := config[ConfDelL_Idx].(*DelimiterConfig)
@@ -148,7 +142,7 @@ func newTraversor(config FormatConfig, source *buffer) *Traversor {
 func (trav *Traversor) writeIndent() {
 	if trav.source.isFirstOfLine() {
 		if trav.hasIndent {
-			trav.source.forceWriteString(trav.indentStr)
+			trav.source.forceWriteString(trav.indentation)
 		}
 
 		if trav.leftConfig != nil {
@@ -566,6 +560,33 @@ func WithModifiedIndent(by int) ConfigOption {
 			if config.level < 0 {
 				config.level = 0
 			}
+		}
+	}
+}
+
+// WithLeftDelimiter is a function that modifies the left delimiter of the formatter.
+//
+// Parameters:
+//   - str: The string to use as the left delimiter.
+//
+// Returns:
+//   - ConfigOption: The configuration option.
+//
+// Behaviors:
+//   - If str is empty, then the left delimiter is removed.
+func WithLeftDelimiter(str string) ConfigOption {
+	if str == "" {
+		return func(f FormatConfig) {
+			f[ConfDelL_Idx] = nil
+		}
+	} else {
+		newConfig := &DelimiterConfig{
+			str:  str,
+			left: true,
+		}
+
+		return func(f FormatConfig) {
+			f[ConfDelL_Idx] = newConfig
 		}
 	}
 }

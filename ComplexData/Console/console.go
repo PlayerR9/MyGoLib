@@ -77,9 +77,11 @@ func (c *Console) ParseArgs(args []string) (*ParsedCommand, error) {
 		return nil, errors.New("missing command name")
 	}
 
-	cInfo, ok := c.commandMap.GetEntry(args[0])
+	commandName := args[0]
+
+	cInfo, ok := c.commandMap.GetEntry(commandName)
 	if !ok {
-		return nil, fmt.Errorf("command %q does not exist", args[0])
+		return nil, fmt.Errorf("command %q does not exist", commandName)
 	}
 
 	flagMap, err := cInfo.ParseArgs(args[1:])
@@ -87,5 +89,5 @@ func (c *Console) ParseArgs(args []string) (*ParsedCommand, error) {
 		return nil, err
 	}
 
-	return NewParsedCommand(args[0], flagMap, cInfo.fn), nil
+	return NewParsedCommand(commandName, flagMap, cInfo.fn), nil
 }
