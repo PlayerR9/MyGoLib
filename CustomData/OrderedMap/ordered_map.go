@@ -8,6 +8,7 @@ import (
 
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 
+	ue "github.com/PlayerR9/MyGoLib/Units/Errors"
 	ll "github.com/PlayerR9/MyGoLib/Units/Iterator"
 )
 
@@ -303,4 +304,25 @@ func (s *OrderedMap[K, V]) DoFunc(f func(K, V) error) error {
 	}
 
 	return nil
+}
+
+// GetAt returns the value at the provided index.
+//
+// Parameters:
+//   - index: The index of the value to retrieve.
+//
+// Returns:
+//   - V: The value at the provided index.
+//
+// Errors:
+//   - *ue.ErrInvalidParameter: The index is out of bounds.
+func (s *OrderedMap[K, V]) GetAt(index int) (V, error) {
+	if index < 0 || index >= len(s.keys) {
+		return *new(V), ue.NewErrInvalidParameter(
+			"index",
+			ue.NewErrOutOfBounds(index, 0, len(s.keys)),
+		)
+	}
+
+	return s.mapping[s.keys[index]], nil
 }

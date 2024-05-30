@@ -1,12 +1,14 @@
 // Package CnsPanel provides a structure and functions for handling
 // console command flags.
-package ConsolePanel
+package pkg
 
 import (
-	"errors"
+	"fmt"
 
 	fss "github.com/PlayerR9/MyGoLib/Formatting/FString"
-	slext "github.com/PlayerR9/MyGoLib/Units/Slices"
+	uc "github.com/PlayerR9/MyGoLib/Units/Common"
+	ue "github.com/PlayerR9/MyGoLib/Units/Errors"
+	us "github.com/PlayerR9/MyGoLib/Units/Slices"
 )
 
 // FlagCallbackFunc is a function type that represents a callback
@@ -39,9 +41,12 @@ func NoFlagCallback(argMap map[string]any) (map[string]any, error) {
 
 // FlagInfo represents a flag for a console command.
 type FlagInfo struct {
+	// name is the name of the flag.
+	name string
+
 	// args is a slice of Argument representing the arguments accepted by
 	// the flag. Order doesn't matter.
-	args []*Argument
+	args []*ArgInfo
 
 	// description is the documentation of the flag.
 	description []string
@@ -51,6 +56,28 @@ type FlagInfo struct {
 
 	// callback is the function that parses the flag arguments.
 	callback FlagCallbackFunc
+}
+
+// Equals checks if the flag is equal to another flag.
+//
+// Two flags are equal iff their names are equal.
+//
+// Parameters:
+//   - other: The other flag to compare.
+//
+// Returns:
+//   - bool: true if the flags are equal, false otherwise.
+func (inf *FlagInfo) Equals(other uc.Equaler) bool {
+	if other == nil {
+		return false
+	}
+
+	otherFlag, ok := other.(*FlagInfo)
+	if !ok {
+		return false
+	}
+
+	return inf.name == otherFlag.name
 }
 
 // FString generates a formatted string representation of a FlagInfo.
@@ -70,6 +97,12 @@ type FlagInfo struct {
 //
 //	Required: <Yes/No>
 func (cfi *FlagInfo) FString(trav *fss.Traversor) error {
+	// Name:
+	err := trav.AddJoinedLine(" ", "Flag:", cfi.name)
+	if err != nil {
+		return err
+	}
+
 	// Arguments:
 	values := make([]string, 0, len(cfi.args))
 	for _, arg := range cfi.args {
@@ -78,7 +111,7 @@ func (cfi *FlagInfo) FString(trav *fss.Traversor) error {
 
 	values = append([]string{"Arguments:"}, values...)
 
-	err := trav.AddJoinedLine(" ", values...)
+	err = trav.AddJoinedLine(" ", values...)
 	if err != nil {
 		return err
 	}
@@ -111,7 +144,7 @@ func (cfi *FlagInfo) FString(trav *fss.Traversor) error {
 				fss.WithIncreasedIndent(),
 			),
 			trav,
-			&descriptionPrinter{cfi.description},
+			&DescriptionPrinter{cfi.description},
 		)
 		if err != nil {
 			return err
@@ -140,36 +173,30 @@ func (cfi *FlagInfo) FString(trav *fss.Traversor) error {
 	return nil
 }
 
-// NewFlagInfo creates a new FlagInfo with the given name and
-// arguments.
-//
-// Parameters:
-//   - isRequired: A boolean indicating whether the flag is required.
-//   - callback: The function that parses the flag arguments.
-//   - args: A slice of strings representing the arguments accepted by
-//     the flag.
-//
-// Returns:
-//   - *FlagInfo: A pointer to the new FlagInfo.
-//
-// Behaviors:
-//   - Any nil arguments are filtered out.
-//   - If 'callback' is nil, a default callback is used that returns nil without error.
-func NewFlagInfo(isRequired bool, description []string, callback FlagCallbackFunc, args ...*Argument) *FlagInfo {
-	flag := &FlagInfo{
-		description: description,
+func NewFlagInfo(name string, doc []string, isRequired bool, fn FlagCallbackFunc, argInfs []*ArgInfo) (*FlagInfo, error) {
+	if name == "" {
+		return nil, ue.NewErrInvalidParameter(
+			"name",
+			ue.NewErrEmpty(name),
+		)
+	}
+
+	newFlag := &FlagInfo{
+		name:        name,
+		description: doc,
 		required:    isRequired,
 	}
 
-	flag.args = slext.FilterNilValues(args)
+	argInfs = us.FilterNilValues(argInfs)
+	newFlag.args = us.UniquefyEquals(argInfs, false)
 
-	if callback == nil {
-		flag.callback = NoFlagCallback
+	if fn != nil {
+		newFlag.callback = fn
 	} else {
-		flag.callback = callback
+		newFlag.callback = NoFlagCallback
 	}
 
-	return flag
+	return newFlag, nil
 }
 
 // IsRequired returns whether a FlagInfo is required.
@@ -187,41 +214,39 @@ func (inf *FlagInfo) IsRequired() bool {
 //
 // Returns:
 //   - map[string]any: A map of the parsed arguments.
-//   - int: The index of the last unsuccessful parse argument.
-//   - bool: A boolean indicating whether the error is ignorable.
-//   - error: An error, if any.
-func (flag *FlagInfo) Parse(args []string) (*FlagParseResult, error) {
-	if len(args) == 0 {
-		return NewFlagParseResult(nil, -1), errors.New("no arguments provided")
-	}
-
-	if len(args) <= len(flag.args) {
-		return NewFlagParseResult(nil, 1), errors.New("not enough arguments provided")
-	} else if len(args)+1 > len(flag.args) {
-		return NewFlagParseResult(nil, 1), errors.New("too many arguments provided")
+//   - error: An error if the arguments are invalid.
+func (flag *FlagInfo) Parse(args []string) (map[string]any, error) {
+	if len(args) < len(flag.args) {
+		return nil, fmt.Errorf("missing argument %q", flag.args[len(args)].GetName())
 	}
 
 	parsedArgs := make(map[string]any) // Map to store the parsed arguments
 
-	i := 1
-	for i < len(flag.args) {
-		arg := flag.args[i]
-
-		parsedArg, err := arg.Parse(args[i])
+	for i, arg := range flag.args {
+		res, err := arg.Parse(args[i])
 		if err != nil {
-			return NewFlagParseResult(nil, i), err
+			return nil, ue.NewErrAt(i+1, "argument", err)
 		}
 
-		parsedArgs[arg.name] = parsedArg
-		i++
+		parsedArgs[arg.GetName()] = res
 	}
 
 	parsed, err := flag.callback(parsedArgs)
 	if err != nil {
-		return NewFlagParseResult(nil, i), err
+		return nil, fmt.Errorf("invalid arguments: %w", err)
 	}
 
-	return NewFlagParseResult(parsed, i), nil
+	var reason error
+
+	if len(args) > len(flag.args) {
+		return nil, ue.NewErrIgnorable(
+			fmt.Errorf("argument %q is an extra argument", args[len(flag.args)]),
+		)
+	} else {
+		reason = nil
+	}
+
+	return parsed, reason
 }
 
 // GetArguments returns the arguments of a FlagInfo.
@@ -232,6 +257,14 @@ func (flag *FlagInfo) Parse(args []string) (*FlagParseResult, error) {
 // Behaviors:
 //   - No nil values are returned.
 //   - Modifying the returned slice will affect the FlagInfo.
-func (inf *FlagInfo) GetArguments() []*Argument {
+func (inf *FlagInfo) GetArguments() []*ArgInfo {
 	return inf.args
+}
+
+// GetName returns the name of a FlagInfo.
+//
+// Returns:
+//   - string: The name of the FlagInfo.
+func (inf *FlagInfo) GetName() string {
+	return inf.name
 }

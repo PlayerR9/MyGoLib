@@ -2,6 +2,7 @@ package Slices
 
 import (
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
+	"golang.org/x/exp/slices"
 )
 
 // Find returns the index of the first occurrence of an element in the slice.
@@ -52,43 +53,56 @@ func FindEquals[T uc.Equaler](S []T, elem T) int {
 //
 // Parameters:
 //   - S: slice of elements.
+//   - prioritizeFirst: If true, the first occurrence of an element is kept.
+//     If false, the last occurrence of an element is kept.
 //
 // Returns:
 //   - []T: slice of elements with duplicates removed.
 //
 // Behavior:
 //   - The function preserves the order of the elements in the slice.
-func Uniquefy[T comparable](S []T) []T {
+func Uniquefy[T comparable](S []T, prioritizeFirst bool) []T {
 	if len(S) < 2 {
 		return S
 	}
 
-	seen := make(map[T]bool)
-	unique := make([]T, 0)
+	var unique []T
 
-	for _, e := range S {
-		_, ok := seen[e]
-		if !ok {
-			unique = append(unique, e)
-			seen[e] = true
+	if prioritizeFirst {
+		seen := make(map[T]bool)
+
+		for _, e := range S {
+			_, ok := seen[e]
+			if !ok {
+				unique = append(unique, e)
+				seen[e] = true
+			}
+		}
+	} else {
+		seen := make(map[T]int)
+
+		for _, e := range S {
+			pos, ok := seen[e]
+			if !ok {
+				seen[e] = len(unique)
+				unique = append(unique, e)
+			} else {
+				unique[pos] = e
+			}
 		}
 	}
 
 	return unique
 }
 
-// UniquefyEquals is the same as Uniquefy but uses the Equals method of the elements.
+// UniquefyLeft is a helper function that removes duplicate elements from the slice.
 //
 // Parameters:
 //   - S: slice of elements.
 //
 // Returns:
 //   - []T: slice of elements with duplicates removed.
-//
-// Behavior:
-//   - The function preserves the order of the elements in the slice.
-//   - This can modify the original slice.
-func UniquefyEquals[T uc.Equaler](S []T) []T {
+func uniquefyLeft[T uc.Equaler](S []T) []T {
 	if len(S) < 2 {
 		return S
 	}
@@ -105,6 +119,37 @@ func UniquefyEquals[T uc.Equaler](S []T) []T {
 		}
 
 		S = S[:top]
+	}
+
+	return S
+}
+
+// UniquefyEquals is the same as Uniquefy but uses the Equals method of the elements.
+//
+// Parameters:
+//   - S: slice of elements.
+//   - prioritizeFirst: If true, the first occurrence of an element is kept.
+//     If false, the last occurrence of an element is kept.
+//
+// Returns:
+//   - []T: slice of elements with duplicates removed.
+//
+// Behavior:
+//   - The function preserves the order of the elements in the slice.
+//   - This can modify the original slice.
+func UniquefyEquals[T uc.Equaler](S []T, prioritizeFirst bool) []T {
+	if len(S) < 2 {
+		return S
+	}
+
+	if !prioritizeFirst {
+		slices.Reverse(S)
+
+		S = uniquefyLeft(S)
+
+		slices.Reverse(S)
+	} else {
+		S = uniquefyLeft(S)
 	}
 
 	return S
@@ -159,8 +204,8 @@ func MergeUnique[T comparable](S1, S2 []T) []T {
 // Behaviors:
 //   - The function does preserve the order of the elements in the slices.
 func MergeUniqueEquals[T uc.Equaler](S1, S2 []T) []T {
-	S1 = UniquefyEquals(S1)
-	S2 = UniquefyEquals(S2)
+	S1 = UniquefyEquals(S1, true)
+	S2 = UniquefyEquals(S2, true)
 
 	if len(S1) == 0 {
 		return S2

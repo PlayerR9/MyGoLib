@@ -324,30 +324,28 @@ type ErrAt struct {
 func (e *ErrAt) Error() string {
 	var builder strings.Builder
 
+	if e.Reason == nil {
+		builder.WriteString("something went wrong at the ")
+	}
+
 	var name string
 
 	if e.Name != "" {
-		builder.WriteString(e.Name)
+		name = e.Name
 	} else {
 		name = "index"
 	}
 
 	builder.WriteString(uc.GetOrdinalSuffix(e.Index))
 	builder.WriteRune(' ')
+	builder.WriteString(name)
 
-	if name == "" {
-		builder.WriteString("index")
-	} else {
-		builder.WriteString(name)
+	if e.Reason != nil {
+		builder.WriteString(" is invalid: ")
+		builder.WriteString(e.Reason.Error())
 	}
 
-	position := builder.String()
-
-	if e.Reason == nil {
-		return fmt.Sprintf("something went wrong at the %s", position)
-	} else {
-		return fmt.Sprintf("at the %s: %s", position, e.Reason.Error())
-	}
+	return builder.String()
 }
 
 // Unwrap returns the reason for the error.

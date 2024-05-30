@@ -258,3 +258,45 @@ func MinSuccessOrFail[T Helperer[O], O any](batch []T) ([]*up.Pair[O, error], bo
 
 	return solution, ok
 }
+
+// EvaluateSimpleHelpers is a function that evaluates a batch of helpers and returns
+// the results.
+//
+// Parameters:
+//   - batch: The slice of helpers.
+//   - f: The evaluation function.
+//
+// Returns:
+//   - []*SimpleHelper[O]: The results of the evaluation.
+//   - bool: True if the slice was filtered, false otherwise.
+//
+// Behaviors:
+//   - This function returns either the successful results or the original slice.
+func EvaluateSimpleHelpers[T any, O any](batch []T, f uc.EvalOneFunc[T, O]) ([]*SimpleHelper[O], bool) {
+	if len(batch) == 0 {
+		return nil, true
+	}
+
+	var allSolutions []*SimpleHelper[O]
+
+	for _, h := range batch {
+		allSolutions = append(allSolutions, NewSimpleHelper(f(h)))
+	}
+
+	top := 0
+
+	for i := 0; i < len(allSolutions); i++ {
+		h := allSolutions[i]
+
+		if h.reason == nil {
+			allSolutions[top] = h
+			top++
+		}
+	}
+
+	if top == 0 {
+		return allSolutions, false
+	}
+
+	return allSolutions[:top], true
+}

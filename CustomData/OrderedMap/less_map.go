@@ -8,22 +8,14 @@ import (
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 
 	ll "github.com/PlayerR9/MyGoLib/Units/Iterator"
+
+	ue "github.com/PlayerR9/MyGoLib/Units/Errors"
 )
 
 // LessMap is a generic data structure that represents a sorted map.
 type LessMap[K uc.Comparer, V any] struct {
 	keys   []K
 	values []V
-}
-
-// Equals implements Common.Objecter.
-func (s *LessMap[K, V]) Equals(other uc.Objecter) bool {
-	panic("unimplemented")
-}
-
-// String implements Common.Objecter.
-func (s *LessMap[K, V]) String() string {
-	panic("unimplemented")
 }
 
 // Copy creates a deep copy of the sorted map.
@@ -224,4 +216,25 @@ func (s *LessMap[K, V]) DoFunc(f func(K, V) error) error {
 	}
 
 	return nil
+}
+
+// GetAt returns the value at the provided index.
+//
+// Parameters:
+//   - index: The index of the value to retrieve.
+//
+// Returns:
+//   - V: The value at the provided index.
+//
+// Errors:
+//   - *ue.ErrInvalidParameter: The index is out of bounds.
+func (s *LessMap[K, V]) GetAt(index int) (V, error) {
+	if index < 0 || index >= len(s.keys) {
+		return *new(V), ue.NewErrInvalidParameter(
+			"index",
+			ue.NewErrOutOfBounds(index, 0, len(s.keys)),
+		)
+	}
+
+	return s.values[index], nil
 }

@@ -1,12 +1,9 @@
-package ConsolePanel
+package pkg
 
 // FlagParseResult represents the result of parsing a flag.
 type FlagParseResult struct {
 	// Parsed arguments.
 	Args map[string]any
-
-	// Index of the last unsuccessful parse argument.
-	Index int
 }
 
 // NewFlagParseResult creates a new FlagParseResult with the given
@@ -14,13 +11,11 @@ type FlagParseResult struct {
 //
 // Parameters:
 //   - args: The arguments to parse.
-//   - index: The index of the last unsuccessful parse argument.
 //
 // Returns:
 //   - *FlagParseResult: A pointer to the new FlagParseResult.
-func NewFlagParseResult(args map[string]any, index int) *FlagParseResult {
+func NewFlagParseResult(args map[string]any) *FlagParseResult {
 	return &FlagParseResult{
-		Args:  args,
-		Index: index,
+		Args: args,
 	}
 }

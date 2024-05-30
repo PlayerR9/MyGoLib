@@ -1,6 +1,6 @@
 // Package CnsPanel provides a structure and functions for handling
 // console command flags.
-package ConsolePanel
+package pkg
 
 // ParsedCommand represents a parsed console command.
 type ParsedCommand struct {

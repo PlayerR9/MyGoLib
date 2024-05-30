@@ -335,7 +335,7 @@ func (s *LessSet[T]) Iterator() ui.Iterater[T] {
 // Returns:
 //   - *LessSet: A new LessSet.
 func NewLessSet[T uc.Comparer](elems []T) *LessSet[T] {
-	elems = us.UniquefyEquals(elems)
+	elems = us.UniquefyEquals(elems, true)
 	uc.Sort(elems)
 
 	return &LessSet[T]{

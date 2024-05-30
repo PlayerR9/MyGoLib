@@ -330,6 +330,6 @@ func (s *EqualSet[T]) Iterator() ui.Iterater[T] {
 //   - *EqualSet: A new EqualSet.
 func NewEqualSet[T uc.Objecter](elems []T) *EqualSet[T] {
 	return &EqualSet[T]{
-		elems: us.UniquefyEquals(elems),
+		elems: us.UniquefyEquals(elems, true),
 	}
 }
