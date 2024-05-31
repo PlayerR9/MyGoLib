@@ -121,8 +121,8 @@ func (fe *FrontierEvaluator[T]) GetResults() ([]T, error) {
 	if !ok {
 		// Determine the most likely error.
 		// As of now, we will just return the first error.
-		return up.ExtractFirsts(results), results[0].Second
+		return hlp.ExtractResults(results), results[0].GetData().Second
 	}
 
-	return up.ExtractFirsts(results), nil
+	return hlp.ExtractResults(results), nil
 }

@@ -9,6 +9,232 @@ import (
 	com "github.com/PlayerR9/MyGoLib/Units/Common"
 )
 
+// ErrOutOfBounds represents an error when a value is out of a specified range.
+type ErrOutOfBounds struct {
+	// LowerBound and UpperBound are the lower and upper bounds of the range,
+	// respectively.
+	LowerBound, UpperBound int
+
+	// LowerInclusive and UpperInclusive are flags indicating whether the lower
+	// and upper bounds are inclusive, respectively.
+	LowerInclusive, UpperInclusive bool
+
+	// Value is the value that caused the error.
+	Value int
+}
+
+// Error is a method of the error interface.
+//
+// The format of the error message is as follows:
+//
+//	value (value) not in range [lowerBound, upperBound]
+//
+// The square brackets indicate that the lower bound is inclusive, while the
+// parentheses indicate that the upper bound is exclusive.
+//
+// Returns:
+//
+//   - string: The error message of the out-of-bound error.
+func (e *ErrOutOfBounds) Error() string {
+	var builder strings.Builder
+
+	fmt.Fprintf(&builder, "value (%d) not in range ", e.Value)
+	if e.LowerInclusive {
+		builder.WriteRune('[')
+	} else {
+		builder.WriteRune('(')
+	}
+
+	fmt.Fprintf(&builder, "%d, %d", e.LowerBound, e.UpperBound)
+	if e.UpperInclusive {
+		builder.WriteRune(']')
+	} else {
+		builder.WriteRune(')')
+	}
+
+	return builder.String()
+}
+
+// WithLowerBound sets the inclusivity of the lower bound.
+//
+// Parameters:
+//
+//   - isInclusive: A boolean indicating whether the lower bound is inclusive.
+//
+// Returns:
+//
+//   - *ErrOutOfBound: The error instance for chaining.
+func (e *ErrOutOfBounds) WithLowerBound(isInclusive bool) *ErrOutOfBounds {
+	e.LowerInclusive = isInclusive
+
+	return e
+}
+
+// WithUpperBound sets the inclusivity of the upper bound.
+//
+// Parameters:
+//
+//   - isInclusive: A boolean indicating whether the upper bound is inclusive.
+//
+// Returns:
+//
+//   - *ErrOutOfBound: The error instance for chaining.
+func (e *ErrOutOfBounds) WithUpperBound(isInclusive bool) *ErrOutOfBounds {
+	e.UpperInclusive = isInclusive
+
+	return e
+}
+
+// NewOutOfBounds creates a new ErrOutOfBound error. If no inclusivity flags are
+// provided, the lower bound is inclusive and the upper bound is exclusive.
+//
+// Parameters:
+//
+//   - lowerBound, upperbound: The lower and upper bounds of the range,
+//     respectively.
+//   - value: The value that caused the error.
+//
+// Returns:
+//
+//   - *ErrOutOfBounds: A pointer to the newly created ErrOutOfBound.
+func NewErrOutOfBounds(value int, lowerBound, upperBound int) *ErrOutOfBounds {
+	return &ErrOutOfBounds{
+		LowerBound:     lowerBound,
+		UpperBound:     upperBound,
+		LowerInclusive: true,
+		UpperInclusive: false,
+		Value:          value,
+	}
+}
+
+// ErrUnexpected represents an error that occurs when an unexpected value is
+// encountered.
+type ErrUnexpected struct {
+	// Expected is the list of expected values.
+	Expected []string
+
+	// Actual is the actual value encountered.
+	Actual fmt.Stringer
+}
+
+// Error is a method of the error interface.
+//
+// Returns:
+//
+//   - string: The error message.
+func (e *ErrUnexpected) Error() string {
+	var expected, got string
+
+	switch len(e.Expected) {
+	case 0:
+		expected = "nothing"
+	case 1:
+		expected = fmt.Sprintf("%q", e.Expected[0])
+	case 2:
+		expected = fmt.Sprintf("%q or %q", e.Expected[0], e.Expected[1])
+	default:
+		var builder strings.Builder
+
+		fmt.Fprintf(&builder, "%q", e.Expected[0])
+
+		for i := 1; i < len(e.Expected)-1; i++ {
+			builder.WriteRune(',')
+			builder.WriteRune(' ')
+			fmt.Fprintf(&builder, "%q", e.Expected[i])
+		}
+
+		builder.WriteRune(',')
+		builder.WriteRune(' ')
+		builder.WriteString("or ")
+
+		fmt.Fprintf(&builder, "%q", e.Expected[len(e.Expected)-1])
+
+		expected = builder.String()
+	}
+
+	if e.Actual == nil {
+		got = "nothing"
+	} else {
+		got = e.Actual.String()
+	}
+
+	return fmt.Sprintf("expected %s, got %s instead", expected, got)
+}
+
+// NewErrUnexpected creates a new ErrUnexpected error.
+//
+// Parameters:
+//
+//   - got: The actual value encountered.
+//   - expected: The list of expected values.
+//
+// Returns:
+//
+//   - *ErrUnexpected: A pointer to the newly created ErrUnexpected.
+func NewErrUnexpected(got fmt.Stringer, expected ...string) *ErrUnexpected {
+	return &ErrUnexpected{Expected: expected, Actual: got}
+}
+
+// ErrEmpty represents an error when a value is empty.
+type ErrEmpty[T any] struct {
+	// Value is the value that caused the error.
+	Value T
+}
+
+// Error returns the error message: "value must not be empty".
+//
+// Returns:
+//   - string: The error message.
+func (e *ErrEmpty[T]) Error() string {
+	var builder strings.Builder
+
+	builder.WriteString(com.TypeOf(e.Value))
+	builder.WriteString(" must not be empty")
+
+	return builder.String()
+}
+
+// NewErrEmpty creates a new ErrEmpty error.
+//
+// Parameters:
+//   - value: The value that caused the error.
+//
+// Returns:
+//   - *ErrEmpty: A pointer to the newly created ErrEmpty.
+func NewErrEmpty[T any](value T) *ErrEmpty[T] {
+	return &ErrEmpty[T]{Value: value}
+}
+
+// ErrNotComparable represents an error when a value is not comparable.
+type ErrNotComparable[T any] struct {
+	// Value is the value that caused the error.
+	Value T
+}
+
+// Error returns the error message: "type <type> does not support comparison".
+//
+// Returns:
+//   - string: The error message.
+func (e *ErrNotComparable[T]) Error() string {
+	var builder strings.Builder
+
+	builder.WriteString("type ")
+	builder.WriteString(fmt.Sprintf("%T", e.Value))
+	builder.WriteString(" does not support comparison")
+
+	return builder.String()
+}
+
+// NewErrNotComparable creates a new ErrNotComparable error.
+//
+// Returns:
+//   - *ErrNotComparable: A pointer to the newly created ErrNotComparable.
+func NewErrNotComparable[T any](value T) *ErrNotComparable[T] {
+	return &ErrNotComparable[T]{
+		Value: value,
+	}
+}
+
 // ErrGT represents an error when a value is less than or equal to a specified value.
 type ErrGT struct {
 	// Value is the value that caused the error.
@@ -330,140 +556,4 @@ func (e *ErrNilValue) Error() string {
 //   - *ErrNilValue: The new ErrNilValue error.
 func NewErrNilValue() *ErrNilValue {
 	return &ErrNilValue{}
-}
-
-// ErrWhile represents an error that occurs while performing an operation.
-type ErrWhile struct {
-	// Operation is the operation that was being performed.
-	Operation string
-
-	// Reason is the reason for the error.
-	Reason error
-}
-
-// Error returns the error message: "error while <operation>: <reason>".
-//
-// Returns:
-//   - string: The error message.
-//
-// Behaviors:
-//   - If the reason is nil, the error message is "an error occurred while
-//     <operation>".
-func (e *ErrWhile) Error() string {
-	if e.Reason == nil {
-		return fmt.Sprintf("an error occurred while %s", e.Operation)
-	} else {
-		return fmt.Sprintf("error while %s: %s", e.Operation, e.Reason.Error())
-	}
-}
-
-// NewErrWhile creates a new ErrWhile error.
-//
-// Parameters:
-//   - operation: The operation that was being performed.
-//   - reason: The reason for the error.
-//
-// Returns:
-//   - *ErrWhile: A pointer to the newly created ErrWhile.
-func NewErrWhile(operation string, reason error) *ErrWhile {
-	return &ErrWhile{
-		Operation: operation,
-		Reason:    reason,
-	}
-}
-
-// Unwrap returns the reason for the error.
-//
-// Returns:
-//   - error: The reason for the error.
-func (e *ErrWhile) Unwrap() error {
-	return e.Reason
-}
-
-// ChangeReason changes the reason for the error.
-//
-// Parameters:
-//   - reason: The new reason for the error.
-func (e *ErrWhile) ChangeReason(reason error) {
-	e.Reason = reason
-}
-
-// ErrWhileAt represents an error that occurs while performing an operation at a specific index.
-type ErrWhileAt struct {
-	// Index is the index where the error occurred.
-	Index int
-
-	// Element is the element where the index is pointing to.
-	Element string
-
-	// Operation is the operation that was being performed.
-	Operation string
-
-	// Reason is the reason for the error.
-	Reason error
-}
-
-// Error returns the error message: "while <operation> <index> <element>: <reason>".
-//
-// Returns:
-//   - string: The error message.
-//
-// Behaviors:
-//   - If the reason is nil, the error message is "an error occurred while
-//     <operation> at index <index>".
-func (e *ErrWhileAt) Error() string {
-	var builder strings.Builder
-
-	if e.Reason == nil {
-		builder.WriteString("an error occurred ")
-	}
-
-	builder.WriteString("while ")
-	builder.WriteString(e.Operation)
-	builder.WriteRune(' ')
-	builder.WriteString(com.GetOrdinalSuffix(e.Index))
-	builder.WriteRune(' ')
-	builder.WriteString(e.Element)
-
-	if e.Reason != nil {
-		builder.WriteString(": ")
-		builder.WriteString(e.Reason.Error())
-	}
-
-	return builder.String()
-}
-
-// NewErrWhileAt creates a new ErrWhileAt error.
-//
-// Parameters:
-//   - operation: The operation that was being performed.
-//   - index: The index where the error occurred.
-//   - elem: The element where the index is pointing to.
-//   - reason: The reason for the error.
-//
-// Returns:
-//   - *ErrWhileAt: A pointer to the newly created ErrWhileAt.
-func NewErrWhileAt(operation string, index int, elem string, reason error) *ErrWhileAt {
-	return &ErrWhileAt{
-		Index:     index,
-		Operation: operation,
-		Element:   elem,
-		Reason:    reason,
-	}
-}
-
-// Unwrap returns the reason for the error.
-//
-// Returns:
-//   - error: The reason for the error.
-func (e *ErrWhileAt) Unwrap() error {
-	return e.Reason
-}
-
-// ChangeReason changes the reason for the error.
-//
-// Parameters:
-//   - reason: The new reason for the error.
-func (e *ErrWhileAt) ChangeReason(reason error) {
-	e.Reason = reason
 }

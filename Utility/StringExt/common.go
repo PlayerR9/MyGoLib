@@ -12,7 +12,6 @@ import (
 	mext "github.com/PlayerR9/MyGoLib/Utility/MathExt"
 
 	ue "github.com/PlayerR9/MyGoLib/Units/Errors"
-	up "github.com/PlayerR9/MyGoLib/Units/Pair"
 	hlp "github.com/PlayerR9/MyGoLib/Utility/Helpers"
 
 	com "github.com/PlayerR9/MyGoLib/Units/Common"
@@ -521,7 +520,8 @@ func SplitInEqualSizedLines(text []string, width, height int) (*TextSplit, error
 	}
 
 	// 4.3. Return the candidates with the lowest SQM.
-	candidates = up.ExtractFirsts(hlp.FilterByNegativeWeight(weights))
+	weights = hlp.FilterByNegativeWeight(weights)
+	candidates = hlp.ExtractResults(weights)
 
 	// If we have more than one candidate, we have to choose one
 	// of them by following other criteria.

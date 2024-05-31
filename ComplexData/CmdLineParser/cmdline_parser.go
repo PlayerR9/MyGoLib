@@ -7,6 +7,7 @@ import (
 	"slices"
 
 	"github.com/PlayerR9/MyGoLib/ComplexData/CmdLineParser/pkg"
+	evalSlc "github.com/PlayerR9/MyGoLib/Evaluations/Slices"
 	ffs "github.com/PlayerR9/MyGoLib/Formatting/FString"
 	ue "github.com/PlayerR9/MyGoLib/Units/Errors"
 )
@@ -263,6 +264,23 @@ func NewCmdLineParser(execName string, description []string, commandBuilder *Cmd
 	return cp, nil
 }
 
+// GetCommandByOpcode returns the CommandInfo for the provided opcode.
+//
+// Parameters:
+//   - opcode: The opcode of the command.
+//
+// Returns:
+//   - *CommandInfo: The CommandInfo for the opcode. Nil if not found.
+func (cns *CmdLineParser) GetCommandByOpcode(opcode string) *pkg.CommandInfo {
+	for _, command := range cns.commandList {
+		if command.GetOpcode() == opcode {
+			return command
+		}
+	}
+
+	return nil
+}
+
 // Parse parses the provided command line arguments
 // and returns a ParsedCommand ready to be executed.
 //
@@ -283,18 +301,19 @@ func (cns *CmdLineParser) Parse(args []string) (*pkg.ParsedCommand, error) {
 		return nil, ue.NewErrInvalidParameter("args", ue.NewErrEmpty(args))
 	}
 
-	index := slices.IndexFunc(cns.commandList, func(c *pkg.CommandInfo) bool {
-		return c.GetOpcode() == args[0]
-	})
-	if index == -1 {
+	command := cns.GetCommandByOpcode(args[0])
+	if command == nil {
 		return nil, NewErrCommandNotFound(args[0])
 	}
 
-	command := cns.commandList[index]
-
 	args = args[1:] // Remove the command name
 
-	pc, err := command.Parse(args)
+	branches, err := evalSlc.Evaluate(command, args)
+	if err != nil {
+		return nil, err
+	}
+
+	pc, err := command.Parse(branches, args)
 	if err != nil {
 		return nil, err
 	}

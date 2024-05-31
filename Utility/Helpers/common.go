@@ -34,7 +34,7 @@ type Helperer[O any] interface {
 //   - If S is empty, the function returns a nil slice.
 //   - If multiple elements have the same maximum weight, they are all returned.
 //   - If S contains only one element, that element is returned.
-func FilterByPositiveWeight[T Helperer[O], O any](S []T) []*up.Pair[O, error] {
+func FilterByPositiveWeight[T Helperer[O], O any](S []T) []T {
 	if len(S) == 0 {
 		return nil
 	}
@@ -53,9 +53,10 @@ func FilterByPositiveWeight[T Helperer[O], O any](S []T) []*up.Pair[O, error] {
 		}
 	}
 
-	solution := make([]*up.Pair[O, error], len(indices))
+	solution := make([]T, len(indices))
+
 	for i, index := range indices {
-		solution[i] = S[index].GetData()
+		solution[i] = S[index]
 	}
 
 	return solution
@@ -74,7 +75,7 @@ func FilterByPositiveWeight[T Helperer[O], O any](S []T) []*up.Pair[O, error] {
 //   - If S is empty, the function returns a nil slice.
 //   - If multiple elements have the same minimum weight, they are all returned.
 //   - If S contains only one element, that element is returned.
-func FilterByNegativeWeight[T Helperer[O], O any](S []T) []*up.Pair[O, error] {
+func FilterByNegativeWeight[T Helperer[O], O any](S []T) []T {
 	if len(S) == 0 {
 		return nil
 	}
@@ -93,9 +94,9 @@ func FilterByNegativeWeight[T Helperer[O], O any](S []T) []*up.Pair[O, error] {
 		}
 	}
 
-	solution := make([]*up.Pair[O, error], len(indices))
+	solution := make([]T, len(indices))
 	for i, index := range indices {
-		solution[i] = S[index].GetData()
+		solution[i] = S[index]
 	}
 
 	return solution
@@ -222,7 +223,7 @@ func ApplyWeightFunc[O any](S []O, f WeightFunc[O]) []*WeightedElement[O] {
 //   - If the slice is empty, the function returns a nil slice and true.
 //   - The result can either be the sucessful results or the original slice.
 //     Nonetheless, the maximum weight is always applied.
-func MaxSuccessOrFail[T Helperer[O], O any](batch []T) ([]*up.Pair[O, error], bool) {
+func MaxSuccessOrFail[T Helperer[O], O any](batch []T) ([]T, bool) {
 	// 1. Remove nil elements.
 	if len(batch) == 0 {
 		return nil, true
@@ -245,7 +246,7 @@ func MaxSuccessOrFail[T Helperer[O], O any](batch []T) ([]*up.Pair[O, error], bo
 // Returns:
 //   - []*up.Pair[O, error]: The results with the minimum weight.
 //   - bool: True if the slice was filtered, false otherwise.
-func MinSuccessOrFail[T Helperer[O], O any](batch []T) ([]*up.Pair[O, error], bool) {
+func MinSuccessOrFail[T Helperer[O], O any](batch []T) ([]T, bool) {
 	if len(batch) == 0 {
 		return nil, true
 	}
@@ -280,7 +281,11 @@ func EvaluateSimpleHelpers[T any, O any](batch []T, f uc.EvalOneFunc[T, O]) ([]*
 	var allSolutions []*SimpleHelper[O]
 
 	for _, h := range batch {
-		allSolutions = append(allSolutions, NewSimpleHelper(f(h)))
+		res, err := f(h)
+
+		helper := NewSimpleHelper(res, err)
+
+		allSolutions = append(allSolutions, helper)
 	}
 
 	top := 0
@@ -294,9 +299,68 @@ func EvaluateSimpleHelpers[T any, O any](batch []T, f uc.EvalOneFunc[T, O]) ([]*
 		}
 	}
 
-	if top == 0 {
+	if top != 0 {
+		return allSolutions[:top], true
+	} else {
 		return allSolutions, false
 	}
+}
 
-	return allSolutions[:top], true
+// EvaluateWeightHelpers is a function that evaluates a batch of helpers and returns
+// the results.
+//
+// Parameters:
+//   - batch: The slice of helpers.
+//   - f: The evaluation function.
+//   - wf: The weight function.
+//   - isPositive: True if the weight is positive, false otherwise.
+//
+// Returns:
+//   - []*WeightedHelper[O]: The results of the evaluation.
+//   - bool: True if the slice was filtered, false otherwise.
+//
+// Behaviors:
+//   - This function returns either the successful results or the original slice.
+func EvaluateWeightHelpers[T any, O any](batch []T, f uc.EvalOneFunc[T, O], wf WeightFunc[T], isPositive bool) ([]*WeightedHelper[O], bool) {
+	if len(batch) == 0 {
+		return nil, true
+	}
+
+	var allSolutions []*WeightedHelper[O]
+
+	for _, h := range batch {
+		res, err := f(h)
+
+		weight, ok := wf(h)
+		if !ok {
+			continue
+		}
+
+		h := NewWeightedHelper(res, err, weight)
+
+		allSolutions = append(allSolutions, h)
+	}
+
+	top := 0
+
+	for i := 0; i < len(allSolutions); i++ {
+		h := allSolutions[i]
+
+		if h.reason == nil {
+			allSolutions[top] = h
+			top++
+		}
+	}
+
+	if top != 0 {
+		allSolutions = allSolutions[:top]
+	}
+
+	if isPositive {
+		allSolutions = FilterByPositiveWeight(allSolutions)
+	} else {
+		allSolutions = FilterByNegativeWeight(allSolutions)
+	}
+
+	return allSolutions, top > 0
 }

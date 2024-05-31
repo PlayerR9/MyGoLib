@@ -23,6 +23,9 @@ import (
 func DoWhile[T any](todo []T, accept slext.PredicateFilter[T], f uc.EvalManyFunc[T, T]) []T {
 	if len(todo) == 0 || accept == nil {
 		return nil
+	} else if f == nil {
+		done, _ := slext.SFSeparate(todo, accept)
+		return done
 	}
 
 	done := make([]T, 0)
@@ -31,10 +34,6 @@ func DoWhile[T any](todo []T, accept slext.PredicateFilter[T], f uc.EvalManyFunc
 		s1, s2 := slext.SFSeparate(todo, accept)
 		if len(s1) > 0 {
 			done = append(done, s1...)
-		}
-
-		if f == nil {
-			return done
 		}
 
 		todo = todo[:0]

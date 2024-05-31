@@ -8,6 +8,7 @@ import (
 
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 	ue "github.com/PlayerR9/MyGoLib/Units/Errors"
+	uthlp "github.com/PlayerR9/MyGoLib/Utility/Helpers"
 )
 
 // ArgumentParserFunc is a function type that represents a function
@@ -18,7 +19,7 @@ import (
 //
 // Returns:
 //   - any: The parsed value.
-type ArgumentParserFunc func(string) (any, error)
+type ArgumentParserFunc func(args []string) ([]any, error)
 
 // NoArgumentParser is a default argument parser function that returns
 // the string as is.
@@ -29,8 +30,14 @@ type ArgumentParserFunc func(string) (any, error)
 // Returns:
 //   - any: The string as is.
 //   - error: nil
-func NoArgumentParser(s string) (any, error) {
-	return s, nil
+func NoArgumentParser(args []string) ([]any, error) {
+	result := make([]any, 0, len(args))
+
+	for _, arg := range args {
+		result = append(result, arg)
+	}
+
+	return result, nil
 }
 
 // ArgInfo represents an argument of a flag.
@@ -211,13 +218,41 @@ func NewArgument(format string, fn ArgumentParserFunc) (*ArgInfo, error) {
 //
 // Errors:
 //   - The error returned is the error from the parser function.
-func (a *ArgInfo) Parse(s string) (any, error) {
-	parsed, err := a.parserFunc(s)
-	if err != nil {
-		return nil, err
+func (a *ArgInfo) Parse(args []string) ([]*resultArg, error) {
+	min := a.qty[0]
+
+	if len(args) < min {
+		return nil, errors.New("not enough arguments, expected at least " + strconv.Itoa(min))
 	}
 
-	return parsed, nil
+	max := a.qty[1]
+
+	if max == -1 || max > len(args) {
+		max = len(args)
+	}
+
+	subslices := make([][]string, 0)
+
+	for i := min; i <= max; i++ {
+		subslice := args[:i]
+		subslices = append(subslices, subslice)
+	}
+
+	f := func(topass []string) (*resultArg, error) {
+		parsed, err := a.parserFunc(topass)
+		if err != nil {
+			return nil, err
+		}
+
+		return newResultArg(topass, parsed), nil
+	}
+
+	solutions, ok := uthlp.EvaluateSimpleHelpers(subslices, f)
+	if !ok {
+		return nil, ue.NewErrPossibleError(errors.New("no valid arguments"), solutions[0].GetData().Second)
+	}
+
+	return uthlp.ExtractResults(solutions), nil
 }
 
 // GetName returns the name of the argument.
@@ -226,4 +261,8 @@ func (a *ArgInfo) Parse(s string) (any, error) {
 //   - string: The name of the argument.
 func (a *ArgInfo) GetName() string {
 	return a.name
+}
+
+func (a *ArgInfo) GetMinMax() (int, int) {
+	return a.qty[0], a.qty[1]
 }

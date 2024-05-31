@@ -9,6 +9,167 @@ import (
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 )
 
+// ErrPanic represents an error when a panic occurs.
+type ErrPanic struct {
+	// Value is the value that caused the panic.
+	Value any
+}
+
+// Error is a method of the error interface.
+//
+// Returns:
+//   - string: The error message of the panic error.
+func (e *ErrPanic) Error() string {
+	return fmt.Sprintf("panic: %v", e.Value)
+}
+
+// NewErrPanic creates a new ErrPanic error.
+//
+// Parameters:
+//   - value: The value that caused the panic.
+//
+// Returns:
+//   - *ErrPanic: A pointer to the newly created ErrPanic.
+func NewErrPanic(value any) *ErrPanic {
+	return &ErrPanic{Value: value}
+}
+
+// ErrWhile represents an error that occurs while performing an operation.
+type ErrWhile struct {
+	// Operation is the operation that was being performed.
+	Operation string
+
+	// Reason is the reason for the error.
+	Reason error
+}
+
+// Error returns the error message: "error while <operation>: <reason>".
+//
+// Returns:
+//   - string: The error message.
+//
+// Behaviors:
+//   - If the reason is nil, the error message is "an error occurred while
+//     <operation>".
+func (e *ErrWhile) Error() string {
+	if e.Reason == nil {
+		return fmt.Sprintf("an error occurred while %s", e.Operation)
+	} else {
+		return fmt.Sprintf("error while %s: %s", e.Operation, e.Reason.Error())
+	}
+}
+
+// NewErrWhile creates a new ErrWhile error.
+//
+// Parameters:
+//   - operation: The operation that was being performed.
+//   - reason: The reason for the error.
+//
+// Returns:
+//   - *ErrWhile: A pointer to the newly created ErrWhile.
+func NewErrWhile(operation string, reason error) *ErrWhile {
+	return &ErrWhile{
+		Operation: operation,
+		Reason:    reason,
+	}
+}
+
+// Unwrap returns the reason for the error.
+//
+// Returns:
+//   - error: The reason for the error.
+func (e *ErrWhile) Unwrap() error {
+	return e.Reason
+}
+
+// ChangeReason changes the reason for the error.
+//
+// Parameters:
+//   - reason: The new reason for the error.
+func (e *ErrWhile) ChangeReason(reason error) {
+	e.Reason = reason
+}
+
+// ErrWhileAt represents an error that occurs while performing an operation at a specific index.
+type ErrWhileAt struct {
+	// Index is the index where the error occurred.
+	Index int
+
+	// Element is the element where the index is pointing to.
+	Element string
+
+	// Operation is the operation that was being performed.
+	Operation string
+
+	// Reason is the reason for the error.
+	Reason error
+}
+
+// Error returns the error message: "while <operation> <index> <element>: <reason>".
+//
+// Returns:
+//   - string: The error message.
+//
+// Behaviors:
+//   - If the reason is nil, the error message is "an error occurred while
+//     <operation> at index <index>".
+func (e *ErrWhileAt) Error() string {
+	var builder strings.Builder
+
+	if e.Reason == nil {
+		builder.WriteString("an error occurred ")
+	}
+
+	builder.WriteString("while ")
+	builder.WriteString(e.Operation)
+	builder.WriteRune(' ')
+	builder.WriteString(uc.GetOrdinalSuffix(e.Index))
+	builder.WriteRune(' ')
+	builder.WriteString(e.Element)
+
+	if e.Reason != nil {
+		builder.WriteString(": ")
+		builder.WriteString(e.Reason.Error())
+	}
+
+	return builder.String()
+}
+
+// NewErrWhileAt creates a new ErrWhileAt error.
+//
+// Parameters:
+//   - operation: The operation that was being performed.
+//   - index: The index where the error occurred.
+//   - elem: The element where the index is pointing to.
+//   - reason: The reason for the error.
+//
+// Returns:
+//   - *ErrWhileAt: A pointer to the newly created ErrWhileAt.
+func NewErrWhileAt(operation string, index int, elem string, reason error) *ErrWhileAt {
+	return &ErrWhileAt{
+		Index:     index,
+		Operation: operation,
+		Element:   elem,
+		Reason:    reason,
+	}
+}
+
+// Unwrap returns the reason for the error.
+//
+// Returns:
+//   - error: The reason for the error.
+func (e *ErrWhileAt) Unwrap() error {
+	return e.Reason
+}
+
+// ChangeReason changes the reason for the error.
+//
+// Parameters:
+//   - reason: The new reason for the error.
+func (e *ErrWhileAt) ChangeReason(reason error) {
+	e.Reason = reason
+}
+
 // ErrNoError represents an error when no error occurs.
 type ErrNoError struct {
 	// Err is the reason for the no error error.
@@ -650,5 +811,70 @@ func NewErrVariableError(variable string, reason error) *ErrVariableError {
 	return &ErrVariableError{
 		Variable: variable,
 		Reason:   reason,
+	}
+}
+
+type ErrPossibleError struct {
+	// Reason is the reason for the possible error.
+	Reason error
+
+	// Possible is the possible error.
+	Possible error
+}
+
+// Error returns the error message: "possible error: <possible>"
+// or "possible error: <possible>: <reason>" if the reason is provided.
+//
+// Returns:
+//   - string: The error message.
+func (e *ErrPossibleError) Error() string {
+	var reasonMsg string
+
+	if e.Reason == nil {
+		reasonMsg = "no error occurred"
+	} else {
+		reasonMsg = e.Reason.Error()
+	}
+
+	var builder strings.Builder
+
+	builder.WriteString(reasonMsg)
+	if e.Possible != nil {
+		builder.WriteString(". It is possible that ")
+		builder.WriteString(e.Possible.Error())
+	}
+
+	return builder.String()
+}
+
+// Unwrap returns the reason for the possible error.
+// It is used for error unwrapping.
+//
+// Returns:
+//   - error: The reason for the possible error.
+func (e *ErrPossibleError) Unwrap() error {
+	return e.Reason
+}
+
+// ChangeReason changes the reason for the possible error.
+//
+// Parameters:
+//   - reason: The new reason for the possible error.
+func (e *ErrPossibleError) ChangeReason(reason error) {
+	e.Reason = reason
+}
+
+// NewErrPossibleError creates a new ErrPossibleError error.
+//
+// Parameters:
+//   - reason: The reason for the possible error.
+//   - possible: The possible error.
+//
+// Returns:
+//   - *ErrPossibleError: A pointer to the new ErrPossibleError error.
+func NewErrPossibleError(reason error, possible error) *ErrPossibleError {
+	return &ErrPossibleError{
+		Reason:   reason,
+		Possible: possible,
 	}
 }

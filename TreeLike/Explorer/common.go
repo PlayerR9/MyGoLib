@@ -94,10 +94,9 @@ func filterInvalidBranches[O any](branches [][]*CurrentEval[O]) ([][]*CurrentEva
 
 	// Return the longest branch.
 	weights := hlp.ApplyWeightFunc(branches, HelperWeightFunc)
+	weights = hlp.FilterByPositiveWeight(weights)
 
-	pairs := hlp.FilterByPositiveWeight(weights)
-
-	elems := pairs[0].First
+	elems := weights[0].GetData().First
 
 	return [][]*CurrentEval[O]{elems}, len(elems)
 }

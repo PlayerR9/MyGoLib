@@ -5,10 +5,12 @@ package pkg
 import (
 	"fmt"
 
+	evalSlc "github.com/PlayerR9/MyGoLib/Evaluations/Slices"
 	fss "github.com/PlayerR9/MyGoLib/Formatting/FString"
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 	ue "github.com/PlayerR9/MyGoLib/Units/Errors"
 	us "github.com/PlayerR9/MyGoLib/Units/Slices"
+	uhlp "github.com/PlayerR9/MyGoLib/Utility/Helpers"
 )
 
 // FlagCallbackFunc is a function type that represents a callback
@@ -22,7 +24,7 @@ import (
 //   - map[string]any: A map of string keys to any values representing
 //     the parsed arguments.
 //   - error: An error if the flag fails.
-type FlagCallbackFunc func(argMap map[string]any) (map[string]any, error)
+type FlagCallbackFunc func(argMap map[string][]any) (map[string][]any, error)
 
 // NoFlagCallback is a default callback function for a console command flag
 // when no callback is provided.
@@ -35,7 +37,7 @@ type FlagCallbackFunc func(argMap map[string]any) (map[string]any, error)
 //   - map[string]any: A map of string keys to any values representing
 //     the parsed arguments.
 //   - error: nil
-func NoFlagCallback(argMap map[string]any) (map[string]any, error) {
+func NoFlagCallback(argMap map[string][]any) (map[string][]any, error) {
 	return argMap, nil
 }
 
@@ -44,9 +46,9 @@ type FlagInfo struct {
 	// name is the name of the flag.
 	name string
 
-	// args is a slice of Argument representing the arguments accepted by
+	// argList is a slice of Argument representing the arguments accepted by
 	// the flag. Order doesn't matter.
-	args []*ArgInfo
+	argList []*ArgInfo
 
 	// description is the documentation of the flag.
 	description []string
@@ -56,6 +58,15 @@ type FlagInfo struct {
 
 	// callback is the function that parses the flag arguments.
 	callback FlagCallbackFunc
+}
+
+// Evaluator implements the Evaluable interface.
+func (inf *FlagInfo) Evaluator() evalSlc.LeafEvaluater[string, *FlagParseResult, *ArgInfo, []*resultArg] {
+	return &flgEvaluator{
+		argList:      inf.argList,
+		startIndices: make([]int, 0),
+		args:         make([]string, 0),
+	}
 }
 
 // Equals checks if the flag is equal to another flag.
@@ -104,8 +115,8 @@ func (cfi *FlagInfo) FString(trav *fss.Traversor) error {
 	}
 
 	// Arguments:
-	values := make([]string, 0, len(cfi.args))
-	for _, arg := range cfi.args {
+	values := make([]string, 0, len(cfi.argList))
+	for _, arg := range cfi.argList {
 		values = append(values, arg.String())
 	}
 
@@ -144,7 +155,7 @@ func (cfi *FlagInfo) FString(trav *fss.Traversor) error {
 				fss.WithIncreasedIndent(),
 			),
 			trav,
-			&DescriptionPrinter{cfi.description},
+			NewDescriptionPrinter(cfi.description),
 		)
 		if err != nil {
 			return err
@@ -188,7 +199,7 @@ func NewFlagInfo(name string, doc []string, isRequired bool, fn FlagCallbackFunc
 	}
 
 	argInfs = us.FilterNilValues(argInfs)
-	newFlag.args = us.UniquefyEquals(argInfs, false)
+	newFlag.argList = us.UniquefyEquals(argInfs, false)
 
 	if fn != nil {
 		newFlag.callback = fn
@@ -215,38 +226,48 @@ func (inf *FlagInfo) IsRequired() bool {
 // Returns:
 //   - map[string]any: A map of the parsed arguments.
 //   - error: An error if the arguments are invalid.
-func (flag *FlagInfo) Parse(args []string) (map[string]any, error) {
-	if len(args) < len(flag.args) {
-		return nil, fmt.Errorf("missing argument %q", flag.args[len(args)].GetName())
+func (flag *FlagInfo) Parse(branches []*FlagParseResult, args []string) (map[string][]any, error) {
+	if len(branches) == 0 {
+		return nil, fmt.Errorf("no arguments provided")
 	}
 
-	parsedArgs := make(map[string]any) // Map to store the parsed arguments
+	solutions, ok := uhlp.EvaluateWeightHelpers(
+		branches,
+		func(b *FlagParseResult) (map[string][]any, error) {
+			result := b.GetResult()
 
-	for i, arg := range flag.args {
-		res, err := arg.Parse(args[i])
-		if err != nil {
-			return nil, ue.NewErrAt(i+1, "argument", err)
+			parsed, err := flag.callback(result)
+			if err != nil {
+				return nil, err
+			}
+
+			return parsed, nil
+		},
+		func(b *FlagParseResult) (float64, bool) {
+			result := b.GetResult()
+
+			return float64(len(result)), true
+		},
+		true,
+	)
+	if !ok {
+		return nil, ue.NewErrPossibleError(fmt.Errorf("no valid arguments"), solutions[0].GetData().Second)
+	}
+
+	actualSolutions := uhlp.ExtractResults(solutions)
+
+	for _, as := range actualSolutions {
+		parsed, err := flag.callback(as)
+		// FIX THIS as it would be better to keep multiple solutions
+		// for later filtering.
+		if err == nil {
+			return parsed, nil
 		}
-
-		parsedArgs[arg.GetName()] = res
 	}
 
-	parsed, err := flag.callback(parsedArgs)
-	if err != nil {
-		return nil, fmt.Errorf("invalid arguments: %w", err)
-	}
+	// FIXME: Make a better error message.
 
-	var reason error
-
-	if len(args) > len(flag.args) {
-		return nil, ue.NewErrIgnorable(
-			fmt.Errorf("argument %q is an extra argument", args[len(flag.args)]),
-		)
-	} else {
-		reason = nil
-	}
-
-	return parsed, reason
+	return nil, fmt.Errorf("no valid arguments")
 }
 
 // GetArguments returns the arguments of a FlagInfo.
@@ -258,7 +279,7 @@ func (flag *FlagInfo) Parse(args []string) (map[string]any, error) {
 //   - No nil values are returned.
 //   - Modifying the returned slice will affect the FlagInfo.
 func (inf *FlagInfo) GetArguments() []*ArgInfo {
-	return inf.args
+	return inf.argList
 }
 
 // GetName returns the name of a FlagInfo.

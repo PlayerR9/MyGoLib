@@ -3,8 +3,6 @@ package CmdLineParser
 import (
 	"strconv"
 	"testing"
-
-	ue "github.com/PlayerR9/MyGoLib/Units/Errors"
 )
 
 func TestParseCommandInfo(t *testing.T) {
@@ -12,47 +10,47 @@ func TestParseCommandInfo(t *testing.T) {
 		args []string = []string{"test", "--v", "5", "--a", "B"}
 	)
 
-	command := NewCmdBuilder().
-		SetCmd(
-			"test",
-			nil,
-			nil,
-			NewFlagBuilder().
-				SetFlag(
-					"--v",
-					false,
-					nil,
-					nil,
-					NewArgBuilder().
-						SetArg(
-							"max",
-							func(s string) (any, error) {
-								num, err := strconv.ParseInt(s, 10, 0)
-								if err != nil {
-									return nil, err
-								}
+	cmdline, err := NewCmdLineParser(
+		"test",
+		[]string{"Test command"},
+		NewCmdBuilder().
+			SetCmd(
+				"test",
+				nil,
+				nil,
+				NewFlagBuilder().
+					SetFlag(
+						"--v",
+						true,
+						nil,
+						nil,
+						NewArgBuilder().
+							SetArg(
+								"max",
+								func(args []string) ([]any, error) {
+									num, err := strconv.ParseInt(args[0], 10, 0)
+									if err != nil {
+										return nil, err
+									}
 
-								return int(num), nil
-							},
-						),
-				),
-		)
+									return []any{int(num)}, nil
+								},
+							),
+					),
+			),
+	)
+	if err != nil {
+		t.Fatalf("Expected no error, got %s instead", err.Error())
+	}
 
-	commands, err := command.Build()
+	parsed, err := cmdline.Parse(args)
 	if err != nil {
 		t.Fatalf("Expected no error, got %s", err.Error())
-	} else if len(commands) != 1 {
-		t.Fatalf("Expected 1 command, got %d", len(commands))
 	}
 
-	cmd := commands[0]
-
-	_, err = cmd.Parse(args)
-	if err != nil {
-		if !ue.As[*ue.ErrIgnorable](err) {
-			t.Fatalf("Expected no error, got %s", err.Error())
-		} else {
-			t.Fatalf("Ignorable error: %s", err.Error())
-		}
+	if parsed == nil {
+		t.Fatalf("Expected a parsed command, got nil instead")
 	}
+
+	t.Fatalf("Only testing the parsing of the command, no further checks implemented")
 }

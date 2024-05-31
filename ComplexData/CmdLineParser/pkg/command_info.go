@@ -4,7 +4,6 @@ package pkg
 
 import (
 	"errors"
-	"fmt"
 
 	ffs "github.com/PlayerR9/MyGoLib/Formatting/FString"
 	"golang.org/x/exp/slices"
@@ -13,6 +12,8 @@ import (
 	ue "github.com/PlayerR9/MyGoLib/Units/Errors"
 	us "github.com/PlayerR9/MyGoLib/Units/Slices"
 	hlp "github.com/PlayerR9/MyGoLib/Utility/Helpers"
+
+	evalSlc "github.com/PlayerR9/MyGoLib/Evaluations/Slices"
 )
 
 // CommandCallbackFunc is a function type that represents a callback
@@ -55,6 +56,18 @@ type CommandInfo struct {
 
 	// callback is the function to call when the command is executed.
 	callback CommandCallbackFunc
+}
+
+// Evaluator implements the Evaluable interface.
+func (inf *CommandInfo) Evaluator() evalSlc.LeafEvaluater[string, *resultBranch, int, map[string][]any] {
+	return &ciEvaluator{
+		flags:           inf.flags,
+		args:            make([]string, 0),
+		flagSeen:        nil,
+		pos:             0,
+		flag:            nil,
+		startingIndices: make([]int, 0),
+	}
 }
 
 // Equals checks if the command is equal to another command.
@@ -279,59 +292,7 @@ func (inf *CommandInfo) GetFlag(name string) *FlagInfo {
 // Returns:
 //   - *ParsedCommand: A pointer to the parsed command.
 //   - error: An error, if any.
-func (inf *CommandInfo) Parse(args []string) (*ParsedCommand, error) {
-	var startingIndices []int
-	var flagSeen []*FlagInfo
-
-	for i := len(args) - 1; i >= 0; i-- {
-		arg := args[i]
-
-		flag := inf.GetFlag(arg)
-		if flag == nil {
-			continue
-		}
-
-		startingIndices = append(startingIndices, i)
-		flagSeen = append(flagSeen, flag)
-	}
-
-	// Check if all the required flags are seen.
-	for _, flag := range inf.flags {
-		if !flag.IsRequired() {
-			continue
-		}
-
-		index := us.FindEquals(flagSeen, flag)
-		if index == -1 {
-			return nil, fmt.Errorf("missing required flag %q", flag.GetName())
-		}
-	}
-
-	branches := []*resultBranch{newResultBranch()}
-	pos := len(args)
-
-	for i, startIndex := range startingIndices {
-		flag := flagSeen[i]
-
-		newArgs := args[startIndex+1 : pos] // +1 to skip the flag name itself
-
-		result, err := flag.Parse(newArgs)
-		if err == nil {
-			pos = startIndex
-		} else if ue.As[*ue.ErrIgnorable](err) {
-			err = err.(*ue.ErrIgnorable).Err
-		}
-
-		var newBranches []*resultBranch
-
-		for _, branch := range branches {
-			tmp := branch.evaluate(flag.GetName(), result, err)
-			newBranches = append(newBranches, tmp...)
-		}
-
-		branches = newBranches
-	}
-
+func (inf *CommandInfo) Parse(branches []*resultBranch, args []string) (*ParsedCommand, error) {
 	// TODO: Handle the case where pos is not 0.
 
 	// Sort the branches by size in descending order.
