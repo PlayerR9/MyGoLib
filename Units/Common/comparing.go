@@ -1,5 +1,7 @@
 package Common
 
+import "fmt"
+
 // Comparable is an interface that defines the behavior of a type that can be
 // compared with other values of the same type using the < and > operators.
 // The interface is implemented by the built-in types int, int8, int16, int32,
@@ -158,7 +160,7 @@ func CompareAny(a, b any) (int, bool) {
 			return 0, false
 		}
 
-		return a.Compare(otherB), true
+		return a.Compare(otherB)
 	default:
 		return 0, false
 	}
@@ -189,9 +191,8 @@ type Comparer interface {
 	//
 	// Returns:
 	//   - int: The result of the comparison.
-	Compare(other Comparer) int
-
-	Objecter
+	//   - bool: True if the objects are comparable, false otherwise.
+	Compare(other Comparer) (int, bool)
 }
 
 // CompareOf compares two objects of the same type. If any of the objects implements
@@ -216,7 +217,7 @@ func CompareOf(a, b any) (int, bool) {
 			return 0, false
 		}
 
-		return a.Compare(val2), true
+		return a.Compare(val2)
 	default:
 		return CompareAny(a, b)
 	}
@@ -244,4 +245,34 @@ func IsComparable(value any) bool {
 	default:
 		return false
 	}
+}
+
+// ErrNotComparable is an error type that is returned when two values are not
+// comparable.
+type ErrNotComparable[A, B Comparer] struct {
+	// First is the first value that is not comparable.
+	First A
+
+	// Second is the second value that is not comparable.
+	Second B
+}
+
+// Error returns the error message: "values <First> and <Second> are not comparable".
+//
+// Returns:
+//   - string: The error message.
+func (e *ErrNotComparable[A, B]) Error() string {
+	return fmt.Sprintf("values %T and %T are not comparable", e.First, e.Second)
+}
+
+// NewErrNotComparable creates a new ErrNotComparable error with the provided values.
+//
+// Parameters:
+//   - first: The first value that is not comparable.
+//   - second: The second value that is not comparable.
+//
+// Returns:
+//   - *ErrNotComparable: A pointer to the new error.
+func NewErrNotComparable[A, B Comparer](first A, second B) *ErrNotComparable[A, B] {
+	return &ErrNotComparable[A, B]{First: first, Second: second}
 }

@@ -1,7 +1,6 @@
 package Graph
 
 import (
-	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 	uos "github.com/PlayerR9/MyGoLib/Utility/Sorting"
 )
 
@@ -22,12 +21,12 @@ func (g *Graph[T]) remapVertices(pos int) {
 	}
 }
 
-type Graph[T uc.Comparer] struct {
+type Graph[T VertexElementer] struct {
 	vertices *uos.Slice[*Vertex[T]]
 	edges    map[int]map[int]bool
 }
 
-func NewGraph[T uc.Comparer]() *Graph[T] {
+func NewGraph[T VertexElementer]() *Graph[T] {
 	return &Graph[T]{
 		vertices: uos.NewSlice[*Vertex[T]](nil),
 		edges:    make(map[int]map[int]bool),

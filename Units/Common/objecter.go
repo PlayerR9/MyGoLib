@@ -61,7 +61,12 @@ func EqualOf(a, b any) bool {
 			return false
 		}
 
-		return a.Compare(otherB) == 0
+		res, ok := a.Compare(otherB)
+		if !ok {
+			return false
+		}
+
+		return res == 0
 	case Objecter:
 		otherB, ok := b.(Objecter)
 		if !ok {

@@ -226,22 +226,23 @@ func (inf *FlagInfo) IsRequired() bool {
 // Returns:
 //   - map[string]any: A map of the parsed arguments.
 //   - error: An error if the arguments are invalid.
-func (flag *FlagInfo) Parse(branches []*FlagParseResult, args []string) (map[string][]any, error) {
+func (flag *FlagInfo) Parse(branches []*FlagParseResult, args []string) ([]*FlagParseResult, error) {
 	if len(branches) == 0 {
 		return nil, fmt.Errorf("no arguments provided")
 	}
 
 	solutions, ok := uhlp.EvaluateWeightHelpers(
 		branches,
-		func(b *FlagParseResult) (map[string][]any, error) {
-			result := b.GetResult()
-
-			parsed, err := flag.callback(result)
+		func(b *FlagParseResult) (*FlagParseResult, error) {
+			parsed, err := flag.callback(b.GetResult())
 			if err != nil {
 				return nil, err
 			}
 
-			return parsed, nil
+			return &FlagParseResult{
+				argMap:        parsed,
+				argumentsDone: b.GetArgumentsDone(),
+			}, nil
 		},
 		func(b *FlagParseResult) (float64, bool) {
 			result := b.GetResult()
@@ -256,18 +257,12 @@ func (flag *FlagInfo) Parse(branches []*FlagParseResult, args []string) (map[str
 
 	actualSolutions := uhlp.ExtractResults(solutions)
 
-	for _, as := range actualSolutions {
-		parsed, err := flag.callback(as)
-		// FIX THIS as it would be better to keep multiple solutions
-		// for later filtering.
-		if err == nil {
-			return parsed, nil
-		}
+	err := uc.StableSort(actualSolutions, false)
+	if err != nil {
+		return nil, err
 	}
 
-	// FIXME: Make a better error message.
-
-	return nil, fmt.Errorf("no valid arguments")
+	return actualSolutions, nil
 }
 
 // GetArguments returns the arguments of a FlagInfo.

@@ -8,7 +8,7 @@ type ParsedCommand struct {
 	name string
 
 	// args is the arguments passed to the command.
-	args map[string]any
+	args map[string]map[string][]any
 
 	// callback is the function to call when the command is used.
 	callback CommandCallbackFunc
@@ -19,18 +19,27 @@ type ParsedCommand struct {
 //
 // Parameters:
 //   - name: The name of the command.
-//   - args: A map of string keys to any values representing the arguments passed
-//     to the command.
+//   - args: The arguments passed to the command.
 //   - callbackFunc: The function to call when the command is used.
 //
 // Returns:
 //   - *ParsedCommand: A pointer to the new ParsedCommand.
-func newParsedCommand(name string, args map[string]any, callbackFunc CommandCallbackFunc) *ParsedCommand {
-	return &ParsedCommand{
+func newParsedCommand(name string, result map[string]*FlagParseResult, callbackFunc CommandCallbackFunc) *ParsedCommand {
+	pc := &ParsedCommand{
 		name:     name,
-		args:     args,
+		args:     make(map[string]map[string][]any),
 		callback: callbackFunc,
 	}
+
+	if result == nil {
+		return pc
+	}
+
+	for k, v := range result {
+		pc.args[k] = v.GetResult()
+	}
+
+	return pc
 }
 
 // GetName returns the name of the command.

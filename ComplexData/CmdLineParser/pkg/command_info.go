@@ -6,10 +6,10 @@ import (
 	"errors"
 
 	ffs "github.com/PlayerR9/MyGoLib/Formatting/FString"
-	"golang.org/x/exp/slices"
 
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 	ue "github.com/PlayerR9/MyGoLib/Units/Errors"
+	up "github.com/PlayerR9/MyGoLib/Units/Pair"
 	us "github.com/PlayerR9/MyGoLib/Units/Slices"
 	hlp "github.com/PlayerR9/MyGoLib/Utility/Helpers"
 
@@ -26,7 +26,7 @@ import (
 // Returns:
 //   - error: An error if the command fails.
 //   - any: The result of the command. (if any)
-type CommandCallbackFunc func(args map[string]any) (any, error)
+type CommandCallbackFunc func(args map[string]map[string][]any) (any, error)
 
 // NoCommandCallback is a default callback function for a console command
 // when no callback is provided.
@@ -38,7 +38,7 @@ type CommandCallbackFunc func(args map[string]any) (any, error)
 // Returns:
 //   - error: nil
 //   - any: nil
-func NoCommandCallback(args map[string]any) (any, error) {
+func NoCommandCallback(args map[string]map[string][]any) (any, error) {
 	return nil, nil
 }
 
@@ -59,14 +59,9 @@ type CommandInfo struct {
 }
 
 // Evaluator implements the Evaluable interface.
-func (inf *CommandInfo) Evaluator() evalSlc.LeafEvaluater[string, *resultBranch, int, map[string][]any] {
+func (inf *CommandInfo) Evaluator() evalSlc.LeafEvaluater[string, *resultBranch, int, []*FlagParseResult] {
 	return &ciEvaluator{
-		flags:           inf.flags,
-		args:            make([]string, 0),
-		flagSeen:        nil,
-		pos:             0,
-		flag:            nil,
-		startingIndices: make([]int, 0),
+		flags: inf.flags,
 	}
 }
 
@@ -292,15 +287,13 @@ func (inf *CommandInfo) GetFlag(name string) *FlagInfo {
 // Returns:
 //   - *ParsedCommand: A pointer to the parsed command.
 //   - error: An error, if any.
-func (inf *CommandInfo) Parse(branches []*resultBranch, args []string) (*ParsedCommand, error) {
+func (inf *CommandInfo) Parse(branches []*resultBranch, args []string) ([]*up.Pair[*ParsedCommand, error], error) {
 	// TODO: Handle the case where pos is not 0.
 
-	// Sort the branches by size in descending order.
-	slices.SortFunc(branches, func(b1, b2 *resultBranch) int {
-		return b2.size() - b1.size()
-	})
-
-	// Clear invalid branches.
+	err := uc.StableSort(branches, false)
+	if err != nil {
+		return nil, err
+	}
 
 	checkIfBranchHasRequiredFlags := func(branch *resultBranch) (*resultBranch, error) {
 		err := branch.errIfInvalidRequiredFlags(inf.flags)
@@ -312,11 +305,13 @@ func (inf *CommandInfo) Parse(branches []*resultBranch, args []string) (*ParsedC
 		return nil, solution[0].GetData().Second
 	} else if len(branches) == 0 {
 		// No valid arguments is also a valid solution. Albeit, it is questionable.
-		command := newParsedCommand(inf.name, make(map[string]any), inf.callback)
+		command := newParsedCommand(inf.name, nil, inf.callback)
 
-		return command, ue.NewErrIgnorable(
-			errors.New("no valid arguments were found"),
-		)
+		return []*up.Pair[*ParsedCommand, error]{
+			up.NewPair(command, error(ue.NewErrIgnorable(
+				errors.New("no valid arguments were found"),
+			))),
+		}, nil
 	}
 
 	branches = hlp.ExtractResults(solution)
@@ -324,33 +319,48 @@ func (inf *CommandInfo) Parse(branches []*resultBranch, args []string) (*ParsedC
 	solution, ok = hlp.EvaluateSimpleHelpers(branches, errIfAnyError)
 	if !ok {
 		// No valid arguments is also a valid solution. Albeit, it is questionable.
-		command := newParsedCommand(inf.name, make(map[string]any), inf.callback)
+		command := newParsedCommand(inf.name, nil, inf.callback)
 
-		return command, ue.NewErrIgnorable(solution[0].GetData().Second)
+		return []*up.Pair[*ParsedCommand, error]{
+			up.NewPair(command, error(ue.NewErrIgnorable(
+				errors.New("no valid arguments were found"),
+			))),
+		}, solution[0].GetData().Second
 	}
 
 	if len(branches) == 0 {
 		// No valid arguments is also a valid solution. Albeit, it is questionable.
-		command := newParsedCommand(inf.name, make(map[string]any), inf.callback)
+		command := newParsedCommand(inf.name, nil, inf.callback)
 
-		return command, ue.NewErrIgnorable(
-			errors.New("no valid arguments were found"),
-		)
+		return []*up.Pair[*ParsedCommand, error]{
+			up.NewPair(command, error(ue.NewErrIgnorable(
+				errors.New("no valid arguments were found"),
+			))),
+		}, nil
 	}
 
-	var reason error
+	var possibleCommands []*up.Pair[*ParsedCommand, error]
 
-	if len(branches) > 1 {
-		reason = ue.NewErrIgnorable(
-			errors.New("ambiguous command"),
-		)
-	} else {
-		reason = nil
+	for _, branch := range branches {
+		var reason error
+
+		result, err := branch.getResultMap()
+		if err != nil {
+			reason = err
+		} else if len(branch.argsDone) < len(args) {
+			reason = ue.NewErrIgnorable(
+				errors.New("extra arguments provided"),
+			)
+		} else {
+			reason = nil
+		}
+
+		command := newParsedCommand(inf.name, result, inf.callback)
+
+		possibleCommands = append(possibleCommands, up.NewPair(command, reason))
 	}
 
-	command := newParsedCommand(inf.name, branches[0].resultMap, inf.callback)
-
-	return command, reason
+	return possibleCommands, nil
 }
 
 // GetDescription returns the description of a CommandInfo.

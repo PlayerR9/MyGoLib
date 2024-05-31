@@ -9,8 +9,14 @@ import (
 	"golang.org/x/exp/slices"
 )
 
+// LessSetElementer is an interface that represents an element of a LessSet.
+type LessSetElementer interface {
+	uc.Comparer
+	uc.Equaler
+}
+
 // LessSet is a set that uses the Equals method to compare elements.
-type LessSet[T uc.Comparer] struct {
+type LessSet[T LessSetElementer] struct {
 	// elems is the slice of elements in the set.
 	elems []T
 }
@@ -334,7 +340,7 @@ func (s *LessSet[T]) Iterator() ui.Iterater[T] {
 //
 // Returns:
 //   - *LessSet: A new LessSet.
-func NewLessSet[T uc.Comparer](elems []T) *LessSet[T] {
+func NewLessSet[T LessSetElementer](elems []T) *LessSet[T] {
 	elems = us.UniquefyEquals(elems, true)
 	uc.Sort(elems)
 

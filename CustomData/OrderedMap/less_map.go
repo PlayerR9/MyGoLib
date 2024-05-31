@@ -12,8 +12,14 @@ import (
 	ue "github.com/PlayerR9/MyGoLib/Units/Errors"
 )
 
+// MapKeyer is an interface that represents a key of a map.
+type MapKeyer interface {
+	uc.Comparer
+	uc.Copier
+}
+
 // LessMap is a generic data structure that represents a sorted map.
-type LessMap[K uc.Comparer, V any] struct {
+type LessMap[K MapKeyer, V any] struct {
 	keys   []K
 	values []V
 }
@@ -43,7 +49,7 @@ func (s *LessMap[K, V]) Copy() uc.Copier {
 //
 // Returns:
 //   - *LessMap[K, V]: A pointer to the newly created sorted map.
-func NewLessMap[K uc.Comparer, V any]() *LessMap[K, V] {
+func NewLessMap[K MapKeyer, V any]() *LessMap[K, V] {
 	return &LessMap[K, V]{
 		keys:   make([]K, 0),
 		values: make([]V, 0),

@@ -33,7 +33,7 @@ func generateHelpCallback(cpnl *CmdLineParser) pkg.CommandCallbackFunc {
 		return ffs.Stringfy(doc), nil
 	}
 
-	return func(args map[string]any) (any, error) {
+	return func(args map[string]map[string][]any) (any, error) {
 		if len(args) == 0 {
 			doc, err := ffs.SprintFString(ffs.DefaultFormatter, cpnl)
 			if err != nil {

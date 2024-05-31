@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	evalSlc "github.com/PlayerR9/MyGoLib/Evaluations/Slices"
+	lls "github.com/PlayerR9/MyGoLib/ListLike/Stacker"
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 	ue "github.com/PlayerR9/MyGoLib/Units/Errors"
 	ui "github.com/PlayerR9/MyGoLib/Units/Iterator"
@@ -32,24 +33,115 @@ func (r *resultArg) Args() []string {
 }
 
 type resultBranch struct {
-	resultMap map[string]any // *FlagParseResult or error
+	// map[FLAG]map[ARG]parsed
+	resultMap map[string]*FlagParseResult
+
+	reason error
+
+	// argsDone is a list of arguments that have been parsed so far.
+	argsDone []string
+}
+
+func (rb *resultBranch) Compare(other uc.Comparer) (int, bool) {
+	if other == nil {
+		return 0, false
+	}
+
+	otherRB, ok := other.(*resultBranch)
+	if !ok {
+		return 0, false
+	}
+
+	diff := len(otherRB.resultMap) - len(rb.resultMap)
+
+	if diff != 0 {
+		return diff, true
+	}
+
+	var size1, size2 int
+
+	for _, v := range rb.resultMap {
+		size1 += v.size()
+	}
+
+	for _, v := range otherRB.resultMap {
+		size2 += v.size()
+	}
+
+	return size2 - size1, true
 }
 
 func (rb *resultBranch) Copy() uc.Copier {
-	resultMap := make(map[string]any)
+	argsDone := make([]string, len(rb.argsDone))
+	copy(argsDone, rb.argsDone)
+
+	resultMap := make(map[string]*FlagParseResult)
+
 	for k, v := range rb.resultMap {
-		resultMap[k] = v
+		values := v.Copy().(*FlagParseResult)
+
+		resultMap[k] = values
 	}
 
-	return &resultBranch{resultMap}
+	return &resultBranch{
+		resultMap: resultMap,
+		argsDone:  argsDone,
+		reason:    rb.reason,
+	}
 }
 
-func newResultBranch() *resultBranch {
-	return &resultBranch{make(map[string]any)}
+func newResultBranch(argMap map[string]*FlagParseResult, reason error, argsDone []string) *resultBranch {
+	rb := &resultBranch{
+		reason: reason,
+	}
+
+	if len(argsDone) > 0 {
+		rb.argsDone = argsDone
+	} else {
+		rb.argsDone = make([]string, 0)
+	}
+
+	if reason == nil && argMap != nil {
+		rb.resultMap = argMap
+	} else {
+		rb.resultMap = make(map[string]*FlagParseResult)
+	}
+
+	return rb
 }
 
-func (rb *resultBranch) size() int {
-	return len(rb.resultMap)
+func (rb *resultBranch) getResultMap() (map[string]*FlagParseResult, error) {
+	if rb.reason != nil {
+		return nil, rb.reason
+	} else {
+		return rb.resultMap, nil
+	}
+}
+
+func (rb *resultBranch) getArgumentsDone() []string {
+	return rb.argsDone
+}
+
+func (rb *resultBranch) changeReason(err error) {
+	if err != nil {
+		rb.reason = err
+		rb.resultMap = make(map[string]*FlagParseResult)
+	} else {
+		rb.reason = nil
+	}
+}
+
+func (rb *resultBranch) setResultMap(result map[string]*FlagParseResult) {
+	rb.resultMap = result
+}
+
+func (rb *resultBranch) hasFlag(flagName string) *FlagParseResult {
+	values, ok := rb.resultMap[flagName]
+	if !ok {
+		return nil
+	}
+
+	return values
 }
 
 func (rb *resultBranch) errIfInvalidRequiredFlags(flags []*FlagInfo) error {
@@ -58,40 +150,36 @@ func (rb *resultBranch) errIfInvalidRequiredFlags(flags []*FlagInfo) error {
 			continue
 		}
 
-		val, ok := rb.resultMap[flag.GetName()]
-		if !ok {
-			return fmt.Errorf("missing required flag %q", flag.GetName())
+		flagName := flag.GetName()
+
+		val := rb.hasFlag(flagName)
+		if val == nil {
+			return fmt.Errorf("missing required flag %q", flagName)
 		}
 
-		switch val := val.(type) {
-		case map[string][]any:
-			// Do nothing.
-		case error:
-			return fmt.Errorf("invalid required flag %q: %w", flag.GetName(), val)
-		default:
-			return fmt.Errorf("required flag %q has an unexpected type %T", flag.GetName(), val)
+		if rb.reason != nil {
+			return fmt.Errorf("invalid required flag %q: %w", flagName, rb.reason)
 		}
 	}
 
 	return nil
 }
 
-func errIfAnyError(rb *resultBranch) (*resultBranch, error) {
-	for arg, val := range rb.resultMap {
-		reason, ok := val.(error)
-		if ok {
-			return rb, fmt.Errorf("flag %q has an error: %w", arg, reason)
-		}
-	}
+func (rb *resultBranch) merge(key string, value *FlagParseResult) {
+	rb.resultMap[key] = value
 
-	return rb, nil
+	rb.argsDone = append(rb.argsDone, value.GetArgumentsDone()...)
+}
+
+func errIfAnyError(rb *resultBranch) (*resultBranch, error) {
+	return rb, rb.reason
 }
 
 type ciEvaluator struct {
 	flags           []*FlagInfo
 	args            []string
 	flagSeen        []*FlagInfo
-	pos             int
+	pos             lls.Stacker[int]
 	flag            *FlagInfo
 	startingIndices []int
 }
@@ -104,7 +192,7 @@ func (inf *ciEvaluator) Init(args []string) (*resultBranch, error) {
 	inf.startingIndices = make([]int, 0)
 	inf.args = args
 	inf.flagSeen = make([]*FlagInfo, 0)
-	inf.pos = len(args)
+	inf.pos = []int{len(args)}
 	inf.flag = nil
 
 	for i := len(args) - 1; i >= 0; i-- {
@@ -131,13 +219,13 @@ func (inf *ciEvaluator) Init(args []string) (*resultBranch, error) {
 		}
 	}
 
-	return newResultBranch(), nil
+	return newResultBranch(nil, nil, nil), nil
 }
 
-func (inf *ciEvaluator) Core(index int, lp int) (*up.Pair[map[string][]any, error], error) {
+func (inf *ciEvaluator) Core(index int, lp int) (*up.Pair[[]*FlagParseResult, error], error) {
 	inf.flag = inf.flagSeen[index]
 
-	newArgs := inf.args[lp+1 : inf.pos] // +1 to skip the flag name itself
+	newArgs := inf.args[lp+1 : pos] // +1 to skip the flag name itself
 
 	branches, err := evalSlc.Evaluate(inf.flag, newArgs)
 	if err != nil {
@@ -152,51 +240,55 @@ func (inf *ciEvaluator) Core(index int, lp int) (*up.Pair[map[string][]any, erro
 	}
 
 	return up.NewPair(result, err), nil
+
 }
 
-func (inf *ciEvaluator) Next(pair *up.Pair[map[string][]any, error], branch *resultBranch) ([]*resultBranch, error) {
+func (inf *ciEvaluator) Next(pair *up.Pair[[]*FlagParseResult, error], branch *resultBranch) ([]*resultBranch, error) {
+	var newBranches []*resultBranch
+
 	flagName := inf.flag.GetName()
 
-	prev, ok := branch.resultMap[flagName]
-	if !ok {
+	argumentsDone := branch.getArgumentsDone()
+	size := len(argumentsDone)
+	argumentsDone = append(argumentsDone, flagName)
+
+	if size == 0 {
+		var newBranch *resultBranch
+
 		// At the first evaluation, we have no previous result and so,
 		// we can just store the result as is.
 		if pair.Second != nil {
-			branch.resultMap[flagName] = pair.Second
+			newBranch = newResultBranch(nil, pair.Second, argumentsDone)
+
+			newBranches = append(newBranches, newBranch)
 		} else {
-			branch.resultMap[flagName] = pair.First
+			for _, result := range pair.First {
+				initialMap := map[string]*FlagParseResult{
+					flagName: result,
+				}
+
+				newBranch = newResultBranch(initialMap, nil, argumentsDone)
+
+				newBranches = append(newBranches, newBranch)
+			}
 		}
-
-		return []*resultBranch{branch}, nil
-	}
-
-	if pair.Second != nil {
-		_, ok := prev.(error)
-		if ok {
-			// Prioritize the latest error.
-			branch.resultMap[flagName] = pair.Second
-		}
-
-		return []*resultBranch{branch}, nil
 	} else {
-		switch prev := prev.(type) {
-		case error:
-			// Prioritize the latest result over the error.
-			branch.resultMap[flagName] = pair.First
+		for _, result := range pair.First {
+			branchCopy := branch.Copy().(*resultBranch)
 
-			return []*resultBranch{branch}, nil
-		case *FlagParseResult:
+			branchCopy.merge(flagName, result)
+
+			newBranches = append(newBranches, branchCopy)
+		}
+
+		if pair.Second == nil && branch.reason == nil {
 			// Possible conflict. Duplicate branch.
 
-			rbCopy := branch.Copy().(*resultBranch)
-
-			rbCopy.resultMap[flagName] = pair.First
-
-			return []*resultBranch{branch, rbCopy}, nil
-		default:
-			return nil, fmt.Errorf("unexpected type %T", prev)
+			newBranches = append(newBranches, branch)
 		}
 	}
+
+	return newBranches, nil
 }
 
 func (inf *ciEvaluator) getFlag(arg string) *FlagInfo {
@@ -211,44 +303,97 @@ func (inf *ciEvaluator) getFlag(arg string) *FlagInfo {
 
 // FlagParseResult represents the result of parsing a flag.
 type FlagParseResult struct {
-	// Parsed arguments.
-	Args map[string][]any
+	// argMap is a map of argument names to their values.
+	argMap map[string][]any
+
+	// argumentsDone is a list of arguments that have been parsed so far.
+	argumentsDone []string
+}
+
+// Compare implements the Comparer interface.
+func (fpr *FlagParseResult) Compare(other uc.Comparer) (int, bool) {
+	if other == nil {
+		return 0, false
+	}
+
+	otherFPR, ok := other.(*FlagParseResult)
+	if !ok {
+		return 0, false
+	}
+
+	diff := len(otherFPR.argMap) - len(fpr.argMap)
+
+	if diff != 0 {
+		return diff, true
+	}
+
+	var size1, size2 int
+
+	for _, v := range fpr.argMap {
+		size1 += len(v)
+	}
+
+	for _, v := range otherFPR.argMap {
+		size2 += len(v)
+	}
+
+	return size2 - size1, true
 }
 
 // Copier implements the Copier interface.
 func (fpr *FlagParseResult) Copy() uc.Copier {
-	args := make(map[string][]any)
-	for k, v := range fpr.Args {
-		args[k] = v
+	argMap := make(map[string][]any)
+	for k, v := range fpr.argMap {
+		argMap[k] = v
 	}
+	argsDone := make([]string, len(fpr.argumentsDone))
+	copy(argsDone, fpr.argumentsDone)
 
-	return &FlagParseResult{args}
+	return &FlagParseResult{
+		argMap:        argMap,
+		argumentsDone: argsDone,
+	}
 }
 
 // NewFlagParseResult creates a new FlagParseResult with the given
 // arguments, index, and ignorable boolean.
 //
 // Parameters:
-//   - args: The arguments to parse.
+//   - argMap: A map of argument names to their values.
+//   - argsDone: A list of arguments that have been parsed so far.
 //
 // Returns:
 //   - *FlagParseResult: A pointer to the new FlagParseResult.
-func NewFlagParseResult(args map[string][]any) *FlagParseResult {
+func NewFlagParseResult() *FlagParseResult {
 	return &FlagParseResult{
-		Args: args,
+		argMap:        make(map[string][]any),
+		argumentsDone: make([]string, 0),
 	}
 }
 
-// Insert inserts the given arguments into the FlagParseResult.
+func (fpr *FlagParseResult) hasFlag(argName string) bool {
+	_, ok := fpr.argMap[argName]
+	return ok
+}
+
+// insert inserts the given arguments into the FlagParseResult.
 //
 // Parameters:
 //   - argName: The name of the argument.
 //   - argValue: The value of the argument.
 //
-// Behaviors:
-//   - If the argument already exists, the value is overwritten.
-func (fpr *FlagParseResult) Insert(argName string, argValue []any) {
-	fpr.Args[argName] = argValue
+// Returns:
+//   - bool: true if the argument was inserted, false otherwise.
+func (fpr *FlagParseResult) insert(argName string, res *resultArg) bool {
+	_, ok := fpr.argMap[argName]
+	if ok {
+		return false
+	}
+
+	fpr.argMap[argName] = res.Parsed()
+	fpr.argumentsDone = append(fpr.argumentsDone, res.Args()...)
+
+	return true
 }
 
 // GetResult returns the parsed arguments.
@@ -256,7 +401,25 @@ func (fpr *FlagParseResult) Insert(argName string, argValue []any) {
 // Returns:
 //   - map[string][]any: The parsed arguments.
 func (fpr *FlagParseResult) GetResult() map[string][]any {
-	return fpr.Args
+	return fpr.argMap
+}
+
+// GetArgumentsDone returns the arguments that have been parsed so far.
+//
+// Returns:
+//   - []string: The arguments that have been parsed so far.
+func (fpr *FlagParseResult) GetArgumentsDone() []string {
+	return fpr.argumentsDone
+}
+
+func (fpr *FlagParseResult) size() int {
+	var size int
+
+	for _, v := range fpr.argMap {
+		size += len(v)
+	}
+
+	return size
 }
 
 type flgEvaluator struct {
@@ -274,7 +437,7 @@ func (inf *flgEvaluator) Init(args []string) (*FlagParseResult, error) {
 	inf.startIndices = make([]int, len(inf.argList))
 	inf.args = args
 
-	return NewFlagParseResult(make(map[string][]any)), nil
+	return NewFlagParseResult(), nil
 }
 
 func (inf *flgEvaluator) Core(index int, lp *ArgInfo) (*up.Pair[[]*resultArg, error], error) {
@@ -304,7 +467,10 @@ func (inf *flgEvaluator) Next(pair *up.Pair[[]*resultArg, error], branch *FlagPa
 	for _, result := range pair.First {
 		branchCopy := branch.Copy().(*FlagParseResult)
 
-		branchCopy.Insert(inf.currentArgName, result.Parsed())
+		ok := branchCopy.insert(inf.currentArgName, result)
+		if !ok {
+			return nil, fmt.Errorf("duplicate argument %q", inf.currentArgName)
+		}
 
 		newBranches = append(newBranches, branchCopy)
 	}

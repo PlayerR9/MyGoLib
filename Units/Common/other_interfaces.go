@@ -1,6 +1,9 @@
 package Common
 
-import "fmt"
+import (
+	"fmt"
+	"slices"
+)
 
 // Copier is an interface that provides a method to create a copy of an element.
 type Copier interface {
@@ -37,7 +40,8 @@ func Clean(elem any) {
 //   - elem: The element to search for.
 //
 // Returns:
-//   - int: The index of the element in the slice.
+//   - int: The index of the element in the slice. -1 if there is at least one non-
+//     comparable element.
 //   - bool: A flag indicating if the element was found.
 //
 // Behaviors:
@@ -55,7 +59,11 @@ func Find[T Comparer](S []T, elem T) (int, bool) {
 	for l <= r {
 		middle := (l + r) / 2
 
-		evaluation := S[middle].Compare(elem)
+		evaluation, ok := S[middle].Compare(elem)
+		if !ok {
+			return -1, false
+		}
+
 		if evaluation < 0 {
 			l = middle + 1
 		} else if evaluation > 0 {
@@ -66,6 +74,62 @@ func Find[T Comparer](S []T, elem T) (int, bool) {
 	}
 
 	return l, false
+}
+
+// StableSort is a function that sorts a slice of elements in ascending order while preserving
+// the order of equal elements.
+//
+// Parameters:
+//   - slice: The slice to sort.
+//   - isAsc: A flag indicating if the sort is in ascending order.
+//
+// Returns:
+//   - error: An error of type *ErrNotComparable if the elements are not comparable.
+//
+// Behaviors:
+//   - This function uses the Merge Sort algorithm to sort the slice.
+//   - The elements in the slice must implement the Comparer interface.
+func StableSort[T Comparer](S []T, isAsc bool) error {
+	var sortFunc func(a, b T) int
+	var err error
+
+	if isAsc {
+		sortFunc = func(a, b T) int {
+			if err != nil {
+				return -1
+			}
+
+			res, ok := a.Compare(b)
+			if !ok {
+				err = NewErrNotComparable(a, b)
+				return -1
+			}
+
+			return res
+		}
+	} else {
+		sortFunc = func(a, b T) int {
+			if err != nil {
+				return -1
+			}
+
+			res, ok := b.Compare(a)
+			if !ok {
+				err = NewErrNotComparable(b, a)
+				return -1
+			}
+
+			if res == 0 {
+				return 0
+			} else {
+				return -res
+			}
+		}
+	}
+
+	slices.SortStableFunc(S, sortFunc)
+
+	return err
 }
 
 // Sort is a function that sorts a slice of elements in ascending order.
@@ -91,14 +155,30 @@ func Sort[T Comparer](S []T) {
 //   - l: The left index of the slice.
 //   - r: The right index of the slice.
 //
+// Returns:
+//   - error: An error of type *ErrNotComparable if the elements are not comparable.
+//
 // Behaviors:
 //   - This function sorts the slice in ascending order.
-func sortQuick[T Comparer](S []T, l, r int) {
+func sortQuick[T Comparer](S []T, l, r int) error {
 	if l < r {
-		p := partition(S, l, r)
-		sortQuick(S, l, p-1)
-		sortQuick(S, p+1, r)
+		p, err := partition(S, l, r)
+		if err != nil {
+			return err
+		}
+
+		err = sortQuick(S, l, p-1)
+		if err != nil {
+			return err
+		}
+
+		err = sortQuick(S, p+1, r)
+		if err != nil {
+			return err
+		}
 	}
+
+	return nil
 }
 
 // partition is a helper function that partitions a slice of elements for the Quick Sort algorithm.
@@ -110,19 +190,25 @@ func sortQuick[T Comparer](S []T, l, r int) {
 //
 // Returns:
 //   - int: The index of the pivot element.
-func partition[T Comparer](S []T, l, r int) int {
+//   - error: An error of type *ErrNotComparable if the elements are not comparable.
+func partition[T Comparer](S []T, l, r int) (int, error) {
 	pivot := S[r]
 	i := l
 
 	for j := l; j < r; j++ {
-		if S[j].Compare(pivot) < 0 {
+		res, ok := S[j].Compare(pivot)
+		if !ok {
+			return 0, NewErrNotComparable(S[j], pivot)
+		}
+
+		if res < 0 {
 			S[i], S[j] = S[j], S[i]
 			i++
 		}
 	}
 
 	S[i], S[r] = S[r], S[i]
-	return i
+	return i, nil
 }
 
 // Runer is an interface that provides a method to get the runes of a string.

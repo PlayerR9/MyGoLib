@@ -3,6 +3,7 @@
 package CmdLineParser
 
 import (
+	"errors"
 	"fmt"
 	"slices"
 
@@ -10,6 +11,8 @@ import (
 	evalSlc "github.com/PlayerR9/MyGoLib/Evaluations/Slices"
 	ffs "github.com/PlayerR9/MyGoLib/Formatting/FString"
 	ue "github.com/PlayerR9/MyGoLib/Units/Errors"
+	up "github.com/PlayerR9/MyGoLib/Units/Pair"
+	us "github.com/PlayerR9/MyGoLib/Units/Slices"
 )
 
 const (
@@ -169,7 +172,7 @@ func NewCmdLineParser(execName string, description []string, commandBuilder *Cmd
 		commandList:    make([]*pkg.CommandInfo, 0),
 	}
 
-	f := func(args map[string]any) (any, error) {
+	f := func(args map[string]map[string][]any) (any, error) {
 		if len(args) == 0 {
 			doc, err := ffs.SprintFString(ffs.DefaultFormatter, cp)
 			if err != nil {
@@ -313,12 +316,24 @@ func (cns *CmdLineParser) Parse(args []string) (*pkg.ParsedCommand, error) {
 		return nil, err
 	}
 
-	pc, err := command.Parse(branches, args)
+	pcs, err := command.Parse(branches, args)
 	if err != nil {
 		return nil, err
 	}
 
-	return pc, nil
+	// Split betweem ignorable and non-ignorable errors
+	solutions, ok := us.SFSeparateEarly(pcs, func(pc *up.Pair[*pkg.ParsedCommand, error]) bool {
+		return !ue.As[*ue.ErrIgnorable](pc.Second)
+	})
+	if !ok {
+		return solutions[0].First, solutions[0].Second
+	} else if len(solutions) > 1 {
+		return solutions[0].First, ue.NewErrIgnorable(
+			errors.New("ambiguous command"),
+		)
+	} else {
+		return solutions[0].First, nil
+	}
 }
 
 // GetCommand returns the CommandInfo for the provided opcode.

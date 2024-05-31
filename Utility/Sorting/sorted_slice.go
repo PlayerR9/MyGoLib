@@ -153,18 +153,24 @@ func (s *Slice[T]) MergeUnique(other *Slice[T]) *Slice[T] {
 //
 // Returns:
 //   - int: index of the first duplicate element or -1 if there are no duplicates.
-func (s *Slice[T]) IndexOfDuplicate() int {
+//   - error: error of type *uc.ErrNotComparable if the elements are not comparable.
+func (s *Slice[T]) IndexOfDuplicate() (int, error) {
 	if len(s.elems) < 2 {
-		return -1
+		return -1, nil
 	}
 
 	for i := 0; i < len(s.elems)-1; i++ {
-		if s.elems[i].Compare(s.elems[i+1]) == 0 {
-			return i
+		res, ok := s.elems[i].Compare(s.elems[i+1])
+		if !ok {
+			return -1, uc.NewErrNotComparable(s.elems[i], s.elems[i+1])
+		}
+
+		if res == 0 {
+			return i, nil
 		}
 	}
 
-	return -1
+	return -1, nil
 }
 
 // computeLPSArray is a helper function that computes the Longest Prefix
@@ -180,14 +186,19 @@ func (s *Slice[T]) IndexOfDuplicate() int {
 //   - The lps array is used to store the length of the longest prefix
 //     that is also a suffix for each index in the subslice.
 //   - The first element of the lps array is always 0.
-func (s *Slice[T]) computeLPSArray(lps []int) {
+func (s *Slice[T]) computeLPSArray(lps []int) error {
 	length := 0
 	i := 1
 	lps[0] = 0 // lps[0] is always 0
 
 	// the loop calculates lps[i] for i = 1 to len(subS)-1
 	for i < len(s.elems) {
-		if s.elems[i].Compare(s.elems[length]) == 0 {
+		res, ok := s.elems[i].Compare(s.elems[length])
+		if !ok {
+			return uc.NewErrNotComparable(s.elems[i], s.elems[length])
+		}
+
+		if res == 0 {
 			length++
 			lps[i] = length
 			i++
@@ -200,6 +211,8 @@ func (s *Slice[T]) computeLPSArray(lps []int) {
 			}
 		}
 	}
+
+	return nil
 }
 
 // FindSubBytesFrom finds the first occurrence of a subslice in a byte
@@ -212,15 +225,16 @@ func (s *Slice[T]) computeLPSArray(lps []int) {
 //
 // Returns:
 //   - int: The index of the first occurrence of the subslice.
+//   - error: An error of type *uc.ErrNotComparable if the elements are not comparable.
 //
 // Behavior:
 //   - The function uses the Knuth-Morris-Pratt algorithm to find the subslice.
 //   - If S or subS is empty, the function returns -1.
 //   - If the subslice is not found, the function returns -1.
 //   - If at is negative, it is set to 0.
-func (s *Slice[T]) FindSubsliceFrom(other *Slice[T], at int) int {
+func (s *Slice[T]) FindSubsliceFrom(other *Slice[T], at int) (int, error) {
 	if other == nil || len(other.elems) == 0 || len(s.elems) == 0 || at+len(other.elems) > len(s.elems) {
-		return -1
+		return -1, nil
 	}
 
 	if at < 0 {
@@ -233,23 +247,35 @@ func (s *Slice[T]) FindSubsliceFrom(other *Slice[T], at int) int {
 	i := at
 	j := 0
 	for i < len(s.elems) {
-		if s.elems[i].Compare(other.elems[j]) == 0 {
+		res, ok := s.elems[i].Compare(other.elems[j])
+		if !ok {
+			return 0, uc.NewErrNotComparable(s.elems[i], other.elems[j])
+		}
+
+		if res == 0 {
 			i++
 			j++
 		}
 
 		if j == len(other.elems) {
-			return i - j
-		} else if i < len(s.elems) && s.elems[i].Compare(other.elems[j]) != 0 {
-			if j != 0 {
-				j = lps[j-1]
-			} else {
-				i = i + 1
+			return i - j, nil
+		} else if i < len(s.elems) {
+			res, ok := s.elems[i].Compare(other.elems[j])
+			if !ok {
+				return 0, uc.NewErrNotComparable(s.elems[i], other.elems[j])
+			}
+
+			if res != 0 {
+				if j != 0 {
+					j = lps[j-1]
+				} else {
+					i = i + 1
+				}
 			}
 		}
 	}
 
-	return -1
+	return -1, nil
 }
 
 // Difference returns the elements that are in S1 but not in S2.

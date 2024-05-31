@@ -4,16 +4,17 @@ import (
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 )
 
-type Vertex[T uc.Comparer] struct {
+type VertexElementer interface {
+	uc.Comparer
+	uc.Equaler
+	uc.Copier
+}
+
+type Vertex[T VertexElementer] struct {
 	value T
 
 	isInitial bool
 	isFinal   bool
-}
-
-// String implements Common.Objecter.
-func (v *Vertex[T]) String() string {
-	panic("unimplemented")
 }
 
 func (v *Vertex[T]) Equals(other uc.Equaler) bool {
@@ -31,14 +32,14 @@ func (v *Vertex[T]) Equals(other uc.Equaler) bool {
 		v.isFinal == otherV.isFinal
 }
 
-func (v *Vertex[T]) Compare(other uc.Comparer) int {
+func (v *Vertex[T]) Compare(other uc.Comparer) (int, bool) {
 	if other == nil {
-		return 1
+		return 0, false
 	}
 
 	otherV, ok := other.(*Vertex[T])
 	if !ok {
-		return 1
+		return 0, false
 	}
 
 	return v.value.Compare(otherV.value)
@@ -52,7 +53,7 @@ func (v *Vertex[T]) Copy() uc.Copier {
 	}
 }
 
-func NewVertex[T uc.Comparer](value T) *Vertex[T] {
+func NewVertex[T VertexElementer](value T) *Vertex[T] {
 	return &Vertex[T]{
 		value:     value,
 		isInitial: false,
