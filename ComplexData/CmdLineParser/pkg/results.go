@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	evalSlc "github.com/PlayerR9/MyGoLib/Evaluations/Slices"
-	lls "github.com/PlayerR9/MyGoLib/ListLike/Stacker"
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 	ue "github.com/PlayerR9/MyGoLib/Units/Errors"
 	ui "github.com/PlayerR9/MyGoLib/Units/Iterator"
@@ -179,7 +178,7 @@ type ciEvaluator struct {
 	flags           []*FlagInfo
 	args            []string
 	flagSeen        []*FlagInfo
-	pos             lls.Stacker[int]
+	pos             int
 	flag            *FlagInfo
 	startingIndices []int
 }
@@ -192,7 +191,7 @@ func (inf *ciEvaluator) Init(args []string) (*resultBranch, error) {
 	inf.startingIndices = make([]int, 0)
 	inf.args = args
 	inf.flagSeen = make([]*FlagInfo, 0)
-	inf.pos = []int{len(args)}
+	inf.pos = len(args)
 	inf.flag = nil
 
 	for i := len(args) - 1; i >= 0; i-- {
@@ -225,7 +224,7 @@ func (inf *ciEvaluator) Init(args []string) (*resultBranch, error) {
 func (inf *ciEvaluator) Core(index int, lp int) (*up.Pair[[]*FlagParseResult, error], error) {
 	inf.flag = inf.flagSeen[index]
 
-	newArgs := inf.args[lp+1 : pos] // +1 to skip the flag name itself
+	newArgs := inf.args[lp+1 : inf.pos] // +1 to skip the flag name itself
 
 	branches, err := evalSlc.Evaluate(inf.flag, newArgs)
 	if err != nil {
