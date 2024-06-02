@@ -44,10 +44,11 @@ type FStringer interface {
 	//
 	// Parameters:
 	//   - trav: The traversor to use for printing.
+	//   - opts: The options to use for printing.
 	//
 	// Returns:
 	//   - error: An error if there was a problem generating the string.
-	FString(trav *Traversor) error
+	FString(trav *Traversor, opts ...Option) error
 }
 
 // FStringFunc is a function that generates a formatted string representation of an object.

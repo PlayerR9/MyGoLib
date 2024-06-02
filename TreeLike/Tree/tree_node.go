@@ -6,7 +6,7 @@ import (
 	"github.com/PlayerR9/MyGoLib/ListLike/Stacker"
 	slext "github.com/PlayerR9/MyGoLib/Units/Slices"
 
-	fsp "github.com/PlayerR9/MyGoLib/Formatting/FString"
+	ffs "github.com/PlayerR9/MyGoLib/Formatting/FString"
 	intf "github.com/PlayerR9/MyGoLib/Units/Common"
 )
 
@@ -39,15 +39,15 @@ func (t *TreeNode[T]) String() string {
 //
 // Returns:
 //   - []string: A slice of strings that represent the node.
-func (t *TreeNode[T]) FString(trav *fsp.Traversor) error {
+func (t *TreeNode[T]) FString(trav *ffs.Traversor, opts ...ffs.Option) error {
 	err := trav.AddLine(intf.StringOf(t.Data))
 	if err != nil {
 		return err
 	}
 
-	err = fsp.ApplyFormMany(
+	err = ffs.ApplyFormMany(
 		trav.GetConfig(
-			fsp.WithIncreasedIndent(),
+			ffs.WithIncreasedIndent(),
 		),
 		trav,
 		t.children,

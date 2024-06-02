@@ -1,7 +1,7 @@
 package OrderedMap
 
 import (
-	fsp "github.com/PlayerR9/MyGoLib/Formatting/FString"
+	ffs "github.com/PlayerR9/MyGoLib/Formatting/FString"
 	ue "github.com/PlayerR9/MyGoLib/Units/Errors"
 	ui "github.com/PlayerR9/MyGoLib/Units/Iterator"
 	up "github.com/PlayerR9/MyGoLib/Units/Pair"
@@ -17,7 +17,7 @@ import (
 type ModifyValueFunc[V any] func(V) (V, error)
 
 // MapIterPrinter is a type that represents a printer for a map iterator.
-type MapIterPrinter[T fsp.FStringer] struct {
+type MapIterPrinter[T ffs.FStringer] struct {
 	// Name is the name of the second element in the key-value pair.
 	Name string
 
@@ -55,7 +55,7 @@ type MapIterPrinter[T fsp.FStringer] struct {
 //
 // Returns:
 //   - error: An error if the printing fails.
-func (mip *MapIterPrinter[T]) FString(trav *fsp.Traversor) error {
+func (mip *MapIterPrinter[T]) FString(trav *ffs.Traversor, opts ...ffs.Option) error {
 	if mip.Iter == nil {
 		return nil
 	}
@@ -71,9 +71,9 @@ func (mip *MapIterPrinter[T]) FString(trav *fsp.Traversor) error {
 			return err
 		}
 
-		err = fsp.ApplyForm(
+		err = ffs.ApplyForm(
 			trav.GetConfig(
-				fsp.WithIncreasedIndent(),
+				ffs.WithIncreasedIndent(),
 			),
 			trav,
 			entry.Second,
@@ -94,7 +94,7 @@ func (mip *MapIterPrinter[T]) FString(trav *fsp.Traversor) error {
 //
 // Returns:
 //   - *MapIterPrinter: A pointer to the newly created map iterator printer.
-func NewMapIterPrinter[T fsp.FStringer](name string, iter ui.Iterater[*up.Pair[string, T]]) *MapIterPrinter[T] {
+func NewMapIterPrinter[T ffs.FStringer](name string, iter ui.Iterater[*up.Pair[string, T]]) *MapIterPrinter[T] {
 	return &MapIterPrinter[T]{
 		Name: name,
 		Iter: iter,
@@ -102,7 +102,7 @@ func NewMapIterPrinter[T fsp.FStringer](name string, iter ui.Iterater[*up.Pair[s
 }
 
 // OrderedMapPrinter is a type that represents a printer for an ordered map.
-type OrderedMapPrinter[T fsp.FStringer] struct {
+type OrderedMapPrinter[T ffs.FStringer] struct {
 	// The name of the ordered map.
 	Name string
 
@@ -136,7 +136,7 @@ type OrderedMapPrinter[T fsp.FStringer] struct {
 //
 // Returns:
 //   - error: An error if the printing fails.
-func (p *OrderedMapPrinter[T]) FString(trav *fsp.Traversor) error {
+func (p *OrderedMapPrinter[T]) FString(trav *ffs.Traversor, opts ...ffs.Option) error {
 	if p.Map == nil {
 		return nil
 	}
@@ -163,9 +163,9 @@ func (p *OrderedMapPrinter[T]) FString(trav *fsp.Traversor) error {
 
 		mip := NewMapIterPrinter(p.ValueName, p.Map.Iterator())
 
-		err := fsp.ApplyForm(
+		err := ffs.ApplyForm(
 			trav.GetConfig(
-				fsp.WithIncreasedIndent(),
+				ffs.WithIncreasedIndent(),
 			),
 			trav,
 			mip,
@@ -188,7 +188,7 @@ func (p *OrderedMapPrinter[T]) FString(trav *fsp.Traversor) error {
 //
 // Returns:
 //   - *OrderedMapPrinter: A pointer to the newly created ordered map printer.
-func NewOrderedMapPrinter[T fsp.FStringer](name string, elem *OrderedMap[string, T], valueName string, ifEmpty string) *OrderedMapPrinter[T] {
+func NewOrderedMapPrinter[T ffs.FStringer](name string, elem *OrderedMap[string, T], valueName string, ifEmpty string) *OrderedMapPrinter[T] {
 	return &OrderedMapPrinter[T]{
 		Name:      name,
 		Map:       elem,

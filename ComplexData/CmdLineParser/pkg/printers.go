@@ -8,7 +8,7 @@ type DescriptionPrinter struct {
 	lines []string
 }
 
-func (dp *DescriptionPrinter) FString(trav *ffs.Traversor) error {
+func (dp *DescriptionPrinter) FString(trav *ffs.Traversor, opts ...ffs.Option) error {
 	if trav == nil {
 		return nil
 	}

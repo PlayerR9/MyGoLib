@@ -196,3 +196,11 @@ func (d *Debugger) Write(p []byte) (n int, err error) {
 
 	return len(p), nil
 }
+
+// GetDebugMode is a function that returns the debug mode.
+//
+// Returns:
+//   - bool: The debug mode.
+func (d *Debugger) GetDebugMode() bool {
+	return d.debugMode
+}

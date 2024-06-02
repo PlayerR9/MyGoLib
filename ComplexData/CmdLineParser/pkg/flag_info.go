@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	evalSlc "github.com/PlayerR9/MyGoLib/Evaluations/Slices"
-	fss "github.com/PlayerR9/MyGoLib/Formatting/FString"
+	ffs "github.com/PlayerR9/MyGoLib/Formatting/FString"
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 	ue "github.com/PlayerR9/MyGoLib/Units/Errors"
 	us "github.com/PlayerR9/MyGoLib/Units/Slices"
@@ -107,7 +107,7 @@ func (inf *FlagInfo) Equals(other uc.Equaler) bool {
 //		// <description>
 //
 //	Required: <Yes/No>
-func (cfi *FlagInfo) FString(trav *fss.Traversor) error {
+func (cfi *FlagInfo) FString(trav *ffs.Traversor, opts ...ffs.Option) error {
 	// Name:
 	err := trav.AddJoinedLine(" ", "Flag:", cfi.name)
 	if err != nil {
@@ -150,9 +150,9 @@ func (cfi *FlagInfo) FString(trav *fss.Traversor) error {
 	} else {
 		trav.AcceptLine()
 
-		err = fss.ApplyForm(
+		err = ffs.ApplyForm(
 			trav.GetConfig(
-				fss.WithIncreasedIndent(),
+				ffs.WithIncreasedIndent(),
 			),
 			trav,
 			NewDescriptionPrinter(cfi.description),

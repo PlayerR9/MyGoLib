@@ -8,6 +8,8 @@ import (
 	itf "github.com/PlayerR9/MyGoLib/Units/Iterator"
 
 	cdp "github.com/PlayerR9/MyGoLib/Units/Pair"
+
+	ffs "github.com/PlayerR9/MyGoLib/Formatting/FString"
 )
 
 // PageRange represents a pair of integers that represent the start and end
@@ -19,20 +21,65 @@ import (
 // page 5.
 type PageRange cdp.Pair[int, int]
 
+// FString returns the string representation of the PageRange using the given
+// traversor and options.
+//
+// Parameters:
+//   - trav: The traversor to use for printing.
+//   - ws: The whitespace to use between the elements. By default, it is a single space.
+//   - sep: The separator to use between the key and value. By default, it is a colon.
+//
+// Behaviors:
+//   - If sep is an empty string, it is set to a colon.
+//   - ws can be empty. The default value is a single space.
+//   - The default call for AString is: AString(trav, " ", "").
+//   - If trav is empty, the function does nothing.
+func (pr *PageRange) FString(trav *ffs.Traversor, opts ...ffs.Option) error {
+	if trav == nil {
+		return nil
+	}
+
+	settings := &settingsTable{
+		ws:  " ",
+		sep: ":",
+	}
+
+	for _, opt := range opts {
+		opt(settings)
+	}
+
+	var err error
+
+	if pr.First == pr.Second {
+		err = trav.AppendString(strconv.Itoa(pr.First))
+	} else {
+		err = trav.AppendJoinedString(settings.ws, strconv.Itoa(pr.First), settings.sep, strconv.Itoa(pr.Second))
+	}
+	if err != nil {
+		return err
+	}
+
+	trav.AcceptWord()
+
+	return nil
+}
+
 // String returns the string representation of the PageRange.
 //
 // Returns:
 //   - string: The string representation of the PageRange.
 func (pr *PageRange) String() string {
-	var builder strings.Builder
+	if pr.First == pr.Second {
+		return strconv.Itoa(pr.First)
+	} else {
+		var builder strings.Builder
 
-	builder.WriteRune('[')
-	builder.WriteString(strconv.Itoa(pr.First))
-	builder.WriteString(" : ")
-	builder.WriteString(strconv.Itoa(pr.Second))
-	builder.WriteRune(']')
+		builder.WriteString(strconv.Itoa(pr.First))
+		builder.WriteRune(':')
+		builder.WriteString(strconv.Itoa(pr.Second))
 
-	return builder.String()
+		return builder.String()
+	}
 }
 
 // Iterator returns an iterator that iterates over the pages in the interval.

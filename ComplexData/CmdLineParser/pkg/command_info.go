@@ -106,7 +106,7 @@ func (ci *CommandInfo) Equals(other uc.Equaler) bool {
 //		- <flag 2>:
 //	   	// <description>
 //		// ...
-func (cci *CommandInfo) FString(trav *ffs.Traversor) error {
+func (cci *CommandInfo) FString(trav *ffs.Traversor, opts ...ffs.Option) error {
 	if trav == nil {
 		return nil
 	}

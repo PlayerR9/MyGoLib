@@ -1,10 +1,11 @@
-package FileManager
+package ConfigManager
 
 import (
 	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 )
 
 // JSONEncoder is an interface for encoding and decoding JSON data.
@@ -21,18 +22,27 @@ type JSONEncoder interface {
 
 // JSONManager is a manager for saving and loading data to and from a JSON file.
 type JSONManager[T JSONEncoder] struct {
-	// Data is the data to save and load.
-	Data T
+	// data is the data to save and load.
+	data T
 
 	// loc is the location of the JSON file.
 	loc string
 
 	// dirPerm is the permissions of the directory.
 	dirPerm os.FileMode
+
+	// mu is a mutex for thread safety.
+	mu *sync.RWMutex
 }
 
-// Create implements the FileManager interface.
+// Create creates a new JSON file at the location of the JSONManager[T].
+//
+// Returns:
+//   - error: An error if one occurred while creating the file.
 func (m *JSONManager[T]) Create() error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	dir := filepath.Dir(m.loc)
 
 	err := os.MkdirAll(dir, m.dirPerm)
@@ -46,7 +56,7 @@ func (m *JSONManager[T]) Create() error {
 	}
 	defer file.Close()
 
-	data, err := json.MarshalIndent(m.Data.Empty(), "", "  ")
+	data, err := json.MarshalIndent(m.data.Empty(), "", "  ")
 	if err != nil {
 		return err
 	}
@@ -79,6 +89,9 @@ func NewJSONManager[T JSONEncoder](loc string, dirPerm os.FileMode) *JSONManager
 // Parameters:
 //   - path: The new path to the JSON file.
 func (m *JSONManager[T]) ChangePath(path string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	m.loc = path
 }
 
@@ -86,18 +99,21 @@ func (m *JSONManager[T]) ChangePath(path string) {
 //
 // Returns:
 //   - error: An error if there was an issue loading the data.
-func (m *JSONManager[T]) Load() error {
+func (m *JSONManager[T]) Load() (T, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	data, err := os.ReadFile(m.loc)
 	if err != nil {
-		return fmt.Errorf("could not read file: %w", err)
+		return *new(T), fmt.Errorf("could not read file: %w", err)
 	}
 
-	err = json.Unmarshal(data, m.Data)
+	err = json.Unmarshal(data, m.data)
 	if err != nil {
-		return fmt.Errorf("could not unmarshal data: %w", err)
+		return *new(T), fmt.Errorf("could not unmarshal data: %w", err)
 	}
 
-	return nil
+	return m.data, nil
 }
 
 // Save saves the data to the JSON file. It will overwrite the file if it already exists.
@@ -105,7 +121,10 @@ func (m *JSONManager[T]) Load() error {
 // Returns:
 //   - error: An error if there was an issue saving the data.
 func (m *JSONManager[T]) Save() error {
-	data, err := json.MarshalIndent(m.Data, "", "  ")
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	data, err := json.MarshalIndent(m.data, "", "  ")
 	if err != nil {
 		return fmt.Errorf("could not marshal data: %w", err)
 	}
@@ -123,6 +142,9 @@ func (m *JSONManager[T]) Save() error {
 // Returns:
 //   - string: The location of the file.
 func (m *JSONManager[T]) GetLocation() string {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
 	return m.loc
 }
 
@@ -131,6 +153,9 @@ func (m *JSONManager[T]) GetLocation() string {
 // Returns:
 //   - [2]os.FileMode: An array of os.FileMode representing the permissions of the directory and file.
 func (m *JSONManager[T]) GetPermissions() [2]os.FileMode {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
 	return [2]os.FileMode{m.dirPerm, 0644}
 }
 
@@ -140,6 +165,9 @@ func (m *JSONManager[T]) GetPermissions() [2]os.FileMode {
 //   - bool: A boolean indicating whether the file exists.
 //   - error: An error if one occurred while checking the file.
 func (m *JSONManager[T]) Exists() (bool, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
 	_, err := os.Stat(m.loc)
 	if err == nil {
 		return true, nil
@@ -157,5 +185,8 @@ func (m *JSONManager[T]) Exists() (bool, error) {
 // Returns:
 //   - error: An error if one occurred while deleting the file.
 func (m *JSONManager[T]) Delete() error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	return os.Remove(m.loc)
 }

@@ -2,15 +2,15 @@
 package PageInterval
 
 import (
-	"fmt"
 	"slices"
 	"sort"
+	"strconv"
+	"strings"
 
-	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
+	ffs "github.com/PlayerR9/MyGoLib/Formatting/FString"
+	ue "github.com/PlayerR9/MyGoLib/Units/Errors"
 	itf "github.com/PlayerR9/MyGoLib/Units/Iterator"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
-
-	fs "github.com/PlayerR9/MyGoLib/Formatting/Strings"
 )
 
 // PageInterval represents a collection of page intervals, where each
@@ -25,6 +25,66 @@ type PageInterval struct {
 	pageCount int
 }
 
+// FString is a method of the PageInterval type that returns the formatted
+// string representation of the PageInterval using the given traversor and
+// options.
+//
+// Parameters:
+//   - trav: The traversor to use for printing.
+//   - opts: The options to use for formatting the string.
+//
+// Returns:
+//   - error: An error if the traversor encounters an error while printing.
+//
+// Options:
+//   - WithWS: Sets the whitespace to use between the intervals. By default, it
+//     is a single space.
+//   - WithSep: Sets the separator to use between the start and end page numbers
+//     of an interval. By default, it is a colon. If the separator is an empty
+//     string, it is set to a colon instead.
+//
+// Behaviors:
+//   - If the traversor is empty, the function does nothing.
+func (pi *PageInterval) FString(trav *ffs.Traversor, opts ...ffs.Option) error {
+	if trav == nil {
+		return nil
+	}
+
+	settings := &settingsTable{
+		ws:  " ",
+		sep: ":",
+	}
+
+	for _, opt := range opts {
+		opt(settings)
+	}
+
+	var err error
+
+	for i, interval := range pi.intervals {
+		var str string
+
+		if interval.First == interval.Second {
+			str = strconv.Itoa(interval.First)
+		} else {
+			str = strings.Join([]string{
+				strconv.Itoa(interval.First),
+				settings.sep,
+				strconv.Itoa(interval.Second),
+			}, settings.ws)
+		}
+
+		err = trav.AppendString(str)
+		if err != nil {
+			return ue.NewErrAt(i+1, "interval", err)
+		}
+
+		trav.AcceptWord()
+	}
+
+	return nil
+}
+
 // String is a method of the PageInterval type that returns a string
 // representation of the PageInterval.
 // Each interval is represented as "start : end" separated by a comma.
@@ -32,7 +92,13 @@ type PageInterval struct {
 // Returns:
 //   - string: A formatted string representation of the PageInterval.
 func (pi *PageInterval) String() string {
-	return fmt.Sprintf("PageInterval[%s]", fs.StringsJoiner(pi.intervals, ", "))
+	values := make([]string, 0, len(pi.intervals))
+
+	for _, interval := range pi.intervals {
+		values = append(values, interval.String())
+	}
+
+	return strings.Join(values, ",")
 }
 
 // Iterator is a method of the PageInterval type that returns an iterator for
@@ -109,7 +175,7 @@ func (pi *PageInterval) HasPages() bool {
 //
 // Returns:
 //   - int: The first page number in the PageInterval.
-//   - error: An error of type *ers.ErrNoPagesInInterval if no pages have been set.
+//   - error: An error of type *ue.ErrNoPagesInInterval if no pages have been set.
 func (pi *PageInterval) GetFirstPage() (int, error) {
 	if pi.pageCount <= 0 {
 		return 0, NewErrNoPagesInInterval()
@@ -123,7 +189,7 @@ func (pi *PageInterval) GetFirstPage() (int, error) {
 //
 // Returns:
 //   - int: The last page number in the PageInterval.
-//   - error: An error of type *ers.ErrNoPagesInInterval if no pages have been set.
+//   - error: An error of type *ue.ErrNoPagesInInterval if no pages have been set.
 func (pi *PageInterval) GetLastPage() (int, error) {
 	if pi.pageCount <= 0 {
 		return 0, NewErrNoPagesInInterval()
@@ -139,7 +205,7 @@ func (pi *PageInterval) GetLastPage() (int, error) {
 //   - page: The page number to add to the PageInterval.
 //
 // Returns:
-//   - error: An error of type *ers.ErrInvalidParameter if the page number is less than 1.
+//   - error: An error of type *ue.ErrInvalidParameter if the page number is less than 1.
 //
 // Example:
 //
@@ -153,9 +219,9 @@ func (pi *PageInterval) GetLastPage() (int, error) {
 //	fmt.Println(pi.pageCount) // Output: 12
 func (pi *PageInterval) AddPage(page int) error {
 	if page < 1 {
-		return ers.NewErrInvalidParameter(
+		return ue.NewErrInvalidParameter(
 			"page",
-			ers.NewErrGT(0),
+			ue.NewErrGT(0),
 		)
 	}
 
@@ -174,12 +240,12 @@ func (pi *PageInterval) AddPage(page int) error {
 			insertPos--
 			pi.intervals[insertPos].Second, ok = gen.Max(pi.intervals[insertPos].Second, page)
 			if !ok {
-				panic(ers.NewErrUnexpectedError(ers.NewErrNotComparable(page)))
+				panic(ue.NewErrUnexpectedError(ue.NewErrNotComparable(page)))
 			}
 		} else if insertPos < len(pi.intervals) && pi.intervals[insertPos].First <= page+1 {
 			pi.intervals[insertPos].First, ok = gen.Min(pi.intervals[insertPos].First, page)
 			if !ok {
-				panic(ers.NewErrUnexpectedError(ers.NewErrNotComparable(page)))
+				panic(ue.NewErrUnexpectedError(ue.NewErrNotComparable(page)))
 			}
 		} else {
 			pi.intervals = append(pi.intervals[:insertPos],

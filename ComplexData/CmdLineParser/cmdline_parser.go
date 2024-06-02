@@ -59,7 +59,7 @@ type CmdLineParser struct {
 //		- <command 2>:
 //	   	// <description>
 //		// ...
-func (cns *CmdLineParser) FString(trav *ffs.Traversor) error {
+func (cns *CmdLineParser) FString(trav *ffs.Traversor, opts ...ffs.Option) error {
 	// Usage:
 	err := trav.AddJoinedLine(" ", "Usage:", cns.ExecutableName, "<command>", "[flags]")
 	if err != nil {
