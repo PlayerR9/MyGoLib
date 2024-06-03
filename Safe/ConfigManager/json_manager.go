@@ -79,9 +79,21 @@ func (m *JSONManager[T]) Create() error {
 //   - *JSONManager[T]: The new JSONManager.
 func NewJSONManager[T JSONEncoder](loc string, dirPerm os.FileMode) *JSONManager[T] {
 	return &JSONManager[T]{
+		data:    *new(T),
 		loc:     loc,
 		dirPerm: dirPerm,
 	}
+}
+
+// ChangeData changes the data of the JSONManager[T].
+//
+// Parameters:
+//   - data: The new data to save and load.
+func (m *JSONManager[T]) ChangeData(data T) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	m.data = data
 }
 
 // ChangePath changes the path of the JSON file.

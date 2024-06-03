@@ -210,10 +210,11 @@ func ApplyWeightFunc[O any](S []O, f WeightFunc[O]) []*WeightedElement[O] {
 	return trimmed
 }
 
-// MaxSuccessOrFail returns the results with the maximum weight.
+// SuccessOrFail returns the results with the maximum weight.
 //
 // Parameters:
 //   - batch: The slice of results.
+//   - useMax: True if the maximum weight should be used, false otherwise.
 //
 // Returns:
 //   - []*up.Pair[O, error]: The results with the maximum weight.
@@ -223,41 +224,30 @@ func ApplyWeightFunc[O any](S []O, f WeightFunc[O]) []*WeightedElement[O] {
 //   - If the slice is empty, the function returns a nil slice and true.
 //   - The result can either be the sucessful results or the original slice.
 //     Nonetheless, the maximum weight is always applied.
-func MaxSuccessOrFail[T Helperer[O], O any](batch []T) ([]T, bool) {
+func SuccessOrFail[T Helperer[O], O any](batch []T, useMax bool) ([]T, bool) {
 	// 1. Remove nil elements.
 	if len(batch) == 0 {
 		return nil, true
 	}
 
 	// 2. Either get successful results or return the original slice.
-	batch, ok := slext.SFSeparateEarly(batch, FilterIsNotSuccess[T, O])
+	success, fail := slext.SFSeparate(batch, FilterIsNotSuccess[T, O])
 
-	// 3. Get only the results with the maximum weight.
-	solution := FilterByPositiveWeight(batch)
+	var target, solution []T
 
-	return solution, ok
-}
-
-// MinSuccessOrFail returns the results with the minimum weight.
-//
-// Parameters:
-//   - batch: The slice of results.
-//
-// Returns:
-//   - []*up.Pair[O, error]: The results with the minimum weight.
-//   - bool: True if the slice was filtered, false otherwise.
-func MinSuccessOrFail[T Helperer[O], O any](batch []T) ([]T, bool) {
-	if len(batch) == 0 {
-		return nil, true
+	if len(success) == 0 {
+		target = fail
+	} else {
+		target = success
 	}
 
-	// 2. Either get successful results or return the original slice.
-	batch, ok := slext.SFSeparateEarly(batch, FilterIsNotSuccess[T, O])
+	if useMax {
+		solution = FilterByPositiveWeight(target)
+	} else {
+		solution = FilterByNegativeWeight(target)
+	}
 
-	// 3. Get only the results with the minimum weight.
-	solution := FilterByNegativeWeight(batch)
-
-	return solution, ok
+	return solution, len(success) > 0
 }
 
 // EvaluateSimpleHelpers is a function that evaluates a batch of helpers and returns

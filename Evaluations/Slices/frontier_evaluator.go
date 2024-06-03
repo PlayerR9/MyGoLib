@@ -117,7 +117,7 @@ func (fe *FrontierEvaluator[T]) GetResults() ([]T, error) {
 		return nil, nil
 	}
 
-	results, ok := hlp.MaxSuccessOrFail(fe.solutions)
+	results, ok := hlp.SuccessOrFail(fe.solutions, true)
 	if !ok {
 		// Determine the most likely error.
 		// As of now, we will just return the first error.
