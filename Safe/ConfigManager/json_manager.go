@@ -32,7 +32,7 @@ type JSONManager[T JSONEncoder] struct {
 	dirPerm os.FileMode
 
 	// mu is a mutex for thread safety.
-	mu *sync.RWMutex
+	mu sync.RWMutex
 }
 
 // Create creates a new JSON file at the location of the JSONManager[T].
@@ -126,6 +126,17 @@ func (m *JSONManager[T]) Load() (T, error) {
 	}
 
 	return m.data, nil
+}
+
+// GetData returns the data of the JSONManager[T].
+//
+// Returns:
+//   - T: The data of the JSONManager[T].
+func (m *JSONManager[T]) GetData() T {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	return m.data
 }
 
 // Save saves the data to the JSON file. It will overwrite the file if it already exists.
