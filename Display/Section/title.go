@@ -5,7 +5,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
+	ers "github.com/PlayerR9/MyGoLib/Units/errors"
 	sext "github.com/PlayerR9/MyGoLib/Utility/StringExt"
 )
 

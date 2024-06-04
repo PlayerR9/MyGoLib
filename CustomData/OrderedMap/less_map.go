@@ -7,9 +7,9 @@ import (
 
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 
-	ll "github.com/PlayerR9/MyGoLib/Units/Iterator"
+	ll "github.com/PlayerR9/MyGoLib/Units/Iterators"
 
-	ue "github.com/PlayerR9/MyGoLib/Units/Errors"
+	ue "github.com/PlayerR9/MyGoLib/Units/errors"
 )
 
 // MapKeyer is an interface that represents a key of a map.

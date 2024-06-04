@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	rws "github.com/PlayerR9/MyGoLib/Safe/RWSafe"
-	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
+	ers "github.com/PlayerR9/MyGoLib/Units/errors"
 
 	bf "github.com/PlayerR9/MyGoLib/Safe/Buffer"
 )

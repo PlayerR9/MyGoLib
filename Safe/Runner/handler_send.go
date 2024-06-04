@@ -3,7 +3,7 @@ package Runner
 import (
 	"sync"
 
-	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
+	ers "github.com/PlayerR9/MyGoLib/Units/errors"
 )
 
 // ExecuteMsgFunc is a function type that executes a message.

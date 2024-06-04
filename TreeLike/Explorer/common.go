@@ -1,7 +1,7 @@
 package TreeExplorer
 
 import (
-	slext "github.com/PlayerR9/MyGoLib/Units/Slices"
+	slext "github.com/PlayerR9/MyGoLib/Units/Slice"
 	hlp "github.com/PlayerR9/MyGoLib/Utility/Helpers"
 )
 

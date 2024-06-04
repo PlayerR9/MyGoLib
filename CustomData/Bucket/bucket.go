@@ -1,8 +1,8 @@
 package Bucket
 
 import (
-	ui "github.com/PlayerR9/MyGoLib/Units/Iterator"
-	us "github.com/PlayerR9/MyGoLib/Units/Slices"
+	ui "github.com/PlayerR9/MyGoLib/Units/Iterators"
+	us "github.com/PlayerR9/MyGoLib/Units/Slice"
 )
 
 // Bucket represents a bucket of elements.

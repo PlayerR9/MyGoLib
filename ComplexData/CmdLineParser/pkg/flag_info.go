@@ -8,8 +8,8 @@ import (
 	evalSlc "github.com/PlayerR9/MyGoLib/Evaluations/Slices"
 	ffs "github.com/PlayerR9/MyGoLib/Formatting/FString"
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
-	ue "github.com/PlayerR9/MyGoLib/Units/Errors"
-	us "github.com/PlayerR9/MyGoLib/Units/Slices"
+	us "github.com/PlayerR9/MyGoLib/Units/Slice"
+	ue "github.com/PlayerR9/MyGoLib/Units/errors"
 	uhlp "github.com/PlayerR9/MyGoLib/Utility/Helpers"
 )
 

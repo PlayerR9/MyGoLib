@@ -4,7 +4,7 @@ import (
 	"reflect"
 
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
-	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
+	ers "github.com/PlayerR9/MyGoLib/Units/errors"
 )
 
 // Min is a function that takes two parameters, a and b, of any type T

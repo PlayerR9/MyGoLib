@@ -1,5 +1,5 @@
 // Package errors provides a custom error type for out-of-bound errors.
-package Errors
+package errors
 
 import (
 	"fmt"

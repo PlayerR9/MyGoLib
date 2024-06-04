@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	fss "github.com/PlayerR9/MyGoLib/Display/Section"
-	ue "github.com/PlayerR9/MyGoLib/Units/Errors"
 	ut "github.com/PlayerR9/MyGoLib/Units/Tray"
+	ue "github.com/PlayerR9/MyGoLib/Units/errors"
 )
 
 // DocumentViewer is a type that represents a document.

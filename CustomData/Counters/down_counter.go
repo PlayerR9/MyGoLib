@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
-	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
+	ers "github.com/PlayerR9/MyGoLib/Units/errors"
 )
 
 // DownCounter represents a counter that decrements downwards until it

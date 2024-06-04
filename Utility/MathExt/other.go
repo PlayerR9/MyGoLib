@@ -3,7 +3,7 @@ package MathExt
 import (
 	"math"
 
-	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
+	ers "github.com/PlayerR9/MyGoLib/Units/errors"
 )
 
 // AVG calculates the average of a slice of float64 elements.

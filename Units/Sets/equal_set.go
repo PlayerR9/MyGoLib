@@ -1,11 +1,11 @@
-package Set
+package Sets
 
 import (
 	"strings"
 
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
-	ui "github.com/PlayerR9/MyGoLib/Units/Iterator"
-	us "github.com/PlayerR9/MyGoLib/Units/Slices"
+	ui "github.com/PlayerR9/MyGoLib/Units/Iterators"
+	us "github.com/PlayerR9/MyGoLib/Units/Slice"
 )
 
 // EqualSet is a set that uses the Equals method to compare elements.

@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	ffs "github.com/PlayerR9/MyGoLib/Formatting/FString"
-	ue "github.com/PlayerR9/MyGoLib/Units/Errors"
-	itf "github.com/PlayerR9/MyGoLib/Units/Iterator"
+	itf "github.com/PlayerR9/MyGoLib/Units/Iterators"
+	ue "github.com/PlayerR9/MyGoLib/Units/errors"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 

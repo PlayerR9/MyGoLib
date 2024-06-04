@@ -8,8 +8,8 @@ import (
 
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 
-	ue "github.com/PlayerR9/MyGoLib/Units/Errors"
-	ll "github.com/PlayerR9/MyGoLib/Units/Iterator"
+	ll "github.com/PlayerR9/MyGoLib/Units/Iterators"
+	ue "github.com/PlayerR9/MyGoLib/Units/errors"
 )
 
 // OrderedMap is a generic data structure that represents a sorted map.

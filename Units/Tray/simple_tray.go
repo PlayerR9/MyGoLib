@@ -1,7 +1,7 @@
 package Tray
 
 import (
-	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
+	ers "github.com/PlayerR9/MyGoLib/Units/errors"
 )
 
 // SimpleTray is a struct that represents a tape.

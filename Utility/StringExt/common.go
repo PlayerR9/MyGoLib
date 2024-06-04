@@ -11,7 +11,7 @@ import (
 
 	mext "github.com/PlayerR9/MyGoLib/Utility/MathExt"
 
-	ue "github.com/PlayerR9/MyGoLib/Units/Errors"
+	ue "github.com/PlayerR9/MyGoLib/Units/errors"
 	hlp "github.com/PlayerR9/MyGoLib/Utility/Helpers"
 
 	com "github.com/PlayerR9/MyGoLib/Units/Common"

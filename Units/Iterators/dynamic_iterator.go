@@ -3,7 +3,7 @@
 package Iterators
 
 import (
-	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
+	ers "github.com/PlayerR9/MyGoLib/Units/errors"
 )
 
 // DynamicIterator is a struct that allows iterating over a collection of iterators

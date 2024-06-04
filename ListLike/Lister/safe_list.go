@@ -6,8 +6,8 @@ import (
 	"sync"
 
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
-	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
-	itf "github.com/PlayerR9/MyGoLib/Units/Iterator"
+	itf "github.com/PlayerR9/MyGoLib/Units/Iterators"
+	ers "github.com/PlayerR9/MyGoLib/Units/errors"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 

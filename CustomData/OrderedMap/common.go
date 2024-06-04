@@ -2,9 +2,9 @@ package OrderedMap
 
 import (
 	ffs "github.com/PlayerR9/MyGoLib/Formatting/FString"
-	ue "github.com/PlayerR9/MyGoLib/Units/Errors"
-	ui "github.com/PlayerR9/MyGoLib/Units/Iterator"
+	ui "github.com/PlayerR9/MyGoLib/Units/Iterators"
 	up "github.com/PlayerR9/MyGoLib/Units/Pair"
+	ue "github.com/PlayerR9/MyGoLib/Units/errors"
 )
 
 // ModifyValueFunc is a function that modifies a value.

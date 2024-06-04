@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
-	ue "github.com/PlayerR9/MyGoLib/Units/Errors"
+	ue "github.com/PlayerR9/MyGoLib/Units/errors"
 	uthlp "github.com/PlayerR9/MyGoLib/Utility/Helpers"
 )
 

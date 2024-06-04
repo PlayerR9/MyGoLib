@@ -5,10 +5,10 @@ import (
 
 	evalSlc "github.com/PlayerR9/MyGoLib/Evaluations/Slices"
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
-	ue "github.com/PlayerR9/MyGoLib/Units/Errors"
-	ui "github.com/PlayerR9/MyGoLib/Units/Iterator"
+	ui "github.com/PlayerR9/MyGoLib/Units/Iterators"
 	up "github.com/PlayerR9/MyGoLib/Units/Pair"
-	us "github.com/PlayerR9/MyGoLib/Units/Slices"
+	us "github.com/PlayerR9/MyGoLib/Units/Slice"
+	ue "github.com/PlayerR9/MyGoLib/Units/errors"
 )
 
 type resultArg struct {

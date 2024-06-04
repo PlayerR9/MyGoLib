@@ -1,8 +1,8 @@
 package Table
 
 import (
-	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
-	ll "github.com/PlayerR9/MyGoLib/Units/Iterator"
+	ll "github.com/PlayerR9/MyGoLib/Units/Iterators"
+	ers "github.com/PlayerR9/MyGoLib/Units/errors"
 )
 
 // Table[T] represents a table of cells that can be drawn to the screen.

@@ -1,8 +1,8 @@
 package Stream
 
 import (
-	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
-	ll "github.com/PlayerR9/MyGoLib/Units/Iterator"
+	ll "github.com/PlayerR9/MyGoLib/Units/Iterators"
+	ers "github.com/PlayerR9/MyGoLib/Units/errors"
 )
 
 // Stream is a stream of items.

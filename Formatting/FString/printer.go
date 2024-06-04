@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
-	ue "github.com/PlayerR9/MyGoLib/Units/Errors"
+	ue "github.com/PlayerR9/MyGoLib/Units/errors"
 )
 
 // Printer is an interface that defines the behavior of a printer.

@@ -5,10 +5,10 @@ import (
 
 	tlt "github.com/PlayerR9/MyGoLib/TreeLike/Traversor"
 	tr "github.com/PlayerR9/MyGoLib/TreeLike/Tree"
-	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
+	ers "github.com/PlayerR9/MyGoLib/Units/errors"
 
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
-	slext "github.com/PlayerR9/MyGoLib/Units/Slices"
+	slext "github.com/PlayerR9/MyGoLib/Units/Slice"
 )
 
 // IsTextNodeSearch is a search criteria that matches text nodes.

@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	itf "github.com/PlayerR9/MyGoLib/Units/Iterator"
+	itf "github.com/PlayerR9/MyGoLib/Units/Iterators"
 
 	cdp "github.com/PlayerR9/MyGoLib/Units/Pair"
 

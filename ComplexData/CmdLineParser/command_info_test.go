@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"testing"
 
-	ue "github.com/PlayerR9/MyGoLib/Units/Errors"
+	ue "github.com/PlayerR9/MyGoLib/Units/errors"
 )
 
 func TestParseCommandInfo(t *testing.T) {

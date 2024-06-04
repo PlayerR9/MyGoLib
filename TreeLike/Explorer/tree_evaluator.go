@@ -3,7 +3,7 @@ package TreeExplorer
 import (
 	tr "github.com/PlayerR9/MyGoLib/TreeLike/Tree"
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
-	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
+	ers "github.com/PlayerR9/MyGoLib/Units/errors"
 )
 
 // TreeEvaluator is a tree evaluator that uses a grammar to tokenize a string.

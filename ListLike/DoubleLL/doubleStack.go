@@ -5,9 +5,9 @@ import (
 
 	"github.com/PlayerR9/MyGoLib/ListLike/Stacker"
 	itff "github.com/PlayerR9/MyGoLib/Units/Common"
-	itf "github.com/PlayerR9/MyGoLib/Units/Iterator"
+	itf "github.com/PlayerR9/MyGoLib/Units/Iterators"
 
-	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
+	ers "github.com/PlayerR9/MyGoLib/Units/errors"
 )
 
 // DoubleStack is a stack that can be accepted or refused.

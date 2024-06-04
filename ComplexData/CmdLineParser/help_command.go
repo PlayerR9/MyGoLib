@@ -6,7 +6,7 @@ import (
 
 	pkg "github.com/PlayerR9/MyGoLib/ComplexData/CmdLineParser/pkg"
 	ffs "github.com/PlayerR9/MyGoLib/Formatting/FString"
-	ue "github.com/PlayerR9/MyGoLib/Units/Errors"
+	ue "github.com/PlayerR9/MyGoLib/Units/errors"
 )
 
 func generateHelpDoc(opcode string) ([]string, error) {

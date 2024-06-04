@@ -5,7 +5,7 @@ import (
 	"unicode/utf8"
 
 	intf "github.com/PlayerR9/MyGoLib/Units/Common"
-	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
+	ers "github.com/PlayerR9/MyGoLib/Units/errors"
 )
 
 // TextSplit represents a split text with a maximum width and height.

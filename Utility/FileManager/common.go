@@ -2,7 +2,12 @@ package FileManager
 
 import (
 	"bufio"
+	"errors"
+	"fmt"
 	"os"
+	"path/filepath"
+
+	ue "github.com/PlayerR9/MyGoLib/Units/errors"
 )
 
 // FileExists checks if a file exists at the specified location.
@@ -18,25 +23,130 @@ func FileExists(loc string) (bool, error) {
 		return true, nil
 	}
 
-	if os.IsNotExist(err) {
+	if errors.Is(err, os.ErrNotExist) {
 		return false, nil
 	} else {
 		return false, err
 	}
 }
 
-// ReadFileByLines reads a file line by line and returns the lines.
-//
-// Parameters:
-//   - loc: The location of the file.
+// Create creates the file at the location.
 //
 // Returns:
-//   - []string: The lines of the file.
-//   - error: An error if one occurred while reading the file.
-func ReadFileByLines(loc string) ([]string, error) {
-	file, err := os.Open(loc)
+//   - error: An error if one occurred while creating the file.
+//
+// Behaviors:
+//   - If the file already exists, it closes the previous file and creates a new one.
+//   - Once the file is opened, it is kept open until the FileManager is closed.
+func Create(loc string, dirPerm, filePerm os.FileMode) (*os.File, error) {
+	dir := filepath.Dir(loc)
+
+	if dirPerm == 0 {
+		dirPerm = os.ModePerm
+	}
+
+	if filePerm == 0 {
+		filePerm = os.ModePerm
+	}
+
+	err := os.MkdirAll(dir, dirPerm)
 	if err != nil {
 		return nil, err
+	}
+
+	file, err := os.OpenFile(loc, os.O_CREATE|os.O_RDWR, filePerm)
+	if err != nil {
+		return nil, err
+	}
+
+	return file, nil
+}
+
+// ReadFile reads the content of a file from the provided path and returns
+// the content as a string.
+//
+// Parameters:
+//   - filePath: A string representing the path to the file to be read.
+//
+// Returns:
+//   - string: A string representing the content of the file.
+//   - error: An error of type *os.PathError if the file could not be opened
+//     or read.
+//
+// Behaviors:
+//   - The function reads the entire file into memory.
+//   - If an error occurs, the function returns the error and an empty string.
+func Read(loc string, create bool) (string, error) {
+	exists, err := FileExists(loc)
+	if err != nil {
+		return "", err
+	}
+
+	var file *os.File
+
+	if !exists {
+		if !create {
+			return "", os.ErrNotExist
+		}
+
+		file, err = Create(loc, 0, 0)
+		if err != nil {
+			return "", err
+		}
+	} else {
+		file, err = os.Open(loc)
+		if err != nil {
+			return "", err
+		}
+	}
+	defer file.Close()
+
+	info, err := file.Stat()
+	if err != nil {
+		return "", fmt.Errorf("could not get file information: %w", err)
+	}
+
+	fileSize := info.Size()
+	buffer := make([]byte, fileSize)
+
+	_, err = file.Read(buffer)
+	if err != nil {
+		return "", fmt.Errorf("could not read file: %w", err)
+	}
+
+	return string(buffer), nil
+}
+
+// Lines reads the file line by line and returns a slice of strings, where each
+// string represents a line from the file.
+//
+// Returns:
+//   - []string: A slice of strings where each string is a line from the file.
+//   - error: An error if one occurred while opening or scanning the file.
+//
+// Behaviors:
+//   - The function reads the file line by line. Each line does not include the
+//     newline character.
+//   - If an error occurs, the function returns the error and the lines read up
+//     to that point.
+func Lines(loc string, create bool) ([]string, error) {
+	exists, err := FileExists(loc)
+	if err != nil {
+		return nil, err
+	}
+
+	var file *os.File
+
+	if !exists {
+		file, err = Create(loc, 0, 0)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		file, err = os.Open(loc)
+		if err != nil {
+			return nil, err
+		}
 	}
 	defer file.Close()
 
@@ -48,4 +158,79 @@ func ReadFileByLines(loc string) ([]string, error) {
 	}
 
 	return lines, scanner.Err()
+}
+
+// PerLine reads the file line by line and applies a function to each line.
+//
+// Parameters:
+//   - loc: The location of the file.
+//   - create: A boolean indicating whether to create the file if it does not exist.
+//   - f: A function that processes a line of text and returns a value.
+//
+// Returns:
+//   - []T: A slice of values returned by the function for each line.
+//   - error: An error if one occurred while opening or scanning the file.
+//
+// Behaviors:
+//   - The function reads the file line by line and applies the function f to each line.
+//   - If an error occurs, the function returns the error and the values processed up to that point.
+func PerLine[T any](loc string, create bool, f func(string) (T, error)) ([]T, error) {
+	exists, err := FileExists(loc)
+	if err != nil {
+		return nil, err
+	}
+
+	var file *os.File
+
+	if !exists {
+		file, err = Create(loc, 0, 0)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		file, err = os.Open(loc)
+		if err != nil {
+			return nil, err
+		}
+	}
+	defer file.Close()
+
+	var lines []T
+	scanner := bufio.NewScanner(file)
+
+	for scanner.Scan() {
+		text := scanner.Text()
+
+		res, err := f(text)
+		if err != nil {
+			return nil, fmt.Errorf("could not process line: %w", err)
+		}
+
+		lines = append(lines, res)
+	}
+
+	return lines, scanner.Err()
+}
+
+// CheckPath checks if the path is a directory or file as expected.
+//
+// Parameters:
+//   - loc: A string representing the path to check.
+//   - isDir: A boolean indicating whether the path should be a directory.
+//
+// Returns:
+//   - bool: True if the path is as expected, false otherwise.
+//   - error: An error if the path is not as expected or if an error occurred
+//     while checking the path.
+func CheckPath(loc string, isDir bool) (bool, error) {
+	if loc == "" {
+		return false, ue.NewErrEmpty(loc)
+	}
+
+	stat, err := os.Stat(loc)
+	if err != nil {
+		return false, err
+	}
+
+	return isDir == stat.IsDir(), nil
 }

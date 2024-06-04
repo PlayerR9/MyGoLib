@@ -1,7 +1,7 @@
 package Bucket
 
 import (
-	slext "github.com/PlayerR9/MyGoLib/Units/Slices"
+	slext "github.com/PlayerR9/MyGoLib/Units/Slice"
 )
 
 // SortFunc is a function type that defines a comparison function for branches.

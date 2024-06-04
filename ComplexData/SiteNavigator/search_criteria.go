@@ -6,7 +6,7 @@ import (
 	"golang.org/x/net/html"
 
 	cdp "github.com/PlayerR9/MyGoLib/Units/Pair"
-	slext "github.com/PlayerR9/MyGoLib/Units/Slices"
+	slext "github.com/PlayerR9/MyGoLib/Units/Slice"
 )
 
 // SearchCriteria is a struct that encapsulates the parameters for searching

@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	intf "github.com/PlayerR9/MyGoLib/Units/Common"
-	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
+	ers "github.com/PlayerR9/MyGoLib/Units/errors"
 )
 
 // UpCounter represents a counter that increments upwards until it

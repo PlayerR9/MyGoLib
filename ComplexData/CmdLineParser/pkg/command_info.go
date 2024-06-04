@@ -8,9 +8,9 @@ import (
 	ffs "github.com/PlayerR9/MyGoLib/Formatting/FString"
 
 	uc "github.com/PlayerR9/MyGoLib/Units/Common"
-	ue "github.com/PlayerR9/MyGoLib/Units/Errors"
 	up "github.com/PlayerR9/MyGoLib/Units/Pair"
-	us "github.com/PlayerR9/MyGoLib/Units/Slices"
+	us "github.com/PlayerR9/MyGoLib/Units/Slice"
+	ue "github.com/PlayerR9/MyGoLib/Units/errors"
 	hlp "github.com/PlayerR9/MyGoLib/Utility/Helpers"
 
 	evalSlc "github.com/PlayerR9/MyGoLib/Evaluations/Slices"

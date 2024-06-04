@@ -1,6 +1,6 @@
 package Tree
 
-import slext "github.com/PlayerR9/MyGoLib/Units/Slices"
+import slext "github.com/PlayerR9/MyGoLib/Units/Slice"
 
 // recCleanup is a helper function that removes every node in the tree rooted at n.
 //

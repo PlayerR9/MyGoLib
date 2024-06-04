@@ -10,9 +10,9 @@ import (
 	"github.com/PlayerR9/MyGoLib/ComplexData/CmdLineParser/pkg"
 	evalSlc "github.com/PlayerR9/MyGoLib/Evaluations/Slices"
 	ffs "github.com/PlayerR9/MyGoLib/Formatting/FString"
-	ue "github.com/PlayerR9/MyGoLib/Units/Errors"
 	up "github.com/PlayerR9/MyGoLib/Units/Pair"
-	us "github.com/PlayerR9/MyGoLib/Units/Slices"
+	us "github.com/PlayerR9/MyGoLib/Units/Slice"
+	ue "github.com/PlayerR9/MyGoLib/Units/errors"
 )
 
 const (

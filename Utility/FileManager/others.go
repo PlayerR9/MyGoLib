@@ -39,14 +39,14 @@ func MediaDownloader(dest, url string, force bool) (string, error) {
 	fields := strings.Split(url, "/")
 	filePath := path.Join(dest, fields[len(fields)-1])
 
-	_, err := os.Stat(dest)
-	if err == nil {
-		if !force {
-			// Do nothing
-			return filePath, nil
-		}
-	} else if !os.IsNotExist(err) {
-		return "", fmt.Errorf("could not check if directory exists: %w", err)
+	exists, err := FileExists(filePath)
+	if err != nil {
+		return "", fmt.Errorf("could not check if file exists: %w", err)
+	}
+
+	if exists && !force {
+		// Do nothing
+		return filePath, nil
 	}
 
 	resp, err := http.Get(url)

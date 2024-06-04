@@ -6,7 +6,7 @@ import (
 	"github.com/PlayerR9/MyGoLib/ListLike/Queuer"
 
 	rws "github.com/PlayerR9/MyGoLib/Safe/RWSafe"
-	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
+	ers "github.com/PlayerR9/MyGoLib/Units/errors"
 )
 
 // Buffer is a thread-safe, generic data structure that allows multiple

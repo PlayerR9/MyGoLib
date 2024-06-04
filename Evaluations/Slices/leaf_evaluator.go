@@ -1,7 +1,7 @@
 package Slices
 
 import (
-	ui "github.com/PlayerR9/MyGoLib/Units/Iterator"
+	ui "github.com/PlayerR9/MyGoLib/Units/Iterators"
 	up "github.com/PlayerR9/MyGoLib/Units/Pair"
 )
 

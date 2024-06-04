@@ -2,7 +2,7 @@ package PageInterval
 
 import (
 	ffs "github.com/PlayerR9/MyGoLib/Formatting/FString"
-	itf "github.com/PlayerR9/MyGoLib/Units/Iterator"
+	itf "github.com/PlayerR9/MyGoLib/Units/Iterators"
 )
 
 var (

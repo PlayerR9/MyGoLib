@@ -4,7 +4,7 @@ import (
 	"slices"
 
 	"github.com/PlayerR9/MyGoLib/ListLike/Stacker"
-	slext "github.com/PlayerR9/MyGoLib/Units/Slices"
+	slext "github.com/PlayerR9/MyGoLib/Units/Slice"
 
 	ffs "github.com/PlayerR9/MyGoLib/Formatting/FString"
 	intf "github.com/PlayerR9/MyGoLib/Units/Common"

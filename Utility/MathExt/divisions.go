@@ -1,7 +1,7 @@
 package MathExt
 
 import (
-	ers "github.com/PlayerR9/MyGoLib/Units/Errors"
+	ers "github.com/PlayerR9/MyGoLib/Units/errors"
 )
 
 // PrimeFactorization is a function that performs prime factorization on an
