@@ -230,7 +230,6 @@ func SuccessOrFail[T Helperer[O], O any](batch []T, useMax bool) ([]T, bool) {
 		return nil, true
 	}
 
-	// 2. Either get successful results or return the original slice.
 	success, fail := slext.SFSeparate(batch, FilterIsNotSuccess[T, O])
 
 	var target, solution []T
@@ -268,32 +267,26 @@ func EvaluateSimpleHelpers[T any, O any](batch []T, f uc.EvalOneFunc[T, O]) ([]*
 		return nil, true
 	}
 
-	var allSolutions []*SimpleHelper[O]
+	solutions := make([]*SimpleHelper[O], 0, len(batch))
 
 	for _, h := range batch {
 		res, err := f(h)
 
 		helper := NewSimpleHelper(res, err)
-
-		allSolutions = append(allSolutions, helper)
+		solutions = append(solutions, helper)
 	}
 
-	top := 0
+	success, fail := slext.SFSeparate(solutions, FilterIsNotSuccess)
 
-	for i := 0; i < len(allSolutions); i++ {
-		h := allSolutions[i]
+	var result []*SimpleHelper[O]
 
-		if h.reason == nil {
-			allSolutions[top] = h
-			top++
-		}
-	}
-
-	if top != 0 {
-		return allSolutions[:top], true
+	if len(success) == 0 {
+		result = fail
 	} else {
-		return allSolutions, false
+		result = success
 	}
+
+	return result, len(success) > 0
 }
 
 // EvaluateWeightHelpers is a function that evaluates a batch of helpers and returns
@@ -303,7 +296,7 @@ func EvaluateSimpleHelpers[T any, O any](batch []T, f uc.EvalOneFunc[T, O]) ([]*
 //   - batch: The slice of helpers.
 //   - f: The evaluation function.
 //   - wf: The weight function.
-//   - isPositive: True if the weight is positive, false otherwise.
+//   - useMax: True if the maximum weight should be used, false otherwise.
 //
 // Returns:
 //   - []*WeightedHelper[O]: The results of the evaluation.
@@ -311,12 +304,12 @@ func EvaluateSimpleHelpers[T any, O any](batch []T, f uc.EvalOneFunc[T, O]) ([]*
 //
 // Behaviors:
 //   - This function returns either the successful results or the original slice.
-func EvaluateWeightHelpers[T any, O any](batch []T, f uc.EvalOneFunc[T, O], wf WeightFunc[T], isPositive bool) ([]*WeightedHelper[O], bool) {
+func EvaluateWeightHelpers[T any, O any](batch []T, f uc.EvalOneFunc[T, O], wf WeightFunc[T], useMax bool) ([]*WeightedHelper[O], bool) {
 	if len(batch) == 0 {
 		return nil, true
 	}
 
-	var allSolutions []*WeightedHelper[O]
+	solutions := make([]*WeightedHelper[O], 0, len(batch))
 
 	for _, h := range batch {
 		res, err := f(h)
@@ -327,30 +320,23 @@ func EvaluateWeightHelpers[T any, O any](batch []T, f uc.EvalOneFunc[T, O], wf W
 		}
 
 		h := NewWeightedHelper(res, err, weight)
-
-		allSolutions = append(allSolutions, h)
+		solutions = append(solutions, h)
 	}
 
-	top := 0
+	success, fail := slext.SFSeparate(solutions, FilterIsNotSuccess)
 
-	for i := 0; i < len(allSolutions); i++ {
-		h := allSolutions[i]
+	var target, result []*WeightedHelper[O]
 
-		if h.reason == nil {
-			allSolutions[top] = h
-			top++
-		}
-	}
-
-	if top != 0 {
-		allSolutions = allSolutions[:top]
-	}
-
-	if isPositive {
-		allSolutions = FilterByPositiveWeight(allSolutions)
+	if len(success) == 0 {
+		target = fail
 	} else {
-		allSolutions = FilterByNegativeWeight(allSolutions)
+		target = success
 	}
 
-	return allSolutions, top > 0
+	if useMax {
+		result = FilterByPositiveWeight(target)
+	} else {
+		result = FilterByNegativeWeight(target)
+	}
+	return result, len(success) > 0
 }
