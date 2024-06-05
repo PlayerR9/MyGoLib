@@ -50,7 +50,7 @@ func NewErrExhaustedIter() *ErrExhaustedIter {
 // Returns:
 //   - bool: True if the error is an *ErrExhaustedIter error, false otherwise.
 func IsExhaustedIter(err error) bool {
-	if err != nil {
+	if err == nil {
 		return false
 	}
 

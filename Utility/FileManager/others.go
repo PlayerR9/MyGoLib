@@ -35,6 +35,11 @@ import (
 //	}
 //	fmt.Println(file_path) // Output: /path/to/destination/file.mp3
 func MediaDownloader(dest, url string, force bool) (string, error) {
+	err := os.MkdirAll(dest, os.ModePerm)
+	if err != nil {
+		return "", fmt.Errorf("could not create directory: %w", err)
+	}
+
 	// Extract the name of the file from the URL
 	fields := strings.Split(url, "/")
 	filePath := path.Join(dest, fields[len(fields)-1])
@@ -177,14 +182,13 @@ func GroupFilesByExtension(dir string) error {
 	}
 
 	groupedFiles := make(map[string][]string)
-	for file, ext := range files {
+	for _, file := range files {
+		ext := filepath.Ext(file)
 		groupedFiles[ext] = append(groupedFiles[ext], file)
 	}
 
-	// Create a folder for each extension and then move the files
-	// to their respective folders
 	for ext, files := range groupedFiles {
-		folder := path.Join(dir, ext)
+		folder := filepath.Join(dir, ext)
 
 		err := os.MkdirAll(folder, os.ModePerm)
 		if err != nil {
@@ -192,8 +196,9 @@ func GroupFilesByExtension(dir string) error {
 		}
 
 		for _, file := range files {
-			newPath := path.Join(folder, path.Base(file))
-			err := os.Rename(file, newPath)
+			oldPath := filepath.Join(dir, file)
+			newPath := filepath.Join(folder, filepath.Base(file))
+			err := os.Rename(oldPath, newPath)
 			if err != nil {
 				return fmt.Errorf("could not move file: %w", err)
 			}
