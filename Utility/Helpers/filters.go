@@ -1,6 +1,6 @@
 package Helpers
 
-// FilterIsNotSuccess filters any helper that is not successful.
+// FilterIsSuccess filters any helper that is not successful.
 //
 // Parameters:
 //   - h: The helper to filter.
@@ -9,7 +9,7 @@ package Helpers
 //   - bool: True if the helper is successful, false otherwise.
 //
 // Behaviors:
-// 	- It assumes that the h is not nil.
-func FilterIsNotSuccess[T Helperer[O], O any](h T) bool {
-	return h.GetData().Second != nil
+//   - It assumes that the h is not nil.
+func FilterIsSuccess[T Helperer[O], O any](h T) bool {
+	return h.GetData().Second == nil
 }

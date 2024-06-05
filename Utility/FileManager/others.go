@@ -202,3 +202,25 @@ func GroupFilesByExtension(dir string) error {
 
 	return nil
 }
+
+// CountDepth counts the depth of a file path.
+//
+// Parameters:
+//   - loc: A string representing the path to the file.
+//
+// Returns:
+//   - int: The depth of the file path.
+func CountDepth(loc string) int {
+	var count int
+
+	for loc != "" {
+		var part string
+
+		loc, part = path.Split(loc)
+		if part != "" {
+			count++
+		}
+	}
+
+	return count
+}

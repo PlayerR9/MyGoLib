@@ -6,6 +6,7 @@ import (
 	"path"
 
 	ui "github.com/PlayerR9/MyGoLib/Units/Iterators"
+	ue "github.com/PlayerR9/MyGoLib/Units/errors"
 )
 
 // Item is a struct that represents a directory entry with its location.
@@ -34,8 +35,8 @@ func NewItem(loc string, de fs.DirEntry) Item {
 //
 // Returns:
 //   - string: The path to the directory.
-func (i *Item) Path() string {
-	return i.loc
+func (item *Item) Path() string {
+	return item.loc
 }
 
 // FullPath returns the full path to the directory entry including
@@ -43,8 +44,8 @@ func (i *Item) Path() string {
 //
 // Returns:
 //   - string: The full path to the directory entry.
-func (i *Item) FullPath() string {
-	return path.Join(i.loc, i.Name())
+func (item *Item) FullPath() string {
+	return path.Join(item.loc, item.Name())
 }
 
 // DEWalkerIter is an iterator that reads directories and all of its subdirectories
@@ -58,67 +59,94 @@ type DEWalkerIter struct {
 
 	// toSee is the slice of directory entries to be visited.
 	toSee []Item
+
+	// el is the error list.
+	el *ue.ErrOrSol[error]
 }
 
 // Size implements the Iterators.Iterater interface.
-func (i *DEWalkerIter) Size() int {
-	return len(i.toSee)
+func (iter *DEWalkerIter) Size() int {
+	return len(iter.toSee)
 }
 
 // Consume implements the Iterators.Iterater interface.
-func (i *DEWalkerIter) Consume() (ui.Iterater[Item], error) {
-	if len(i.toSee) == 0 {
+//
+// It ignores entries that would cause an error when reading them.
+// However, if all entries are invalid, only the furthest error is returned.
+func (iter *DEWalkerIter) Consume() (*ItemList, error) {
+	if len(iter.toSee) == 0 {
 		return nil, ui.NewErrExhaustedIter()
+	}
+
+	for len(iter.toSee) > 0 && iter.toSee[0].IsDir() {
+		currentPath := iter.toSee[0].FullPath()
+
+		subEntries, err := os.ReadDir(currentPath)
+		iter.toSee = iter.toSee[1:]
+
+		if err != nil {
+			iter.el.AddErr(err, CountDepth(currentPath))
+		} else {
+			var tmp []Item
+
+			for _, entry := range subEntries {
+				tmp = append(tmp, NewItem(currentPath, entry))
+			}
+
+			iter.toSee = append(tmp, iter.toSee...)
+		}
+	}
+
+	if len(iter.toSee) == 0 {
+		return nil, iter.el.GetErrors()[0]
 	}
 
 	var todo []Item
 
-	currentPath := i.toSee[0].FullPath()
+	firstDirIndex := -1
 
-	if i.toSee[0].IsDir() {
-		subEntries, err := os.ReadDir(currentPath)
-		if err != nil {
-			return nil, err
-		}
-
-		for _, entry := range subEntries {
-			item := NewItem(currentPath, entry)
-
-			todo = append(todo, item)
-		}
-
-		i.toSee = i.toSee[1:]
-	} else {
-		firstDirIndex := -1
-
-		for j := 1; j < len(i.toSee); j++ {
-			if i.toSee[j].IsDir() {
-				firstDirIndex = j
-				break
-			}
-		}
-
-		if firstDirIndex == -1 {
-			todo = i.toSee
-			i.toSee = i.toSee[:0]
-		} else {
-			todo = i.toSee[:firstDirIndex]
-			i.toSee = i.toSee[firstDirIndex:]
+	for j := 1; j < len(iter.toSee); j++ {
+		if iter.toSee[j].IsDir() {
+			firstDirIndex = j
+			break
 		}
 	}
 
-	return ui.NewSimpleIterator(todo), nil
+	if firstDirIndex == -1 {
+		todo = iter.toSee
+		iter.toSee = iter.toSee[:0]
+	} else {
+		todo = iter.toSee[:firstDirIndex]
+		iter.toSee = iter.toSee[firstDirIndex:]
+	}
+
+	return &ItemList{items: todo}, nil
 }
 
 // Restart implements the Iterators.Iterater interface.
-func (i *DEWalkerIter) Restart() {
+func (iter *DEWalkerIter) Restart() {
 	var toSee []Item
 
-	for _, item := range i.source {
-		toSee = append(toSee, NewItem(i.loc, item))
+	for _, item := range iter.source {
+		toSee = append(toSee, NewItem(iter.loc, item))
 	}
 
-	i.toSee = toSee
+	iter.toSee = toSee
+
+	var el ue.ErrOrSol[error]
+
+	iter.el = &el
+}
+
+// ItemList is a struct that represents a list of items.
+type ItemList struct {
+	// items is the slice of items.
+	items []Item
+}
+
+// Iterator implements the Iterators.Iterable interface.
+func (il *ItemList) Iterator() ui.Iterater[Item] {
+	return ui.NewSimpleIterator(il.items)
 }
 
 // NewDirEntryIterator creates a new directory entry iterator.
@@ -132,7 +160,7 @@ func (i *DEWalkerIter) Restart() {
 // Returns:
 //   - *Iter1: The new directory entry iterator.
 //   - error: An error if it fails to read the directory.
-func NewDirEntryIterator(loc string) (*DEWalkerIter, error) {
+func NewDEWalkerIter(loc string) (ui.Iterater[Item], error) {
 	entries, err := os.ReadDir(loc)
 	if err != nil {
 		return nil, err
@@ -144,9 +172,11 @@ func NewDirEntryIterator(loc string) (*DEWalkerIter, error) {
 		toSee = append(toSee, NewItem(loc, entry))
 	}
 
-	return &DEWalkerIter{
+	iter := ui.NewProceduralIterator(&DEWalkerIter{
 		loc:    loc,
 		source: entries,
 		toSee:  toSee,
-	}, nil
+	})
+
+	return iter, nil
 }

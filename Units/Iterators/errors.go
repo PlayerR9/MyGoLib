@@ -1,5 +1,7 @@
 package Iterators
 
+import "errors"
+
 // ErrNotInitialized is an error type that is returned when an iterator
 // is not initialized.
 type ErrNotInitialized struct{}
@@ -38,4 +40,21 @@ func (e *ErrExhaustedIter) Error() string {
 //   - *ErrExhaustedIter: A pointer to the new error.
 func NewErrExhaustedIter() *ErrExhaustedIter {
 	return &ErrExhaustedIter{}
+}
+
+// IsExhaustedIter checks if an error is an *ErrExhaustedIter error.
+//
+// Parameters:
+//   - err: The error to check.
+//
+// Returns:
+//   - bool: True if the error is an *ErrExhaustedIter error, false otherwise.
+func IsExhaustedIter(err error) bool {
+	if err != nil {
+		return false
+	}
+
+	var exhausted *ErrExhaustedIter
+
+	return errors.As(err, &exhausted)
 }

@@ -230,7 +230,7 @@ func SuccessOrFail[T Helperer[O], O any](batch []T, useMax bool) ([]T, bool) {
 		return nil, true
 	}
 
-	success, fail := slext.SFSeparate(batch, FilterIsNotSuccess[T, O])
+	success, fail := slext.SFSeparate(batch, FilterIsSuccess[T, O])
 
 	var target, solution []T
 
@@ -276,7 +276,7 @@ func EvaluateSimpleHelpers[T any, O any](batch []T, f uc.EvalOneFunc[T, O]) ([]*
 		solutions = append(solutions, helper)
 	}
 
-	success, fail := slext.SFSeparate(solutions, FilterIsNotSuccess)
+	success, fail := slext.SFSeparate(solutions, FilterIsSuccess)
 
 	var result []*SimpleHelper[O]
 
@@ -323,7 +323,7 @@ func EvaluateWeightHelpers[T any, O any](batch []T, f uc.EvalOneFunc[T, O], wf W
 		solutions = append(solutions, h)
 	}
 
-	success, fail := slext.SFSeparate(solutions, FilterIsNotSuccess)
+	success, fail := slext.SFSeparate(solutions, FilterIsSuccess)
 
 	var target, result []*WeightedHelper[O]
 
