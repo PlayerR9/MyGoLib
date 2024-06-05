@@ -83,6 +83,11 @@ func MediaDownloader(dest, url string, force bool) (string, error) {
 //   - map[string]string: A map where the keys are the file paths and the
 //     values are the file extensions.
 //   - error: An error if it fails to read the directory or any of its files.
+//
+// Behaviors:
+//   - The function does not search subdirectories, nor returns directories.
+//   - The file paths are relative to the directory path.
+//   - The keys contain the full path to the file (including the extension).
 func GetAllFileNamesInDirectory(directoryPath string) (map[string]string, error) {
 	fileExtensionMap := make(map[string]string)
 
@@ -155,4 +160,45 @@ func SplitPath(filePath string) []string {
 	slices.Reverse(parts)
 
 	return parts
+}
+
+// GroupFilesByExtension is a function that groups files in a directory by their
+// extension and moves them to a folder with the same name as the extension.
+//
+// Parameters:
+//   - dir: A string representing the path to the directory.
+//
+// Returns:
+//   - error: An error if it fails to read the directory, create folders, or move files.
+func GroupFilesByExtension(dir string) error {
+	files, err := GetAllFileNamesInDirectory(dir)
+	if err != nil {
+		return err
+	}
+
+	groupedFiles := make(map[string][]string)
+	for file, ext := range files {
+		groupedFiles[ext] = append(groupedFiles[ext], file)
+	}
+
+	// Create a folder for each extension and then move the files
+	// to their respective folders
+	for ext, files := range groupedFiles {
+		folder := path.Join(dir, ext)
+
+		err := os.MkdirAll(folder, os.ModePerm)
+		if err != nil {
+			return fmt.Errorf("could not create folder: %w", err)
+		}
+
+		for _, file := range files {
+			newPath := path.Join(folder, path.Base(file))
+			err := os.Rename(file, newPath)
+			if err != nil {
+				return fmt.Errorf("could not move file: %w", err)
+			}
+		}
+	}
+
+	return nil
 }
