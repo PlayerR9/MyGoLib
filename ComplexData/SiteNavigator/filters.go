@@ -5,6 +5,7 @@ import (
 )
 
 var (
+	// FilterNilFEFuncs is a predicate filter that filters out nil FilterErrFuncs.
 	FilterNilFEFuncs us.PredicateFilter[FilterErrFunc]
 )
 

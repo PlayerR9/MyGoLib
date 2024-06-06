@@ -5,6 +5,13 @@ import (
 	"slices"
 )
 
+// Enumer is an interface representing an enumeration.
+type Enumer interface {
+	~int
+
+	fmt.Stringer
+}
+
 // Copier is an interface that provides a method to create a copy of an element.
 type Copier interface {
 	// Copy creates a copy of the element.

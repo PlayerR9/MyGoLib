@@ -2,55 +2,123 @@ package RWSafe
 
 import (
 	"sync"
+
+	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 )
 
-// Locker is a struct that represents a locker.
-type Locker struct {
-	// cond is the condition of the locker.
-	cond bool
+// Locker is a thread-safe locker that allows multiple goroutines to wait for a condition.
+type Locker[T uc.Enumer] struct {
+	// preds is the map of predicates.
+	preds *SafeMap[T, bool]
 
-	// signal is the signal of the locker.
-	signal sync.Cond
+	// cond is the condition variable.
+	cond *sync.Cond
 }
 
-// NewLocker creates a new Locker with the given condition.
+// NewLocker creates a new Locker.
 //
 // Parameters:
-//   - cond: The condition of the locker.
+//   - keys: The keys to initialize the locker.
 //
 // Returns:
-//   - *Locker: A pointer to the new Locker.
-func NewLocker(cond bool) *Locker {
-	return &Locker{
-		cond:   cond,
-		signal: sync.Cond{L: new(sync.Mutex)},
+//   - *Locker[T]: A new Locker.
+func NewLocker[T uc.Enumer](keys ...T) *Locker[T] {
+	l := &Locker[T]{
+		preds: NewSafeMap[T, bool](),
+		cond:  sync.NewCond(&sync.Mutex{}),
+	}
+
+	for _, key := range keys {
+		l.preds.Set(key, false)
+	}
+
+	return l
+}
+
+// is checks if any of the predicates are true.
+//
+// Returns:
+//   - bool: A flag indicating if any of the predicates are true.
+func (l *Locker[T]) is() bool {
+	ok, err := l.preds.Scan(func(key T, value bool) (bool, error) {
+		return value, nil
+	})
+	if err != nil {
+		return false
+	}
+
+	return ok
+}
+
+// DoFunc is a function that executes a function while waiting for the condition to be false.
+//
+// Parameters:
+//   - sm: The SafeMap to use.
+//
+// Returns:
+//   - bool: A flag indicating whether the waiting should end or not.
+type DoFunc[T uc.Enumer] func(sm *SafeMap[T, bool]) bool
+
+// Do executes a function while waiting for the condition to be false.
+//
+// Parameters:
+//   - f: The function to execute.
+func (l *Locker[T]) Do(f DoFunc[T]) {
+	ok := false
+
+	for !ok {
+		l.cond.L.Lock()
+
+		for !l.is() {
+			l.cond.Wait()
+		}
+
+		ok = f(l.preds)
+
+		l.cond.L.Unlock()
 	}
 }
 
-// ModifyCond modifies the condition of the locker.
+// Broadcast broadcasts the condition to all waiting goroutines.
 //
 // Parameters:
-//   - cond: The new condition of the locker.
-func (l *Locker) ModifyCond(cond bool) {
-	l.signal.L.Lock()
-	defer l.signal.L.Unlock()
+//   - key: The key to broadcast.
+//   - value: The value to broadcast.
+func (l *Locker[T]) Broadcast(key T, value bool) {
+	l.cond.L.Lock()
+	defer l.cond.L.Unlock()
 
-	l.cond = cond
-	l.signal.Broadcast()
+	l.preds.Set(key, value)
+
+	l.cond.Broadcast()
 }
 
-// WaitForCond waits for the condition of the locker to be true.
+// Signal signals the condition to a single waiting goroutine.
 //
 // Parameters:
-//   - do: The function to execute when the condition is true.
-func (l *Locker) WaitForCond(do func(cond bool)) {
-	l.signal.L.Lock()
-	defer l.signal.L.Unlock()
+//   - key: The key to signal.
+//   - value: The value to signal.
+func (l *Locker[T]) Signal(key T, value bool) {
+	l.cond.L.Lock()
+	defer l.cond.L.Unlock()
 
-	for !l.cond {
-		l.signal.Wait()
+	l.preds.Set(key, value)
+
+	l.cond.Signal()
+}
+
+// Get returns the value of a predicate.
+//
+// Parameters:
+//   - key: The key to get the value.
+//
+// Returns:
+//   - bool: The value of the predicate or false if the key does not exist.
+func (l *Locker[T]) Get(key T) bool {
+	val, ok := l.preds.Get(key)
+	if !ok {
+		return false
 	}
 
-	// Make use of the condition variable.
-	do(l.cond)
+	return val
 }

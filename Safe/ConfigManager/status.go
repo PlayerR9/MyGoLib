@@ -3,15 +3,12 @@ package ConfigManager
 import (
 	"encoding/json"
 	"sync"
+
+	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 )
 
-// StatusKeyer is an interface that defines the key type for the Status type.
-type StatusKeyer interface {
-	~int
-}
-
 // Status is a type that represents the status of a set of keys.
-type Status[T StatusKeyer] struct {
+type Status[T uc.Enumer] struct {
 	// status is the status of the keys.
 	status map[T]bool
 
@@ -57,7 +54,7 @@ func (u *Status[T]) UnmarshalJSON(data []byte) error {
 //
 // Returns:
 //   - *Status: The new Status object.
-func NewStatus[T StatusKeyer](keys []T) *Status[T] {
+func NewStatus[T uc.Enumer](keys []T) *Status[T] {
 	status := make(map[T]bool, len(keys))
 	for _, key := range keys {
 		status[key] = false
