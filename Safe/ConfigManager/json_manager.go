@@ -120,6 +120,8 @@ func (m *JSONManager[T]) Load() (T, error) {
 		return *new(T), fmt.Errorf("could not read file: %w", err)
 	}
 
+	m.data = *new(T)
+
 	err = json.Unmarshal(data, m.data)
 	if err != nil {
 		return *new(T), fmt.Errorf("could not unmarshal data: %w", err)
