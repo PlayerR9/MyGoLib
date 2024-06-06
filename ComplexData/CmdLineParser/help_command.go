@@ -10,8 +10,9 @@ import (
 )
 
 func generateHelpDoc(opcode string) ([]string, error) {
-	doc, err := ffs.Sprintln(
+	doc, err := ffs.Sprintjln(
 		ffs.DefaultFormatter,
+		" ",
 		"Displays help information for the",
 		strconv.Quote(opcode),
 		"command.",
@@ -56,6 +57,7 @@ func generateHelpCallback(cpnl *CmdLineParser) pkg.CommandCallbackFunc {
 				}
 
 				pages = append(pages, page)
+				pages = append(pages, []string{}) // Add a blank line
 			}
 
 			return pages, nil
