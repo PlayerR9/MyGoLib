@@ -38,7 +38,7 @@ func NewLocker[T uc.Enumer](keys ...T) *Locker[T] {
 // is checks if any of the predicates are true.
 //
 // Returns:
-//   - bool: A flag indicating if any of the predicates are true.
+//   - bool: True if all predicates are true, false otherwise.
 func (l *Locker[T]) is() bool {
 	ok, err := l.preds.Scan(func(key T, value bool) (bool, error) {
 		return value, nil
@@ -63,13 +63,35 @@ type DoFunc[T uc.Enumer] func(sm *SafeMap[T, bool]) bool
 //
 // Parameters:
 //   - f: The function to execute.
-func (l *Locker[T]) Do(f DoFunc[T]) {
+//
+// Returns:
+//   - bool: A flag indicating the result of the function.
+func (l *Locker[T]) Do(f DoFunc[T]) bool {
+	l.cond.L.Lock()
+	defer l.cond.L.Unlock()
+
+	for l.is() {
+		l.cond.Wait()
+	}
+
+	ok := f(l.preds)
+
+	return ok
+}
+
+// DoUntill executes a function while waiting for the condition to be false.
+//
+// The function will be executed until the condition returned by the function is true.
+//
+// Parameters:
+//   - f: The function to execute.
+func (l *Locker[T]) DoUntill(f DoFunc[T]) {
 	ok := false
 
 	for !ok {
 		l.cond.L.Lock()
 
-		for !l.is() {
+		for l.is() {
 			l.cond.Wait()
 		}
 

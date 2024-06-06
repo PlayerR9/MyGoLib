@@ -7,7 +7,225 @@ import (
 
 	rws "github.com/PlayerR9/MyGoLib/Safe/RWSafe"
 	ers "github.com/PlayerR9/MyGoLib/Units/errors"
+
+	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 )
+
+// Locker is a thread-safe locker that allows multiple goroutines to wait for a condition.
+type Locker[T uc.Enumer] struct {
+	// preds is the map of predicates.
+	preds *rws.SafeMap[T, bool]
+
+	// obs is the map of observer predicates.
+	obs *rws.SafeMap[T, func() bool]
+
+	// cond is the condition variable.
+	cond *sync.Cond
+}
+
+// NewLocker creates a new Locker.
+//
+// Use Locker.Set for observer boolean predicates.
+//
+// Parameters:
+//   - keys: The keys to initialize the locker.
+//
+// Returns:
+//   - *Locker[T]: A new Locker.
+func NewLocker[T uc.Enumer](keys ...T) *Locker[T] {
+	l := &Locker[T]{
+		preds: rws.NewSafeMap[T, bool](),
+		obs:   rws.NewSafeMap[T, func() bool](),
+		cond:  sync.NewCond(&sync.Mutex{}),
+	}
+
+	for _, key := range keys {
+		l.preds.Set(key, true)
+	}
+
+	return l
+}
+
+// Set sets the value of a predicate.
+//
+// Parameters:
+//   - key: The key to set the value.
+//   - value: The value to set.
+func (l *Locker[T]) Set(key T, value func() bool) {
+	l.cond.L.Lock()
+	defer l.cond.L.Unlock()
+
+	l.obs.Set(key, value)
+}
+
+// is checks if any of the predicates are true.
+//
+// Returns:
+//   - map[T]bool: A map of the predicates and their values.
+//   - bool: True if all predicates are true, false otherwise.
+func (l *Locker[T]) is() (map[T]bool, bool) {
+	iter := l.preds.Iterator()
+
+	lockedMap := make(map[T]bool)
+
+	for {
+		val, err := iter.Consume()
+		if err != nil {
+			break
+		}
+
+		lockedMap[val.First] = val.Second
+	}
+
+	obsIter := l.obs.Iterator()
+
+	for {
+		val, err := obsIter.Consume()
+		if err != nil {
+			break
+		}
+
+		lockedMap[val.First] = val.Second()
+	}
+
+	for _, value := range lockedMap {
+		if value {
+			return lockedMap, false
+		}
+	}
+
+	return lockedMap, true
+}
+
+// DoFunc is a function that executes a function while waiting for the condition to be false.
+//
+// Parameters:
+//   - sm: The SafeMap to use.
+//
+// Returns:
+//   - bool: True if the function should exit, false otherwise.
+type DoFunc[T uc.Enumer] func(sm map[T]bool) bool
+
+// Do executes a function while waiting for at least one of the conditions to be false.
+//
+// Parameters:
+//   - f: The function to execute.
+//
+// Returns:
+//   - bool: True if the function should exit, false otherwise.
+func (l *Locker[T]) Do(f DoFunc[T]) bool {
+	l.cond.L.Lock()
+	defer l.cond.L.Unlock()
+
+	var m map[T]bool
+	var ok bool
+
+	for {
+		m, ok = l.is()
+		if !ok {
+			break
+		}
+
+		l.cond.Wait()
+	}
+
+	ok = f(m)
+
+	return ok
+}
+
+// DoUntill executes a function while waiting for the condition to be false.
+//
+// The function will be executed until the condition returned by the function is true.
+//
+// Parameters:
+//   - f: The function to execute.
+func (l *Locker[T]) DoUntill(f DoFunc[T]) {
+	shouldExit := false
+
+	var m map[T]bool
+	var ok bool
+
+	for !shouldExit {
+		l.cond.L.Lock()
+
+		for {
+			m, ok = l.is()
+			if !ok {
+				break
+			}
+
+			l.cond.Wait()
+		}
+
+		shouldExit = f(m)
+
+		l.cond.L.Unlock()
+	}
+}
+
+// Broadcast broadcasts the condition to all waiting goroutines.
+//
+// Parameters:
+//   - key: The key to broadcast.
+//   - value: The value to broadcast.
+func (l *Locker[T]) Broadcast(key T, value bool) {
+	l.cond.L.Lock()
+	defer l.cond.L.Unlock()
+
+	if value {
+		l.preds.Set(key, func() bool { return true })
+	} else {
+		l.preds.Set(key, func() bool { return false })
+	}
+
+	l.cond.Broadcast()
+}
+
+// Signal signals the condition to a single waiting goroutine.
+//
+// Parameters:
+//   - key: The key to signal.
+//   - value: The value to signal.
+func (l *Locker[T]) Signal(key T, value bool) {
+	l.cond.L.Lock()
+	defer l.cond.L.Unlock()
+
+	if value {
+		l.preds.Set(key, func() bool { return true })
+	} else {
+		l.preds.Set(key, func() bool { return false })
+	}
+
+	l.cond.Signal()
+}
+
+// Get returns the value of a predicate.
+//
+// Parameters:
+//   - key: The key to get the value.
+//
+// Returns:
+//   - bool: The value of the predicate or false if the key does not exist.
+func (l *Locker[T]) Get(key T) bool {
+	val, ok := l.preds.Get(key)
+	if !ok {
+		return false
+	}
+
+	return val()
+}
+
+type BufferCondition int
+
+const (
+	IsEmpty BufferCondition = iota
+	IsNotClosed
+)
+
+func (bc BufferCondition) String() string {
+	return [...]string{"IsEmpty", "IsNotClosed"}[bc]
+}
 
 // Buffer is a thread-safe, generic data structure that allows multiple
 // goroutines to produce and consume elements in a synchronized manner.
@@ -33,8 +251,7 @@ type Buffer[T any] struct {
 	// A condition variable to signal when the Buffer is not empty or closed.
 	isNotEmptyOrClosed *sync.Cond
 
-	// A boolean indicating whether the Buffer is closed.
-	isClosed *rws.RWSafe[bool]
+	ineoc *Locker[BufferCondition]
 }
 
 // NewBuffer creates a new Buffer instance.
@@ -71,9 +288,11 @@ func NewBuffer[T any](bufferSize int) (*Buffer[T], error) {
 		q:                  Queuer.NewSafeQueue[T](),
 		sendTo:             make(chan T, bufferSize),
 		receiveFrom:        make(chan T, bufferSize),
-		isClosed:           rws.NewRWSafe(false),
+		ineoc:              NewLocker(IsNotClosed),
 		isNotEmptyOrClosed: sync.NewCond(new(sync.Mutex)),
 	}
+
+	b.ineoc.Set(IsEmpty, func() bool { return b.q.IsEmpty() })
 
 	return b, nil
 }
@@ -123,11 +342,7 @@ func (b *Buffer[T]) listenForIncomingMessages() {
 		b.isNotEmptyOrClosed.Broadcast()
 	}
 
-	b.isNotEmptyOrClosed.L.Lock()
-	b.isClosed.Set(true)
-	b.isNotEmptyOrClosed.L.Unlock()
-
-	b.isNotEmptyOrClosed.Broadcast()
+	b.ineoc.Broadcast(IsNotClosed, false)
 }
 
 // sendMessagesFromBuffer is a method of the Buffer type that sends
@@ -189,7 +404,47 @@ func (b *Buffer[T]) Wait() {
 	b.wg.Wait()
 }
 
-// Close is a method of the Buffer type that closes the Buffer.
+// Close is a method of the Buffer type that closes the Buffer
+// and waits for all goroutines to finish executing.
 func (b *Buffer[T]) Close() {
 	close(b.sendTo)
+
+	b.wg.Wait()
+}
+
+// Send is a method of the Buffer type that sends a message to the send channel.
+//
+// Parameters:
+//   - msg: The message to send.
+//
+// Behaviors:
+//   - If the send channel is nil, the method will return immediately.
+func (b *Buffer[T]) Send(msg T) {
+	if b.sendTo == nil {
+		return
+	}
+
+	b.sendTo <- msg
+}
+
+// Receive is a method of the Buffer type that receives a message from the receive channel.
+//
+// Returns:
+//   - T: The message received from the receive channel.
+//   - bool: A boolean indicating if the message was received successfully.
+//
+// Behaviors:
+//   - If the receive channel is nil, the method will return a zero value and false.
+//   - This method will block until a message is received from the receive channel.
+func (b *Buffer[T]) Receive() (T, bool) {
+	if b.receiveFrom == nil {
+		return *new(T), false
+	}
+
+	msg, ok := <-b.receiveFrom
+	if !ok {
+		return msg, false
+	}
+
+	return msg, true
 }
