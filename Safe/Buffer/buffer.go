@@ -1,22 +1,21 @@
 package Buffer
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/PlayerR9/MyGoLib/ListLike/Queuer"
-
-	ers "github.com/PlayerR9/MyGoLib/Units/errors"
 )
 
 type BufferCondition int
 
 const (
 	IsEmpty BufferCondition = iota
-	IsNotClosed
+	IsRunning
 )
 
 func (bc BufferCondition) String() string {
-	return [...]string{"IsEmpty", "IsNotClosed"}[bc]
+	return [...]string{"IsEmpty", "IsRunning"}[bc]
 }
 
 // Buffer is a thread-safe, generic data structure that allows multiple
@@ -37,10 +36,7 @@ type Buffer[T any] struct {
 	// A WaitGroup to wait for all goroutines to finish.
 	wg sync.WaitGroup
 
-	// A Once to ensure that the close and run operations on the channels are done only once..
-	once sync.Once
-
-	ineoc *Locker[BufferCondition]
+	locker *Locker[BufferCondition]
 }
 
 // NewBuffer creates a new Buffer instance.
@@ -65,61 +61,56 @@ type Buffer[T any] struct {
 //
 // Of course, a Close method is also provided to manually close the Buffer but
 // it is not necessary to call it if the send-only channel is closed.
-func NewBuffer[T any](bufferSize int) (*Buffer[T], error) {
-	if bufferSize < 0 {
-		return nil, ers.NewErrInvalidParameter(
-			"bufferSize",
-			ers.NewErrGTE(0),
-		)
-	}
-
-	b := &Buffer[T]{
-		q:           Queuer.NewSafeQueue[T](),
-		sendTo:      make(chan T, bufferSize),
-		receiveFrom: make(chan T, bufferSize),
-		ineoc:       NewLocker(IsEmpty, IsNotClosed),
-	}
-
-	b.q.SetIsEmptyObserver(func(val bool) {
-		b.ineoc.Signal(IsEmpty, val)
-	})
-
-	b.ineoc.Signal(IsNotClosed, false)
-
-	return b, nil
+func NewBuffer[T any]() *Buffer[T] {
+	return &Buffer[T]{}
 }
 
 // Start is a method of the Buffer type that starts the Buffer by launching
 // the goroutines that listen for incoming messages and send messages from
 // the Buffer to the send channel.
 func (b *Buffer[T]) Start() {
-	b.once.Do(func() {
-		b.wg.Add(2)
+	if b.locker != nil {
+		return
+	}
 
-		b.ineoc.Signal(IsNotClosed, true)
+	b.locker = NewLocker[BufferCondition]()
+	b.locker.SetSubject(IsEmpty, true, true)
+	b.locker.SetSubject(IsRunning, true, true)
 
-		go b.listenForIncomingMessages()
-		go b.sendMessagesFromBuffer()
+	b.q = Queuer.NewSafeQueue[T]()
+	b.q.ObserveSize(func(val int) {
+		ok := b.locker.ChangeValue(IsEmpty, val == 0)
+		if !ok {
+			panic("unable to change value")
+		}
 	})
+
+	b.sendTo = make(chan T)
+	b.receiveFrom = make(chan T)
+
+	b.wg.Add(2)
+
+	go b.listenForIncomingMessages()
+	go b.sendMessagesFromBuffer()
 }
 
-// GetSendChannel returns the send-only channel of the Buffer.
+// GetSender returns the send-only channel of the Buffer.
 //
 // This method is safe for concurrent use by multiple goroutines.
 //
 // Returns:
 //   - Sender[T]: The send-only channel of the Buffer.
-func (b *Buffer[T]) GetSendChannel() Sender[T] {
+func (b *Buffer[T]) GetSender() Sender[T] {
 	return b
 }
 
-// GetReceiveChannel returns the receive-only channel of the Buffer.
+// GetReceiver returns the receive-only channel of the Buffer.
 //
 // This method is safe for concurrent use by multiple goroutines.
 //
 // Returns:
 //   - <-chan T: The receive-only channel of the Buffer.
-func (b *Buffer[T]) GetReceiveChannel() Receiver[T] {
+func (b *Buffer[T]) GetReceiver() Receiver[T] {
 	return b
 }
 
@@ -131,12 +122,13 @@ func (b *Buffer[T]) listenForIncomingMessages() {
 	defer b.wg.Done()
 
 	for msg := range b.sendTo {
-		b.q.Enqueue(msg)
+		err := b.q.Enqueue(msg)
+		if err != nil {
+			panic(fmt.Errorf("error enqueuing message: %T", msg))
+		}
 	}
 
-	b.ineoc.Signal(IsEmpty, b.q.IsEmpty())
-
-	b.ineoc.Signal(IsNotClosed, false)
+	b.locker.ChangeValue(IsRunning, false)
 }
 
 // sendMessagesFromBuffer is a method of the Buffer type that sends
@@ -146,34 +138,64 @@ func (b *Buffer[T]) listenForIncomingMessages() {
 func (b *Buffer[T]) sendMessagesFromBuffer() {
 	defer b.wg.Done()
 
-	for b.ineoc.Get(IsNotClosed) {
-		ok := b.ineoc.Do(func(sm map[BufferCondition]bool) bool {
-			b.ineoc.Signal(IsEmpty, b.q.IsEmpty())
+	for {
+		value, ok := b.locker.Get(IsRunning)
+		if !ok {
+			panic("unable to get whether the buffer is running or not")
+		}
 
-			if !sm[IsEmpty] {
-				msg, err := b.q.Dequeue()
-				if err == nil {
-					b.receiveFrom <- msg
-				}
+		if !value {
+			break
+		}
+
+		mapCopy := b.locker.Do()
+
+		for {
+			isEmpty, ok := b.sendSingleMessage()
+			if !ok || isEmpty {
+				break
 			}
+		}
 
-			return !sm[IsNotClosed]
-		})
-		if ok {
+		if !mapCopy[IsRunning] {
 			break
 		}
 	}
 
 	for {
-		msg, err := b.q.Dequeue()
-		if err != nil {
+		isEmpty, _ := b.sendSingleMessage()
+		if isEmpty {
 			break
 		}
-
-		b.receiveFrom <- msg
 	}
 
-	close(b.receiveFrom)
+	b.locker = nil
+	b.q = nil
+}
+
+// sendSingleMessage is a method of the Buffer type that sends a single message
+// from the Buffer to the send channel.
+//
+// Returns:
+//   - bool: A boolean indicating if the queue is empty.
+//   - bool: A boolean indicating if a message was sent successfully.
+func (b *Buffer[T]) sendSingleMessage() (bool, bool) {
+	msg, err := b.q.Peek()
+	if err != nil {
+		return true, true
+	}
+
+	select {
+	case b.receiveFrom <- msg:
+		_, err := b.q.Dequeue()
+		if err != nil {
+			return true, false
+		}
+
+		return false, true
+	default:
+		return false, false
+	}
 }
 
 // CleanBuffer removes all elements from the Buffer, effectively resetting
@@ -183,6 +205,10 @@ func (b *Buffer[T]) sendMessagesFromBuffer() {
 //
 // This method is safe for concurrent use by multiple goroutines.
 func (b *Buffer[T]) CleanBuffer() {
+	if b.q == nil {
+		return
+	}
+
 	b.q.Clear()
 }
 
@@ -197,9 +223,17 @@ func (b *Buffer[T]) Wait() {
 // Close is a method of the Buffer type that closes the Buffer
 // and waits for all goroutines to finish executing.
 func (b *Buffer[T]) Close() {
+	if b.sendTo == nil {
+		return
+	}
+
 	close(b.sendTo)
+	b.sendTo = nil
 
 	b.wg.Wait()
+
+	close(b.receiveFrom)
+	b.receiveFrom = nil
 }
 
 // Send is a method of the Buffer type that sends a message to the send channel.
@@ -209,12 +243,14 @@ func (b *Buffer[T]) Close() {
 //
 // Behaviors:
 //   - If the send channel is nil, the method will return immediately.
-func (b *Buffer[T]) Send(msg T) {
+func (b *Buffer[T]) Send(msg T) bool {
 	if b.sendTo == nil {
-		return
+		return false
 	}
 
 	b.sendTo <- msg
+
+	return true
 }
 
 // Receive is a method of the Buffer type that receives a message from the receive channel.
@@ -237,4 +273,12 @@ func (b *Buffer[T]) Receive() (T, bool) {
 	}
 
 	return msg, true
+}
+
+// IsClosed is a method of the Buffer type that checks if the Buffer is closed.
+//
+// Returns:
+//   - bool: True if the Buffer is closed, false otherwise.
+func (b *Buffer[T]) IsClosed() bool {
+	return b.locker == nil
 }

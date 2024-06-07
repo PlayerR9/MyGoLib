@@ -10,43 +10,54 @@ func TestInit(t *testing.T) {
 		MaxCount int = 100
 	)
 
-	buffer, err := NewBuffer[int](0)
-	if err != nil {
-		t.Fatalf("Expected no error, got %s", err.Error())
-	}
+	buffer := NewBuffer[int]()
 
-	sender, receiver := buffer.GetSendChannel(), buffer.GetReceiveChannel()
-
-	var wg sync.WaitGroup
+	sender, receiver := buffer.GetSender(), buffer.GetReceiver()
 
 	buffer.Start()
 
-	wg.Add(1)
+	var wg sync.WaitGroup
+
+	wg.Add(2)
 
 	go func() {
 		defer wg.Done()
 
 		for i := 0; i < MaxCount; i++ {
+			ok := sender.Send(i)
+			if !ok {
+				t.Errorf("could not send %d", i)
+				return
+			}
+		}
+
+		buffer.Close()
+	}()
+
+	go func() {
+		defer wg.Done()
+
+		i := 0
+
+		for i < MaxCount {
 			x, ok := receiver.Receive()
 			if !ok {
-				t.Errorf("Expected true, got %t", ok)
+				t.Errorf("could not receive %d", i)
 				return
 			}
 
 			if x != i {
-				t.Errorf("Expected %d, got %d", i, x)
+				t.Errorf("expected %d, got %d", i, x)
 				return
 			}
+
+			i++
 		}
 	}()
 
-	for i := 0; i < MaxCount; i++ {
-		sender.Send(i)
-	}
-
-	buffer.Close()
-
 	wg.Wait()
+
+	t.Fatalf("Test completed")
 }
 
 func TestTrimFrom(t *testing.T) {
@@ -54,12 +65,9 @@ func TestTrimFrom(t *testing.T) {
 		MaxCount int = 100
 	)
 
-	buffer, err := NewBuffer[int](1)
-	if err != nil {
-		t.Errorf("Expected no error, got %s", err.Error())
-	}
+	buffer := NewBuffer[int]()
 
-	sender, receiver := buffer.GetSendChannel(), buffer.GetReceiveChannel()
+	sender, receiver := buffer.GetSender(), buffer.GetReceiver()
 
 	var wg sync.WaitGroup
 
@@ -81,14 +89,16 @@ func TestTrimFrom(t *testing.T) {
 	}(MaxCount)
 
 	for i := 0; i < MaxCount; i++ {
-		sender.Send(i)
+		ok := sender.Send(i)
+		if !ok {
+			t.Errorf("Could not send %d", i)
+			return
+		}
 	}
 
 	buffer.CleanBuffer()
 
 	buffer.Close()
-
-	t.Fatalf("Expected no error, got %s", "error")
 
 	wg.Wait()
 

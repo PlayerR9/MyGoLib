@@ -10,7 +10,7 @@ import (
 // to a channel. It is safe for concurrent use by multiple goroutines.
 type SignalBuffer struct {
 	// The value contained in the SignalBuffer.
-	value *rws.RWSafe[bool]
+	value *rws.Subject[bool]
 
 	// A receive-only channel of type T. Messages from the SignalBuffer
 	// are sent to this channel.
@@ -29,7 +29,7 @@ type SignalBuffer struct {
 //   - *SignalBuffer: A pointer to the new SignalBuffer.
 func NewSignalBuffer() *SignalBuffer {
 	return &SignalBuffer{
-		value:       rws.NewRWSafe(false),
+		value:       rws.NewSubject(false),
 		receiveFrom: make(chan bool),
 		closed:      make(chan struct{}),
 	}

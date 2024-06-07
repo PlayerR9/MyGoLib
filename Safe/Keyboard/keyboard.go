@@ -14,11 +14,8 @@ type Keyboard struct {
 	// buffer is a safe buffer for keyboard.Key values.
 	buffer *sfb.Buffer[keyboard.Key]
 
-	// sendKeyChan is the send channel for keyboard.Key values.
-	sendKeyChan chan<- keyboard.Key
-
 	// receiveKeyChan is the receive channel for keyboard.Key values.
-	receiveKeyChan <-chan keyboard.Key
+	receiver sfb.Receiver[keyboard.Key]
 
 	// errChan is the error channel for the Keyboard.
 	errChan chan error
@@ -40,15 +37,11 @@ func NewKeyboard() *Keyboard {
 		closeChan: make(chan struct{}),
 	}
 
-	buffer, err := sfb.NewBuffer[keyboard.Key](1)
-	if err != nil {
-		panic(err)
-	}
+	buffer := sfb.NewBuffer[keyboard.Key]()
 
 	k.buffer = buffer
 
-	k.sendKeyChan = buffer.GetSendChannel()
-	k.receiveKeyChan = buffer.GetReceiveChannel()
+	k.receiver = buffer.GetReceiver()
 
 	return k
 }
@@ -65,8 +58,8 @@ func (k *Keyboard) GetErrorChannel() <-chan error {
 //
 // Returns:
 //   - <-chan keyboard.Key: The key channel.
-func (k *Keyboard) GetKeyChannel() <-chan keyboard.Key {
-	return k.receiveKeyChan
+func (k *Keyboard) GetKeyChannel() sfb.Receiver[keyboard.Key] {
+	return k.receiver
 }
 
 // Close closes the Keyboard.
@@ -74,13 +67,11 @@ func (k *Keyboard) GetKeyChannel() <-chan keyboard.Key {
 // Returns:
 //   - error: An error if the Keyboard could not be closed.
 func (k *Keyboard) Close() error {
-	if k.sendKeyChan == nil {
+	if k.buffer == nil {
 		return fmt.Errorf("keyboard already closed")
 	}
 
-	close(k.sendKeyChan)
-
-	k.buffer.Wait()
+	k.buffer.Close()
 
 	close(k.closeChan)
 
@@ -91,8 +82,6 @@ func (k *Keyboard) Close() error {
 	// Clean up
 
 	k.buffer = nil
-	k.sendKeyChan = nil
-	k.receiveKeyChan = nil
 
 	err := keyboard.Close()
 	if err != nil {
@@ -138,7 +127,7 @@ func (k *Keyboard) keyListener() {
 			if err != nil {
 				k.errChan <- err
 			} else {
-				k.sendKeyChan <- key
+				k.buffer.Send(key)
 			}
 		}
 	}

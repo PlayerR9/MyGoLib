@@ -44,15 +44,12 @@ func NewDebugger(logger *log.Logger) *Debugger {
 		logger: logger,
 	}
 
-	buffer, err := sfb.NewBuffer[PrintMessager](1)
-	if err != nil {
-		panic(err)
-	}
+	buffer := sfb.NewBuffer[PrintMessager]()
 
 	dbg.msgBuffer = buffer
 
-	dbg.receiver = buffer.GetReceiveChannel()
-	dbg.sender = buffer.GetSendChannel()
+	dbg.receiver = buffer.GetReceiver()
+	dbg.sender = buffer.GetSender()
 
 	return dbg
 }

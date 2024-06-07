@@ -6,7 +6,10 @@ type Sender[T any] interface {
 	//
 	// Parameters:
 	//   - msg: The message to send.
-	Send(msg T)
+	//
+	// Returns:
+	//   - bool: False if the Buffer is closed, true otherwise.
+	Send(msg T) bool
 }
 
 // Receiver is the interface that wraps the Receive method.

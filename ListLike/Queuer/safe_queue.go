@@ -22,7 +22,7 @@ type SafeQueue[T any] struct {
 
 	// frontMutex and backMutex are sync.RWMutexes, which are used to ensure that
 	// concurrent reads and writes to the front and back nodes are thread-safe.
-	frontMutex, backMutex sync.RWMutex
+	mu sync.RWMutex
 
 	// size is the size that observers observe.
 	size *rws.Subject[int]
@@ -42,12 +42,12 @@ type SafeQueue[T any] struct {
 func NewSafeQueue[T any](values ...T) *SafeQueue[T] {
 	if len(values) == 0 {
 		return &SafeQueue[T]{
-			size: rws.NewSubject[int](0),
+			size: rws.NewSubject(0),
 		}
 	}
 
 	queue := &SafeQueue[T]{
-		size: rws.NewSubject[int](len(values)),
+		size: rws.NewSubject(len(values)),
 	}
 
 	// First node
@@ -76,15 +76,13 @@ func NewSafeQueue[T any](values ...T) *SafeQueue[T] {
 //
 //   - value: The value of type T to be added to the queue.
 func (queue *SafeQueue[T]) Enqueue(value T) error {
-	queue.backMutex.Lock()
-	defer queue.backMutex.Unlock()
+	queue.mu.Lock()
+	defer queue.mu.Unlock()
 
 	node := NewQueueSafeNode(value)
 
 	if queue.back == nil {
-		queue.frontMutex.Lock()
 		queue.front = node
-		queue.frontMutex.Unlock()
 	} else {
 		queue.back.SetNext(node)
 	}
@@ -107,8 +105,8 @@ func (queue *SafeQueue[T]) Enqueue(value T) error {
 //
 //   - T: The value of the element at the front of the queue.
 func (queue *SafeQueue[T]) Dequeue() (T, error) {
-	queue.frontMutex.Lock()
-	defer queue.frontMutex.Unlock()
+	queue.mu.Lock()
+	defer queue.mu.Unlock()
 
 	if queue.front == nil {
 		return *new(T), ers.NewErrEmpty(queue)
@@ -118,10 +116,7 @@ func (queue *SafeQueue[T]) Dequeue() (T, error) {
 
 	if queue.front.Next() == nil {
 		queue.front = nil
-
-		queue.backMutex.Lock()
 		queue.back = nil
-		queue.backMutex.Unlock()
 	} else {
 		queue.front = queue.front.Next()
 	}
@@ -129,8 +124,6 @@ func (queue *SafeQueue[T]) Dequeue() (T, error) {
 	queue.size.ModifyState(func(size int) int {
 		return size - 1
 	})
-
-	toRemove.SetNext(nil)
 
 	return toRemove.Value, nil
 }
@@ -144,8 +137,8 @@ func (queue *SafeQueue[T]) Dequeue() (T, error) {
 //
 //   - T: The value of the element at the front of the queue.
 func (queue *SafeQueue[T]) Peek() (T, error) {
-	queue.frontMutex.RLock()
-	defer queue.frontMutex.RUnlock()
+	queue.mu.RLock()
+	defer queue.mu.RUnlock()
 
 	if queue.front == nil {
 		return *new(T), ers.NewErrEmpty(queue)
@@ -161,8 +154,8 @@ func (queue *SafeQueue[T]) Peek() (T, error) {
 //
 //   - bool: A boolean value that is true if the queue is empty, and false otherwise.
 func (queue *SafeQueue[T]) IsEmpty() bool {
-	queue.frontMutex.RLock()
-	defer queue.frontMutex.RUnlock()
+	queue.mu.RLock()
+	defer queue.mu.RUnlock()
 
 	return queue.front == nil
 }
@@ -174,13 +167,10 @@ func (queue *SafeQueue[T]) IsEmpty() bool {
 //
 //   - int: An integer that represents the number of elements in the queue.
 func (queue *SafeQueue[T]) Size() int {
-	queue.frontMutex.RLock()
-	defer queue.frontMutex.RUnlock()
+	queue.mu.RLock()
+	defer queue.mu.RUnlock()
 
-	queue.backMutex.RLock()
-	defer queue.backMutex.RUnlock()
-
-	return queue.size.GetState()
+	return queue.size.Get()
 }
 
 // Iterator is a method of the SafeQueue type. It is used to return an iterator
@@ -192,11 +182,8 @@ func (queue *SafeQueue[T]) Size() int {
 //   - itf.Iterater[T]: An iterator that can be used to iterate over the elements
 //     in the queue.
 func (queue *SafeQueue[T]) Iterator() itf.Iterater[T] {
-	queue.frontMutex.RLock()
-	defer queue.frontMutex.RUnlock()
-
-	queue.backMutex.RLock()
-	defer queue.backMutex.RUnlock()
+	queue.mu.RLock()
+	defer queue.mu.RUnlock()
 
 	var builder itf.Builder[T]
 
@@ -210,43 +197,25 @@ func (queue *SafeQueue[T]) Iterator() itf.Iterater[T] {
 // Clear is a method of the SafeQueue type. It is used to remove all elements
 // from the queue, making it empty.
 func (queue *SafeQueue[T]) Clear() {
-	queue.frontMutex.Lock()
-	defer queue.frontMutex.Unlock()
-
-	queue.backMutex.Lock()
-	defer queue.backMutex.Unlock()
+	queue.mu.Lock()
+	defer queue.mu.Unlock()
 
 	if queue.front == nil {
 		return // Queue is already empty
 	}
 
-	// 1. First node
-	prev := queue.front
-
-	// 2. Subsequent nodes
-	for node := queue.front.Next(); node != nil; node = node.Next() {
-		prev = node
-		prev.SetNext(nil)
-	}
-
-	prev.SetNext(nil)
-
-	// 3. Reset queue fields
 	queue.front = nil
 	queue.back = nil
 
-	queue.size.SetState(0)
+	queue.size.Set(0)
 }
 
 // GoString implements the fmt.GoStringer interface.
 func (queue *SafeQueue[T]) GoString() string {
-	queue.frontMutex.RLock()
-	defer queue.frontMutex.RUnlock()
+	queue.mu.RLock()
+	defer queue.mu.RUnlock()
 
-	queue.backMutex.RLock()
-	defer queue.backMutex.RUnlock()
-
-	size := queue.size.GetState()
+	size := queue.size.Get()
 
 	values := make([]string, 0, size)
 	for node := queue.front; node != nil; node = node.Next() {
@@ -267,11 +236,8 @@ func (queue *SafeQueue[T]) GoString() string {
 // CutNilValues is a method of the SafeQueue type. It is used to remove all nil
 // values from the queue.
 func (queue *SafeQueue[T]) CutNilValues() {
-	queue.frontMutex.Lock()
-	defer queue.frontMutex.Unlock()
-
-	queue.backMutex.Lock()
-	defer queue.backMutex.Unlock()
+	queue.mu.Lock()
+	defer queue.mu.Unlock()
 
 	if queue.front == nil {
 		return // Queue is empty
@@ -282,7 +248,7 @@ func (queue *SafeQueue[T]) CutNilValues() {
 		queue.front = nil
 		queue.back = nil
 
-		queue.size.SetState(0)
+		queue.size.Set(0)
 
 		return
 	}
@@ -349,13 +315,10 @@ func (queue *SafeQueue[T]) CutNilValues() {
 //
 //   - []T: A slice of the elements in the queue.
 func (queue *SafeQueue[T]) Slice() []T {
-	queue.frontMutex.RLock()
-	defer queue.frontMutex.RUnlock()
+	queue.mu.RLock()
+	defer queue.mu.RUnlock()
 
-	queue.backMutex.RLock()
-	defer queue.backMutex.RUnlock()
-
-	slice := make([]T, 0, queue.size.GetState())
+	slice := make([]T, 0, queue.size.Get())
 
 	for node := queue.front; node != nil; node = node.Next() {
 		slice = append(slice, node.Value)
@@ -373,14 +336,11 @@ func (queue *SafeQueue[T]) Slice() []T {
 // Behaviors:
 //   - Does not copy the observers.
 func (queue *SafeQueue[T]) Copy() uc.Copier {
-	queue.frontMutex.RLock()
-	defer queue.frontMutex.RUnlock()
-
-	queue.backMutex.RLock()
-	defer queue.backMutex.RUnlock()
+	queue.mu.RLock()
+	defer queue.mu.RUnlock()
 
 	queueCopy := &SafeQueue[T]{
-		size: rws.NewSubject(queue.size.GetState()),
+		size: rws.NewSubject(queue.size.Get()),
 	}
 
 	if queue.front == nil {
@@ -424,22 +384,24 @@ func (queue *SafeQueue[T]) IsFull() bool {
 
 // SetIsEmptyObserver is a method of the SafeQueue type. It is used to set an
 // observer that will be notified when the queue becomes empty or non-empty.
-func (queue *SafeQueue[T]) SetIsEmptyObserver(act func(bool)) {
-	obs := &IsEmptyObserver{
-		act: act,
-	}
-
-	queue.size.Attach(obs)
+func (queue *SafeQueue[T]) ObserveSize(action func(int)) {
+	queue.size.Attach(NewIsEmptyObserver(action))
 }
 
 type IsEmptyObserver struct {
-	act func(bool)
+	action func(int)
 }
 
-func (o *IsEmptyObserver) Notify(change int) {
-	if change == 0 {
-		o.act(true)
-	} else {
-		o.act(false)
+func (o *IsEmptyObserver) Notify(size int) {
+	o.action(size)
+}
+
+func NewIsEmptyObserver(action func(int)) *IsEmptyObserver {
+	if action == nil {
+		return nil
+	}
+
+	return &IsEmptyObserver{
+		action: action,
 	}
 }
