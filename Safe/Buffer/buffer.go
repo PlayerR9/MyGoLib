@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/PlayerR9/MyGoLib/ListLike/Queuer"
+	rws "github.com/PlayerR9/MyGoLib/Safe/RWSafe"
 )
 
 type BufferCondition int
@@ -36,7 +37,7 @@ type Buffer[T any] struct {
 	// A WaitGroup to wait for all goroutines to finish.
 	wg sync.WaitGroup
 
-	locker *Locker[BufferCondition]
+	locker *rws.Locker[BufferCondition]
 }
 
 // NewBuffer creates a new Buffer instance.
@@ -73,7 +74,7 @@ func (b *Buffer[T]) Start() {
 		return
 	}
 
-	b.locker = NewLocker[BufferCondition]()
+	b.locker = rws.NewLocker[BufferCondition]()
 	b.locker.SetSubject(IsEmpty, true, true)
 	b.locker.SetSubject(IsRunning, true, true)
 
@@ -148,16 +149,17 @@ func (b *Buffer[T]) sendMessagesFromBuffer() {
 			break
 		}
 
-		mapCopy := b.locker.Do()
-
-		for {
-			isEmpty, ok := b.sendSingleMessage()
-			if !ok || isEmpty {
-				break
+		ok = b.locker.DoFunc(func(m map[BufferCondition]bool) bool {
+			for {
+				isEmpty, ok := b.sendSingleMessage()
+				if !ok || isEmpty {
+					break
+				}
 			}
-		}
 
-		if !mapCopy[IsRunning] {
+			return m[IsRunning]
+		})
+		if !ok {
 			break
 		}
 	}

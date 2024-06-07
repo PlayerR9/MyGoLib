@@ -14,9 +14,6 @@ type Keyboard struct {
 	// buffer is a safe buffer for keyboard.Key values.
 	buffer *sfb.Buffer[keyboard.Key]
 
-	// receiveKeyChan is the receive channel for keyboard.Key values.
-	receiver sfb.Receiver[keyboard.Key]
-
 	// errChan is the error channel for the Keyboard.
 	errChan chan error
 
@@ -37,11 +34,7 @@ func NewKeyboard() *Keyboard {
 		closeChan: make(chan struct{}),
 	}
 
-	buffer := sfb.NewBuffer[keyboard.Key]()
-
-	k.buffer = buffer
-
-	k.receiver = buffer.GetReceiver()
+	k.buffer = sfb.NewBuffer[keyboard.Key]()
 
 	return k
 }
@@ -58,8 +51,8 @@ func (k *Keyboard) GetErrorChannel() <-chan error {
 //
 // Returns:
 //   - <-chan keyboard.Key: The key channel.
-func (k *Keyboard) GetKeyChannel() sfb.Receiver[keyboard.Key] {
-	return k.receiver
+func (k *Keyboard) GetKeyReceiver() sfb.Receiver[keyboard.Key] {
+	return k.buffer
 }
 
 // Close closes the Keyboard.

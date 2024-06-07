@@ -6,8 +6,6 @@ import (
 
 	rws "github.com/PlayerR9/MyGoLib/Safe/RWSafe"
 	ers "github.com/PlayerR9/MyGoLib/Units/errors"
-
-	bf "github.com/PlayerR9/MyGoLib/Safe/Buffer"
 )
 
 // DtTable represents a table of cells.
@@ -18,9 +16,6 @@ type DtTable struct {
 
 	// rows is a slice of rows in the table.
 	rows []*DtRow
-
-	// signalBuffer is a buffer to signal changes to the table.
-	sb *bf.SignalBuffer
 }
 
 // GetCellAt returns the cell at the given coordinates.
@@ -129,7 +124,6 @@ func NewDtTable(height, width int) (*DtTable, error) {
 		height: rws.NewSubject(height),
 		width:  rws.NewSubject(width),
 		rows:   rows,
-		sb:     bf.NewSignalBuffer(),
 	}, nil
 }
 
@@ -144,7 +138,6 @@ func NewDtTable(height, width int) (*DtTable, error) {
 func TransformIntoTable(highlights []DtCell) (*DtTable, error) {
 	table := &DtTable{
 		rows: make([]*DtRow, 0),
-		sb:   bf.NewSignalBuffer(),
 	}
 
 	if len(highlights) == 0 {
@@ -289,27 +282,4 @@ func (dt *DtTable) ResizeWidth(newWidth int) error {
 	dt.width.Set(newWidth)
 
 	return nil
-}
-
-// GetModifyChan returns the signal buffer's signal channel.
-//
-// Returns:
-//   - <-chan bool: The signal channel.
-func (dt *DtTable) GetModifyChan() <-chan bool {
-	return dt.sb.GetSignalChan()
-}
-
-// SignalChange signals a change to the table.
-func (dt *DtTable) SignalChange() {
-	dt.sb.SignalChange()
-}
-
-// Close closes the table.
-func (dt *DtTable) Close() {
-	dt.sb.Close()
-}
-
-// Wait waits for the table to close.
-func (dt *DtTable) Wait() {
-	dt.sb.Wait()
 }

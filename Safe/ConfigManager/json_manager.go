@@ -74,12 +74,13 @@ func (m *JSONManager[T]) Create() error {
 // Parameters:
 //   - loc: The path to the JSON file.
 //   - dirPerm: The permissions for the directory.
+//   - elem: The data to save and load. (only used for type inference)
 //
 // Returns:
 //   - *JSONManager[T]: The new JSONManager.
-func NewJSONManager[T JSONEncoder](loc string, dirPerm os.FileMode) *JSONManager[T] {
+func NewJSONManager[T JSONEncoder](loc string, dirPerm os.FileMode, elem T) *JSONManager[T] {
 	return &JSONManager[T]{
-		data:    *new(T),
+		data:    elem,
 		loc:     loc,
 		dirPerm: dirPerm,
 	}
@@ -119,8 +120,6 @@ func (m *JSONManager[T]) Load() (T, error) {
 	if err != nil {
 		return *new(T), fmt.Errorf("could not read file: %w", err)
 	}
-
-	m.data = *new(T)
 
 	err = json.Unmarshal(data, m.data)
 	if err != nil {
