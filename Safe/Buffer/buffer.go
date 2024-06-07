@@ -5,216 +5,8 @@ import (
 
 	"github.com/PlayerR9/MyGoLib/ListLike/Queuer"
 
-	rws "github.com/PlayerR9/MyGoLib/Safe/RWSafe"
 	ers "github.com/PlayerR9/MyGoLib/Units/errors"
-
-	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 )
-
-// Locker is a thread-safe locker that allows multiple goroutines to wait for a condition.
-type Locker[T uc.Enumer] struct {
-	// preds is the map of predicates.
-	preds *rws.SafeMap[T, bool]
-
-	// obs is the map of observer predicates.
-	obs *rws.SafeMap[T, func() bool]
-
-	// cond is the condition variable.
-	cond *sync.Cond
-}
-
-// NewLocker creates a new Locker.
-//
-// Use Locker.Set for observer boolean predicates.
-//
-// Parameters:
-//   - keys: The keys to initialize the locker.
-//
-// Returns:
-//   - *Locker[T]: A new Locker.
-func NewLocker[T uc.Enumer](keys ...T) *Locker[T] {
-	l := &Locker[T]{
-		preds: rws.NewSafeMap[T, bool](),
-		obs:   rws.NewSafeMap[T, func() bool](),
-		cond:  sync.NewCond(&sync.Mutex{}),
-	}
-
-	for _, key := range keys {
-		l.preds.Set(key, true)
-	}
-
-	return l
-}
-
-// Set sets the value of a predicate.
-//
-// Parameters:
-//   - key: The key to set the value.
-//   - value: The value to set.
-func (l *Locker[T]) Set(key T, value func() bool) {
-	l.cond.L.Lock()
-	defer l.cond.L.Unlock()
-
-	l.obs.Set(key, value)
-}
-
-// is checks if any of the predicates are true.
-//
-// Returns:
-//   - map[T]bool: A map of the predicates and their values.
-//   - bool: True if all predicates are true, false otherwise.
-func (l *Locker[T]) is() (map[T]bool, bool) {
-	iter := l.preds.Iterator()
-
-	lockedMap := make(map[T]bool)
-
-	for {
-		val, err := iter.Consume()
-		if err != nil {
-			break
-		}
-
-		lockedMap[val.First] = val.Second
-	}
-
-	obsIter := l.obs.Iterator()
-
-	for {
-		val, err := obsIter.Consume()
-		if err != nil {
-			break
-		}
-
-		lockedMap[val.First] = val.Second()
-	}
-
-	for _, value := range lockedMap {
-		if value {
-			return lockedMap, false
-		}
-	}
-
-	return lockedMap, true
-}
-
-// DoFunc is a function that executes a function while waiting for the condition to be false.
-//
-// Parameters:
-//   - sm: The SafeMap to use.
-//
-// Returns:
-//   - bool: True if the function should exit, false otherwise.
-type DoFunc[T uc.Enumer] func(sm map[T]bool) bool
-
-// Do executes a function while waiting for at least one of the conditions to be false.
-//
-// Parameters:
-//   - f: The function to execute.
-//
-// Returns:
-//   - bool: True if the function should exit, false otherwise.
-func (l *Locker[T]) Do(f DoFunc[T]) bool {
-	l.cond.L.Lock()
-	defer l.cond.L.Unlock()
-
-	var m map[T]bool
-	var ok bool
-
-	for {
-		m, ok = l.is()
-		if !ok {
-			break
-		}
-
-		l.cond.Wait()
-	}
-
-	ok = f(m)
-
-	return ok
-}
-
-// DoUntill executes a function while waiting for the condition to be false.
-//
-// The function will be executed until the condition returned by the function is true.
-//
-// Parameters:
-//   - f: The function to execute.
-func (l *Locker[T]) DoUntill(f DoFunc[T]) {
-	shouldExit := false
-
-	var m map[T]bool
-	var ok bool
-
-	for !shouldExit {
-		l.cond.L.Lock()
-
-		for {
-			m, ok = l.is()
-			if !ok {
-				break
-			}
-
-			l.cond.Wait()
-		}
-
-		shouldExit = f(m)
-
-		l.cond.L.Unlock()
-	}
-}
-
-// Broadcast broadcasts the condition to all waiting goroutines.
-//
-// Parameters:
-//   - key: The key to broadcast.
-//   - value: The value to broadcast.
-func (l *Locker[T]) Broadcast(key T, value bool) {
-	l.cond.L.Lock()
-	defer l.cond.L.Unlock()
-
-	if value {
-		l.preds.Set(key, func() bool { return true })
-	} else {
-		l.preds.Set(key, func() bool { return false })
-	}
-
-	l.cond.Broadcast()
-}
-
-// Signal signals the condition to a single waiting goroutine.
-//
-// Parameters:
-//   - key: The key to signal.
-//   - value: The value to signal.
-func (l *Locker[T]) Signal(key T, value bool) {
-	l.cond.L.Lock()
-	defer l.cond.L.Unlock()
-
-	if value {
-		l.preds.Set(key, func() bool { return true })
-	} else {
-		l.preds.Set(key, func() bool { return false })
-	}
-
-	l.cond.Signal()
-}
-
-// Get returns the value of a predicate.
-//
-// Parameters:
-//   - key: The key to get the value.
-//
-// Returns:
-//   - bool: The value of the predicate or false if the key does not exist.
-func (l *Locker[T]) Get(key T) bool {
-	val, ok := l.preds.Get(key)
-	if !ok {
-		return false
-	}
-
-	return val()
-}
 
 type BufferCondition int
 
@@ -247,9 +39,6 @@ type Buffer[T any] struct {
 
 	// A Once to ensure that the close and run operations on the channels are done only once..
 	once sync.Once
-
-	// A condition variable to signal when the Buffer is not empty or closed.
-	isNotEmptyOrClosed *sync.Cond
 
 	ineoc *Locker[BufferCondition]
 }
@@ -285,14 +74,17 @@ func NewBuffer[T any](bufferSize int) (*Buffer[T], error) {
 	}
 
 	b := &Buffer[T]{
-		q:                  Queuer.NewSafeQueue[T](),
-		sendTo:             make(chan T, bufferSize),
-		receiveFrom:        make(chan T, bufferSize),
-		ineoc:              NewLocker(IsNotClosed),
-		isNotEmptyOrClosed: sync.NewCond(new(sync.Mutex)),
+		q:           Queuer.NewSafeQueue[T](),
+		sendTo:      make(chan T, bufferSize),
+		receiveFrom: make(chan T, bufferSize),
+		ineoc:       NewLocker(IsEmpty, IsNotClosed),
 	}
 
-	b.ineoc.Set(IsEmpty, func() bool { return b.q.IsEmpty() })
+	b.q.SetIsEmptyObserver(func(val bool) {
+		b.ineoc.Signal(IsEmpty, val)
+	})
+
+	b.ineoc.Signal(IsNotClosed, false)
 
 	return b, nil
 }
@@ -304,9 +96,10 @@ func (b *Buffer[T]) Start() {
 	b.once.Do(func() {
 		b.wg.Add(2)
 
-		go b.sendMessagesFromBuffer()
-		go b.listenForIncomingMessages()
+		b.ineoc.Signal(IsNotClosed, true)
 
+		go b.listenForIncomingMessages()
+		go b.sendMessagesFromBuffer()
 	})
 }
 
@@ -315,9 +108,9 @@ func (b *Buffer[T]) Start() {
 // This method is safe for concurrent use by multiple goroutines.
 //
 // Returns:
-//   - chan<- T: The send-only channel of the Buffer.
-func (b *Buffer[T]) GetSendChannel() chan<- T {
-	return b.sendTo
+//   - Sender[T]: The send-only channel of the Buffer.
+func (b *Buffer[T]) GetSendChannel() Sender[T] {
+	return b
 }
 
 // GetReceiveChannel returns the receive-only channel of the Buffer.
@@ -326,8 +119,8 @@ func (b *Buffer[T]) GetSendChannel() chan<- T {
 //
 // Returns:
 //   - <-chan T: The receive-only channel of the Buffer.
-func (b *Buffer[T]) GetReceiveChannel() <-chan T {
-	return b.receiveFrom
+func (b *Buffer[T]) GetReceiveChannel() Receiver[T] {
+	return b
 }
 
 // listenForIncomingMessages is a method of the Buffer type that listens for
@@ -339,10 +132,11 @@ func (b *Buffer[T]) listenForIncomingMessages() {
 
 	for msg := range b.sendTo {
 		b.q.Enqueue(msg)
-		b.isNotEmptyOrClosed.Broadcast()
 	}
 
-	b.ineoc.Broadcast(IsNotClosed, false)
+	b.ineoc.Signal(IsEmpty, b.q.IsEmpty())
+
+	b.ineoc.Signal(IsNotClosed, false)
 }
 
 // sendMessagesFromBuffer is a method of the Buffer type that sends
@@ -352,24 +146,22 @@ func (b *Buffer[T]) listenForIncomingMessages() {
 func (b *Buffer[T]) sendMessagesFromBuffer() {
 	defer b.wg.Done()
 
-	for {
-		b.isNotEmptyOrClosed.L.Lock()
-		for !b.isClosed.Get() && b.q.IsEmpty() {
-			b.isNotEmptyOrClosed.Wait()
-		}
+	for b.ineoc.Get(IsNotClosed) {
+		ok := b.ineoc.Do(func(sm map[BufferCondition]bool) bool {
+			b.ineoc.Signal(IsEmpty, b.q.IsEmpty())
 
-		msg, err := b.q.Dequeue()
+			if !sm[IsEmpty] {
+				msg, err := b.q.Dequeue()
+				if err == nil {
+					b.receiveFrom <- msg
+				}
+			}
 
-		if err == nil {
-			b.receiveFrom <- msg
-		}
-
-		if b.isClosed.Get() {
-			b.isNotEmptyOrClosed.L.Unlock()
+			return !sm[IsNotClosed]
+		})
+		if ok {
 			break
 		}
-
-		b.isNotEmptyOrClosed.L.Unlock()
 	}
 
 	for {
@@ -392,8 +184,6 @@ func (b *Buffer[T]) sendMessagesFromBuffer() {
 // This method is safe for concurrent use by multiple goroutines.
 func (b *Buffer[T]) CleanBuffer() {
 	b.q.Clear()
-
-	b.isNotEmptyOrClosed.Broadcast()
 }
 
 // Wait is a method of the Buffer type that waits for all goroutines
@@ -443,7 +233,7 @@ func (b *Buffer[T]) Receive() (T, bool) {
 
 	msg, ok := <-b.receiveFrom
 	if !ok {
-		return msg, false
+		return *new(T), false
 	}
 
 	return msg, true

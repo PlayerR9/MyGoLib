@@ -9,6 +9,8 @@ import (
 	itf "github.com/PlayerR9/MyGoLib/Units/Iterators"
 	ers "github.com/PlayerR9/MyGoLib/Units/errors"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
+
+	rws "github.com/PlayerR9/MyGoLib/Safe/RWSafe"
 )
 
 // SafeQueue is a generic type that represents a thread-safe queue data
@@ -22,8 +24,8 @@ type SafeQueue[T any] struct {
 	// concurrent reads and writes to the front and back nodes are thread-safe.
 	frontMutex, backMutex sync.RWMutex
 
-	// size is the current number of elements in the queue.
-	size int
+	// size is the size that observers observe.
+	size *rws.Subject[int]
 }
 
 // NewSafeQueue is a function that creates and returns a new instance of a
@@ -39,11 +41,14 @@ type SafeQueue[T any] struct {
 //   - *SafeQueue[T]: A pointer to the newly created SafeQueue.
 func NewSafeQueue[T any](values ...T) *SafeQueue[T] {
 	if len(values) == 0 {
-		return new(SafeQueue[T])
+		return &SafeQueue[T]{
+			size: rws.NewSubject[int](0),
+		}
 	}
 
-	queue := new(SafeQueue[T])
-	queue.size = len(values)
+	queue := &SafeQueue[T]{
+		size: rws.NewSubject[int](len(values)),
+	}
 
 	// First node
 	node := NewQueueSafeNode(values[0])
@@ -85,7 +90,10 @@ func (queue *SafeQueue[T]) Enqueue(value T) error {
 	}
 
 	queue.back = node
-	queue.size++
+
+	queue.size.ModifyState(func(size int) int {
+		return size + 1
+	})
 
 	return nil
 }
@@ -118,7 +126,10 @@ func (queue *SafeQueue[T]) Dequeue() (T, error) {
 		queue.front = queue.front.Next()
 	}
 
-	queue.size--
+	queue.size.ModifyState(func(size int) int {
+		return size - 1
+	})
+
 	toRemove.SetNext(nil)
 
 	return toRemove.Value, nil
@@ -169,7 +180,7 @@ func (queue *SafeQueue[T]) Size() int {
 	queue.backMutex.RLock()
 	defer queue.backMutex.RUnlock()
 
-	return queue.size
+	return queue.size.GetState()
 }
 
 // Iterator is a method of the SafeQueue type. It is used to return an iterator
@@ -223,7 +234,8 @@ func (queue *SafeQueue[T]) Clear() {
 	// 3. Reset queue fields
 	queue.front = nil
 	queue.back = nil
-	queue.size = 0
+
+	queue.size.SetState(0)
 }
 
 // GoString implements the fmt.GoStringer interface.
@@ -234,7 +246,9 @@ func (queue *SafeQueue[T]) GoString() string {
 	queue.backMutex.RLock()
 	defer queue.backMutex.RUnlock()
 
-	values := make([]string, 0, queue.size)
+	size := queue.size.GetState()
+
+	values := make([]string, 0, size)
 	for node := queue.front; node != nil; node = node.Next() {
 		values = append(values, uc.StringOf(node.Value))
 	}
@@ -242,7 +256,7 @@ func (queue *SafeQueue[T]) GoString() string {
 	var builder strings.Builder
 
 	builder.WriteString("SafeQueue{size=")
-	builder.WriteString(strconv.Itoa(queue.size))
+	builder.WriteString(strconv.Itoa(size))
 	builder.WriteString(", values=[← ")
 	builder.WriteString(strings.Join(values, ", "))
 	builder.WriteString("]}")
@@ -267,7 +281,8 @@ func (queue *SafeQueue[T]) CutNilValues() {
 		// Single node
 		queue.front = nil
 		queue.back = nil
-		queue.size = 0
+
+		queue.size.SetState(0)
 
 		return
 	}
@@ -281,7 +296,14 @@ func (queue *SafeQueue[T]) CutNilValues() {
 		queue.front = queue.front.Next()
 
 		toDelete.SetNext(nil)
-		queue.size--
+
+		queue.size.ModifyState(func(size int) int {
+			return size - 1
+		})
+
+		if queue.front == nil {
+			queue.back = nil
+		}
 	}
 
 	prev := queue.front
@@ -292,7 +314,10 @@ func (queue *SafeQueue[T]) CutNilValues() {
 			prev = node
 		} else {
 			prev.SetNext(node.Next())
-			queue.size--
+
+			queue.size.ModifyState(func(size int) int {
+				return size - 1
+			})
 
 			if toDelete != nil {
 				toDelete.SetNext(nil)
@@ -310,7 +335,10 @@ func (queue *SafeQueue[T]) CutNilValues() {
 	if gen.IsNil(queue.back.Value) {
 		queue.back = prev
 		queue.back.SetNext(nil)
-		queue.size--
+
+		queue.size.ModifyState(func(size int) int {
+			return size - 1
+		})
 	}
 }
 
@@ -327,7 +355,7 @@ func (queue *SafeQueue[T]) Slice() []T {
 	queue.backMutex.RLock()
 	defer queue.backMutex.RUnlock()
 
-	slice := make([]T, 0, queue.size)
+	slice := make([]T, 0, queue.size.GetState())
 
 	for node := queue.front; node != nil; node = node.Next() {
 		slice = append(slice, node.Value)
@@ -340,8 +368,10 @@ func (queue *SafeQueue[T]) Slice() []T {
 // the queue.
 //
 // Returns:
-//
 //   - itf.Copier: A copy of the queue.
+//
+// Behaviors:
+//   - Does not copy the observers.
 func (queue *SafeQueue[T]) Copy() uc.Copier {
 	queue.frontMutex.RLock()
 	defer queue.frontMutex.RUnlock()
@@ -350,7 +380,7 @@ func (queue *SafeQueue[T]) Copy() uc.Copier {
 	defer queue.backMutex.RUnlock()
 
 	queueCopy := &SafeQueue[T]{
-		size: queue.size,
+		size: rws.NewSubject(queue.size.GetState()),
 	}
 
 	if queue.front == nil {
@@ -390,4 +420,26 @@ func (queue *SafeQueue[T]) Capacity() int {
 //   - bool: false
 func (queue *SafeQueue[T]) IsFull() bool {
 	return false
+}
+
+// SetIsEmptyObserver is a method of the SafeQueue type. It is used to set an
+// observer that will be notified when the queue becomes empty or non-empty.
+func (queue *SafeQueue[T]) SetIsEmptyObserver(act func(bool)) {
+	obs := &IsEmptyObserver{
+		act: act,
+	}
+
+	queue.size.Attach(obs)
+}
+
+type IsEmptyObserver struct {
+	act func(bool)
+}
+
+func (o *IsEmptyObserver) Notify(change int) {
+	if change == 0 {
+		o.act(true)
+	} else {
+		o.act(false)
+	}
 }

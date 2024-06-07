@@ -16,11 +16,11 @@ type Debugger struct {
 	// msgBuffer is the buffer for messages.
 	msgBuffer *sfb.Buffer[PrintMessager]
 
-	// receiveChan is the channel to receive messages.
-	receiveChan <-chan PrintMessager
+	// receiver is the channel to receive messages.
+	receiver sfb.Receiver[PrintMessager]
 
 	// sendChan is the channel to send messages.
-	sendChan chan<- PrintMessager
+	sender sfb.Sender[PrintMessager]
 
 	// DebugMode is a flag that determines whether or not to print debug messages.
 	debugMode bool
@@ -50,8 +50,9 @@ func NewDebugger(logger *log.Logger) *Debugger {
 	}
 
 	dbg.msgBuffer = buffer
-	dbg.receiveChan = buffer.GetReceiveChannel()
-	dbg.sendChan = buffer.GetSendChannel()
+
+	dbg.receiver = buffer.GetReceiveChannel()
+	dbg.sender = buffer.GetSendChannel()
 
 	return dbg
 }
@@ -68,7 +69,12 @@ func (d *Debugger) ToggleDebugMode(active bool) {
 func (d *Debugger) loggerListener() {
 	defer d.wg.Done()
 
-	for msg := range d.receiveChan {
+	for {
+		msg, ok := d.receiver.Receive()
+		if !ok {
+			break
+		}
+
 		switch msg := msg.(type) {
 		case *PrintMessage:
 			d.logger.Print(msg.v...)
@@ -86,7 +92,12 @@ func (d *Debugger) loggerListener() {
 func (d *Debugger) stdoutListener() {
 	defer d.wg.Done()
 
-	for msg := range d.receiveChan {
+	for {
+		msg, ok := d.receiver.Receive()
+		if !ok {
+			break
+		}
+
 		switch msg := msg.(type) {
 		case *PrintMessage:
 			fmt.Print(msg.v...)
@@ -123,16 +134,14 @@ func (d *Debugger) Close() {
 	}
 
 	// Close the send channel to signal the goroutine to stop
-	close(d.sendChan)
-
-	d.msgBuffer.Wait()
+	d.msgBuffer.Close()
 
 	d.wg.Wait()
 
 	// Clean up
 	d.msgBuffer = nil
-	d.receiveChan = nil
-	d.sendChan = nil
+	d.receiver = nil
+	d.sender = nil
 
 	d.logger = nil
 }
@@ -147,11 +156,11 @@ func (d *Debugger) Wait() {
 // Parameters:
 //   - v: The values to print.
 func (d *Debugger) Println(v ...interface{}) {
-	if !d.debugMode || d.sendChan == nil {
+	if !d.debugMode || d.sender == nil {
 		return
 	}
 
-	d.sendChan <- NewPrintlnMessage(v)
+	d.sender.Send(NewPrintlnMessage(v))
 }
 
 // Printf is a function that prints formatted text.
@@ -160,11 +169,11 @@ func (d *Debugger) Println(v ...interface{}) {
 //   - format: The format string.
 //   - v: The values to print.
 func (d *Debugger) Printf(format string, v ...interface{}) {
-	if !d.debugMode || d.sendChan == nil {
+	if !d.debugMode || d.sender == nil {
 		return
 	}
 
-	d.sendChan <- NewPrintfMessage(format, v)
+	d.sender.Send(NewPrintfMessage(format, v))
 }
 
 // Print is a function that prints text.
@@ -172,11 +181,11 @@ func (d *Debugger) Printf(format string, v ...interface{}) {
 // Parameters:
 //   - v: The values to print.
 func (d *Debugger) Print(v ...interface{}) {
-	if !d.debugMode || d.sendChan == nil {
+	if !d.debugMode || d.sender == nil {
 		return
 	}
 
-	d.sendChan <- NewPrintMessage(v)
+	d.sender.Send(NewPrintMessage(v))
 }
 
 // Write is a function that writes to the debugger.
@@ -188,11 +197,11 @@ func (d *Debugger) Print(v ...interface{}) {
 //   - int: Always the length of the bytes.
 //   - error: Always nil.
 func (d *Debugger) Write(p []byte) (n int, err error) {
-	if !d.debugMode || d.sendChan == nil {
+	if !d.debugMode || d.sender == nil {
 		return 0, nil
 	}
 
-	d.sendChan <- NewPrintMessage([]any{p})
+	d.sender.Send(NewPrintMessage([]any{p}))
 
 	return len(p), nil
 }
