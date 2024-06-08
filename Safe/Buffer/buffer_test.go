@@ -12,8 +12,6 @@ func TestInit(t *testing.T) {
 
 	buffer := NewBuffer[int]()
 
-	sender, receiver := buffer.GetSender(), buffer.GetReceiver()
-
 	buffer.Start()
 
 	var wg sync.WaitGroup
@@ -24,7 +22,7 @@ func TestInit(t *testing.T) {
 		defer wg.Done()
 
 		for i := 0; i < MaxCount; i++ {
-			ok := sender.Send(i)
+			ok := buffer.Send(i)
 			if !ok {
 				t.Errorf("could not send %d", i)
 				return
@@ -40,7 +38,7 @@ func TestInit(t *testing.T) {
 		i := 0
 
 		for i < MaxCount {
-			x, ok := receiver.Receive()
+			x, ok := buffer.Receive()
 			if !ok {
 				t.Errorf("could not receive %d", i)
 				return
@@ -67,8 +65,6 @@ func TestTrimFrom(t *testing.T) {
 
 	buffer := NewBuffer[int]()
 
-	sender, receiver := buffer.GetSender(), buffer.GetReceiver()
-
 	var wg sync.WaitGroup
 
 	wg.Add(1)
@@ -79,7 +75,7 @@ func TestTrimFrom(t *testing.T) {
 		defer wg.Done()
 
 		for {
-			x, ok := receiver.Receive()
+			x, ok := buffer.Receive()
 			if !ok {
 				break
 			}
@@ -89,7 +85,7 @@ func TestTrimFrom(t *testing.T) {
 	}(MaxCount)
 
 	for i := 0; i < MaxCount; i++ {
-		ok := sender.Send(i)
+		ok := buffer.Send(i)
 		if !ok {
 			t.Errorf("Could not send %d", i)
 			return
@@ -102,7 +98,7 @@ func TestTrimFrom(t *testing.T) {
 
 	wg.Wait()
 
-	_, ok := receiver.Receive()
+	_, ok := buffer.Receive()
 	if ok {
 		t.Errorf("Expected false, got %t", ok)
 	}

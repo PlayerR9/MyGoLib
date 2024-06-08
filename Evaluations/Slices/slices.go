@@ -28,7 +28,7 @@ func DoWhile[T any](todo []T, accept slext.PredicateFilter[T], f uc.EvalManyFunc
 		return done
 	}
 
-	done := make([]T, 0)
+	var done []T
 
 	for len(todo) > 0 {
 		s1, s2 := slext.SFSeparate(todo, accept)

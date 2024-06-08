@@ -1,17 +1,5 @@
 package Buffer
 
-// Sender is the interface that wraps the Send method.
-type Sender[T any] interface {
-	// Send sends a message to the Buffer.
-	//
-	// Parameters:
-	//   - msg: The message to send.
-	//
-	// Returns:
-	//   - bool: False if the Buffer is closed, true otherwise.
-	Send(msg T) bool
-}
-
 // Receiver is the interface that wraps the Receive method.
 type Receiver[T any] interface {
 	// Receive receives a message from the Buffer.

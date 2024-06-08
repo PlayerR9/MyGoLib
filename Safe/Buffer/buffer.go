@@ -8,13 +8,18 @@ import (
 	rws "github.com/PlayerR9/MyGoLib/Safe/RWSafe"
 )
 
+// BufferCondition is an enumeration of the possible conditions of the Buffer.
 type BufferCondition int
 
 const (
+	// IsEmpty indicates that the Buffer is empty.
 	IsEmpty BufferCondition = iota
+
+	// IsRunning indicates that the Buffer is running.
 	IsRunning
 )
 
+// String implements Common.Enum interface.
 func (bc BufferCondition) String() string {
 	return [...]string{"IsEmpty", "IsRunning"}[bc]
 }
@@ -25,50 +30,24 @@ func (bc BufferCondition) String() string {
 // goroutines.
 // The Buffer should be initialized with the Init method before use.
 type Buffer[T any] struct {
-	// A pointer to the RWSafeQueue that stores the elements of the Buffer.
+	// q is a pointer to the SafeQueue that stores the elements of the Buffer.
 	q *Queuer.SafeQueue[T]
 
-	// A send-only channel of type T. Messages from the Buffer are sent to this channel.
+	// sendTo is a channel that receives messages and sends them to the Buffer.
 	sendTo chan T
 
-	// A receive-only channel of type T. Messages sent to this channel are added to the Buffer.
+	// receiveFrom is a channel that receives messages from the Buffer and
+	// sends them to the consumer.
 	receiveFrom chan T
 
-	// A WaitGroup to wait for all goroutines to finish.
+	// wg is a WaitGroup that is used to wait for the goroutines to finish.
 	wg sync.WaitGroup
 
+	// locker is a pointer to the RWSafe that synchronizes the Buffer.
 	locker *rws.Locker[BufferCondition]
 }
 
-// NewBuffer creates a new Buffer instance.
-//
-// Parameters:
-//   - bufferSize: The size of the buffer for the send and receive channels.
-//     Must be a non-negative integer. If a negative integer is provided,
-//     the method will panic with an *ers.InvalidParameterError.
-//
-// Returns:
-//   - *Buffer: A pointer to the newly created Buffer instance.
-//   - error: An error of type *ers.InvalidParameterError if
-//     the buffer size is negative.
-//
-// Information: To close the buffer, just close the send-only channel.
-// Once that is done, a cascade of events will happen:
-//   - The goroutine that listens for incoming messages will stop listening
-//     and exit.
-//   - The goroutine that sends messages from the Buffer to the receive
-//     channel will stop sending messages once the Buffer is empty, and then exit.
-//   - The Buffer will be cleaned up.
-//
-// Of course, a Close method is also provided to manually close the Buffer but
-// it is not necessary to call it if the send-only channel is closed.
-func NewBuffer[T any]() *Buffer[T] {
-	return &Buffer[T]{}
-}
-
-// Start is a method of the Buffer type that starts the Buffer by launching
-// the goroutines that listen for incoming messages and send messages from
-// the Buffer to the send channel.
+// Start implements the Runner interface.
 func (b *Buffer[T]) Start() {
 	if b.locker != nil {
 		return
@@ -95,24 +74,75 @@ func (b *Buffer[T]) Start() {
 	go b.sendMessagesFromBuffer()
 }
 
-// GetSender returns the send-only channel of the Buffer.
-//
-// This method is safe for concurrent use by multiple goroutines.
-//
-// Returns:
-//   - Sender[T]: The send-only channel of the Buffer.
-func (b *Buffer[T]) GetSender() Sender[T] {
-	return b
+// Close implements the Runner interface.
+func (b *Buffer[T]) Close() {
+	if b.sendTo == nil {
+		return
+	}
+
+	close(b.sendTo)
+	b.sendTo = nil
+
+	b.wg.Wait()
+
+	close(b.receiveFrom)
+	b.receiveFrom = nil
 }
 
-// GetReceiver returns the receive-only channel of the Buffer.
+// IsClosed implements the Runner interface.
+func (b *Buffer[T]) IsClosed() bool {
+	return b.locker == nil
+}
+
+// Send implements the Sender interface.
+func (b *Buffer[T]) Send(msg T) bool {
+	if b.sendTo == nil {
+		return false
+	}
+
+	b.sendTo <- msg
+
+	return true
+}
+
+// Receive implements the Receiver interface.
+func (b *Buffer[T]) Receive() (T, bool) {
+	if b.receiveFrom == nil {
+		return *new(T), false
+	}
+
+	msg, ok := <-b.receiveFrom
+	if !ok {
+		return *new(T), false
+	}
+
+	return msg, true
+}
+
+// NewBuffer creates a new Buffer instance.
 //
-// This method is safe for concurrent use by multiple goroutines.
+// Parameters:
+//   - bufferSize: The size of the buffer for the send and receive channels.
+//     Must be a non-negative integer. If a negative integer is provided,
+//     the method will panic with an *ers.InvalidParameterError.
 //
 // Returns:
-//   - <-chan T: The receive-only channel of the Buffer.
-func (b *Buffer[T]) GetReceiver() Receiver[T] {
-	return b
+//   - *Buffer: A pointer to the newly created Buffer instance.
+//   - error: An error of type *ers.InvalidParameterError if
+//     the buffer size is negative.
+//
+// Information: To close the buffer, just close the send-only channel.
+// Once that is done, a cascade of events will happen:
+//   - The goroutine that listens for incoming messages will stop listening
+//     and exit.
+//   - The goroutine that sends messages from the Buffer to the receive
+//     channel will stop sending messages once the Buffer is empty, and then exit.
+//   - The Buffer will be cleaned up.
+//
+// Of course, a Close method is also provided to manually close the Buffer but
+// it is not necessary to call it if the send-only channel is closed.
+func NewBuffer[T any]() *Buffer[T] {
+	return &Buffer[T]{}
 }
 
 // listenForIncomingMessages is a method of the Buffer type that listens for
@@ -212,75 +242,4 @@ func (b *Buffer[T]) CleanBuffer() {
 	}
 
 	b.q.Clear()
-}
-
-// Wait is a method of the Buffer type that waits for all goroutines
-// launched by the Buffer to finish executing.
-//
-// This method is thread-safe and can be called from multiple goroutines.
-func (b *Buffer[T]) Wait() {
-	b.wg.Wait()
-}
-
-// Close is a method of the Buffer type that closes the Buffer
-// and waits for all goroutines to finish executing.
-func (b *Buffer[T]) Close() {
-	if b.sendTo == nil {
-		return
-	}
-
-	close(b.sendTo)
-	b.sendTo = nil
-
-	b.wg.Wait()
-
-	close(b.receiveFrom)
-	b.receiveFrom = nil
-}
-
-// Send is a method of the Buffer type that sends a message to the send channel.
-//
-// Parameters:
-//   - msg: The message to send.
-//
-// Behaviors:
-//   - If the send channel is nil, the method will return immediately.
-func (b *Buffer[T]) Send(msg T) bool {
-	if b.sendTo == nil {
-		return false
-	}
-
-	b.sendTo <- msg
-
-	return true
-}
-
-// Receive is a method of the Buffer type that receives a message from the receive channel.
-//
-// Returns:
-//   - T: The message received from the receive channel.
-//   - bool: A boolean indicating if the message was received successfully.
-//
-// Behaviors:
-//   - If the receive channel is nil, the method will return a zero value and false.
-//   - This method will block until a message is received from the receive channel.
-func (b *Buffer[T]) Receive() (T, bool) {
-	if b.receiveFrom == nil {
-		return *new(T), false
-	}
-
-	msg, ok := <-b.receiveFrom
-	if !ok {
-		return *new(T), false
-	}
-
-	return msg, true
-}
-
-// IsClosed is a method of the Buffer type that checks if the Buffer is closed.
-//
-// Returns:
-//   - bool: True if the Buffer is closed, false otherwise.
-func (b *Buffer[T]) IsClosed() bool {
-	return b.locker == nil
 }

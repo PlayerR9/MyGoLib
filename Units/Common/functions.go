@@ -52,6 +52,16 @@ type MainFunc func() error
 // Routine is a function type used to represent a go routine.
 type RoutineFunc func()
 
+// ErrorIfFunc is a function type that takes an element and returns an error
+// if the element is invalid.
+//
+// Parameters:
+//   - elem: The element to check.
+//
+// Returns:
+//   - error: An error if the element is invalid.
+type ErrorIfFunc[T any] func(elem T) error
+
 // TypeOf returns the type of the value as a string.
 //
 // Parameters:

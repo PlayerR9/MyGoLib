@@ -150,3 +150,19 @@ func (sm *SafeMap[T, U]) Scan(f ScanFunc[T, U]) (bool, error) {
 
 	return true, nil
 }
+
+// GetMap returns the underlying map.
+//
+// Returns:
+//   - map[T]U: The underlying map.
+func (sm *SafeMap[T, U]) GetMap() map[T]U {
+	sm.mu.RLock()
+	defer sm.mu.RUnlock()
+
+	mapCopy := make(map[T]U, len(sm.m))
+	for key, value := range sm.m {
+		mapCopy[key] = value
+	}
+
+	return mapCopy
+}

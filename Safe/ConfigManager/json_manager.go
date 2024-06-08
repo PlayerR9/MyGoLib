@@ -2,9 +2,8 @@ package ConfigManager
 
 import (
 	"encoding/json"
-	"fmt"
+	"errors"
 	"os"
-	"path/filepath"
 	"sync"
 )
 
@@ -12,12 +11,6 @@ import (
 type JSONEncoder interface {
 	json.Marshaler
 	json.Unmarshaler
-
-	// Empty returns the default values of the data.
-	//
-	// Returns:
-	//   - JSONEncoder: The default values of the data.
-	Empty() json.Marshaler
 }
 
 // JSONManager is a manager for saving and loading data to and from a JSON file.
@@ -31,6 +24,9 @@ type JSONManager[T JSONEncoder] struct {
 	// dirPerm is the permissions of the directory.
 	dirPerm os.FileMode
 
+	// filePerm is the permissions of the file.
+	filePerm os.FileMode
+
 	// mu is a mutex for thread safety.
 	mu sync.RWMutex
 }
@@ -39,29 +35,8 @@ type JSONManager[T JSONEncoder] struct {
 //
 // Returns:
 //   - error: An error if one occurred while creating the file.
-func (m *JSONManager[T]) Create() error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	dir := filepath.Dir(m.loc)
-
-	err := os.MkdirAll(dir, m.dirPerm)
-	if err != nil {
-		return err
-	}
-
-	file, err := os.Create(m.loc)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	data, err := json.MarshalIndent(m.data.Empty(), "", "  ")
-	if err != nil {
-		return err
-	}
-
-	_, err = file.Write(data)
+func (m *JSONManager[T]) Create(empty T) error {
+	err := m.writeData(empty)
 	if err != nil {
 		return err
 	}
@@ -73,17 +48,39 @@ func (m *JSONManager[T]) Create() error {
 //
 // Parameters:
 //   - loc: The path to the JSON file.
-//   - dirPerm: The permissions for the directory.
 //   - elem: The data to save and load. (only used for type inference)
 //
 // Returns:
 //   - *JSONManager[T]: The new JSONManager.
-func NewJSONManager[T JSONEncoder](loc string, dirPerm os.FileMode, elem T) *JSONManager[T] {
+func NewJSONManager[T JSONEncoder](loc string, elem T) *JSONManager[T] {
 	return &JSONManager[T]{
-		data:    elem,
-		loc:     loc,
-		dirPerm: dirPerm,
+		data:     elem,
+		loc:      loc,
+		dirPerm:  0777,
+		filePerm: 0666,
 	}
+}
+
+// SetDirPermissions sets the permissions of the directory.
+//
+// Parameters:
+//   - perm: The permissions of the directory.
+func (m *JSONManager[T]) SetDirPermissions(perm os.FileMode) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	m.dirPerm = perm
+}
+
+// SetFilePermissions sets the permissions of the file.
+//
+// Parameters:
+//   - perm: The permissions of the file.
+func (m *JSONManager[T]) SetFilePermissions(perm os.FileMode) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	m.dirPerm = perm
 }
 
 // ChangeData changes the data of the JSONManager[T].
@@ -116,15 +113,12 @@ func (m *JSONManager[T]) Load() (T, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	data, err := os.ReadFile(m.loc)
+	res, err := m.openFile()
 	if err != nil {
-		return *new(T), fmt.Errorf("could not read file: %w", err)
+		return *new(T), err
 	}
 
-	err = json.Unmarshal(data, m.data)
-	if err != nil {
-		return *new(T), fmt.Errorf("could not unmarshal data: %w", err)
-	}
+	m.data = res
 
 	return m.data, nil
 }
@@ -148,14 +142,9 @@ func (m *JSONManager[T]) Save() error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	data, err := json.MarshalIndent(m.data, "", "  ")
+	err := m.writeData(m.data)
 	if err != nil {
-		return fmt.Errorf("could not marshal data: %w", err)
-	}
-
-	err = os.WriteFile(m.loc, data, 0644)
-	if err != nil {
-		return fmt.Errorf("could not write file: %w", err)
+		return err
 	}
 
 	return nil
@@ -180,7 +169,7 @@ func (m *JSONManager[T]) GetPermissions() [2]os.FileMode {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
-	return [2]os.FileMode{m.dirPerm, 0644}
+	return [2]os.FileMode{m.dirPerm, m.filePerm}
 }
 
 // Exists checks if a file exists at the location of the JSONManager[T].
@@ -197,7 +186,7 @@ func (m *JSONManager[T]) Exists() (bool, error) {
 		return true, nil
 	}
 
-	if os.IsNotExist(err) {
+	if errors.Is(err, os.ErrNotExist) {
 		return false, nil
 	}
 
