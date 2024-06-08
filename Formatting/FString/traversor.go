@@ -591,6 +591,33 @@ func WithLeftDelimiter(str string) ConfigOption {
 	}
 }
 
+// WithRightDelimiter is a function that modifies the right delimiter of the formatter.
+//
+// Parameters:
+//   - str: The string to use as the right delimiter.
+//
+// Returns:
+//   - ConfigOption: The configuration option.
+//
+// Behaviors:
+//   - If str is empty, then the right delimiter is removed.
+func WithRightDelimiter(str string) ConfigOption {
+	if str == "" {
+		return func(f FormatConfig) {
+			f[ConfDelR_Idx] = nil
+		}
+	} else {
+		newConfig := &DelimiterConfig{
+			str:  str,
+			left: false,
+		}
+
+		return func(f FormatConfig) {
+			f[ConfDelR_Idx] = newConfig
+		}
+	}
+}
+
 // GetConfig is a method that returns a copy of the configuration of the traversor.
 //
 // Parameters:

@@ -62,15 +62,15 @@ func NewFormatter(options ...Configer) (form FormatConfig) {
 	for _, opt := range options {
 		switch opt := opt.(type) {
 		case *IndentConfig:
-			form[0] = opt
+			form[ConfInd_Idx] = opt
 		case *DelimiterConfig:
 			if opt.left {
-				form[1] = opt
+				form[ConfDelL_Idx] = opt
 			} else {
-				form[2] = opt
+				form[ConfDelR_Idx] = opt
 			}
 		case *SeparatorConfig:
-			form[3] = opt
+			form[ConfSep_Idx] = opt
 		default:
 			panic(fmt.Errorf("invalid configuration type: %T", opt))
 		}

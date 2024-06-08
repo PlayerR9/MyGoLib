@@ -173,15 +173,16 @@ func SliceFilter[T any](S []T, filter PredicateFilter[T]) []T {
 		return S
 	}
 
-	solution := make([]T, 0)
+	top := 0
 
-	for _, item := range S {
-		if filter(item) {
-			solution = append(solution, item)
+	for i := 0; i < len(S); i++ {
+		if filter(S[i]) {
+			S[top] = S[i]
+			top++
 		}
 	}
 
-	return solution
+	return S[:top]
 }
 
 // FilterNilValues is a function that iterates over the slice and removes the
@@ -196,15 +197,20 @@ func SliceFilter[T any](S []T, filter PredicateFilter[T]) []T {
 // Behavior:
 //   - If S is empty, the function returns a nil slice.
 func FilterNilValues[T any](S []*T) []*T {
-	solution := make([]*T, 0)
+	if len(S) == 0 {
+		return nil
+	}
 
-	for _, item := range S {
-		if item != nil {
-			solution = append(solution, item)
+	top := 0
+
+	for i := 0; i < len(S); i++ {
+		if S[i] != nil {
+			S[top] = S[i]
+			top++
 		}
 	}
 
-	return solution
+	return S[:top]
 }
 
 // FilterNilPredicates is a function that iterates over the slice and removes the
@@ -223,15 +229,16 @@ func FilterNilPredicates[T any](S []PredicateFilter[T]) []PredicateFilter[T] {
 		return nil
 	}
 
-	solution := make([]PredicateFilter[T], 0)
+	top := 0
 
-	for _, item := range S {
-		if item != nil {
-			solution = append(solution, item)
+	for i := 0; i < len(S); i++ {
+		if S[i] != nil {
+			S[top] = S[i]
+			top++
 		}
 	}
 
-	return solution
+	return S[:top]
 }
 
 // SFSeparate is a function that iterates over the slice and applies the filter
@@ -249,18 +256,24 @@ func FilterNilPredicates[T any](S []PredicateFilter[T]) []PredicateFilter[T] {
 // Behavior:
 //   - If S is empty, the function returns two empty slices.
 func SFSeparate[T any](S []T, filter PredicateFilter[T]) ([]T, []T) {
-	success := make([]T, 0)
-	failed := make([]T, 0)
+	if len(S) == 0 {
+		return []T{}, []T{}
+	}
 
-	for _, item := range S {
-		if filter(item) {
-			success = append(success, item)
+	var failed []T
+
+	top := 0
+
+	for i := 0; i < len(S); i++ {
+		if filter(S[i]) {
+			S[top] = S[i]
+			top++
 		} else {
-			failed = append(failed, item)
+			failed = append(failed, S[i])
 		}
 	}
 
-	return success, failed
+	return S[:top], failed
 }
 
 // SFSeparateEarly is a variant of SFSeparate that returns all successful elements.
@@ -281,16 +294,18 @@ func SFSeparateEarly[T any](S []T, filter PredicateFilter[T]) ([]T, bool) {
 		return []T{}, true
 	}
 
-	success := make([]T, 0)
-	for _, item := range S {
-		if filter(item) {
-			success = append(success, item)
+	top := 0
+
+	for i := 0; i < len(S); i++ {
+		if filter(S[i]) {
+			S[top] = S[i]
+			top++
 		}
 	}
 
-	if len(success) == 0 {
+	if top == 0 {
 		return S, false
+	} else {
+		return S[:top], true
 	}
-
-	return success, true
 }
