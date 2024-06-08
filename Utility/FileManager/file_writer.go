@@ -1,6 +1,7 @@
 package FileManager
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -28,26 +29,36 @@ type FileWriter struct {
 //
 // Parameters:
 //   - loc: A string representing the location of the file.
-//   - dirPerm: An os.FileMode representing the permissions to set on the directories.
-//   - filePerm: An os.FileMode representing the permissions to set on the file.
 //
 // Returns:
 //   - *FileWriter: A pointer to the newly created FileWriter.
-func NewFileWriter(loc string, dirPerm, filePerm os.FileMode) *FileWriter {
-	if dirPerm == 0 {
-		dirPerm = os.ModePerm
-	}
-
-	if filePerm == 0 {
-		filePerm = os.ModePerm
-	}
-
+//
+// Behaviors:
+//   - The directory permissions are set to DP_OwnerRestrictOthers.
+//   - The file permissions are set to FP_OwnerRestrictOthers.
+func NewFileWriter(loc string) *FileWriter {
 	return &FileWriter{
 		loc:      loc,
-		dirPerm:  dirPerm,
-		filePerm: filePerm,
+		dirPerm:  DP_OwnerRestrictOthers,
+		filePerm: FP_OwnerRestrictOthers,
 		flag:     os.O_APPEND | os.O_WRONLY,
 	}
+}
+
+// SetDirPermissions sets the permissions of the directory.
+//
+// Parameters:
+//   - perm: An os.FileMode representing the permissions to set on the directory.
+func (fw *FileWriter) SetDirPermissions(perm os.FileMode) {
+	fw.dirPerm = perm
+}
+
+// SetFilePermissions sets the permissions of the file.
+//
+// Parameters:
+//   - perm: An os.FileMode representing the permissions to set on the file.
+func (fw *FileWriter) SetFilePermissions(perm os.FileMode) {
+	fw.filePerm = perm
 }
 
 // GetLocation returns the location of the file.
@@ -129,7 +140,7 @@ func (fw *FileWriter) Exists() (bool, error) {
 		return true, nil
 	}
 
-	if os.IsNotExist(err) {
+	if errors.Is(err, os.ErrNotExist) {
 		return false, nil
 	}
 

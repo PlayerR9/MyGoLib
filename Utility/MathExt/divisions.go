@@ -1,6 +1,8 @@
 package MathExt
 
 import (
+	"math/big"
+
 	ers "github.com/PlayerR9/MyGoLib/Units/errors"
 )
 
@@ -102,4 +104,38 @@ func GreatestCommonDivisor(a, b int) int {
 	}
 
 	return a
+}
+
+// BigFloatDivision is a function that performs division on two integers and returns
+// the result as a big.Float.
+//
+// Parameters:
+//   - numerator: The numerator of the division.
+//   - denominator: The denominator of the division.
+//
+// Returns:
+//   - *big.Float: The result of the division as a big.Float.
+//   - error: An error of type *ErrInvalidParameter if the numerator is negative or
+func BigFloatDivision(numerator, denominator int) (*big.Float, error) {
+	if numerator < 0 {
+		return new(big.Float), ers.NewErrInvalidParameter(
+			"numerator",
+			ers.NewErrGTE(0),
+		)
+	}
+
+	if denominator <= 0 {
+		return new(big.Float), ers.NewErrInvalidParameter(
+			"denominator",
+			ers.NewErrGT(0),
+		)
+	}
+
+	// return R(n1) / R(n2)
+	convergence := new(big.Float).Quo(
+		new(big.Float).SetInt(IntToBigInt(numerator)),
+		new(big.Float).SetInt(IntToBigInt(denominator)),
+	)
+
+	return convergence, nil
 }

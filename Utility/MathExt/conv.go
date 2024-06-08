@@ -2,6 +2,7 @@ package MathExt
 
 import (
 	"math"
+	"math/big"
 
 	ers "github.com/PlayerR9/MyGoLib/Units/errors"
 )
@@ -216,4 +217,8 @@ func BaseToDec(n []int, base int) (int, error) {
 	}
 
 	return result, nil
+}
+
+func IntToBigInt(n int) *big.Int {
+	return new(big.Int).SetInt64(int64(n))
 }
