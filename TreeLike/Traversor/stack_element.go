@@ -26,18 +26,11 @@ type stackElement[T any] struct {
 // Returns:
 //   - *stackElement[T, E]: A pointer to the stack element.
 func newStackElement[T any](prev *tr.TreeNode[T], data T, info uc.Copier) *stackElement[T] {
-	se := &stackElement[T]{
+	return &stackElement[T]{
 		prev: prev,
 		elem: tr.NewTreeNode(data),
+		info: info,
 	}
-
-	if info == nil {
-		se.info = nil
-	} else {
-		se.info = info.Copy()
-	}
-
-	return se
 }
 
 // getData returns the data of the stack element.

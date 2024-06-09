@@ -106,3 +106,13 @@ func (b *Bucket[T]) Limit(n int) {
 		b.elems = b.elems[:n]
 	}
 }
+
+// Slice returns the elements of the bucket.
+//
+// If possible, use only Iterator() instead of this function.
+//
+// Returns:
+//   - []T: the elements of the bucket.
+func (b *Bucket[T]) Slice() []T {
+	return b.elems
+}
