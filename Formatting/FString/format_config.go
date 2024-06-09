@@ -146,7 +146,7 @@ func ApplyFormMany[T FStringer](form FormatConfig, trav *Traversor, elems []T) e
 //
 // Behaviors:
 //   - If the traversor is nil, the function does nothing.
-func ApplyFormFunc[T FStringer](form FormatConfig, trav *Traversor, elem T, f FStringFunc[T]) error {
+func ApplyFormFunc[T any](form FormatConfig, trav *Traversor, elem T, f FStringFunc[T]) error {
 	if trav == nil {
 		// Do nothing if the traversor is nil.
 		return nil
@@ -173,7 +173,7 @@ func ApplyFormFunc[T FStringer](form FormatConfig, trav *Traversor, elem T, f FS
 //
 // Behaviors:
 //   - If the traversor is nil, the function does nothing.
-func ApplyFormManyFunc[T FStringer](form FormatConfig, trav *Traversor, elems []T, f FStringFunc[T]) error {
+func ApplyFormManyFunc[T any](form FormatConfig, trav *Traversor, elems []T, f FStringFunc[T]) error {
 	if trav == nil || len(elems) == 0 {
 		// Do nothing if the traversor is nil or if there are no elements.
 		return nil
