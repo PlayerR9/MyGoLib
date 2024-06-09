@@ -1,6 +1,7 @@
 package Sorting
 
 import (
+	ui "github.com/PlayerR9/MyGoLib/Units/Iterators"
 	us "github.com/PlayerR9/MyGoLib/Units/slice"
 )
 
@@ -8,6 +9,27 @@ import (
 type BucketSet[K comparable, E any] struct {
 	// buckets is the map of buckets.
 	buckets map[K]*Bucket[E]
+}
+
+// Iterator implements the Iterators.Iterable interface.
+func (bs *BucketSet[K, E]) Iterator() ui.Iterater[E] {
+	var builder ui.Builder[K]
+
+	for size := range bs.buckets {
+		builder.Add(size)
+	}
+
+	di, err := ui.NewDynamicIterator(
+		builder.Build(),
+		func(size K) *ui.SimpleIterator[E] {
+			return bs.buckets[size].Iterator().(*ui.SimpleIterator[E])
+		},
+	)
+	if err != nil {
+		return nil
+	}
+
+	return di
 }
 
 // NewBucketSet creates a map of buckets from the given elements using the given
@@ -95,4 +117,49 @@ func (bs *BucketSet[K, E]) Sort(sf SortFunc[E], isAsc bool) {
 	for _, bucket := range bs.buckets {
 		bucket.Sort(sf, isAsc)
 	}
+}
+
+// GetBuckets returns the map of buckets.
+//
+// Returns:
+//   - map[int]*Bucket: the map of buckets.
+func (bs *BucketSet[K, E]) GetBuckets() map[K]*Bucket[E] {
+	return bs.buckets
+}
+
+// GetBucket returns the bucket with the given size.
+//
+// Parameters:
+//   - size: size of the bucket to return.
+//
+// Returns:
+//   - *Bucket: the bucket with the given size.
+//
+// Behaviors:
+//   - If the bucket does not exist, nil is returned.
+func (bs *BucketSet[K, E]) GetBucket(size K) *Bucket[E] {
+	b, ok := bs.buckets[size]
+	if !ok {
+		return nil
+	}
+
+	return b
+}
+
+// DoBuckets applies the given function to each bucket.
+//
+// Parameters:
+//   - f: function to apply to each bucket.
+//
+// Returns:
+//   - error: the first error encountered.
+func (bs *BucketSet[K, E]) DoBuckets(f func(K, *Bucket[E]) error) error {
+	for size, bucket := range bs.buckets {
+		err := f(size, bucket)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
