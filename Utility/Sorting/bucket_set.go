@@ -2,6 +2,7 @@ package Sorting
 
 import (
 	ui "github.com/PlayerR9/MyGoLib/Units/Iterators"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
 	us "github.com/PlayerR9/MyGoLib/Units/slice"
 )
 
@@ -9,6 +10,19 @@ import (
 type BucketSet[K comparable, E any] struct {
 	// buckets is the map of buckets.
 	buckets map[K]*Bucket[E]
+}
+
+// Copy implements the common.Copier interface.
+func (bs *BucketSet[K, E]) Copy() uc.Copier {
+	buckets := make(map[K]*Bucket[E])
+
+	for size, bucket := range bs.buckets {
+		buckets[size] = bucket.Copy().(*Bucket[E])
+	}
+
+	return &BucketSet[K, E]{
+		buckets: buckets,
+	}
 }
 
 // Iterator implements the Iterators.Iterable interface.
@@ -32,7 +46,26 @@ func (bs *BucketSet[K, E]) Iterator() ui.Iterater[E] {
 	return di
 }
 
-// NewBucketSet creates a map of buckets from the given elements using the given
+// NewBucketSet creates a new bucket set from the given map of elements.
+//
+// Parameters:
+//   - m: map of elements to add to the buckets.
+//
+// Returns:
+//   - *BucketSet: the new bucket set.
+func NewBucketSet[K comparable, E any](m map[K][]E) *BucketSet[K, E] {
+	buckets := make(map[K]*Bucket[E])
+
+	for size, elems := range m {
+		buckets[size] = NewBucket(elems)
+	}
+
+	return &BucketSet[K, E]{
+		buckets: buckets,
+	}
+}
+
+// MakeBucketSet creates a map of buckets from the given elements using the given
 // function.
 //
 // Parameters:
@@ -41,7 +74,7 @@ func (bs *BucketSet[K, E]) Iterator() ui.Iterater[E] {
 //
 // Returns:
 //   - map[int]*Bucket: the map of buckets.
-func NewBucketSet[K comparable, E any](elems []E, f func(E) K) *BucketSet[K, E] {
+func MakeBucketSet[K comparable, E any](elems []E, f func(E) K) *BucketSet[K, E] {
 	buckets := make(map[K]*Bucket[E])
 
 	for _, elem := range elems {
