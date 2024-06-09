@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"strings"
 
-	intf "github.com/PlayerR9/MyGoLib/Units/Common"
+	intf "github.com/PlayerR9/MyGoLib/Units/common"
 	ers "github.com/PlayerR9/MyGoLib/Units/errors"
 )
 
@@ -21,7 +21,7 @@ type UpCounter struct {
 	retreatCount int
 }
 
-// Equals implements Common.Objecter.
+// Equals implements common.Objecter.
 func (c *UpCounter) Equals(other intf.Equaler) bool {
 	if other == nil {
 		return false

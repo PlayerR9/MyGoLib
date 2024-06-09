@@ -4,7 +4,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	intf "github.com/PlayerR9/MyGoLib/Units/Common"
+	intf "github.com/PlayerR9/MyGoLib/Units/common"
 	ers "github.com/PlayerR9/MyGoLib/Units/errors"
 )
 

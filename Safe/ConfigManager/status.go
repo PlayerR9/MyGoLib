@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"sync"
 
-	uc "github.com/PlayerR9/MyGoLib/Units/Common"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
 )
 
 // Status is a type that represents the status of a set of keys.

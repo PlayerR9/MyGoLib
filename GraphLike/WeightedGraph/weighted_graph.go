@@ -3,7 +3,7 @@ package WeightedGraph
 import (
 	tlt "github.com/PlayerR9/MyGoLib/TreeLike/Traversor"
 	tr "github.com/PlayerR9/MyGoLib/TreeLike/Tree"
-	uc "github.com/PlayerR9/MyGoLib/Units/Common"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
 )
 
 // WeightFunc is a function that calculates the weight of an edge.

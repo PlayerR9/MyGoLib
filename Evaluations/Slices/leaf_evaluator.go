@@ -2,7 +2,7 @@ package Slices
 
 import (
 	ui "github.com/PlayerR9/MyGoLib/Units/Iterators"
-	up "github.com/PlayerR9/MyGoLib/Units/Pair"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
 )
 
 // LeafEvaluater is an interface that represents a leaf evaluater.
@@ -24,9 +24,9 @@ type LeafEvaluater[A, T, E, R any] interface {
 	//   - lpe: The loop element.
 	//
 	// Returns:
-	//   - *up.Pair[R, error]: The result and an error.
+	//   - *uc.Pair[R, error]: The result and an error.
 	//   - error: An error if the evaluation fails (reserved for panic-level of critical errors).
-	Core(index int, lpe E) (*up.Pair[R, error], error)
+	Core(index int, lpe E) (*uc.Pair[R, error], error)
 
 	// Next is a function type that performs the next evaluation.
 	//
@@ -37,7 +37,7 @@ type LeafEvaluater[A, T, E, R any] interface {
 	// Returns:
 	//   - []T: The new branches.
 	//   - error: An error if the evaluation fails (reserved for panic-level of critical errors).
-	Next(pair *up.Pair[R, error], branch T) ([]T, error)
+	Next(pair *uc.Pair[R, error], branch T) ([]T, error)
 
 	ui.Iterable[E]
 }

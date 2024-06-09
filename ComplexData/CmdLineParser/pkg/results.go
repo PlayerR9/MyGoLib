@@ -4,11 +4,10 @@ import (
 	"fmt"
 
 	evalSlc "github.com/PlayerR9/MyGoLib/Evaluations/Slices"
-	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 	ui "github.com/PlayerR9/MyGoLib/Units/Iterators"
-	up "github.com/PlayerR9/MyGoLib/Units/Pair"
-	us "github.com/PlayerR9/MyGoLib/Units/Slice"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
 	ue "github.com/PlayerR9/MyGoLib/Units/errors"
+	us "github.com/PlayerR9/MyGoLib/Units/slice"
 )
 
 type resultArg struct {
@@ -39,35 +38,6 @@ type resultBranch struct {
 
 	// argsDone is a list of arguments that have been parsed so far.
 	argsDone []string
-}
-
-func (rb *resultBranch) Compare(other uc.Comparer) (int, bool) {
-	if other == nil {
-		return 0, false
-	}
-
-	otherRB, ok := other.(*resultBranch)
-	if !ok {
-		return 0, false
-	}
-
-	diff := len(otherRB.resultMap) - len(rb.resultMap)
-
-	if diff != 0 {
-		return diff, true
-	}
-
-	var size1, size2 int
-
-	for _, v := range rb.resultMap {
-		size1 += v.size()
-	}
-
-	for _, v := range otherRB.resultMap {
-		size2 += v.size()
-	}
-
-	return size2 - size1, true
 }
 
 func (rb *resultBranch) Copy() uc.Copier {
@@ -121,6 +91,7 @@ func (rb *resultBranch) getArgumentsDone() []string {
 	return rb.argsDone
 }
 
+/*
 func (rb *resultBranch) changeReason(err error) {
 	if err != nil {
 		rb.reason = err
@@ -133,6 +104,7 @@ func (rb *resultBranch) changeReason(err error) {
 func (rb *resultBranch) setResultMap(result map[string]*FlagParseResult) {
 	rb.resultMap = result
 }
+*/
 
 func (rb *resultBranch) hasFlag(flagName string) *FlagParseResult {
 	values, ok := rb.resultMap[flagName]
@@ -221,7 +193,7 @@ func (inf *ciEvaluator) Init(args []string) (*resultBranch, error) {
 	return newResultBranch(nil, nil, nil), nil
 }
 
-func (inf *ciEvaluator) Core(index int, lp int) (*up.Pair[[]*FlagParseResult, error], error) {
+func (inf *ciEvaluator) Core(index int, lp int) (*uc.Pair[[]*FlagParseResult, error], error) {
 	inf.flag = inf.flagSeen[index]
 
 	newArgs := inf.args[lp+1 : inf.pos] // +1 to skip the flag name itself
@@ -238,11 +210,11 @@ func (inf *ciEvaluator) Core(index int, lp int) (*up.Pair[[]*FlagParseResult, er
 		err = err.(*ue.ErrIgnorable).Err
 	}
 
-	return up.NewPair(result, err), nil
+	return uc.NewPair(result, err), nil
 
 }
 
-func (inf *ciEvaluator) Next(pair *up.Pair[[]*FlagParseResult, error], branch *resultBranch) ([]*resultBranch, error) {
+func (inf *ciEvaluator) Next(pair *uc.Pair[[]*FlagParseResult, error], branch *resultBranch) ([]*resultBranch, error) {
 	var newBranches []*resultBranch
 
 	flagName := inf.flag.GetName()
@@ -309,36 +281,6 @@ type FlagParseResult struct {
 	argumentsDone []string
 }
 
-// Compare implements the Comparer interface.
-func (fpr *FlagParseResult) Compare(other uc.Comparer) (int, bool) {
-	if other == nil {
-		return 0, false
-	}
-
-	otherFPR, ok := other.(*FlagParseResult)
-	if !ok {
-		return 0, false
-	}
-
-	diff := len(otherFPR.argMap) - len(fpr.argMap)
-
-	if diff != 0 {
-		return diff, true
-	}
-
-	var size1, size2 int
-
-	for _, v := range fpr.argMap {
-		size1 += len(v)
-	}
-
-	for _, v := range otherFPR.argMap {
-		size2 += len(v)
-	}
-
-	return size2 - size1, true
-}
-
 // Copier implements the Copier interface.
 func (fpr *FlagParseResult) Copy() uc.Copier {
 	argMap := make(map[string][]any)
@@ -370,10 +312,12 @@ func NewFlagParseResult() *FlagParseResult {
 	}
 }
 
+/*
 func (fpr *FlagParseResult) hasFlag(argName string) bool {
 	_, ok := fpr.argMap[argName]
 	return ok
 }
+*/
 
 // insert inserts the given arguments into the FlagParseResult.
 //
@@ -439,7 +383,7 @@ func (inf *flgEvaluator) Init(args []string) (*FlagParseResult, error) {
 	return NewFlagParseResult(), nil
 }
 
-func (inf *flgEvaluator) Core(index int, lp *ArgInfo) (*up.Pair[[]*resultArg, error], error) {
+func (inf *flgEvaluator) Core(index int, lp *ArgInfo) (*uc.Pair[[]*resultArg, error], error) {
 	inf.currentArgName = lp.GetName()
 
 	var newPosition int
@@ -452,10 +396,10 @@ func (inf *flgEvaluator) Core(index int, lp *ArgInfo) (*up.Pair[[]*resultArg, er
 
 	results, err := lp.Parse(inf.args[newPosition:])
 
-	return up.NewPair(results, err), nil
+	return uc.NewPair(results, err), nil
 }
 
-func (inf *flgEvaluator) Next(pair *up.Pair[[]*resultArg, error], branch *FlagParseResult) ([]*FlagParseResult, error) {
+func (inf *flgEvaluator) Next(pair *uc.Pair[[]*resultArg, error], branch *FlagParseResult) ([]*FlagParseResult, error) {
 	if pair.Second != nil {
 		// Current branch is invalid.
 		return nil, nil

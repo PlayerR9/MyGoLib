@@ -1,4 +1,4 @@
-package Pair
+package common
 
 // RemoveNilPairs removes all nil pairs from the given slice of pairs.
 //

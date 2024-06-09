@@ -6,9 +6,9 @@ import (
 	"strconv"
 	"strings"
 
-	uc "github.com/PlayerR9/MyGoLib/Units/Common"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
 	ue "github.com/PlayerR9/MyGoLib/Units/errors"
-	uthlp "github.com/PlayerR9/MyGoLib/Utility/Helpers"
+	us "github.com/PlayerR9/MyGoLib/Units/slice"
 )
 
 // ArgumentParserFunc is a function type that represents a function
@@ -247,12 +247,12 @@ func (a *ArgInfo) Parse(args []string) ([]*resultArg, error) {
 		return newResultArg(topass, parsed), nil
 	}
 
-	solutions, ok := uthlp.EvaluateSimpleHelpers(subslices, f)
+	solutions, ok := us.EvaluateSimpleHelpers(subslices, f)
 	if !ok {
 		return nil, ue.NewErrPossibleError(errors.New("no valid arguments"), solutions[0].GetData().Second)
 	}
 
-	return uthlp.ExtractResults(solutions), nil
+	return us.ExtractResults(solutions), nil
 }
 
 // GetName returns the name of the argument.

@@ -3,18 +3,14 @@ package OrderedMap
 import (
 	"slices"
 
-	cdp "github.com/PlayerR9/MyGoLib/Units/Pair"
-
-	uc "github.com/PlayerR9/MyGoLib/Units/Common"
-
 	ll "github.com/PlayerR9/MyGoLib/Units/Iterators"
-
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
 	ue "github.com/PlayerR9/MyGoLib/Units/errors"
+	uts "github.com/PlayerR9/MyGoLib/Utility/Sorting"
 )
 
 // MapKeyer is an interface that represents a key of a map.
 type MapKeyer interface {
-	uc.Comparer
 	uc.Copier
 }
 
@@ -22,6 +18,8 @@ type MapKeyer interface {
 type LessMap[K MapKeyer, V any] struct {
 	keys   []K
 	values []V
+
+	sf uts.SortFunc[K]
 }
 
 // Copy creates a deep copy of the sorted map.
@@ -42,17 +40,29 @@ func (s *LessMap[K, V]) Copy() uc.Copier {
 	return &LessMap[K, V]{
 		keys:   keysCopy,
 		values: valuesCopy,
+		sf:     s.sf,
 	}
 }
 
 // NewLessMap creates a new sorted map.
 //
+// Parameters:
+//   - sf: The sort function to use for sorting the keys.
+//
 // Returns:
 //   - *LessMap[K, V]: A pointer to the newly created sorted map.
-func NewLessMap[K MapKeyer, V any]() *LessMap[K, V] {
+//
+// Behaviors:
+//   - If the sort function is nil, the function returns nil.
+func NewLessMap[K MapKeyer, V any](sf uts.SortFunc[K]) *LessMap[K, V] {
+	if sf == nil {
+		return nil
+	}
+
 	return &LessMap[K, V]{
 		keys:   make([]K, 0),
 		values: make([]V, 0),
+		sf:     sf,
 	}
 }
 
@@ -65,14 +75,13 @@ func NewLessMap[K MapKeyer, V any]() *LessMap[K, V] {
 // Behaviors:
 //   - If the key already exists, the value is updated.
 func (s *LessMap[K, V]) AddEntry(key K, value V) {
-	pos, ok := uc.Find(s.keys, key)
+	pos, ok := slices.BinarySearchFunc(s.keys, key, s.sf)
 	if ok {
 		s.values[pos] = value
-		return
+	} else {
+		s.keys = slices.Insert(s.keys, pos, key)
+		s.values = slices.Insert(s.values, pos, value)
 	}
-
-	s.keys = slices.Insert(s.keys, pos, key)
-	s.values = slices.Insert(s.values, pos, value)
 }
 
 // GetEntry gets the value of the entry with the provided key.
@@ -88,7 +97,7 @@ func (s *LessMap[K, V]) AddEntry(key K, value V) {
 //   - One can use the error *ErrKeyNotFound from the package
 //     when the key does not exist.
 func (s *LessMap[K, V]) GetEntry(key K) (V, bool) {
-	pos, ok := uc.Find(s.keys, key)
+	pos, ok := slices.BinarySearchFunc(s.keys, key, s.sf)
 	if !ok {
 		return *new(V), false
 	}
@@ -123,18 +132,20 @@ func (s *LessMap[K, V]) Keys() []K {
 // GetEntries returns the entries in the sorted map.
 //
 // Returns:
-//   - []*cdp.Pair[K, V]: The entries in the sorted map.
+//   - []*uc.Pair[K, V]: The entries in the sorted map.
 //
 // Behaviors:
 //   - The entries are returned in the order of the keys.
 //   - There are no nil pairs in the returned slice.
 //   - Prefer using Iterator() method for iterating over the entries
 //     instead of this method.
-func (s *LessMap[K, V]) GetEntries() []*cdp.Pair[K, V] {
-	entries := make([]*cdp.Pair[K, V], 0, len(s.keys))
+func (s *LessMap[K, V]) GetEntries() []*uc.Pair[K, V] {
+	entries := make([]*uc.Pair[K, V], 0, len(s.keys))
 
 	for i, key := range s.keys {
-		entries = append(entries, cdp.NewPair(key, s.values[i]))
+		p := uc.NewPair(key, s.values[i])
+
+		entries = append(entries, p)
 	}
 
 	return entries
@@ -148,7 +159,7 @@ func (s *LessMap[K, V]) GetEntries() []*cdp.Pair[K, V] {
 // Behaviors:
 //   - If the key does not exist, nothing happens.
 func (s *LessMap[K, V]) Delete(key K) {
-	pos, ok := uc.Find(s.keys, key)
+	pos, ok := slices.BinarySearchFunc(s.keys, key, s.sf)
 	if !ok {
 		return
 	}
@@ -170,7 +181,7 @@ func (s *LessMap[K, V]) Delete(key K) {
 //   - *ErrKeyNotFound: The key does not exist in the sorted map.
 //   - Any error returned by the function 'f'.
 func (s *LessMap[K, V]) ModifyValueFunc(key K, f ModifyValueFunc[V]) error {
-	pos, ok := uc.Find(s.keys, key)
+	pos, ok := slices.BinarySearchFunc(s.keys, key, s.sf)
 	if !ok {
 		return NewErrKeyNotFound()
 	}
@@ -188,15 +199,17 @@ func (s *LessMap[K, V]) ModifyValueFunc(key K, f ModifyValueFunc[V]) error {
 // Iterator returns an iterator for the sorted map.
 //
 // Returns:
-//   - ll.Iterater[*cdp.Pair[K, V]]: An iterator for the sorted map.
+//   - ll.Iterater[*uc.Pair[K, V]]: An iterator for the sorted map.
 //
 // Behaviors:
 //   - The iterator returns the entries in the order of the keys as pairs.
-func (s *LessMap[K, V]) Iterator() ll.Iterater[*cdp.Pair[K, V]] {
-	var builder ll.Builder[*cdp.Pair[K, V]]
+func (s *LessMap[K, V]) Iterator() ll.Iterater[*uc.Pair[K, V]] {
+	var builder ll.Builder[*uc.Pair[K, V]]
 
 	for i, key := range s.keys {
-		builder.Add(cdp.NewPair(key, s.values[i]))
+		p := uc.NewPair(key, s.values[i])
+
+		builder.Add(p)
 	}
 
 	return builder.Build()

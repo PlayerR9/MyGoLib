@@ -3,22 +3,19 @@ package Sets
 import (
 	"strings"
 
-	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 	ui "github.com/PlayerR9/MyGoLib/Units/Iterators"
-	us "github.com/PlayerR9/MyGoLib/Units/Slice"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
+	uts "github.com/PlayerR9/MyGoLib/Utility/Sorting"
 	"golang.org/x/exp/slices"
 )
 
-// LessSetElementer is an interface that represents an element of a LessSet.
-type LessSetElementer interface {
-	uc.Comparer
-	uc.Equaler
-}
-
 // LessSet is a set that uses the Equals method to compare elements.
-type LessSet[T LessSetElementer] struct {
+type LessSet[T any] struct {
 	// elems is the slice of elements in the set.
 	elems []T
+
+	// sf is the sort function to use.
+	sf uts.SortFunc[T]
 }
 
 // IsEmpty checks if the set is empty.
@@ -49,8 +46,7 @@ func (s *LessSet[T]) HasElem(elem T) bool {
 		return false
 	}
 
-	_, ok := uc.Find(s.elems, elem)
-
+	_, ok := slices.BinarySearchFunc(s.elems, elem, s.sf)
 	return ok
 }
 
@@ -67,7 +63,7 @@ func (s *LessSet[T]) Add(elem T) {
 		return
 	}
 
-	pos, ok := uc.Find(s.elems, elem)
+	pos, ok := slices.BinarySearchFunc(s.elems, elem, s.sf)
 	if ok {
 		return
 	}
@@ -87,7 +83,7 @@ func (s *LessSet[T]) Remove(elem T) {
 		return
 	}
 
-	pos, ok := uc.Find(s.elems, elem)
+	pos, ok := slices.BinarySearchFunc(s.elems, elem, s.sf)
 	if !ok {
 		return
 	}
@@ -103,24 +99,23 @@ func (s *LessSet[T]) Remove(elem T) {
 // Returns:
 //   - *LessSet[T]: The union of the set with the other set.
 func (s *LessSet[T]) Union(other *LessSet[T]) *LessSet[T] {
-	if other == nil {
-		return s
-	}
+	newElems := make([]T, len(s.elems))
+	copy(newElems, s.elems)
 
-	elems := make([]T, len(s.elems))
-	copy(elems, s.elems)
+	if other != nil {
+		for _, e := range other.elems {
+			pos, ok := slices.BinarySearchFunc(newElems, e, s.sf)
+			if ok {
+				continue
+			}
 
-	for _, e := range other.elems {
-		pos, ok := uc.Find(elems, e)
-		if ok {
-			continue
+			newElems = slices.Insert(newElems, pos, e)
 		}
-
-		elems = slices.Insert(elems, pos, e)
 	}
 
 	return &LessSet[T]{
-		elems: elems,
+		elems: newElems,
+		sf:    s.sf,
 	}
 }
 
@@ -132,22 +127,19 @@ func (s *LessSet[T]) Union(other *LessSet[T]) *LessSet[T] {
 // Returns:
 //   - *LessSet[T]: The intersection of the set with the other set.
 func (s *LessSet[T]) Intersection(other *LessSet[T]) *LessSet[T] {
-	if other == nil {
-		return &LessSet[T]{
-			elems: make([]T, 0),
-		}
-	}
+	var newElems []T
 
-	newElems := make([]T, 0)
-
-	for _, e := range s.elems {
-		if other.HasElem(e) {
-			newElems = append(newElems, e)
+	if other != nil {
+		for _, e := range s.elems {
+			if other.HasElem(e) {
+				newElems = append(newElems, e)
+			}
 		}
 	}
 
 	return &LessSet[T]{
 		elems: newElems,
+		sf:    s.sf,
 	}
 }
 
@@ -159,20 +151,19 @@ func (s *LessSet[T]) Intersection(other *LessSet[T]) *LessSet[T] {
 // Returns:
 //   - *LessSet[T]: The difference of the set with the other set.
 func (s *LessSet[T]) Difference(other *LessSet[T]) *LessSet[T] {
-	if other == nil {
-		return s
-	}
+	var newElems []T
 
-	newElems := make([]T, 0)
-
-	for _, e := range s.elems {
-		if !other.HasElem(e) {
-			newElems = append(newElems, e)
+	if other != nil {
+		for _, e := range s.elems {
+			if !other.HasElem(e) {
+				newElems = append(newElems, e)
+			}
 		}
 	}
 
 	return &LessSet[T]{
 		elems: newElems,
+		sf:    s.sf,
 	}
 }
 
@@ -185,10 +176,16 @@ func (s *LessSet[T]) Difference(other *LessSet[T]) *LessSet[T] {
 //   - *LessSet[T]: The symmetric difference of the set with the other set.
 func (s *LessSet[T]) SymmetricDifference(other *LessSet[T]) *LessSet[T] {
 	if other == nil {
-		return s
+		newElems := make([]T, len(s.elems))
+		copy(newElems, s.elems)
+
+		return &LessSet[T]{
+			elems: newElems,
+			sf:    s.sf,
+		}
 	}
 
-	diff1 := make([]T, 0)
+	var diff1, diff2 []T
 
 	for _, e := range s.elems {
 		if !other.HasElem(e) {
@@ -196,28 +193,27 @@ func (s *LessSet[T]) SymmetricDifference(other *LessSet[T]) *LessSet[T] {
 		}
 	}
 
-	diff2 := make([]T, 0)
-
 	for _, e := range other.elems {
 		if !s.HasElem(e) {
 			diff2 = append(diff2, e)
 		}
 	}
 
-	elems := make([]T, len(diff1))
-	copy(elems, diff1)
+	newElems := make([]T, len(diff1))
+	copy(newElems, diff1)
 
 	for _, e := range diff2 {
-		pos, ok := uc.Find(elems, e)
+		pos, ok := slices.BinarySearchFunc(newElems, e, s.sf)
 		if ok {
 			continue
 		}
 
-		elems = slices.Insert(elems, pos, e)
+		newElems = slices.Insert(newElems, pos, e)
 	}
 
 	return &LessSet[T]{
-		elems: elems,
+		elems: newElems,
+		sf:    s.sf,
 	}
 }
 
@@ -260,18 +256,15 @@ func (s *LessSet[T]) String() string {
 		return "{}"
 	}
 
-	if len(s.elems) == 1 {
-		return "{" + uc.StringOf(s.elems[0]) + "}"
+	values := make([]string, 0, len(s.elems))
+	for _, k := range s.elems[1:] {
+		values = append(values, uc.StringOf(k))
 	}
 
 	var builder strings.Builder
 
 	builder.WriteRune('{')
-	builder.WriteString(uc.StringOf(s.elems[0]))
-	for _, k := range s.elems[1:] {
-		builder.WriteString(", ")
-		builder.WriteString(uc.StringOf(k))
-	}
+	builder.WriteString(strings.Join(values, ", "))
 	builder.WriteRune('}')
 
 	return builder.String()
@@ -317,6 +310,7 @@ func (s *LessSet[T]) Copy() uc.Copier {
 
 	return &LessSet[T]{
 		elems: newElems,
+		sf:    s.sf,
 	}
 }
 
@@ -338,17 +332,46 @@ func (s *LessSet[T]) Iterator() ui.Iterater[T] {
 
 // NewLessSet creates a new LessSet.
 //
+// Parameters:
+//   - elems: The elements to add to the set.
+//   - sf: The sort function to use.
+//
 // Returns:
 //   - *LessSet: A new LessSet.
-func NewLessSet[T LessSetElementer](elems []T) *LessSet[T] {
-	elems = us.UniquefyEquals(elems, true)
-	uc.Sort(elems)
+//
+// Behaviors:
+//   - If the sort function is nil, the function returns nil.
+func NewLessSet[T any](elems []T, sf uts.SortFunc[T]) *LessSet[T] {
+	if sf == nil {
+		return nil
+	}
+
+	var newElems []T
+
+	for _, e := range elems {
+		pos, ok := slices.BinarySearchFunc(newElems, e, sf)
+		if ok {
+			continue
+		}
+
+		newElems = slices.Insert(newElems, pos, e)
+	}
 
 	return &LessSet[T]{
-		elems: elems,
+		elems: newElems,
+		sf:    sf,
 	}
 }
 
+// Find finds an element in the set.
+//
+// Parameters:
+//   - elem: The element to find.
+//
+// Returns:
+//   - int: The index of the element in the set.
+//   - bool: True if the element is in the set, false otherwise.
 func (s *LessSet[T]) Find(elem T) (int, bool) {
-	return uc.Find(s.elems, elem)
+	pos, ok := slices.BinarySearchFunc(s.elems, elem, s.sf)
+	return pos, ok
 }

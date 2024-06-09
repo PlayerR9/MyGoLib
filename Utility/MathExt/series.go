@@ -126,7 +126,11 @@ func NewLinearRegression() *LinearRegression {
 //   - float64: The value of a.
 //   - float64: The value of b.
 //   - error: An error if the calculation fails.
-func (l *LinearRegression) FindEquation(cr ConvergenceResult) error {
+func (l *LinearRegression) FindEquation(cr *ConvergenceResult) error {
+	if cr == nil {
+		return ue.NewErrNilParameter("cr")
+	}
+
 	if len(cr.values) < 2 {
 		return fmt.Errorf("not enough values to calculate equation")
 	}

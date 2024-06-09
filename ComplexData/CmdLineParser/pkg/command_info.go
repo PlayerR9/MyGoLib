@@ -5,15 +5,12 @@ package pkg
 import (
 	"errors"
 
-	ffs "github.com/PlayerR9/MyGoLib/Formatting/FString"
-
-	uc "github.com/PlayerR9/MyGoLib/Units/Common"
-	up "github.com/PlayerR9/MyGoLib/Units/Pair"
-	us "github.com/PlayerR9/MyGoLib/Units/Slice"
-	ue "github.com/PlayerR9/MyGoLib/Units/errors"
-	hlp "github.com/PlayerR9/MyGoLib/Utility/Helpers"
-
 	evalSlc "github.com/PlayerR9/MyGoLib/Evaluations/Slices"
+	ffs "github.com/PlayerR9/MyGoLib/Formatting/FString"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
+	ue "github.com/PlayerR9/MyGoLib/Units/errors"
+	us "github.com/PlayerR9/MyGoLib/Units/slice"
+	uts "github.com/PlayerR9/MyGoLib/Utility/Sorting"
 )
 
 // CommandCallbackFunc is a function type that represents a callback
@@ -287,42 +284,39 @@ func (inf *CommandInfo) GetFlag(name string) *FlagInfo {
 // Returns:
 //   - *ParsedCommand: A pointer to the parsed command.
 //   - error: An error, if any.
-func (inf *CommandInfo) Parse(branches []*resultBranch, args []string) ([]*up.Pair[*ParsedCommand, error], error) {
+func (inf *CommandInfo) Parse(branches []*resultBranch, args []string) ([]*uc.Pair[*ParsedCommand, error], error) {
 	// TODO: Handle the case where pos is not 0.
 
-	err := uc.StableSort(branches, false)
-	if err != nil {
-		return nil, err
-	}
+	uts.StableSort(branches, ResultBranchSortFunc, false)
 
 	checkIfBranchHasRequiredFlags := func(branch *resultBranch) (*resultBranch, error) {
 		err := branch.errIfInvalidRequiredFlags(inf.flags)
 		return branch, err
 	}
 
-	solution, ok := hlp.EvaluateSimpleHelpers(branches, checkIfBranchHasRequiredFlags)
+	solution, ok := us.EvaluateSimpleHelpers(branches, checkIfBranchHasRequiredFlags)
 	if !ok {
 		return nil, solution[0].GetData().Second
 	} else if len(branches) == 0 {
 		// No valid arguments is also a valid solution. Albeit, it is questionable.
 		command := newParsedCommand(inf.name, nil, inf.callback)
 
-		return []*up.Pair[*ParsedCommand, error]{
-			up.NewPair(command, error(ue.NewErrIgnorable(
+		return []*uc.Pair[*ParsedCommand, error]{
+			uc.NewPair(command, error(ue.NewErrIgnorable(
 				errors.New("no valid arguments were found"),
 			))),
 		}, nil
 	}
 
-	branches = hlp.ExtractResults(solution)
+	branches = us.ExtractResults(solution)
 
-	solution, ok = hlp.EvaluateSimpleHelpers(branches, errIfAnyError)
+	solution, ok = us.EvaluateSimpleHelpers(branches, errIfAnyError)
 	if !ok {
 		// No valid arguments is also a valid solution. Albeit, it is questionable.
 		command := newParsedCommand(inf.name, nil, inf.callback)
 
-		return []*up.Pair[*ParsedCommand, error]{
-			up.NewPair(command, error(ue.NewErrIgnorable(
+		return []*uc.Pair[*ParsedCommand, error]{
+			uc.NewPair(command, error(ue.NewErrIgnorable(
 				errors.New("no valid arguments were found"),
 			))),
 		}, solution[0].GetData().Second
@@ -332,14 +326,14 @@ func (inf *CommandInfo) Parse(branches []*resultBranch, args []string) ([]*up.Pa
 		// No valid arguments is also a valid solution. Albeit, it is questionable.
 		command := newParsedCommand(inf.name, nil, inf.callback)
 
-		return []*up.Pair[*ParsedCommand, error]{
-			up.NewPair(command, error(ue.NewErrIgnorable(
+		return []*uc.Pair[*ParsedCommand, error]{
+			uc.NewPair(command, error(ue.NewErrIgnorable(
 				errors.New("no valid arguments were found"),
 			))),
 		}, nil
 	}
 
-	var possibleCommands []*up.Pair[*ParsedCommand, error]
+	var possibleCommands []*uc.Pair[*ParsedCommand, error]
 
 	for _, branch := range branches {
 		var reason error
@@ -357,7 +351,7 @@ func (inf *CommandInfo) Parse(branches []*resultBranch, args []string) ([]*up.Pa
 
 		command := newParsedCommand(inf.name, result, inf.callback)
 
-		possibleCommands = append(possibleCommands, up.NewPair(command, reason))
+		possibleCommands = append(possibleCommands, uc.NewPair(command, reason))
 	}
 
 	return possibleCommands, nil

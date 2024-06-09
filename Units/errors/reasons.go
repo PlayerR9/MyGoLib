@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	com "github.com/PlayerR9/MyGoLib/Units/Common"
+	com "github.com/PlayerR9/MyGoLib/Units/common"
 )
 
 // ErrOutOfBounds represents an error when a value is out of a specified range.
@@ -203,36 +203,6 @@ func (e *ErrEmpty[T]) Error() string {
 //   - *ErrEmpty: A pointer to the newly created ErrEmpty.
 func NewErrEmpty[T any](value T) *ErrEmpty[T] {
 	return &ErrEmpty[T]{Value: value}
-}
-
-// ErrNotComparable represents an error when a value is not comparable.
-type ErrNotComparable[T any] struct {
-	// Value is the value that caused the error.
-	Value T
-}
-
-// Error returns the error message: "type <type> does not support comparison".
-//
-// Returns:
-//   - string: The error message.
-func (e *ErrNotComparable[T]) Error() string {
-	var builder strings.Builder
-
-	builder.WriteString("type ")
-	builder.WriteString(fmt.Sprintf("%T", e.Value))
-	builder.WriteString(" does not support comparison")
-
-	return builder.String()
-}
-
-// NewErrNotComparable creates a new ErrNotComparable error.
-//
-// Returns:
-//   - *ErrNotComparable: A pointer to the newly created ErrNotComparable.
-func NewErrNotComparable[T any](value T) *ErrNotComparable[T] {
-	return &ErrNotComparable[T]{
-		Value: value,
-	}
 }
 
 // ErrGT represents an error when a value is less than or equal to a specified value.

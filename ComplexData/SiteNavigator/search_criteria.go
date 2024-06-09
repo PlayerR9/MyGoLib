@@ -5,8 +5,8 @@ import (
 
 	"golang.org/x/net/html"
 
-	cdp "github.com/PlayerR9/MyGoLib/Units/Pair"
-	slext "github.com/PlayerR9/MyGoLib/Units/Slice"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
+	slext "github.com/PlayerR9/MyGoLib/Units/slice"
 )
 
 // SearchCriteria is a struct that encapsulates the parameters for searching
@@ -19,7 +19,7 @@ type SearchCriteria struct {
 	Data *string
 
 	// Attrs is a slice of attribute key-value pairs to match.
-	Attrs []*cdp.Pair[string, slext.PredicateFilter[string]]
+	Attrs []*uc.Pair[string, slext.PredicateFilter[string]]
 }
 
 // NewSearchCriteria constructs a new SearchCriteria instance using the provided
@@ -59,7 +59,7 @@ func (sc *SearchCriteria) SetData(data string) *SearchCriteria {
 // Returns:
 //   - *SearchCriteria: The SearchCriteria instance with the attribute key-value pair appended.
 func (sc *SearchCriteria) AppendAttr(key string, val slext.PredicateFilter[string]) *SearchCriteria {
-	sc.Attrs = append(sc.Attrs, cdp.NewPair(key, val))
+	sc.Attrs = append(sc.Attrs, uc.NewPair(key, val))
 
 	return sc
 }

@@ -1,7 +1,9 @@
 package Graph
 
 import (
-	uos "github.com/PlayerR9/MyGoLib/Utility/Sorting"
+	"slices"
+
+	uts "github.com/PlayerR9/MyGoLib/Utility/Sorting"
 )
 
 // remapVertices shifts all vertices to the right starting from the given position.
@@ -22,14 +24,20 @@ func (g *Graph[T]) remapVertices(pos int) {
 }
 
 type Graph[T VertexElementer] struct {
-	vertices *uos.Slice[*Vertex[T]]
+	vertices []*Vertex[T]
 	edges    map[int]map[int]bool
+	sf       uts.SortFunc[*Vertex[T]]
 }
 
-func NewGraph[T VertexElementer]() *Graph[T] {
+func NewGraph[T VertexElementer](sf uts.SortFunc[*Vertex[T]]) *Graph[T] {
+	if sf == nil {
+		return nil
+	}
+
 	return &Graph[T]{
-		vertices: uos.NewSlice[*Vertex[T]](nil),
+		vertices: make([]*Vertex[T], 0),
 		edges:    make(map[int]map[int]bool),
+		sf:       sf,
 	}
 }
 
@@ -38,9 +46,9 @@ func (g *Graph[T]) AddVertex(v *Vertex[T]) {
 		return
 	}
 
-	pos, ok := g.vertices.TryInsert(v)
+	pos, ok := slices.BinarySearchFunc(g.vertices, v, g.sf)
 	if !ok {
-		g.vertices.Insert(v, false)
+		g.vertices = slices.Insert(g.vertices, pos, v)
 		g.remapVertices(pos)
 	}
 
@@ -67,8 +75,8 @@ func (g *Graph[T]) AddEdge(from, to *Vertex[T]) {
 		return
 	}
 
-	fromIndex := g.vertices.Find(from)
-	toIndex := g.vertices.Find(to)
+	fromIndex, _ := slices.BinarySearchFunc(g.vertices, from, g.sf)
+	toIndex, _ := slices.BinarySearchFunc(g.vertices, to, g.sf)
 
 	g.edges[fromIndex][toIndex] = true
 }

@@ -1,7 +1,7 @@
 package OrderedMap
 
 import (
-	uc "github.com/PlayerR9/MyGoLib/Units/Common"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
 )
 
 // PredicateFilter is a type that defines a map filter function.

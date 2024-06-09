@@ -4,7 +4,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	com "github.com/PlayerR9/MyGoLib/Units/Common"
+	com "github.com/PlayerR9/MyGoLib/Units/common"
 )
 
 // String represents a unit of data in a draw table with a specific style.
@@ -16,7 +16,7 @@ type String struct {
 	length int
 }
 
-// Equals implements Common.Objecter.
+// Equals implements common.Objecter.
 func (s *String) Equals(other com.Equaler) bool {
 	if other == nil {
 		return false

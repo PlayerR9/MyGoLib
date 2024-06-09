@@ -4,11 +4,8 @@ import (
 	"slices"
 	"strings"
 
-	cdp "github.com/PlayerR9/MyGoLib/Units/Pair"
-
-	uc "github.com/PlayerR9/MyGoLib/Units/Common"
-
 	ll "github.com/PlayerR9/MyGoLib/Units/Iterators"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
 	ue "github.com/PlayerR9/MyGoLib/Units/errors"
 )
 
@@ -21,7 +18,7 @@ type OrderedMap[K comparable, V any] struct {
 	keys []K
 }
 
-// Equals implements Common.Objecter.
+// Equals implements common.Objecter.
 func (s *OrderedMap[K, V]) Equals(other uc.Equaler) bool {
 	if other == nil {
 		return false
@@ -50,7 +47,7 @@ func (s *OrderedMap[K, V]) Equals(other uc.Equaler) bool {
 	return true
 }
 
-// String implements Common.Objecter.
+// String implements common.Objecter.
 func (s *OrderedMap[K, V]) String() string {
 	if len(s.keys) == 0 {
 		return "{}"
@@ -186,18 +183,18 @@ func (s *OrderedMap[K, V]) Keys() []K {
 // GetEntries returns the entries in the sorted map.
 //
 // Returns:
-//   - []*cdp.Pair[K, V]: The entries in the sorted map.
+//   - []*uc.Pair[K, V]: The entries in the sorted map.
 //
 // Behaviors:
 //   - The entries are returned in the order of the keys.
 //   - There are no nil pairs in the returned slice.
 //   - Prefer using Iterator() method for iterating over the entries
 //     instead of this method.
-func (s *OrderedMap[K, V]) GetEntries() []*cdp.Pair[K, V] {
-	entries := make([]*cdp.Pair[K, V], 0, len(s.keys))
+func (s *OrderedMap[K, V]) GetEntries() []*uc.Pair[K, V] {
+	entries := make([]*uc.Pair[K, V], 0, len(s.keys))
 
 	for _, key := range s.keys {
-		entries = append(entries, cdp.NewPair(key, s.mapping[key]))
+		entries = append(entries, uc.NewPair(key, s.mapping[key]))
 	}
 
 	return entries
@@ -271,15 +268,15 @@ func (s *OrderedMap[K, V]) SortKeys(less func(K, K) int) {
 // Iterator returns an iterator for the sorted map.
 //
 // Returns:
-//   - ll.Iterater[*cdp.Pair[K, V]]: An iterator for the sorted map.
+//   - ll.Iterater[*uc.Pair[K, V]]: An iterator for the sorted map.
 //
 // Behaviors:
 //   - The iterator returns the entries in the order of the keys as pairs.
-func (s *OrderedMap[K, V]) Iterator() ll.Iterater[*cdp.Pair[K, V]] {
-	var builder ll.Builder[*cdp.Pair[K, V]]
+func (s *OrderedMap[K, V]) Iterator() ll.Iterater[*uc.Pair[K, V]] {
+	var builder ll.Builder[*uc.Pair[K, V]]
 
 	for _, key := range s.keys {
-		builder.Add(cdp.NewPair(key, s.mapping[key]))
+		builder.Add(uc.NewPair(key, s.mapping[key]))
 	}
 
 	return builder.Build()

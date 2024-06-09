@@ -2,7 +2,7 @@ package TreeExplorer
 
 import (
 	tr "github.com/PlayerR9/MyGoLib/TreeLike/Tree"
-	uc "github.com/PlayerR9/MyGoLib/Units/Common"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
 	ers "github.com/PlayerR9/MyGoLib/Units/errors"
 )
 

@@ -5,7 +5,7 @@ import (
 
 	rws "github.com/PlayerR9/MyGoLib/Safe/RWSafe"
 	ur "github.com/PlayerR9/MyGoLib/Units/Runner"
-	us "github.com/PlayerR9/MyGoLib/Units/Slice"
+	us "github.com/PlayerR9/MyGoLib/Units/slice"
 )
 
 // DiscardAnyMessage is a function that discards all messages from a receiver.

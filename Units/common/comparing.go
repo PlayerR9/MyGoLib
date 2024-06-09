@@ -1,6 +1,4 @@
-package Common
-
-import "fmt"
+package common
 
 // Comparable is an interface that defines the behavior of a type that can be
 // compared with other values of the same type using the < and > operators.
@@ -154,13 +152,6 @@ func CompareAny(a, b any) (int, bool) {
 		} else {
 			return 0, true
 		}
-	case Comparer:
-		otherB, ok := b.(Comparer)
-		if !ok {
-			return 0, false
-		}
-
-		return a.Compare(otherB)
 	default:
 		return 0, false
 	}
@@ -177,102 +168,4 @@ type Equaler interface {
 	// Returns:
 	//   - bool: True if the objects are equal, false otherwise.
 	Equals(other Equaler) bool
-}
-
-// Comparer is an interface that defines a method to compare two objects
-// of the same type.
-type Comparer interface {
-	// Compare returns a negative value if the object is less than the other object,
-	// zero if they are equal, and a positive value if the object is greater
-	// than the other object.
-	//
-	// Parameters:
-	//   - other: The other object to compare to.
-	//
-	// Returns:
-	//   - int: The result of the comparison.
-	//   - bool: True if the objects are comparable, false otherwise.
-	Compare(other Comparer) (int, bool)
-}
-
-// CompareOf compares two objects of the same type. If any of the objects implements
-// the Comparer interface, the Compare method is called. Otherwise, the objects are
-// compared using the < and == operators.
-//
-// Parameters:
-//   - a: The first object to compare.
-//   - b: The second object to compare.
-//
-// Returns:
-//   - int: The result of the comparison.
-func CompareOf(a, b any) (int, bool) {
-	if a == nil || b == nil {
-		return 0, false
-	}
-
-	switch a := a.(type) {
-	case Comparer:
-		val2, ok := b.(Comparer)
-		if !ok {
-			return 0, false
-		}
-
-		return a.Compare(val2)
-	default:
-		return CompareAny(a, b)
-	}
-}
-
-// IsComparable returns true if the value is comparable with other values of the
-// same type using the < and > operators or the Comparable interface.
-//
-// Parameters:
-//   - value: The value to check.
-//
-// Returns:
-//   - bool: True if the value is comparable, false otherwise.
-func IsComparable(value any) bool {
-	if value == nil {
-		return false
-	}
-
-	switch value.(type) {
-	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64,
-		float32, float64, string:
-		return true
-	case Comparer:
-		return true
-	default:
-		return false
-	}
-}
-
-// ErrNotComparable is an error type that is returned when two values are not
-// comparable.
-type ErrNotComparable[A, B Comparer] struct {
-	// First is the first value that is not comparable.
-	First A
-
-	// Second is the second value that is not comparable.
-	Second B
-}
-
-// Error returns the error message: "values <First> and <Second> are not comparable".
-//
-// Returns:
-//   - string: The error message.
-func (e *ErrNotComparable[A, B]) Error() string {
-	return fmt.Sprintf("values %T and %T are not comparable", e.First, e.Second)
-}
-
-// NewErrNotComparable creates a new ErrNotComparable error with the provided values.
-//
-// Parameters:
-//   - first: The first value that is not comparable.
-//   - second: The second value that is not comparable.
-//
-// Returns:
-//   - *ErrNotComparable: A pointer to the new error.
-func NewErrNotComparable[A, B Comparer](first A, second B) *ErrNotComparable[A, B] {
-	return &ErrNotComparable[A, B]{First: first, Second: second}
 }

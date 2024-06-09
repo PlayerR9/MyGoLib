@@ -3,7 +3,7 @@ package FString
 import (
 	"strings"
 
-	uc "github.com/PlayerR9/MyGoLib/Units/Common"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
 )
 
 // Stringify converts a formatted string to a string.

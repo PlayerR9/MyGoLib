@@ -1,11 +1,10 @@
 package Graph
 
 import (
-	uc "github.com/PlayerR9/MyGoLib/Units/Common"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
 )
 
 type VertexElementer interface {
-	uc.Comparer
 	uc.Equaler
 	uc.Copier
 }
@@ -32,19 +31,6 @@ func (v *Vertex[T]) Equals(other uc.Equaler) bool {
 		v.isFinal == otherV.isFinal
 }
 
-func (v *Vertex[T]) Compare(other uc.Comparer) (int, bool) {
-	if other == nil {
-		return 0, false
-	}
-
-	otherV, ok := other.(*Vertex[T])
-	if !ok {
-		return 0, false
-	}
-
-	return v.value.Compare(otherV.value)
-}
-
 func (v *Vertex[T]) Copy() uc.Copier {
 	return &Vertex[T]{
 		value:     v.value.Copy().(T),
@@ -59,4 +45,8 @@ func NewVertex[T VertexElementer](value T) *Vertex[T] {
 		isInitial: false,
 		isFinal:   false,
 	}
+}
+
+func (v *Vertex[T]) GetValue() T {
+	return v.value
 }

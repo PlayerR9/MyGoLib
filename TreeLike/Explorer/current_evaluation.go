@@ -3,7 +3,7 @@ package TreeExplorer
 import (
 	"fmt"
 
-	uc "github.com/PlayerR9/MyGoLib/Units/Common"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
 )
 
 // EvalStatus represents the status of an evaluation.

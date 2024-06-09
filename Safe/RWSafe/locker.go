@@ -3,7 +3,7 @@ package RWSafe
 import (
 	"sync"
 
-	uc "github.com/PlayerR9/MyGoLib/Units/Common"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
 )
 
 // Locker is a thread-safe locker that allows multiple goroutines to wait for a condition.

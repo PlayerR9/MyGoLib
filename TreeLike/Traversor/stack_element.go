@@ -1,9 +1,8 @@
 package Traversor
 
 import (
-	uc "github.com/PlayerR9/MyGoLib/Units/Common"
-
 	tr "github.com/PlayerR9/MyGoLib/TreeLike/Tree"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
 )
 
 // stackElement is a stack element.

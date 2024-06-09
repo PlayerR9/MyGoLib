@@ -3,9 +3,9 @@ package Sets
 import (
 	"strings"
 
-	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 	ui "github.com/PlayerR9/MyGoLib/Units/Iterators"
-	us "github.com/PlayerR9/MyGoLib/Units/Slice"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
+	us "github.com/PlayerR9/MyGoLib/Units/slice"
 )
 
 // EqualSet is a set that uses the Equals method to compare elements.
@@ -308,11 +308,11 @@ func (s *EqualSet[T]) Copy() uc.Copier {
 	}
 }
 
-// Slice returns a slice of the elements in the set.
+// slice returns a slice of the elements in the set.
 //
 // Returns:
 //   - []T: A slice of the elements in the set.
-func (s *EqualSet[T]) Slice() []T {
+func (s *EqualSet[T]) slice() []T {
 	return s.elems
 }
 

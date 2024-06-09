@@ -1,7 +1,7 @@
-package Slices
+package slice
 
 import (
-	uc "github.com/PlayerR9/MyGoLib/Units/Common"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
 	"golang.org/x/exp/slices"
 )
 

@@ -9,12 +9,10 @@ import (
 	"encoding/hex"
 	"slices"
 
-	mext "github.com/PlayerR9/MyGoLib/Utility/MathExt"
-
+	com "github.com/PlayerR9/MyGoLib/Units/common"
 	ue "github.com/PlayerR9/MyGoLib/Units/errors"
-	hlp "github.com/PlayerR9/MyGoLib/Utility/Helpers"
-
-	com "github.com/PlayerR9/MyGoLib/Units/Common"
+	us "github.com/PlayerR9/MyGoLib/Units/slice"
+	mext "github.com/PlayerR9/MyGoLib/Utility/MathExt"
 )
 
 // ToUTF8Runes converts a string to a slice of runes.
@@ -501,7 +499,7 @@ func SplitInEqualSizedLines(text []string, width, height int) (*TextSplit, error
 	}
 
 	// 4.2. Calculate the SQM of each candidate and returns the ones with the lowest SQM.
-	weights := hlp.ApplyWeightFunc(candidates, func(candidate *TextSplit) (float64, bool) {
+	weights := us.ApplyWeightFunc(candidates, func(candidate *TextSplit) (float64, bool) {
 		values := make([]float64, 0, candidate.GetHeight())
 
 		for _, line := range candidate.lines {
@@ -520,8 +518,8 @@ func SplitInEqualSizedLines(text []string, width, height int) (*TextSplit, error
 	}
 
 	// 4.3. Return the candidates with the lowest SQM.
-	weights = hlp.FilterByNegativeWeight(weights)
-	candidates = hlp.ExtractResults(weights)
+	weights = us.FilterByNegativeWeight(weights)
+	candidates = us.ExtractResults(weights)
 
 	// If we have more than one candidate, we have to choose one
 	// of them by following other criteria.

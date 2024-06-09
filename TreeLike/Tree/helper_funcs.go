@@ -1,6 +1,6 @@
 package Tree
 
-import slext "github.com/PlayerR9/MyGoLib/Units/Slice"
+import us "github.com/PlayerR9/MyGoLib/Units/slice"
 
 // recCleanup is a helper function that removes every node in the tree rooted at n.
 //
@@ -62,7 +62,7 @@ func recSnakeTraversal[T any](n *TreeNode[T]) [][]T {
 //
 // Behaviors:
 //   - This function is recursive.
-func recPruneFunc[T any](filter slext.PredicateFilter[T], highest *TreeNode[T], n *TreeNode[T]) (*TreeNode[T], bool) {
+func recPruneFunc[T any](filter us.PredicateFilter[T], highest *TreeNode[T], n *TreeNode[T]) (*TreeNode[T], bool) {
 	if filter(n.Data) {
 		// Delete all children
 		recCleanup(n)

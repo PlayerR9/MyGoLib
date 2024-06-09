@@ -4,9 +4,8 @@ import (
 	"fmt"
 
 	"github.com/PlayerR9/MyGoLib/ListLike/Stacker"
-	itff "github.com/PlayerR9/MyGoLib/Units/Common"
 	itf "github.com/PlayerR9/MyGoLib/Units/Iterators"
-
+	itff "github.com/PlayerR9/MyGoLib/Units/common"
 	ers "github.com/PlayerR9/MyGoLib/Units/errors"
 )
 
@@ -55,7 +54,7 @@ func (ds *DoubleStack[T]) Push(value T) error {
 // MustPop pops a value from the double stack.
 //
 // It stores the popped value in the auxiliary stack.
-// Panics with an error of type *Common.ErrEmptyList if the main stack is empty.
+// Panics with an error of type *common.ErrEmptyList if the main stack is empty.
 //
 // Returns:
 //
@@ -76,7 +75,7 @@ func (ds *DoubleStack[T]) Pop() (T, error) {
 
 // MustPeek returns the value at the top of the double stack without removing it.
 //
-// Panics with an error of type *Common.ErrEmptyList if the main stack is empty.
+// Panics with an error of type *common.ErrEmptyList if the main stack is empty.
 //
 // Returns:
 //

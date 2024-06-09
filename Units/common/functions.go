@@ -1,4 +1,4 @@
-package Common
+package common
 
 import (
 	"fmt"
@@ -216,5 +216,37 @@ func GoStringOf(elem any) string {
 		return strconv.Quote(elem.Error())
 	default:
 		return fmt.Sprintf("%#v", elem)
+	}
+}
+
+// Min is a function that takes two parameters, a and b, of any type T
+// according to the uc.CompareOf function and returns the smaller of the two values.
+//
+// Parameters:
+//   - a, b: The two values to compare.
+//
+// Return:
+//   - T: The smaller of the two values.
+func Min[T Comparable](a, b T) T {
+	if a < b {
+		return a
+	} else {
+		return b
+	}
+}
+
+// Max is a function that takes two parameters, a and b, of any type T
+// according to the uc.CompareOf function and returns the larger of the two values.
+//
+// Parameters:
+//   - a, b: The two values to compare.
+//
+// Return:
+//   - T: The larger of the two values.
+func Max[T Comparable](a, b T) T {
+	if a > b {
+		return a
+	} else {
+		return b
 	}
 }

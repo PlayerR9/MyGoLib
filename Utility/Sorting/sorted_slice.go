@@ -1,13 +1,17 @@
 package Sorting
 
-import (
-	uc "github.com/PlayerR9/MyGoLib/Units/Common"
-)
+import "slices"
 
 // Slice is a slice that uses the Compare method to compare elements.
-type Slice[T uc.Comparer] struct {
+type Slice[T any] struct {
 	// elems is the slice of elements in the sorted slice.
 	elems []T
+
+	// sf is the sort function used to compare elements.
+	sf SortFunc[T]
+
+	// isAsc is a flag indicating if the sort is in ascending order.
+	isAsc bool
 }
 
 // NewSlice creates a new sorted slice.
@@ -17,13 +21,20 @@ type Slice[T uc.Comparer] struct {
 //
 // Returns:
 //   - *Slice[T]: The new sorted slice.
-func NewSlice[T uc.Comparer](elems []T) *Slice[T] {
-	if len(elems) == 0 {
-		return &Slice[T]{elems: make([]T, 0)}
-	} else {
-		uc.Sort(elems)
+//
+// Behaviors:
+//   - Returns nil if the sort function is nil.
+func NewSlice[T any](elems []T, sf SortFunc[T], isAsc bool) *Slice[T] {
+	if sf == nil {
+		return nil
+	}
 
-		return &Slice[T]{elems: elems}
+	Sort(elems, sf, isAsc)
+
+	return &Slice[T]{
+		elems: elems,
+		sf:    sf,
+		isAsc: isAsc,
 	}
 }
 
@@ -44,9 +55,9 @@ func (s *Slice[T]) Insert(elem T, force bool) int {
 		return 0
 	}
 
-	pos, ok := uc.Find(s.elems, elem)
+	pos, ok := slices.BinarySearchFunc(s.elems, elem, s.sf)
 	if !ok || force {
-		s.elems = append(s.elems[:pos], append([]T{elem}, s.elems[pos:]...)...)
+		s.elems = slices.Insert(s.elems, pos, elem)
 	}
 
 	return pos
@@ -61,7 +72,9 @@ func (s *Slice[T]) Insert(elem T, force bool) int {
 //   - int: The index where the element would be inserted.
 //   - bool: True if the element is already in the slice, false otherwise.
 func (s *Slice[T]) TryInsert(elem T) (int, bool) {
-	return uc.Find(s.elems, elem)
+	pos, ok := slices.BinarySearchFunc(s.elems, elem, s.sf)
+
+	return pos, ok
 }
 
 // Find is the same as Find but uses the Compare method of the elements.
@@ -79,7 +92,7 @@ func (s *Slice[T]) Find(elem T) int {
 		return -1
 	}
 
-	pos, ok := uc.Find(s.elems, elem)
+	pos, ok := slices.BinarySearchFunc(s.elems, elem, s.sf)
 	if ok {
 		return pos
 	}
@@ -98,22 +111,26 @@ func (s *Slice[T]) Find(elem T) int {
 // Behavior:
 //   - The function preserves the order of the elements in the slice.
 //   - The values must be sorted in ascending order for the Compare method to work.
-func (s *Slice[T]) Uniquefy() *Slice[T] {
+func (s *Slice[T]) Uniquefy() {
 	if len(s.elems) < 2 {
-		return &Slice[T]{
-			elems: s.elems,
+		return
+	}
+
+	for i := 0; i < len(s.elems)-1; i++ {
+		elem := s.elems[i]
+
+		top := i
+		for ; top < len(s.elems)-1; top++ {
+			res := s.sf(s.elems[top+1], elem)
+			if res != 0 {
+				break
+			}
+		}
+
+		if top != i {
+			s.elems = slices.Delete(s.elems, i+1, top+1)
 		}
 	}
-
-	newS := &Slice[T]{
-		elems: make([]T, 0),
-	}
-
-	for _, e := range s.elems {
-		newS.Insert(e, false)
-	}
-
-	return newS
 }
 
 // MergeUnique merges two slices and removes duplicate elements.
@@ -126,51 +143,47 @@ func (s *Slice[T]) Uniquefy() *Slice[T] {
 //   - []T: slice of elements with duplicates removed.
 //
 // Behaviors:
-//   - The function does not preserve the order of the elements in the slices.
+//   - The function does preserve the order of the elements in the slice.
 func (s *Slice[T]) MergeUnique(other *Slice[T]) *Slice[T] {
-	if other == nil {
-		return &Slice[T]{
-			elems: s.elems,
+	newElems := make([]T, len(s.elems))
+	copy(newElems, s.elems)
+
+	if other != nil {
+		for _, e := range other.elems {
+			pos, ok := slices.BinarySearchFunc(newElems, e, s.sf)
+			if !ok {
+				newElems = slices.Insert(newElems, pos, e)
+			}
 		}
 	}
 
-	newS := &Slice[T]{
-		elems: make([]T, len(s.elems)),
+	return &Slice[T]{
+		elems: newElems,
+		sf:    s.sf,
+		isAsc: s.isAsc,
 	}
-	copy(newS.elems, s.elems)
-
-	for _, e := range other.elems {
-		newS.Insert(e, false)
-	}
-
-	return newS
 }
 
 // IndexOfDuplicate returns the index of the first duplicate element in the slice.
 //
-// Parameters:
-//   - S: slice of elements.
-//
 // Returns:
-//   - int: index of the first duplicate element or -1 if there are no duplicates.
-//   - error: error of type *uc.ErrNotComparable if the elements are not comparable.
-func (s *Slice[T]) IndexOfDuplicate() (int, error) {
+//   - int: index of the first duplicate element.
+//
+// Behaviors:
+//   - The function returns -1 if no duplicates are found.
+func (s *Slice[T]) IndexOfDuplicate() int {
 	if len(s.elems) < 2 {
-		return -1, nil
+		return -1
 	}
 
 	for i := 0; i < len(s.elems)-1; i++ {
-		res, ok := s.elems[i].Compare(s.elems[i+1])
-		if !ok {
-			return -1, uc.NewErrNotComparable(s.elems[i], s.elems[i+1])
-		}
-
+		res := s.sf(s.elems[i], s.elems[i+1])
 		if res == 0 {
-			return i, nil
+			return i
 		}
 	}
 
-	return -1, nil
+	return -1
 }
 
 // computeLPSArray is a helper function that computes the Longest Prefix
@@ -186,17 +199,14 @@ func (s *Slice[T]) IndexOfDuplicate() (int, error) {
 //   - The lps array is used to store the length of the longest prefix
 //     that is also a suffix for each index in the subslice.
 //   - The first element of the lps array is always 0.
-func (s *Slice[T]) computeLPSArray(lps []int) error {
+func (s *Slice[T]) computeLPSArray(lps []int) {
 	length := 0
 	i := 1
 	lps[0] = 0 // lps[0] is always 0
 
 	// the loop calculates lps[i] for i = 1 to len(subS)-1
 	for i < len(s.elems) {
-		res, ok := s.elems[i].Compare(s.elems[length])
-		if !ok {
-			return uc.NewErrNotComparable(s.elems[i], s.elems[length])
-		}
+		res := s.sf(s.elems[i], s.elems[length])
 
 		if res == 0 {
 			length++
@@ -211,8 +221,6 @@ func (s *Slice[T]) computeLPSArray(lps []int) error {
 			}
 		}
 	}
-
-	return nil
 }
 
 // FindSubBytesFrom finds the first occurrence of a subslice in a byte
@@ -225,16 +233,15 @@ func (s *Slice[T]) computeLPSArray(lps []int) error {
 //
 // Returns:
 //   - int: The index of the first occurrence of the subslice.
-//   - error: An error of type *uc.ErrNotComparable if the elements are not comparable.
 //
 // Behavior:
 //   - The function uses the Knuth-Morris-Pratt algorithm to find the subslice.
 //   - If S or subS is empty, the function returns -1.
 //   - If the subslice is not found, the function returns -1.
 //   - If at is negative, it is set to 0.
-func (s *Slice[T]) FindSubsliceFrom(other *Slice[T], at int) (int, error) {
+func (s *Slice[T]) FindSubsliceFrom(other *Slice[T], at int) int {
 	if other == nil || len(other.elems) == 0 || len(s.elems) == 0 || at+len(other.elems) > len(s.elems) {
-		return -1, nil
+		return -1
 	}
 
 	if at < 0 {
@@ -247,10 +254,7 @@ func (s *Slice[T]) FindSubsliceFrom(other *Slice[T], at int) (int, error) {
 	i := at
 	j := 0
 	for i < len(s.elems) {
-		res, ok := s.elems[i].Compare(other.elems[j])
-		if !ok {
-			return 0, uc.NewErrNotComparable(s.elems[i], other.elems[j])
-		}
+		res := s.sf(s.elems[i], other.elems[j])
 
 		if res == 0 {
 			i++
@@ -258,12 +262,9 @@ func (s *Slice[T]) FindSubsliceFrom(other *Slice[T], at int) (int, error) {
 		}
 
 		if j == len(other.elems) {
-			return i - j, nil
+			return i - j
 		} else if i < len(s.elems) {
-			res, ok := s.elems[i].Compare(other.elems[j])
-			if !ok {
-				return 0, uc.NewErrNotComparable(s.elems[i], other.elems[j])
-			}
+			res := s.sf(s.elems[i], other.elems[j])
 
 			if res != 0 {
 				if j != 0 {
@@ -275,29 +276,34 @@ func (s *Slice[T]) FindSubsliceFrom(other *Slice[T], at int) (int, error) {
 		}
 	}
 
-	return -1, nil
+	return -1
 }
 
-// Difference returns the elements that are in S1 but not in S2.
+// Difference returns the elements that are in s but not in other.
 //
 // Parameters:
-//   - S1: The first slice of elements.
-//   - S2: The second slice of elements.
+//   - other: The slice to compare with.
+//
+// Returns:
+//   - *Slice[T]: The slice of elements that are in s but not in other.
 func (s *Slice[T]) Difference(other *Slice[T]) *Slice[T] {
+	var newElems []T
+
 	if other == nil {
-		return s
-	}
-
-	newS := &Slice[T]{
-		elems: make([]T, 0),
-	}
-
-	for _, e := range s.elems {
-		pos := other.Find(e)
-		if pos == -1 {
-			newS.Insert(e, false)
+		newElems = make([]T, len(s.elems))
+		copy(newElems, s.elems)
+	} else {
+		for _, e := range s.elems {
+			pos := other.Find(e)
+			if pos == -1 {
+				newElems = append(newElems, e)
+			}
 		}
 	}
 
-	return newS
+	return &Slice[T]{
+		elems: newElems,
+		sf:    s.sf,
+		isAsc: s.isAsc,
+	}
 }

@@ -5,12 +5,11 @@ import (
 	"strings"
 	"sync"
 
-	uc "github.com/PlayerR9/MyGoLib/Units/Common"
+	rws "github.com/PlayerR9/MyGoLib/Safe/RWSafe"
 	itf "github.com/PlayerR9/MyGoLib/Units/Iterators"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
 	ers "github.com/PlayerR9/MyGoLib/Units/errors"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
-
-	rws "github.com/PlayerR9/MyGoLib/Safe/RWSafe"
 )
 
 // SafeQueue is a generic type that represents a thread-safe queue data

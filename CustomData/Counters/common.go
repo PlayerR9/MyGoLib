@@ -3,7 +3,7 @@
 package Counters
 
 import (
-	uc "github.com/PlayerR9/MyGoLib/Units/Common"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
 )
 
 // Counter interface defines the methods that a counter must implement.

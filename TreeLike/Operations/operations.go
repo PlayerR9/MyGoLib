@@ -6,7 +6,7 @@ import (
 
 	tlt "github.com/PlayerR9/MyGoLib/TreeLike/Traversor"
 	tr "github.com/PlayerR9/MyGoLib/TreeLike/Tree"
-	uc "github.com/PlayerR9/MyGoLib/Units/Common"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
 )
 
 type InfPrinter struct {

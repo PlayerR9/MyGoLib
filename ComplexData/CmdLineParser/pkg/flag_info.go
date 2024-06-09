@@ -7,10 +7,10 @@ import (
 
 	evalSlc "github.com/PlayerR9/MyGoLib/Evaluations/Slices"
 	ffs "github.com/PlayerR9/MyGoLib/Formatting/FString"
-	uc "github.com/PlayerR9/MyGoLib/Units/Common"
-	us "github.com/PlayerR9/MyGoLib/Units/Slice"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
 	ue "github.com/PlayerR9/MyGoLib/Units/errors"
-	uhlp "github.com/PlayerR9/MyGoLib/Utility/Helpers"
+	us "github.com/PlayerR9/MyGoLib/Units/slice"
+	uts "github.com/PlayerR9/MyGoLib/Utility/Sorting"
 )
 
 // FlagCallbackFunc is a function type that represents a callback
@@ -231,7 +231,7 @@ func (flag *FlagInfo) Parse(branches []*FlagParseResult, args []string) ([]*Flag
 		return nil, fmt.Errorf("no arguments provided")
 	}
 
-	solutions, ok := uhlp.EvaluateWeightHelpers(
+	solutions, ok := us.EvaluateWeightHelpers(
 		branches,
 		func(b *FlagParseResult) (*FlagParseResult, error) {
 			parsed, err := flag.callback(b.GetResult())
@@ -255,12 +255,9 @@ func (flag *FlagInfo) Parse(branches []*FlagParseResult, args []string) ([]*Flag
 		return nil, ue.NewErrPossibleError(fmt.Errorf("no valid arguments"), solutions[0].GetData().Second)
 	}
 
-	actualSolutions := uhlp.ExtractResults(solutions)
+	actualSolutions := us.ExtractResults(solutions)
 
-	err := uc.StableSort(actualSolutions, false)
-	if err != nil {
-		return nil, err
-	}
+	uts.StableSort(actualSolutions, FlagParseResultSortFunc, false)
 
 	return actualSolutions, nil
 }

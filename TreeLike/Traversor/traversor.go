@@ -3,9 +3,8 @@ package Traversor
 import (
 	"github.com/PlayerR9/MyGoLib/ListLike/Queuer"
 	"github.com/PlayerR9/MyGoLib/ListLike/Stacker"
-	uc "github.com/PlayerR9/MyGoLib/Units/Common"
-
 	tr "github.com/PlayerR9/MyGoLib/TreeLike/Tree"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
 )
 
 // ObserverFunc is a function that observes a node.

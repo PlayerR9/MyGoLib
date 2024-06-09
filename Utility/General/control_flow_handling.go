@@ -7,7 +7,7 @@ import (
 	"os/exec"
 	"strings"
 
-	uc "github.com/PlayerR9/MyGoLib/Units/Common"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
 )
 
 // RunInPowerShell is a function that returns a function that runs a program in

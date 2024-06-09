@@ -9,8 +9,8 @@ import (
 
 	ffs "github.com/PlayerR9/MyGoLib/Formatting/FString"
 	itf "github.com/PlayerR9/MyGoLib/Units/Iterators"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
 	ue "github.com/PlayerR9/MyGoLib/Units/errors"
-	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
 // PageInterval represents a collection of page intervals, where each
@@ -234,19 +234,16 @@ func (pi *PageInterval) AddPage(page int) error {
 	} else {
 		insertPos := sort.Search(len(pi.intervals), criteriaPageGTE)
 
-		var ok bool
-
 		if insertPos > 0 && pi.intervals[insertPos-1].Second >= page-1 {
 			insertPos--
-			pi.intervals[insertPos].Second, ok = gen.Max(pi.intervals[insertPos].Second, page)
-			if !ok {
-				panic(ue.NewErrUnexpectedError(ue.NewErrNotComparable(page)))
-			}
+
+			max := uc.Max(pi.intervals[insertPos].Second, page)
+
+			pi.intervals[insertPos].Second = max
 		} else if insertPos < len(pi.intervals) && pi.intervals[insertPos].First <= page+1 {
-			pi.intervals[insertPos].First, ok = gen.Min(pi.intervals[insertPos].First, page)
-			if !ok {
-				panic(ue.NewErrUnexpectedError(ue.NewErrNotComparable(page)))
-			}
+			min := uc.Min(pi.intervals[insertPos].First, page)
+
+			pi.intervals[insertPos].First = min
 		} else {
 			pi.intervals = append(pi.intervals[:insertPos],
 				append([]*PageRange{newPageRange(page, page)}, pi.intervals[insertPos:]...)...,

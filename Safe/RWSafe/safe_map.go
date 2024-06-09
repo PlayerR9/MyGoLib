@@ -3,9 +3,8 @@ package RWSafe
 import (
 	"sync"
 
-	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 	ui "github.com/PlayerR9/MyGoLib/Units/Iterators"
-	up "github.com/PlayerR9/MyGoLib/Units/Pair"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
 )
 
 // SafeMap is a thread-safe map.
@@ -33,14 +32,14 @@ func (sm *SafeMap[T, U]) Copy() uc.Copier {
 }
 
 // Iterator implements the Iterable interface.
-func (sm *SafeMap[T, U]) Iterator() ui.Iterater[*up.Pair[T, U]] {
+func (sm *SafeMap[T, U]) Iterator() ui.Iterater[*uc.Pair[T, U]] {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
 
-	entries := make([]*up.Pair[T, U], 0, len(sm.m))
+	entries := make([]*uc.Pair[T, U], 0, len(sm.m))
 
 	for key, value := range sm.m {
-		entries = append(entries, up.NewPair(key, value))
+		entries = append(entries, uc.NewPair(key, value))
 	}
 
 	return ui.NewSimpleIterator(entries)

@@ -3,7 +3,7 @@ package StringExt
 import (
 	"unicode/utf8"
 
-	intf "github.com/PlayerR9/MyGoLib/Units/Common"
+	intf "github.com/PlayerR9/MyGoLib/Units/common"
 )
 
 // lineOfSplitter is a helper struct used in the SplitTextInEqualSizedLines function.

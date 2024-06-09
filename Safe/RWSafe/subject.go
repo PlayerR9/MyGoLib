@@ -3,7 +3,7 @@ package RWSafe
 import (
 	"sync"
 
-	uc "github.com/PlayerR9/MyGoLib/Units/Common"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
 )
 
 // Subject is the subject that observers observe.

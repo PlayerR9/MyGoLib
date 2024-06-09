@@ -1,8 +1,7 @@
 package TreeExplorer
 
 import (
-	slext "github.com/PlayerR9/MyGoLib/Units/Slice"
-	hlp "github.com/PlayerR9/MyGoLib/Utility/Helpers"
+	us "github.com/PlayerR9/MyGoLib/Units/slice"
 )
 
 // FilterBranchesFunc is a function that filters branches.
@@ -85,7 +84,7 @@ func FilterErrorLeaves[O any](h *CurrentEval[O]) bool {
 //   - [][]helperToken: The filtered branches.
 //   - int: The index of the last invalid token. -1 if no invalid token is found.
 func filterInvalidBranches[O any](branches [][]*CurrentEval[O]) ([][]*CurrentEval[O], int) {
-	branches, ok := slext.SFSeparateEarly(branches, FilterIncompleteTokens)
+	branches, ok := us.SFSeparateEarly(branches, FilterIncompleteTokens)
 	if ok {
 		return branches, -1
 	} else if len(branches) == 0 {
@@ -93,8 +92,8 @@ func filterInvalidBranches[O any](branches [][]*CurrentEval[O]) ([][]*CurrentEva
 	}
 
 	// Return the longest branch.
-	weights := hlp.ApplyWeightFunc(branches, HelperWeightFunc)
-	weights = hlp.FilterByPositiveWeight(weights)
+	weights := us.ApplyWeightFunc(branches, HelperWeightFunc)
+	weights = us.FilterByPositiveWeight(weights)
 
 	elems := weights[0].GetData().First
 

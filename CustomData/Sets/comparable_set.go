@@ -3,8 +3,8 @@ package Sets
 import (
 	"strings"
 
-	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 	ui "github.com/PlayerR9/MyGoLib/Units/Iterators"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
 )
 
 // ComparableSet is a set that uses the == operator to compare elements.

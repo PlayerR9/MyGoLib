@@ -2,8 +2,8 @@ package SiteNavigator
 
 import (
 	lls "github.com/PlayerR9/MyGoLib/ListLike/Stacker"
-	us "github.com/PlayerR9/MyGoLib/Units/Slice"
 	ue "github.com/PlayerR9/MyGoLib/Units/errors"
+	us "github.com/PlayerR9/MyGoLib/Units/slice"
 	"golang.org/x/net/html"
 )
 

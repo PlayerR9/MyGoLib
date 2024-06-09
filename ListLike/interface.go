@@ -3,8 +3,8 @@ package ListLike
 import (
 	"fmt"
 
-	intf "github.com/PlayerR9/MyGoLib/Units/Common"
 	itr "github.com/PlayerR9/MyGoLib/Units/Iterators"
+	intf "github.com/PlayerR9/MyGoLib/Units/common"
 )
 
 // ListLike is an interface that defines methods for a list data structure.

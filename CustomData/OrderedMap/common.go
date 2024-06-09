@@ -3,7 +3,7 @@ package OrderedMap
 import (
 	ffs "github.com/PlayerR9/MyGoLib/Formatting/FString"
 	ui "github.com/PlayerR9/MyGoLib/Units/Iterators"
-	up "github.com/PlayerR9/MyGoLib/Units/Pair"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
 	ue "github.com/PlayerR9/MyGoLib/Units/errors"
 )
 
@@ -22,7 +22,7 @@ type MapIterPrinter[T ffs.FStringer] struct {
 	Name string
 
 	// Iter is the iterator to print.
-	Iter ui.Iterater[*up.Pair[string, T]]
+	Iter ui.Iterater[*uc.Pair[string, T]]
 }
 
 // FStringIterator is a helper function that iterates over a list of key-value pairs
@@ -94,7 +94,7 @@ func (mip *MapIterPrinter[T]) FString(trav *ffs.Traversor, opts ...ffs.Option) e
 //
 // Returns:
 //   - *MapIterPrinter: A pointer to the newly created map iterator printer.
-func NewMapIterPrinter[T ffs.FStringer](name string, iter ui.Iterater[*up.Pair[string, T]]) *MapIterPrinter[T] {
+func NewMapIterPrinter[T ffs.FStringer](name string, iter ui.Iterater[*uc.Pair[string, T]]) *MapIterPrinter[T] {
 	return &MapIterPrinter[T]{
 		Name: name,
 		Iter: iter,

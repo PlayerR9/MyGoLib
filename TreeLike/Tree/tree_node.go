@@ -3,11 +3,10 @@ package Tree
 import (
 	"slices"
 
-	"github.com/PlayerR9/MyGoLib/ListLike/Stacker"
-	slext "github.com/PlayerR9/MyGoLib/Units/Slice"
-
 	ffs "github.com/PlayerR9/MyGoLib/Formatting/FString"
-	intf "github.com/PlayerR9/MyGoLib/Units/Common"
+	"github.com/PlayerR9/MyGoLib/ListLike/Stacker"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
+	us "github.com/PlayerR9/MyGoLib/Units/slice"
 )
 
 // TreeNode is a generic data structure that represents a node in a tree.
@@ -22,12 +21,12 @@ type TreeNode[T any] struct {
 	children []*TreeNode[T]
 }
 
-// Equals implements Common.Objecter.
-func (t *TreeNode[T]) Equals(other intf.Objecter) bool {
+// Equals implements common.Objecter.
+func (t *TreeNode[T]) Equals(other uc.Objecter) bool {
 	panic("unimplemented")
 }
 
-// String implements Common.Objecter.
+// String implements common.Objecter.
 func (t *TreeNode[T]) String() string {
 	panic("unimplemented")
 }
@@ -40,7 +39,7 @@ func (t *TreeNode[T]) String() string {
 // Returns:
 //   - []string: A slice of strings that represent the node.
 func (t *TreeNode[T]) FString(trav *ffs.Traversor, opts ...ffs.Option) error {
-	err := trav.AddLine(intf.StringOf(t.Data))
+	err := trav.AddLine(uc.StringOf(t.Data))
 	if err != nil {
 		return err
 	}
@@ -68,7 +67,7 @@ func (t *TreeNode[T]) FString(trav *ffs.Traversor, opts ...ffs.Option) error {
 //   - This function is recursive.
 //   - The parent is not copied.
 //   - The data is shallow copied.
-func (n *TreeNode[T]) Copy() intf.Copier {
+func (n *TreeNode[T]) Copy() uc.Copier {
 	node := &TreeNode[T]{
 		Data:     n.Data,
 		parent:   nil,
@@ -186,7 +185,7 @@ func (n *TreeNode[T]) AddChild(child *TreeNode[T]) {
 // Behaviors:
 //   - This is just a more efficient way to add multiple children.
 func (n *TreeNode[T]) AddChildren(children ...*TreeNode[T]) {
-	children = slext.FilterNilValues(children)
+	children = us.FilterNilValues(children)
 	if len(children) == 0 {
 		return
 	}

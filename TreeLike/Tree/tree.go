@@ -4,8 +4,8 @@ import (
 	fsp "github.com/PlayerR9/MyGoLib/Formatting/FString"
 	"github.com/PlayerR9/MyGoLib/ListLike/Queuer"
 	"github.com/PlayerR9/MyGoLib/ListLike/Stacker"
-	uc "github.com/PlayerR9/MyGoLib/Units/Common"
-	slext "github.com/PlayerR9/MyGoLib/Units/Slice"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
+	us "github.com/PlayerR9/MyGoLib/Units/slice"
 )
 
 // Tree is a generic data structure that represents a tree.
@@ -69,7 +69,7 @@ func NewTree[T any](data T) *Tree[T] {
 // Returns:
 //   - error: An error of type *ErrMissingRoot if the tree does not have a root.
 func (t *Tree[T]) SetChildren(children []*Tree[T]) error {
-	children = slext.SliceFilter(children, FilterNilTree)
+	children = us.SliceFilter(children, FilterNilTree)
 	if len(children) == 0 {
 		return nil
 	}
@@ -296,7 +296,7 @@ func (t *Tree[T]) SnakeTraversal() [][]T {
 //
 // Returns:
 //   - bool: True if the tree has the child, false otherwise.
-func (t *Tree[T]) HasChild(filter slext.PredicateFilter[T]) bool {
+func (t *Tree[T]) HasChild(filter us.PredicateFilter[T]) bool {
 	if filter == nil || t.root == nil {
 		return false
 	}
@@ -332,7 +332,7 @@ func (t *Tree[T]) HasChild(filter slext.PredicateFilter[T]) bool {
 //
 // Returns:
 //   - []*Node[T]: A slice of pointers to the children of the node.
-func (t *Tree[T]) FilterChildren(filter slext.PredicateFilter[T]) []*TreeNode[T] {
+func (t *Tree[T]) FilterChildren(filter us.PredicateFilter[T]) []*TreeNode[T] {
 	if filter == nil || t.root == nil {
 		return nil
 	}
@@ -375,7 +375,7 @@ func (t *Tree[T]) FilterChildren(filter slext.PredicateFilter[T]) []*TreeNode[T]
 // Behaviors:
 //   - If the root satisfies the filter, the tree is cleaned up.
 //   - It is a recursive function.
-func (t *Tree[T]) PruneBranches(filter slext.PredicateFilter[T]) bool {
+func (t *Tree[T]) PruneBranches(filter us.PredicateFilter[T]) bool {
 	if filter == nil || t.root == nil {
 		return false
 	}
@@ -404,7 +404,7 @@ func (t *Tree[T]) PruneBranches(filter slext.PredicateFilter[T]) bool {
 //   - If this function returns only one tree, this is the updated tree. But, if
 //     it returns more than one tree, then we have deleted the root of the tree and
 //     obtained a forest.
-func (t *Tree[T]) SkipFilter(filter slext.PredicateFilter[T]) []*Tree[T] {
+func (t *Tree[T]) SkipFilter(filter us.PredicateFilter[T]) []*Tree[T] {
 	frontier := make([]*TreeNode[T], len(t.leaves))
 	copy(frontier, t.leaves)
 
@@ -418,7 +418,7 @@ func (t *Tree[T]) SkipFilter(filter slext.PredicateFilter[T]) []*Tree[T] {
 		seen[leaf] = true
 
 		// Remove any node that has been seen from the frontier.
-		frontier = slext.SliceFilter(frontier, func(n *TreeNode[T]) bool {
+		frontier = us.SliceFilter(frontier, func(n *TreeNode[T]) bool {
 			return !seen[n]
 		})
 
@@ -540,7 +540,7 @@ func (t *Tree[T]) ProcessLeaves(f uc.EvalManyFunc[T, T]) error {
 //
 // Returns:
 //   - *treeNode[T]: A pointer to the node that satisfies the filter.
-func (t *Tree[T]) SearchNodes(f slext.PredicateFilter[T]) *TreeNode[T] {
+func (t *Tree[T]) SearchNodes(f us.PredicateFilter[T]) *TreeNode[T] {
 	Q := Queuer.NewLinkedQueue(t.root)
 
 	for {

@@ -1,8 +1,8 @@
 package CmdLineParser
 
 import (
-	us "github.com/PlayerR9/MyGoLib/Units/Slice"
 	ue "github.com/PlayerR9/MyGoLib/Units/errors"
+	us "github.com/PlayerR9/MyGoLib/Units/slice"
 
 	pkg "github.com/PlayerR9/MyGoLib/ComplexData/CmdLineParser/pkg"
 )

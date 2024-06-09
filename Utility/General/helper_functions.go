@@ -3,53 +3,8 @@ package General
 import (
 	"reflect"
 
-	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 	ers "github.com/PlayerR9/MyGoLib/Units/errors"
 )
-
-// Min is a function that takes two parameters, a and b, of any type T
-// according to the uc.CompareOf function and returns the smaller of the two values.
-//
-// Parameters:
-//   - a, b: The two values to compare.
-//
-// Return:
-//   - T: The smaller of the two values.
-//   - bool: True if the values are comparable. False otherwise
-func Min[T any](a, b T) (T, bool) {
-	res, ok := uc.CompareOf(a, b)
-	if !ok {
-		return *new(T), false
-	}
-
-	if res < 0 {
-		return a, true
-	} else {
-		return b, true
-	}
-}
-
-// Max is a function that takes two parameters, a and b, of any type T
-// according to the uc.CompareOf function and returns the larger of the two values.
-//
-// Parameters:
-//   - a, b: The two values to compare.
-//
-// Return:
-//   - T: The larger of the two values.
-//   - bool: True if the values are comparable. False otherwise
-func Max[T any](a, b T) (T, bool) {
-	res, ok := uc.CompareOf(a, b)
-	if !ok {
-		return *new(T), false
-	}
-
-	if res > 0 {
-		return a, true
-	} else {
-		return b, true
-	}
-}
 
 // SplitIntoGroups splits the slice into n groups and returns a 2D slice where
 // each inner slice represents a group.

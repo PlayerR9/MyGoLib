@@ -10,9 +10,9 @@ import (
 	"github.com/PlayerR9/MyGoLib/ComplexData/CmdLineParser/pkg"
 	evalSlc "github.com/PlayerR9/MyGoLib/Evaluations/Slices"
 	ffs "github.com/PlayerR9/MyGoLib/Formatting/FString"
-	up "github.com/PlayerR9/MyGoLib/Units/Pair"
-	us "github.com/PlayerR9/MyGoLib/Units/Slice"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
 	ue "github.com/PlayerR9/MyGoLib/Units/errors"
+	us "github.com/PlayerR9/MyGoLib/Units/slice"
 )
 
 const (
@@ -322,7 +322,7 @@ func (cns *CmdLineParser) Parse(args []string) (*pkg.ParsedCommand, error) {
 	}
 
 	// Split betweem ignorable and non-ignorable errors
-	solutions, ok := us.SFSeparateEarly(pcs, func(pc *up.Pair[*pkg.ParsedCommand, error]) bool {
+	solutions, ok := us.SFSeparateEarly(pcs, func(pc *uc.Pair[*pkg.ParsedCommand, error]) bool {
 		return !ue.As[*ue.ErrIgnorable](pc.Second)
 	})
 	if !ok {

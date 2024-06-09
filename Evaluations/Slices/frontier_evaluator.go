@@ -2,10 +2,8 @@ package Slices
 
 import (
 	"github.com/PlayerR9/MyGoLib/ListLike/Stacker"
-	uc "github.com/PlayerR9/MyGoLib/Units/Common"
-	hlp "github.com/PlayerR9/MyGoLib/Utility/Helpers"
-
-	up "github.com/PlayerR9/MyGoLib/Units/Pair"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
+	us "github.com/PlayerR9/MyGoLib/Units/slice"
 )
 
 // Accepter is an interface that represents an accepter.
@@ -23,7 +21,7 @@ type FrontierEvaluator[T Accepter] struct {
 	matcher uc.EvalManyFunc[T, T]
 
 	// solutions is the list of solutions.
-	solutions []*hlp.WeightedHelper[T]
+	solutions []*us.WeightedHelper[T]
 }
 
 // NewFrontierEvaluator creates a new frontier evaluator.
@@ -39,7 +37,7 @@ type FrontierEvaluator[T Accepter] struct {
 func NewFrontierEvaluator[T Accepter](matcher uc.EvalManyFunc[T, T]) *FrontierEvaluator[T] {
 	fe := &FrontierEvaluator[T]{
 		matcher:   matcher,
-		solutions: make([]*hlp.WeightedHelper[T], 0),
+		solutions: make([]*us.WeightedHelper[T], 0),
 	}
 
 	return fe
@@ -62,14 +60,17 @@ func (fe *FrontierEvaluator[T]) Evaluate(elem T) {
 		return
 	}
 
-	if elem.Accept() {
-		fe.solutions = []*hlp.WeightedHelper[T]{hlp.NewWeightedHelper(elem, nil, 0.0)}
+	ok := elem.Accept()
+	if ok {
+		h := us.NewWeightedHelper(elem, nil, 0.0)
+		fe.solutions = []*us.WeightedHelper[T]{h}
 		return
 	}
 
-	fe.solutions = make([]*hlp.WeightedHelper[T], 0)
+	fe.solutions = make([]*us.WeightedHelper[T], 0)
 
-	S := Stacker.NewArrayStack(up.NewPair(elem, 0.0))
+	p := uc.NewPair(elem, 0.0)
+	S := Stacker.NewArrayStack(p)
 
 	for {
 		p, err := S.Pop()
@@ -79,21 +80,24 @@ func (fe *FrontierEvaluator[T]) Evaluate(elem T) {
 
 		nexts, err := fe.matcher(p.First)
 		if err != nil {
-			fe.solutions = append(fe.solutions, hlp.NewWeightedHelper(p.First, err, p.Second))
+			h := us.NewWeightedHelper(p.First, err, p.Second)
+			fe.solutions = append(fe.solutions, h)
 			continue
 		}
 
-		newPairs := make([]*up.Pair[T, float64], 0, len(nexts))
+		newPairs := make([]*uc.Pair[T, float64], 0, len(nexts))
 
 		for _, next := range nexts {
-			p := up.NewPair(next, p.Second+1.0)
+			p := uc.NewPair(next, p.Second+1.0)
 
 			newPairs = append(newPairs, p)
 		}
 
 		for _, pair := range newPairs {
-			if pair.First.Accept() {
-				fe.solutions = []*hlp.WeightedHelper[T]{hlp.NewWeightedHelper(pair.First, nil, pair.Second)}
+			ok := pair.First.Accept()
+			if ok {
+				h := us.NewWeightedHelper(pair.First, nil, pair.Second)
+				fe.solutions = []*us.WeightedHelper[T]{h}
 			} else {
 				err := S.Push(pair)
 				if err != nil {
@@ -119,12 +123,15 @@ func (fe *FrontierEvaluator[T]) GetResults() ([]T, error) {
 		return nil, nil
 	}
 
-	results, ok := hlp.SuccessOrFail(fe.solutions, true)
+	results, ok := us.SuccessOrFail(fe.solutions, true)
+
+	extracted := us.ExtractResults(results)
+
 	if !ok {
 		// Determine the most likely error.
 		// As of now, we will just return the first error.
-		return hlp.ExtractResults(results), results[0].GetData().Second
+		return extracted, results[0].GetData().Second
+	} else {
+		return extracted, nil
 	}
-
-	return hlp.ExtractResults(results), nil
 }

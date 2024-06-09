@@ -1,8 +1,11 @@
-package Bucket
+package Sorting
 
 import (
+	"slices"
+
 	ui "github.com/PlayerR9/MyGoLib/Units/Iterators"
-	us "github.com/PlayerR9/MyGoLib/Units/Slice"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
+	us "github.com/PlayerR9/MyGoLib/Units/slice"
 )
 
 // Bucket represents a bucket of elements.
@@ -11,9 +14,19 @@ type Bucket[T any] struct {
 	elems []T
 }
 
-// Iterator implements the Iterator method of the Iterable interface.
+// Iterator implements the Iterators.Iterable interface.
 func (b *Bucket[T]) Iterator() ui.Iterater[T] {
 	return ui.NewSimpleIterator(b.elems)
+}
+
+// Copy implements the common.Copier interface.
+func (b *Bucket[T]) Copy() uc.Copier {
+	elems := make([]T, len(b.elems))
+	copy(elems, b.elems)
+
+	return &Bucket[T]{
+		elems: elems,
+	}
 }
 
 // NewBucket creates a new bucket of elements.
@@ -29,6 +42,25 @@ func NewBucket[T any](elements []T) *Bucket[T] {
 	}
 }
 
+// Sort sorts the elements in the bucket using the given comparison function.
+//
+// Parameters:
+//   - f: comparison function to use.
+//   - isAsc: flag indicating if the sort is in ascending order.
+func (b *Bucket[T]) Sort(sf SortFunc[T], isAsc bool) {
+	if sf == nil {
+		return
+	}
+
+	if !isAsc {
+		sf = func(a, b T) int {
+			return -sf(a, b)
+		}
+	}
+
+	slices.SortStableFunc(b.elems, sf)
+}
+
 // Add adds a element to the bucket.
 //
 // Parameters:
@@ -38,22 +70,6 @@ func (b *Bucket[T]) Add(element T) {
 		b.elems = []T{element}
 	} else {
 		b.elems = append(b.elems, element)
-	}
-}
-
-// InsertionSort sorts the elements in the bucket using the given comparison
-// function.
-//
-// Parameters:
-//   - f: comparison function to use.
-func (b *Bucket[T]) InsertionSort(f SortFunc[T]) {
-	for i := 1; i < len(b.elems); i++ {
-		j := i
-
-		for j > 0 && f(b.elems[j], b.elems[j-1]) {
-			b.elems[j], b.elems[j-1] = b.elems[j-1], b.elems[j]
-			j--
-		}
 	}
 }
 
@@ -79,14 +95,14 @@ func (b *Bucket[T]) GetSize() int {
 // Parameters:
 //   - n: number of elements to keep.
 //
-// Returns:
-//   - *Bucket: the bucket.
-func (b *Bucket[T]) Limit(n int) *Bucket[T] {
-	if len(b.elems) <= n {
-		return b
-	} else {
-		return &Bucket[T]{
-			elems: b.elems[:n],
-		}
+// Behaviors:
+//   - If the n is less than or equal to 0, then the bucket will be empty.
+//   - If the n is greater then the size of the bucket, then the bucket will
+//     remain the same.
+func (b *Bucket[T]) Limit(n int) {
+	if n <= 0 {
+		b.elems = []T{}
+	} else if len(b.elems) > n {
+		b.elems = b.elems[:n]
 	}
 }

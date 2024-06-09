@@ -1,4 +1,4 @@
-package Common
+package common
 
 import (
 	"fmt"
@@ -55,18 +55,6 @@ func EqualOf(a, b any) bool {
 	}
 
 	switch a := a.(type) {
-	case Comparer:
-		otherB, ok := b.(Comparer)
-		if !ok {
-			return false
-		}
-
-		res, ok := a.Compare(otherB)
-		if !ok {
-			return false
-		}
-
-		return res == 0
 	case Objecter:
 		otherB, ok := b.(Objecter)
 		if !ok {

@@ -3,8 +3,8 @@ package Sets
 import (
 	"fmt"
 
-	uc "github.com/PlayerR9/MyGoLib/Units/Common"
 	ui "github.com/PlayerR9/MyGoLib/Units/Iterators"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
 )
 
 // Seter is an interface for a set.

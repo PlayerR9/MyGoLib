@@ -1,7 +1,7 @@
 package SiteNavigator
 
 import (
-	us "github.com/PlayerR9/MyGoLib/Units/Slice"
+	us "github.com/PlayerR9/MyGoLib/Units/slice"
 )
 
 var (

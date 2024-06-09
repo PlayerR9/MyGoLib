@@ -1,7 +1,7 @@
 package CString
 
 import (
-	uc "github.com/PlayerR9/MyGoLib/Units/Common"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
 	"github.com/gdamore/tcell"
 )
 

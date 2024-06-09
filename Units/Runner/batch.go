@@ -4,7 +4,7 @@ import (
 	"sync"
 
 	rws "github.com/PlayerR9/MyGoLib/Safe/RWSafe"
-	uc "github.com/PlayerR9/MyGoLib/Units/Common"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
 )
 
 // Batch is a struct that represents a batch of Go routines.

@@ -2,9 +2,8 @@ package Traversor
 
 import (
 	"github.com/PlayerR9/MyGoLib/ListLike/Stacker"
-	uc "github.com/PlayerR9/MyGoLib/Units/Common"
-
 	tr "github.com/PlayerR9/MyGoLib/TreeLike/Tree"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
 )
 
 // Builder is a struct that builds a tree.
