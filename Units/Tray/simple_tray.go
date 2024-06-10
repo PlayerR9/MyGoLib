@@ -1,6 +1,8 @@
 package Tray
 
 import (
+	"slices"
+
 	ers "github.com/PlayerR9/MyGoLib/Units/errors"
 )
 
@@ -16,44 +18,90 @@ type SimpleTray[T any] struct {
 	size int
 }
 
+// GetLeftDistance implements the Trayer interface.
+func (t *SimpleTray[T]) GetLeftDistance() int {
+	return t.arrow
+}
+
+// GetRightDistance implements the Trayer interface.
+func (t *SimpleTray[T]) GetRightDistance() int {
+	return t.size - t.arrow - 1
+}
+
+// moveRightBy is a helper function that moves the arrow to the right by n positions.
+//
+// Parameters:
+//   - arrow: The current position of the arrow.
+//   - n: The number of positions to move the arrow.
+//
+// Returns:
+//   - int: The updated position of the arrow.
+//   - int: The number of positions that the arrow has moved beyond the end of the tape.
+func (st *SimpleTray[T]) moveRightBy(arrow, n int) (int, int) {
+	if st.size == 0 {
+		return arrow, n
+	}
+
+	arrow += n
+	excess := arrow - (st.size - 1)
+
+	if excess > 0 {
+		arrow = st.size - 1
+	} else {
+		excess = 0
+	}
+
+	return arrow, excess
+}
+
+// moveLeftBy is a helper function that moves the arrow to the left by n positions.
+//
+// Parameters:
+//   - n: The number of positions to move the arrow.
+//
+// Returns:
+//   - int: The number of positions that the arrow has moved beyond the start of the tape.
+//
+// Assumptions:
+//   - n is non-negative.
+func (st *SimpleTray[T]) moveLeftBy(arrow, n int) (int, int) {
+	if st.size == 0 {
+		return arrow, n
+	}
+
+	arrow -= n
+	excess := -arrow
+
+	if arrow < 0 {
+		arrow = 0
+	} else {
+		excess = 0
+	}
+
+	return arrow, excess
+}
+
 // Move implements the Trayer interface.
 func (t *SimpleTray[T]) Move(n int) int {
 	if n == 0 {
 		return 0
 	}
 
-	var diff int
+	var arrow, excess int
 
 	if n < 0 {
-		diff = t.arrow + n
-
-		if diff < 0 {
-			t.arrow = 0
-		} else {
-			t.arrow += n
-			diff = 0
-		}
+		arrow, excess = t.moveLeftBy(t.arrow, -n)
+		excess = -excess
 	} else {
-		diff = (t.arrow + n) - (t.size - 1)
-
-		if diff > 0 {
-			t.arrow = t.size - 1
-		} else {
-			t.arrow += n
-			diff = 0
-		}
+		arrow, excess = t.moveRightBy(t.arrow, n)
 	}
 
-	return diff
+	t.arrow = arrow
+
+	return excess
 }
 
-// Write writes the given element to the tape at the arrow position.
-//
-// Parameters:
-//   - elem: The element to write.
-//
-// Returns:
-//   - error: An error of type *ers.Empty[*SimpleTray] if the tape is empty.
+// Write implements the Trayer interface.
 func (t *SimpleTray[T]) Write(elem T) error {
 	if len(t.tape) == 0 {
 		return ers.NewErrEmpty(t)
@@ -64,11 +112,7 @@ func (t *SimpleTray[T]) Write(elem T) error {
 	return nil
 }
 
-// Read reads the element at the arrow position.
-//
-// Returns:
-//   - T: The element at the arrow position.
-//   - error: An error of type *ers.Empty[*SimpleTray] if the tape is empty.
+// Read implements the Trayer interface.
 func (t *SimpleTray[T]) Read() (T, error) {
 	if len(t.tape) == 0 {
 		return *new(T), ers.NewErrEmpty(t)
@@ -77,79 +121,89 @@ func (t *SimpleTray[T]) Read() (T, error) {
 	return t.tape[t.arrow], nil
 }
 
-// ReadLeft reads the element to the left of the arrow position.
-//
-// Returns:
-//   - T: The element to the left of the arrow position.
-//   - error: An error if elements to the left of the arrow position cannot be found.
-//
-// Errors:
-//   - *ers.ErrEmpty[*GeneralTray]: If the tape is empty.
-//   - *ers.ErrInvalidParameter: If n is less than 0.
-func (t *SimpleTray[T]) Delete(n int) error {
+// ReadMany implements the Trayer interface.
+func (t *SimpleTray[T]) ReadMany(n int) []T {
+	if n == 0 || t.size == 0 {
+		return nil
+	}
+
+	var left, right int
+
 	if n < 0 {
-		return ers.NewErrInvalidParameter(
-			"n",
-			ers.NewErrGTE(0),
-		)
-	} else if n == 0 {
-		return nil
-	} else if len(t.tape) == 0 {
-		return ers.NewErrEmpty(t)
-	} else if n >= len(t.tape) {
-		t.tape = []T{}
-		t.arrow = 0
-		return nil
-	}
-
-	if t.arrow == 0 {
-		t.tape = t.tape[n:]
-	} else if t.arrow == len(t.tape)-1 {
-		t.arrow -= n
-		t.tape = t.tape[:t.arrow+1]
+		left, _ = t.moveLeftBy(t.arrow, -n)
+		right = t.arrow + 1
 	} else {
-		t.tape = append(t.tape[:t.arrow], t.tape[t.arrow+n:]...)
+		left = t.arrow
+		right, _ = t.moveRightBy(t.arrow, n)
 	}
 
-	return nil
+	return t.tape[left:right]
 }
 
-// Insert inserts the given elements to the tape at the arrow position.
-//
-// Parameters:
-//   - elems: The elements to insert.
-func (t *SimpleTray[T]) Insert(elems ...T) {
-	if len(t.tape) == 0 {
-		t.tape = elems
-	} else {
-		t.tape = append(t.tape[:t.arrow], append(elems, t.tape[t.arrow:]...)...)
+// Delete implements the Trayer interface.
+func (st *SimpleTray[T]) Delete(n int) int {
+	if n == 0 {
+		return 0
+	} else if st.size == 0 {
+		return n
 	}
+
+	var left, right, excess int
+
+	if n < 0 {
+		left, excess = st.moveLeftBy(st.arrow, -n)
+		right = st.arrow + 1
+
+		st.arrow = left
+	} else {
+		left = st.arrow
+		right, excess = st.moveRightBy(st.arrow, n)
+	}
+
+	st.tape = slices.Delete(st.tape, left, right)
+	st.size = len(st.tape)
+
+	if st.arrow >= st.size {
+		if st.size == 0 {
+			st.arrow = 0
+		} else {
+			st.arrow = st.size - 1
+		}
+	}
+
+	return excess
 }
 
-// ExtendTapeOnLeft extends the tape on the left with the given elements.
-//
-// Parameters:
-//   - elems: The elements to add.
+// ExtendTapeOnLeft implements the Trayer interface.
 func (t *SimpleTray[T]) ExtendTapeOnLeft(elems ...T) {
-	if len(t.tape) == 0 {
+	if len(elems) == 0 {
+		return
+	}
+
+	if t.size == 0 {
 		t.tape = elems
-		t.arrow = 0
+		t.arrow = len(elems) - 1
+		t.size = len(elems)
 	} else {
-		t.tape = append(elems, t.tape...)
+		t.tape = slices.Insert(t.tape, t.arrow, elems...)
 		t.arrow += len(elems)
+		t.size = len(t.tape)
 	}
 }
 
-// ExtendTapeOnRight extends the tape on the right with the given elements.
-//
-// Parameters:
-//   - elems: The elements to add.
+// ExtendTapeOnRight implements the Trayer interface.
 func (t *SimpleTray[T]) ExtendTapeOnRight(elems ...T) {
-	if len(t.tape) == 0 {
+	if len(elems) == 0 {
+		return
+	}
+
+	if t.size == 0 {
 		t.tape = elems
 		t.arrow = 0
+		t.size = len(elems)
 	} else {
-		t.tape = append(t.tape, elems...)
+		t.tape = slices.Insert(t.tape, t.arrow+1, elems...)
+		t.size = len(t.tape)
 	}
 }
 
@@ -160,7 +214,11 @@ func (t *SimpleTray[T]) ArrowStart() {
 
 // ArrowEnd moves the arrow to the end of the tape.
 func (t *SimpleTray[T]) ArrowEnd() {
-	t.arrow = len(t.tape) - 1
+	if len(t.tape) == 0 {
+		t.arrow = 0
+	} else {
+		t.arrow = len(t.tape) - 1
+	}
 }
 
 /*
@@ -217,5 +275,6 @@ func NewSimpleTray[T any](tape []T) *SimpleTray[T] {
 	return &SimpleTray[T]{
 		tape:  tape,
 		arrow: 0,
+		size:  len(tape),
 	}
 }

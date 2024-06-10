@@ -10,7 +10,82 @@ type ProceduralTray[E Trayable[T], T any] struct {
 	source Trayer[E]
 
 	// current is the current tape in the source.
-	current *SimpleTray[T]
+	current Trayer[T]
+}
+
+// moveRightBy is a helper function that moves the arrow to the right by n positions.
+//
+// Parameters:
+//   - arrow: The current position of the arrow.
+//   - n: The number of positions to move the arrow.
+//
+// Returns:
+//   - int: The updated position of the arrow.
+//   - int: The number of positions that the arrow has moved beyond the end of the tape.
+func (st *ProceduralTray[E, T]) moveRightBy(arrow, n int) (int, int) {
+	arrow, excess := st.current.moveRightBy(arrow, n)
+
+	if excess > 0 {
+		arrow = 0
+		excess--
+
+		tmp := st.source.Move(1)
+		if tmp != 0 {
+			return arrow, excess
+		}
+
+		elem, err := st.source.Read()
+		if err != nil {
+			panic(fmt.Errorf("could not read source: %w", err))
+		}
+
+		otherTray := elem.ToTray()
+
+		otherTray.
+			excess = otherTray.Move(excess)
+	}
+
+	if st.size == 0 {
+		return arrow, n
+	}
+
+	arrow += n
+	excess := arrow - (st.size - 1)
+
+	if excess > 0 {
+		arrow = st.size - 1
+	} else {
+		excess = 0
+	}
+
+	return arrow, excess
+}
+
+// moveLeftBy is a helper function that moves the arrow to the left by n positions.
+//
+// Parameters:
+//   - n: The number of positions to move the arrow.
+//
+// Returns:
+//   - int: The number of positions that the arrow has moved beyond the start of the tape.
+//
+// Assumptions:
+//   - n is non-negative.
+func (pt *ProceduralTray[E, T]) moveLeftBy(arrow, n int) (int, int) {
+	if st.size == 0 {
+		return arrow, n
+	}
+
+	arrow -= n
+	excess := -arrow
+
+	if arrow < 0 {
+		arrow = 0
+	} else {
+		excess = 0
+	}
+
+	return arrow, excess
 }
 
 // Move implements the Trayer interface.
@@ -83,11 +158,7 @@ func (t *ProceduralTray[E, T]) Write(elem T) error {
 	return t.current.Write(elem)
 }
 
-// Read reads the element at the arrow position.
-//
-// Returns:
-//   - T: The element at the arrow position.
-//   - error: An error of type *ers.Empty[*ProceduralTray] if the tape is empty.
+// Read implements the Trayer interface.
 func (t *ProceduralTray[E, T]) Read() (T, error) {
 	if t.current == nil {
 		otherTray, err := t.source.Read()

@@ -76,11 +76,7 @@ func (t *DynamicTray[E, T]) Write(elem T) error {
 	return t.current.Write(elem)
 }
 
-// Read reads the element at the arrow position.
-//
-// Returns:
-//   - T: The element at the arrow position.
-//   - error: An error of type *ers.Empty[*DynamicTray] if the tape is empty.
+// Read implements the Trayer interface.
 func (t *DynamicTray[E, T]) Read() (T, error) {
 	if t.current == nil {
 		otherTray, err := t.source.Read()
@@ -240,7 +236,14 @@ func (t *DynamicTray[E, T]) ShiftRightOfArrow(n int) {
 //
 // Returns:
 //   - *DynamicTray: A pointer to the new DynamicTray.
+//
+// Behaviors:
+//   - If the transition function is nil, it will return nil.
 func NewDynamicTray[E, T any](tape []E, f func(E) *SimpleTray[T]) *DynamicTray[E, T] {
+	if f == nil {
+		return nil
+	}
+
 	return &DynamicTray[E, T]{
 		source:     NewSimpleTray(tape),
 		current:    nil,

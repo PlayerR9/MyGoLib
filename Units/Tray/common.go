@@ -1,5 +1,9 @@
 package Tray
 
+import (
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
+)
+
 // Trayable is an interface that represents a type that can be converted to a Tray.
 type Trayable[T any] interface {
 	// ToTray converts the Trayable to a Tray.
@@ -11,6 +15,18 @@ type Trayable[T any] interface {
 
 // Trayer is an interface that represents any type of Tray.
 type Trayer[T any] interface {
+	// GetLeftDistance returns the distance from the arrow to the left end of the tape.
+	//
+	// Returns:
+	//   - int: The distance from the arrow to the left end of the tape.
+	GetLeftDistance() int
+
+	// GetRightDistance returns the distance from the arrow to the right end of the tape.
+	//
+	// Returns:
+	//   - int: The distance from the arrow to the right end of the tape.
+	GetRightDistance() int
+
 	// Move moves the arrow by n positions.
 	//
 	// Parameters:
@@ -50,12 +66,6 @@ type Trayer[T any] interface {
 	//   - error: An error of type *ers.ErrInvalidParameter if n is less than 0.
 	Delete(n int) error
 
-	// Insert inserts the given elements to the tape at the arrow position.
-	//
-	// Parameters:
-	//   - elems: The elements to insert.
-	Insert(elems ...T)
-
 	// ExtendTapeOnLeft extends the tape on the left with the given elements.
 	//
 	// Parameters:
@@ -91,4 +101,6 @@ type Trayer[T any] interface {
 		ShiftRightOfArrow(n int)
 
 	*/
+
+	uc.Copier
 }
