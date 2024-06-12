@@ -3,6 +3,7 @@ package Tray
 import (
 	"slices"
 
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
 	ers "github.com/PlayerR9/MyGoLib/Units/errors"
 )
 
@@ -263,6 +264,35 @@ func (t *GeneralTray[T]) ShiftRightOfArrow(n int) {
 	}
 }
 */
+
+// Copy implements the Trayer interface.
+func (t *SimpleTray[T]) Copy() uc.Copier {
+	return NewSimpleTray[T](t.tape)
+}
+
+// Backup implements the Trayer interface.
+func (t *SimpleTray[T]) Backup() *TrayBackup[T] {
+	tapeCopy := make([]T, len(t.tape))
+	copy(tapeCopy, t.tape)
+
+	return &TrayBackup[T]{
+		tape:  tapeCopy,
+		arrow: t.arrow,
+	}
+}
+
+// Restore implements the Trayer interface.
+func (t *SimpleTray[T]) Restore(backup *TrayBackup[T]) error {
+	if backup == nil {
+		return ers.NewErrNilParameter("backup")
+	}
+
+	t.tape = backup.tape
+	t.arrow = backup.arrow
+	t.size = len(backup.tape)
+
+	return nil
+}
 
 // NewSimpleTray creates a new GeneralTray with the given tape.
 //

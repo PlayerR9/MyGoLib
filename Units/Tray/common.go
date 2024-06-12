@@ -1,6 +1,7 @@
 package Tray
 
 import (
+	ub "github.com/PlayerR9/MyGoLib/Units/Debugging"
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
 )
 
@@ -63,8 +64,8 @@ type Trayer[T any] interface {
 	//   - n: The number of elements to delete.
 	//
 	// Returns:
-	//   - error: An error of type *ers.ErrInvalidParameter if n is less than 0.
-	Delete(n int) error
+	//   - int: The number of elements that were not deleted.
+	Delete(n int) int
 
 	// ExtendTapeOnLeft extends the tape on the left with the given elements.
 	//
@@ -103,4 +104,6 @@ type Trayer[T any] interface {
 	*/
 
 	uc.Copier
+
+	ub.Backuper[*TrayBackup[T]]
 }
