@@ -10,6 +10,7 @@ import (
 	ub "github.com/PlayerR9/MyGoLib/Units/Debugging"
 	ut "github.com/PlayerR9/MyGoLib/Units/Tray"
 	ue "github.com/PlayerR9/MyGoLib/Units/errors"
+	us "github.com/PlayerR9/MyGoLib/Units/slice"
 	mext "github.com/PlayerR9/MyGoLib/Utility/MathExt"
 )
 
@@ -73,7 +74,7 @@ func (pr *ParseResult) GetNBits(n int) ([]int, error) {
 	return pr.binary[:n], nil
 }
 
-func Filter(prs ...ParseResult) ([]ParseResult, bool) {
+func Filter(prs []ParseResult) ([]ParseResult, bool) {
 	top := 0
 
 	for i := 0; i < len(prs); i++ {
@@ -111,6 +112,382 @@ func Select(left, right []ParseResult) []ParseResult {
 	}
 
 	return results
+}
+
+type ParseFunc func(ParseResult) []ParseResult
+
+type Rule struct {
+	lhs string
+	rhs []string
+}
+
+func NewRule(str string) (*Rule, error) {
+	fields := strings.Split(str, "->")
+
+	if len(fields) == 0 {
+		return nil, fmt.Errorf("missing either lhs or rhs")
+	} else if len(fields) > 2 {
+		return nil, fmt.Errorf("too many fields: expected 2, got %d", len(fields))
+	}
+
+	lhs := strings.TrimSpace(fields[0])
+
+	rhs := strings.Fields(fields[1])
+	rhs = us.RemoveEmpty(rhs)
+	if len(rhs) == 0 {
+		return nil, fmt.Errorf("missing rhs")
+	}
+
+	return &Rule{
+		lhs: lhs,
+		rhs: rhs,
+	}, nil
+}
+
+type Grammar struct {
+	rules []*Rule
+}
+
+func NewGrammar() *Grammar {
+	return &Grammar{
+		rules: make([]*Rule, 0),
+	}
+}
+
+func (g *Grammar) AddRule(rule *Rule) {
+	g.rules = append(g.rules, rule)
+}
+
+func (g *Grammar) MakeRule(str string) error {
+	rule, err := NewRule(str)
+	if err != nil {
+		return err
+	}
+
+	g.AddRule(rule)
+
+	return nil
+}
+
+var (
+	ZSGrammar *Grammar
+)
+
+func init() {
+	ZSGrammar = NewGrammar()
+
+	ZSGrammar.MakeRule("R1a -> 0 0") // R1a -> P0
+	ZSGrammar.MakeRule("R1a -> 0 0 R1a") // R1a -> P0 R1a
+
+	return solution
+}
+
+func parseR1(pr ParseResult) []ParseResult {
+	tmp := parseR1a(pr)
+
+	tmp, ok := Filter(tmp)
+	if !ok {
+		return tmp
+	}
+
+	var results []ParseResult
+	var todo []ParseResult
+
+	for _, t := range tmp {
+		if t.IsDone() {
+			// R1 -> R1a : R1 -> P0
+			results = append(results, t)
+		} else {
+			todo = append(todo, t)
+		}
+	}
+
+	for _, t := range todo {
+		// R1 -> R1a R2
+		tmp := parseR2(t)
+
+		for _, t2 := range tmp {
+			t2 = t.MergeSolution(t2)
+
+			results = append(results, t2)
+		}
+
+		// R1 -> R1a R4
+		tmp = parseR4(t)
+
+		for _, t2 := range tmp {
+			t2 = t.MergeSolution(t2)
+
+			results = append(results, t2)
+		}
+	}
+
+	return results
+}
+
+func parseR2a(binary []int) ([]ZPacket, []int, error) {
+	// R2a -> P1
+	// R2a -> P1 R2a
+}
+
+func parseR2(pr ParseResult) []ParseResult {
+	tmp := parseR2a(pr)
+
+	tmp, ok := Filter(tmp)
+	if !ok {
+		return tmp
+	}
+
+	var results []ParseResult
+	var todo []ParseResult
+
+	for _, t := range tmp {
+		if t.IsDone() {
+			// R2 -> R2a
+			results = append(results, t)
+		} else {
+			todo = append(todo, t)
+		}
+	}
+
+	for _, t := range todo {
+		// R2 -> R2a R1
+		tmp := parseR1(t)
+
+		for _, t2 := range tmp {
+			t2 = t.MergeSolution(t2)
+
+			results = append(results, t2)
+		}
+
+		// R2 -> R2a R3
+		tmp = parseR3(t)
+
+		for _, t2 := range tmp {
+			t2 = t.MergeSolution(t2)
+
+			results = append(results, t2)
+		}
+	}
+
+	return results
+
+}
+
+func parseR3a(binary []int) ([]ZPacket, []int, error) {
+	if len(binary) == 0 {
+		return nil, binary, fmt.Errorf("expected at least 1 bit, got 0")
+	}
+
+	if binary[0] != 0 {
+		return nil, binary, fmt.Errorf("expected 0, got %d", binary[0])
+	}
+
+	var result []ZPacket
+
+	result = append(result, ZPacket{
+		header: NewZss(NoPacket, false),
+		value:  1,
+	})
+
+	binary = binary[1:]
+
+	if len(binary) == 0 {
+		// R3a -> N0 : R3a -> 0
+		return result, binary, nil
+	}
+
+	if binary[0] != 1 {
+		return result, binary, fmt.Errorf("expected 1, got %d", binary[0])
+	}
+
+	binary = binary[1:]
+
+	result = []ZPacket{
+		{
+			header: NewZss(NoPacket, false),
+			value:  2,
+		},
+	}
+
+	if len(binary) == 0 {
+		// R3a -> N0 R3a : R3a -> 0 1
+		return result, binary, nil
+	}
+
+	tmp, end, err := parseR3a(binary)
+	if err != nil {
+		return result, binary, nil
+	}
+
+	// R3a -> N0 R3a : R3a -> 0 1 R3a
+	result = append(result, tmp...)
+
+	return result, end, nil
+
+}
+
+func parseR3(pr ParseResult) []ParseResult {
+	tmp := parseR3a(pr)
+
+	tmp, ok := Filter(tmp)
+	if !ok {
+		return tmp
+	}
+
+	var results []ParseResult
+	var todo []ParseResult
+
+	for _, t := range tmp {
+		if t.IsDone() {
+			// R3 -> R3a
+			results = append(results, t)
+		} else {
+			todo = append(todo, t)
+		}
+	}
+
+	for _, t := range todo {
+		// R3 -> R3a R5
+		tmp1 := parseR5(t)
+
+		for _, t2 := range tmp1 {
+			t2 = t.MergeSolution(t2)
+
+			results = append(results, t2)
+		}
+	}
+
+	return results
+}
+
+func parseR4a(pr ParseResult) []ParseResult {
+	bits, err := pr.GetNBits(1)
+	if err != nil {
+		res := ParseResult{
+			binary:  pr.binary,
+			packets: []ZPacket{},
+			reason:  err,
+		}
+
+		return []ParseResult{res}
+	}
+
+	if bits[0] != 1 {
+		res := ParseResult{
+			binary:  pr.binary,
+			packets: []ZPacket{},
+			reason:  fmt.Errorf("expected 1, got %d", bits[0]),
+		}
+
+		return []ParseResult{res}
+	}
+
+	// R4a -> N1 : R4a -> 1
+	res := ParseResult{
+		binary: pr.binary[1:],
+		packets: []ZPacket{
+			{
+				header: NewZss(NoPacket, true),
+				value:  1,
+			},
+		},
+	}
+
+	solution := []ParseResult{res}
+
+	bits, err = res.GetNBits(1)
+	if err != nil {
+		return solution
+	}
+
+	if bits[0] != 0 {
+		return solution
+	}
+
+	// R4a -> N1 R4a : R4a -> 1 0
+	res = ParseResult{
+		binary: res.binary[1:],
+		packets: []ZPacket{
+			{
+				header: NewZss(NoPacket, true),
+				value:  2,
+			},
+		},
+	}
+
+	// R4a -> N1 R4a : R4a -> 1 0 R4a
+	tmp := parseR4a(res)
+
+	tmp, ok := Filter(tmp)
+	if !ok {
+		return solution
+	}
+
+	for _, t := range tmp {
+		t = res.MergeSolution(t)
+
+		solution = append(solution, t)
+	}
+
+	return solution
+}
+
+func parseR4(pr ParseResult) []ParseResult {
+	tmp1 := parseR4a(pr)
+
+	tmp1, ok := Filter(tmp1)
+	if !ok {
+		return tmp1
+	}
+
+	var results []ParseResult
+	var todo []ParseResult
+
+	for _, t := range tmp1 {
+		if t.IsDone() {
+			// R4 -> R4a
+			results = append(results, t)
+		} else {
+			todo = append(todo, t)
+		}
+	}
+
+	for _, t := range todo {
+		// R4 -> R4a R5
+		tmp2 := parseR5(t)
+
+		for _, t2 := range tmp2 {
+			t2 = t.MergeSolution(t2)
+
+			results = append(results, t2)
+		}
+	}
+
+	return results
+}
+
+func parseR5(pr ParseResult) []ParseResult {
+	tmp1 := parseR1(pr)
+	tmp2 := parseR2(pr)
+
+	tmp1, ok1 := Filter(tmp1)
+	tmp2, ok2 := Filter(tmp2)
+
+	if ok1 == ok2 {
+		res := Select(tmp1, tmp2)
+
+		return res
+	}
+
+	if ok1 {
+		// R5 -> R1
+		return tmp1
+	} else {
+		// R5 -> R2
+		return tmp2
+	}
+}
 }
 
 func parseR1a(pr ParseResult) []ParseResult {
@@ -250,7 +627,7 @@ func parseR2(pr ParseResult) []ParseResult {
 		}
 
 		// R2 -> R2a R3
-		tmp := parseR3(t)
+		tmp = parseR3(t)
 
 		for _, t2 := range tmp {
 			t2 = t.MergeSolution(t2)
@@ -350,51 +727,76 @@ func parseR3(pr ParseResult) []ParseResult {
 	return results
 }
 
-func parseR4a(binary []int) ([]ZPacket, []int, error) {
-	if len(binary) == 0 {
-		return nil, binary, fmt.Errorf("expected at least 1 bit, got 0")
-	}
-
-	if binary[0] != 1 {
-		return nil, binary, fmt.Errorf("expected 1, got %d", binary[0])
-	}
-
-	var result []ZPacket
-
-	result = append(result, ZPacket{
-		header: NewZss(NoPacket, true),
-		value:  1,
-	})
-
-	binary = binary[1:]
-
-	if len(binary) == 0 {
-		// R4a -> N1 : R4a -> 1
-		return result, binary, nil
-	}
-
-	tmp, end, err := parseR4a(binary)
+func parseR4a(pr ParseResult) []ParseResult {
+	bits, err := pr.GetNBits(1)
 	if err != nil {
-		return result, binary, nil
+		res := ParseResult{
+			binary:  pr.binary,
+			packets: []ZPacket{},
+			reason:  err,
+		}
+
+		return []ParseResult{res}
 	}
 
-	result = append(result, tmp...)
-	binary = end
+	if bits[0] != 1 {
+		res := ParseResult{
+			binary:  pr.binary,
+			packets: []ZPacket{},
+			reason:  fmt.Errorf("expected 1, got %d", bits[0]),
+		}
 
-	if len(binary) == 0 {
-		// R4a -> N1 : R4a -> 1 0
-		return result, binary, nil
+		return []ParseResult{res}
 	}
 
-	tmp, end, err = parseR4a(binary)
+	// R4a -> N1 : R4a -> 1
+	res := ParseResult{
+		binary: pr.binary[1:],
+		packets: []ZPacket{
+			{
+				header: NewZss(NoPacket, true),
+				value:  1,
+			},
+		},
+	}
+
+	solution := []ParseResult{res}
+
+	bits, err = res.GetNBits(1)
 	if err != nil {
-		return result, binary, nil
+		return solution
+	}
+
+	if bits[0] != 0 {
+		return solution
+	}
+
+	// R4a -> N1 R4a : R4a -> 1 0
+	res = ParseResult{
+		binary: res.binary[1:],
+		packets: []ZPacket{
+			{
+				header: NewZss(NoPacket, true),
+				value:  2,
+			},
+		},
 	}
 
 	// R4a -> N1 R4a : R4a -> 1 0 R4a
-	result = append(result, tmp...)
+	tmp := parseR4a(res)
 
-	return result, end, nil
+	tmp, ok := Filter(tmp)
+	if !ok {
+		return solution
+	}
+
+	for _, t := range tmp {
+		t = res.MergeSolution(t)
+
+		solution = append(solution, t)
+	}
+
+	return solution
 }
 
 func parseR4(pr ParseResult) []ParseResult {
@@ -439,7 +841,7 @@ func parseR5(pr ParseResult) []ParseResult {
 	tmp2, ok2 := Filter(tmp2)
 
 	if ok1 == ok2 {
-		res = Select(tmp1, tmp2)
+		res := Select(tmp1, tmp2)
 
 		return res
 	}

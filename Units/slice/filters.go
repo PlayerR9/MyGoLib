@@ -537,3 +537,23 @@ func EvaluateWeightHelpers[T any, O any](batch []T, f uc.EvalOneFunc[T, O], wf W
 	}
 	return result, len(success) > 0
 }
+
+// RemoveEmpty is a function that removes the empty elements from a slice.
+//
+// Parameters:
+//   - elems: The slice of elements.
+//
+// Returns:
+//   - []T: The slice of elements without the empty elements.
+func RemoveEmpty[T comparable](elems []T) []T {
+	top := 0
+
+	for i := 0; i < len(elems); i++ {
+		if elems[i] != *new(T) {
+			elems[top] = elems[i]
+			top++
+		}
+	}
+
+	return elems[:top]
+}
