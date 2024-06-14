@@ -8,6 +8,13 @@ import (
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
 )
 
+// DebugPrintTray is a helper function that prints the contents of a tray.
+//
+// Parameters:
+//   - tray: The tray to print.
+//
+// Returns:
+//   - []string: A slice of strings that represent the contents of the tray.
 func DebugPrintTray[T any](tray ut.Trayer[T]) []string {
 	if tray == nil {
 		return nil

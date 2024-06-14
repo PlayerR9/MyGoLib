@@ -1,78 +1,55 @@
 package FSM
 
 import (
-	"fmt"
-
 	ut "github.com/PlayerR9/MyGoLib/Units/Tray"
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
-	ue "github.com/PlayerR9/MyGoLib/Units/errors"
 )
 
-type DetFunc[I any, S any, E uc.Enumer] func(*ActiveFSM[I, S, E]) (any, error)
+// DetFunc is a function that determines the value of an element of the FSM.
+//
+// Parameters:
+//   - fsm: The active FSM.
+//
+// Returns:
+//   - any: The value of the element.
+//   - error: An error if the function fails.
+type DetFunc[I any, S any, E uc.Enumer] func(fsm *ActiveFSM[I, S, E]) (any, error)
 
-type TransFunc[I any, S any, E uc.Enumer] func(*ActiveFSM[I, S, E]) (S, error)
+// TransFunc is a function that transitions the FSM to the next state.
+//
+// Parameters:
+//   - fsm: The active FSM.
+//
+// Returns:
+//   - S: The next state of the FSM.
+//   - error: An error if the function fails.
+type TransFunc[I any, S any, E uc.Enumer] func(fsm *ActiveFSM[I, S, E]) (S, error)
 
-type EvalFunc[I any, S any, R any, E uc.Enumer] func(*ActiveFSM[I, S, E]) (R, error)
+// EvalFunc is a function that evaluates the FSM.
+//
+// Parameters:
+//   - fsm: The active FSM.
+//
+// Returns:
+//   - any: The result of the evaluation.
+//   - error: An error if the function fails.
+type EvalFunc[I any, S any, R any, E uc.Enumer] func(fsm *ActiveFSM[I, S, E]) (R, error)
 
-type EndCond[I any, S any, E uc.Enumer] func(*ActiveFSM[I, S, E]) bool
+// EndCond is a function that determines whether the FSM should end.
+//
+// Parameters:
+//   - fsm: The active FSM.
+//
+// Returns:
+//   - bool: A boolean indicating whether the FSM should end.
+type EndCond[I any, S any, E uc.Enumer] func(fsm *ActiveFSM[I, S, E]) bool
 
-type InitFunc[I any, S any] func(ut.Trayer[I]) (S, error)
-
-func (fsm *FSM[I, S, R, E]) Run(inputStream ut.Trayable[I]) ([]R, error) {
-	if inputStream == nil {
-		return nil, ue.NewErrNilParameter("inputStream")
-	}
-
-	var solution []R
-
-	stream := inputStream.ToTray()
-	stream.ArrowStart()
-
-	initState, err := fsm.InitFn(stream)
-	if err != nil {
-		return solution, fmt.Errorf("error initializing: %w", err)
-	}
-
-	active := newActiveCmp[I, S, E](initState, stream)
-
-	// End condition: Check if the FSM has reached the end.
-	for {
-		ok := fsm.ShouldEndFn(active)
-		if ok {
-			break
-		}
-
-		// Action: Determine all the elements of the FSM.
-		for _, elem := range fsm.orderDets {
-			fn, ok := fsm.detsBefore[elem]
-			if !ok {
-				return solution, fmt.Errorf("no function for element %s", elem.String())
-			}
-
-			sol, err := fn(active)
-			if err != nil {
-				return solution, fmt.Errorf("error determining %s: %w", elem.String(), err)
-			}
-
-			active.m[elem] = sol
-		}
-
-		// Transition: Get the element that will determine the next state.
-		res, err := fsm.GetResFn(active)
-		if err != nil {
-			return solution, fmt.Errorf("error evaluating: %w", err)
-		}
-
-		solution = append(solution, res)
-
-		// Transition: Change the state.
-		nextState, err := fsm.NextFn(active)
-		if err != nil {
-			return solution, fmt.Errorf("error transitioning: %w", err)
-		}
-
-		active.changeState(nextState)
-	}
-
-	return solution, nil
-}
+// InitFunc is a function that initializes the FSM.
+//
+// Parameters:
+//   - tray: The tray that the FSM uses to store data.
+//
+// Returns:
+//   - S: The initial state of the FSM.
+//   - error: An error if the function fails.
+type InitFunc[I any, S any] func(tray ut.Trayer[I]) (S, error)
