@@ -52,11 +52,19 @@ type ErrWhile struct {
 //   - If the reason is nil, the error message is "an error occurred while
 //     <operation>".
 func (e *ErrWhile) Error() string {
+	var builder strings.Builder
+
 	if e.Reason == nil {
-		return fmt.Sprintf("an error occurred while %s", e.Operation)
+		builder.WriteString("an error occurred while ")
+		builder.WriteString(e.Operation)
 	} else {
-		return fmt.Sprintf("error while %s: %s", e.Operation, e.Reason.Error())
+		builder.WriteString("error while ")
+		builder.WriteString(e.Operation)
+		builder.WriteString(": ")
+		builder.WriteString(e.Reason.Error())
 	}
+
+	return builder.String()
 }
 
 // NewErrWhile creates a new ErrWhile error.
@@ -232,11 +240,19 @@ type ErrInvalidParameter struct {
 // Returns:
 //   - string: The error message.
 func (e *ErrInvalidParameter) Error() string {
-	if e.Reason == nil {
-		return fmt.Sprintf("parameter (%s) is invalid", e.Parameter)
-	} else {
-		return fmt.Sprintf("parameter (%s) is invalid: %s", e.Parameter, e.Reason.Error())
+	var builder strings.Builder
+
+	builder.WriteString("parameter (")
+	builder.WriteString(e.Parameter)
+	builder.WriteRune(')')
+	builder.WriteString(" is invalid")
+
+	if e.Reason != nil {
+		builder.WriteString(": ")
+		builder.WriteString(e.Reason.Error())
 	}
+
+	return builder.String()
 }
 
 // Unwrap returns the reason for the invalidity of the parameter.
@@ -309,18 +325,13 @@ type ErrInvalidCall struct {
 func (e *ErrInvalidCall) Error() string {
 	var builder strings.Builder
 
-	builder.WriteString("call")
-	builder.WriteRune(' ')
-	builder.WriteString("to")
-	builder.WriteRune(' ')
+	builder.WriteString("call to ")
 	builder.WriteString(e.FnName)
 	builder.WriteString(e.Signature.String())
-	builder.WriteRune(' ')
-	builder.WriteString("failed")
+	builder.WriteString(" failed")
 
 	if e.Reason != nil {
-		builder.WriteRune(':')
-		builder.WriteRune(' ')
+		builder.WriteString(": ")
 		builder.WriteString(e.Reason.Error())
 	}
 
@@ -428,9 +439,14 @@ type ErrInvalidRune struct {
 func (e *ErrInvalidRune) Error() string {
 	if e.Reason == nil {
 		return "rune is invalid"
-	} else {
-		return fmt.Sprintf("invalid rune: %s", e.Reason.Error())
 	}
+
+	var builder strings.Builder
+
+	builder.WriteString("invalid rune: ")
+	builder.WriteString(e.Reason.Error())
+
+	return builder.String()
 }
 
 // Unwrap returns the reason for the invalidity of the rune.
@@ -558,11 +574,19 @@ type ErrAfter struct {
 // Returns:
 //   - string: The error message.
 func (e *ErrAfter) Error() string {
+	var builder strings.Builder
+
 	if e.Reason == nil {
-		return fmt.Sprintf("something went wrong after %s", e.After)
+		builder.WriteString("something went wrong after ")
+		builder.WriteString(e.After)
 	} else {
-		return fmt.Sprintf("after %s: %s", e.After, e.Reason.Error())
+		builder.WriteString("after ")
+		builder.WriteString(e.After)
+		builder.WriteString(": ")
+		builder.WriteString(e.Reason.Error())
 	}
+
+	return builder.String()
 }
 
 // Unwrap returns the reason for the error.
@@ -612,11 +636,19 @@ type ErrBefore struct {
 // Returns:
 //   - string: The error message.
 func (e *ErrBefore) Error() string {
+	var builder strings.Builder
+
 	if e.Reason == nil {
-		return fmt.Sprintf("something went wrong before %s", e.Before)
+		builder.WriteString("something went wrong before ")
+		builder.WriteString(e.Before)
 	} else {
-		return fmt.Sprintf("before %s: %s", e.Before, e.Reason.Error())
+		builder.WriteString("before ")
+		builder.WriteString(e.Before)
+		builder.WriteString(": ")
+		builder.WriteString(e.Reason.Error())
 	}
+
+	return builder.String()
 }
 
 // Unwrap returns the reason for the error.
@@ -665,19 +697,20 @@ type ErrInvalidUsage struct {
 // Returns:
 //   - string: The error message.
 func (e *ErrInvalidUsage) Error() string {
-	var reason string
+	var builder strings.Builder
 
 	if e.Reason == nil {
-		reason = "invalid usage"
+		builder.WriteString("invalid usage")
 	} else {
-		reason = e.Reason.Error()
+		builder.WriteString(e.Reason.Error())
 	}
 
 	if e.Usage == "" {
-		return reason
+		builder.WriteString(". ")
+		builder.WriteString(e.Usage)
 	}
 
-	return fmt.Sprintf("%s. %s", reason, e.Usage)
+	return builder.String()
 }
 
 // Unwrap returns the reason for the invalid usage.
@@ -725,9 +758,14 @@ type ErrUnexpectedError struct {
 func (e *ErrUnexpectedError) Error() string {
 	if e.Reason == nil {
 		return "unexpected error"
-	} else {
-		return fmt.Sprintf("unexpected error: %s", e.Reason.Error())
 	}
+
+	var builder strings.Builder
+
+	builder.WriteString("unexpected error: ")
+	builder.WriteString(e.Reason.Error())
+
+	return builder.String()
 }
 
 // Unwrap returns the reason for the unexpected error.
@@ -775,11 +813,18 @@ type ErrVariableError struct {
 // Returns:
 //   - string: The error message.
 func (e *ErrVariableError) Error() string {
-	if e.Reason == nil {
-		return fmt.Sprintf("variable (%s) error", e.Variable)
-	} else {
-		return fmt.Sprintf("variable (%s) error: %s", e.Variable, e.Reason.Error())
+	var builder strings.Builder
+
+	builder.WriteString("variable (")
+	builder.WriteString(e.Variable)
+	builder.WriteString(") error")
+
+	if e.Reason != nil {
+		builder.WriteString(": ")
+		builder.WriteString(e.Reason.Error())
 	}
+
+	return builder.String()
 }
 
 // Unwrap returns the reason for the variable error.
@@ -814,6 +859,7 @@ func NewErrVariableError(variable string, reason error) *ErrVariableError {
 	}
 }
 
+// ErrPossibleError represents an error that occurs when a possible error is encountered.
 type ErrPossibleError struct {
 	// Reason is the reason for the possible error.
 	Reason error
@@ -828,17 +874,14 @@ type ErrPossibleError struct {
 // Returns:
 //   - string: The error message.
 func (e *ErrPossibleError) Error() string {
-	var reasonMsg string
-
-	if e.Reason == nil {
-		reasonMsg = "no error occurred"
-	} else {
-		reasonMsg = e.Reason.Error()
-	}
-
 	var builder strings.Builder
 
-	builder.WriteString(reasonMsg)
+	if e.Reason == nil {
+		builder.WriteString("no error occurred")
+	} else {
+		builder.WriteString(e.Reason.Error())
+	}
+
 	if e.Possible != nil {
 		builder.WriteString(". It is possible that ")
 		builder.WriteString(e.Possible.Error())

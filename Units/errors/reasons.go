@@ -38,14 +38,20 @@ type ErrOutOfBounds struct {
 func (e *ErrOutOfBounds) Error() string {
 	var builder strings.Builder
 
-	fmt.Fprintf(&builder, "value (%d) not in range ", e.Value)
+	builder.WriteString("value (")
+	builder.WriteString(strconv.Itoa(e.Value))
+	builder.WriteString(") not in range ")
+
 	if e.LowerInclusive {
 		builder.WriteRune('[')
 	} else {
 		builder.WriteRune('(')
 	}
 
-	fmt.Fprintf(&builder, "%d, %d", e.LowerBound, e.UpperBound)
+	builder.WriteString(strconv.Itoa(e.LowerBound))
+	builder.WriteString(", ")
+	builder.WriteString(strconv.Itoa(e.UpperBound))
+
 	if e.UpperInclusive {
 		builder.WriteRune(']')
 	} else {
@@ -114,51 +120,47 @@ type ErrUnexpected struct {
 	Expected []string
 
 	// Actual is the actual value encountered.
-	Actual fmt.Stringer
+	Actual string
 }
 
 // Error is a method of the error interface.
 //
-// Returns:
-//
-//   - string: The error message.
+// Message: "expected <expected>, got <actual> instead"
 func (e *ErrUnexpected) Error() string {
-	var expected, got string
+	var builder strings.Builder
 
-	switch len(e.Expected) {
-	case 0:
-		expected = "nothing"
-	case 1:
-		expected = fmt.Sprintf("%q", e.Expected[0])
-	case 2:
-		expected = fmt.Sprintf("%q or %q", e.Expected[0], e.Expected[1])
-	default:
-		var builder strings.Builder
+	builder.WriteString("expected ")
 
-		fmt.Fprintf(&builder, "%q", e.Expected[0])
+	if len(e.Expected) == 0 {
+		builder.WriteString("nothing")
+	} else {
+		builder.WriteString(strconv.Quote(e.Expected[0]))
+	}
+
+	if len(e.Expected) > 2 {
+		var values []string
 
 		for i := 1; i < len(e.Expected)-1; i++ {
-			builder.WriteRune(',')
-			builder.WriteRune(' ')
-			fmt.Fprintf(&builder, "%q", e.Expected[i])
+			values = append(values, strconv.Quote(e.Expected[i]))
 		}
 
+		builder.WriteString(strings.Join(values, ", "))
 		builder.WriteRune(',')
-		builder.WriteRune(' ')
-		builder.WriteString("or ")
-
-		fmt.Fprintf(&builder, "%q", e.Expected[len(e.Expected)-1])
-
-		expected = builder.String()
 	}
 
-	if e.Actual == nil {
-		got = "nothing"
+	builder.WriteString(" or ")
+	builder.WriteString(strconv.Quote(e.Expected[len(e.Expected)-1]))
+	builder.WriteString(", got ")
+
+	if e.Actual == "" {
+		builder.WriteString("nothing")
 	} else {
-		got = e.Actual.String()
+		builder.WriteString(strconv.Quote(e.Actual))
 	}
 
-	return fmt.Sprintf("expected %s, got %s instead", expected, got)
+	builder.WriteString(" instead")
+
+	return builder.String()
 }
 
 // NewErrUnexpected creates a new ErrUnexpected error.
@@ -171,7 +173,7 @@ func (e *ErrUnexpected) Error() string {
 // Returns:
 //
 //   - *ErrUnexpected: A pointer to the newly created ErrUnexpected.
-func NewErrUnexpected(got fmt.Stringer, expected ...string) *ErrUnexpected {
+func NewErrUnexpected(got string, expected ...string) *ErrUnexpected {
 	return &ErrUnexpected{Expected: expected, Actual: got}
 }
 
@@ -374,44 +376,31 @@ type ErrInvalidValues[T comparable] struct {
 //   - If there are two values, the error message is "value must not be
 //     either <value 0> or <value 1>".
 func (e *ErrInvalidValues[T]) Error() string {
-	switch len(e.Values) {
-	case 0:
+	if len(e.Values) == 0 {
 		return "value is invalid"
-	case 1:
-		var builder strings.Builder
-
-		builder.WriteString("value must not be ")
-		builder.WriteString(com.StringOf(e.Values[0]))
-
-		return builder.String()
-	case 2:
-		var builder strings.Builder
-
-		builder.WriteString("value must not be either ")
-		builder.WriteString(com.StringOf(e.Values[0]))
-		builder.WriteString(" or ")
-		builder.WriteString(com.StringOf(e.Values[1]))
-
-		return builder.String()
-	default:
-		values := make([]string, 0, len(e.Values))
-
-		for _, v := range e.Values {
-			values = append(values, com.StringOf(v))
-		}
-
-		var builder strings.Builder
-
-		builder.WriteString("value must not be ")
-		builder.WriteString(strings.Join(values[:len(values)-1], ", "))
-
-		builder.WriteRune(',')
-		builder.WriteRune(' ')
-		builder.WriteString("or ")
-		builder.WriteString(values[len(values)-1])
-
-		return builder.String()
 	}
+
+	values := make([]string, 0, len(e.Values))
+	for _, v := range e.Values {
+		values = append(values, com.StringOf(v))
+	}
+
+	var builder strings.Builder
+
+	builder.WriteString("value must not be ")
+
+	if len(e.Values) == 2 {
+		builder.WriteString("either ")
+		builder.WriteString(values[0])
+	} else if len(e.Values) > 2 {
+		builder.WriteString(strings.Join(values[:len(values)-1], ", "))
+		builder.WriteRune(',')
+	}
+
+	builder.WriteString(" or ")
+	builder.WriteString(values[len(values)-1])
+
+	return builder.String()
 }
 
 // NewErrInvalidValues creates a new ErrInvalidValues error.
