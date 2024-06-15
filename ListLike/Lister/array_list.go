@@ -6,7 +6,6 @@ import (
 
 	itf "github.com/PlayerR9/MyGoLib/Units/Iterators"
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
-	ers "github.com/PlayerR9/MyGoLib/Units/errors"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
@@ -37,52 +36,35 @@ func NewArrayList[T any](values ...T) *ArrayList[T] {
 	return list
 }
 
-// Append is a method of the ArrayList type. It is used to add an element to the
-// end of the list.
+// Append implements the Lister interface.
 //
-// Panics with an error of type *ErrFullList if the list is full.
-//
-// Parameters:
-//
-//   - value: A pointer to an element of type T to be added to the list.
-func (list *ArrayList[T]) Append(value T) error {
+// Always returns true.
+func (list *ArrayList[T]) Append(value T) bool {
 	list.values = append(list.values, value)
 
-	return nil
+	return true
 }
 
-// DeleteFirst is a method of the ArrayList type. It is used to remove and return
-// the first element in the list.
-//
-// Panics with an error of type *ErrInvalidOperation if the list is empty.
-//
-// Returns:
-//
-//   - T: The first element in the list.
-func (list *ArrayList[T]) DeleteFirst() (T, error) {
+// DeleteFirst implements the Lister interface.
+func (list *ArrayList[T]) DeleteFirst() (T, bool) {
 	if len(list.values) <= 0 {
-		return *new(T), ers.NewErrEmpty(list)
+		return *new(T), false
 	}
 
 	toRemove := list.values[0]
 	list.values = list.values[1:]
-	return toRemove, nil
+	return toRemove, true
 }
 
-// PeekFirst is a method of the ArrayList type. It is used to return the first
-// element in the list without removing it.
-//
-// Panics with an error of type *ErrInvalidOperation if the list is empty.
-//
-// Returns:
-//
-//   - T: A pointer to the first element in the list.
-func (list *ArrayList[T]) PeekFirst() (T, error) {
+// PeekFirst implements the Lister interface.
+func (list *ArrayList[T]) PeekFirst() (T, bool) {
 	if len(list.values) == 0 {
-		return *new(T), ers.NewErrEmpty(list)
+		return *new(T), false
 	}
 
-	return list.values[0], nil
+	elem := list.values[0]
+
+	return elem, true
 }
 
 // IsEmpty is a method of the ArrayList type. It checks if the list is empty.
@@ -157,52 +139,35 @@ func (list *ArrayList[T]) GoString() string {
 	return builder.String()
 }
 
-// Prepend is a method of the ArrayList type. It is used to add an element to the
-// end of the list.
+// Prepend implements the Lister interface.
 //
-// Panics with an error of type *ErrFullList if the list is full.
-//
-// Parameters:
-//
-//   - value: A pointer to an element of type T to be added to the list.
-func (list *ArrayList[T]) Prepend(value T) error {
+// Always returns true.
+func (list *ArrayList[T]) Prepend(value T) bool {
 	list.values = append([]T{value}, list.values...)
 
-	return nil
+	return true
 }
 
-// DeleteLast is a method of the ArrayList type. It is used to remove and return
-// the last element in the list.
-//
-// Panics with an error of type *ErrInvalidOperation if the list is empty.
-//
-// Returns:
-//
-//   - T: The last element in the list.
-func (list *ArrayList[T]) DeleteLast() (T, error) {
+// DeleteLast implements the Lister interface.
+func (list *ArrayList[T]) DeleteLast() (T, bool) {
 	if len(list.values) == 0 {
-		return *new(T), ers.NewErrEmpty(list)
+		return *new(T), false
 	}
 
 	toRemove := list.values[len(list.values)-1]
 	list.values = list.values[:len(list.values)-1]
-	return toRemove, nil
+	return toRemove, true
 }
 
-// PeekLast is a method of the ArrayList type. It is used to return the last
-// element in the list without removing it.
-//
-// Panics with an error of type *ErrInvalidOperation if the list is empty.
-//
-// Returns:
-//
-//   - T: The last element in the list.
-func (list *ArrayList[T]) PeekLast() (T, error) {
+// PeekLast implements the Lister interface.
+func (list *ArrayList[T]) PeekLast() (T, bool) {
 	if len(list.values) == 0 {
-		return *new(T), ers.NewErrEmpty(list)
+		return *new(T), false
 	}
 
-	return list.values[len(list.values)-1], nil
+	elm := list.values[len(list.values)-1]
+
+	return elm, true
 }
 
 // CutNilValues is a method of the ArrayList type. It is used to remove all nil

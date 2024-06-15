@@ -7,29 +7,28 @@ import (
 // Queuer is an interface that defines methods for a queue data structure.
 type Queuer[T any] interface {
 	// Enqueue is a method that adds a value of type T to the end of the queue.
-	// If the queue is full, it will panic.
 	//
 	// Parameters:
-	//
 	//   - value: The value of type T to add to the queue.
-	Enqueue(value T) error
-
-	// Dequeue is a method that dequeues an element from the queue and returns it.
-	// If the queue is empty, it will panic.
 	//
 	// Returns:
+	//   - bool: True if the value was successfully added to the queue, false otherwise.
+	Enqueue(value T) bool
+
+	// Dequeue is a method that dequeues an element from the queue and returns it.
 	//
+	// Returns:
 	//   - T: The value of type T that was dequeued.
-	Dequeue() (T, error)
+	//   - bool: True if the value was successfully dequeued, false otherwise.
+	Dequeue() (T, bool)
 
 	// Peek is a method that returns the value at the front of the queue without
 	// removing it.
-	// If the queue is empty, it will panic.
 	//
 	// Returns:
-	//
 	//   - T: The value of type T at the front of the queue.
-	Peek() (T, error)
+	//   - bool: True if the value was successfully peeked, false otherwise.
+	Peek() (T, bool)
 
 	ListLike.ListLike[T]
 }
@@ -70,36 +69,6 @@ func (node *QueueNode[T]) SetNext(next *QueueNode[T]) {
 //   - *QueueNode: The next node in the queue.
 func (node *QueueNode[T]) Next() *QueueNode[T] {
 	return node.next
-}
-
-// Queuer is an interface that defines methods for a queue data structure.
-type SafeQueuer[T any] interface {
-	// Enqueue is a method that adds a value of type T to the end of the queue.
-	// If the queue is full, it will panic.
-	//
-	// Parameters:
-	//
-	//   - value: The value of type T to add to the queue.
-	Enqueue(value T) error
-
-	// Dequeue is a method that dequeues an element from the queue and returns it.
-	// If the queue is empty, it will panic.
-	//
-	// Returns:
-	//
-	//   - T: The value of type T that was dequeued.
-	Dequeue() (T, error)
-
-	// Peek is a method that returns the value at the front of the queue without
-	// removing it.
-	// If the queue is empty, it will panic.
-	//
-	// Returns:
-	//
-	//   - T: The value of type T at the front of the queue.
-	Peek() (T, error)
-
-	ListLike.ListLike[T]
 }
 
 // QueueSafeNode represents a node in a linked queue.

@@ -310,8 +310,8 @@ func CEWithSearch[T any](search *SearchCriteria, action ActionType, parse NodeLi
 		var el ue.ErrOrSol[*html.Node]
 
 		for {
-			node, err := S.Pop()
-			if err != nil {
+			node, ok := S.Pop()
+			if !ok {
 				break
 			}
 

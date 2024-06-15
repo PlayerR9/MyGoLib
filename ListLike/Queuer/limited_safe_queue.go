@@ -7,7 +7,6 @@ import (
 
 	itf "github.com/PlayerR9/MyGoLib/Units/Iterators"
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
-	ers "github.com/PlayerR9/MyGoLib/Units/errors"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
@@ -65,20 +64,13 @@ func NewLimitedSafeQueue[T any](values ...T) *LimitedSafeQueue[T] {
 	return queue
 }
 
-// Enqueue is a method of the LimitedSafeQueue type. It is used to add an element to the
-// back of the queue.
-//
-// Panics with an error of type *ErrCallFailed if the queue is fu
-//
-// Parameters:
-//
-//   - value: The value of type T to be added to the queue.
-func (queue *LimitedSafeQueue[T]) Enqueue(value T) error {
+// Enqueue implements the Queuer interface.
+func (queue *LimitedSafeQueue[T]) Enqueue(value T) bool {
 	queue.backMutex.Lock()
 	defer queue.backMutex.Unlock()
 
 	if queue.size >= queue.capacity {
-		return NewErrFullQueue(queue)
+		return false
 	}
 
 	node := NewQueueSafeNode(value)
@@ -94,23 +86,16 @@ func (queue *LimitedSafeQueue[T]) Enqueue(value T) error {
 	queue.back = node
 	queue.size++
 
-	return nil
+	return true
 }
 
-// Dequeue is a method of the LimitedSafeQueue type. It is used to remove and return the
-// element at the front of the queue.
-//
-// Panics with an error of type *ErrCallFailed if the queue is empty.
-//
-// Returns:
-//
-//   - T: The value of the element at the front of the queue.
-func (queue *LimitedSafeQueue[T]) Dequeue() (T, error) {
+// Dequeue implements the Queuer interface.
+func (queue *LimitedSafeQueue[T]) Dequeue() (T, bool) {
 	queue.frontMutex.Lock()
 	defer queue.frontMutex.Unlock()
 
 	if queue.front == nil {
-		return *new(T), ers.NewErrEmpty(queue)
+		return *new(T), false
 	}
 
 	toRemove := queue.front
@@ -128,26 +113,19 @@ func (queue *LimitedSafeQueue[T]) Dequeue() (T, error) {
 	queue.size--
 	toRemove.SetNext(nil)
 
-	return toRemove.Value, nil
+	return toRemove.Value, true
 }
 
-// Peek is a method of the LimitedSafeQueue type. It is used to return the element at the
-// front of the queue without removing it.
-//
-// Panics with an error of type *ErrCallFailed if the queue is empty.
-//
-// Returns:
-//
-//   - T: The value of the element at the front of the queue.
-func (queue *LimitedSafeQueue[T]) Peek() (T, error) {
+// Peek implements the Queuer interface.
+func (queue *LimitedSafeQueue[T]) Peek() (T, bool) {
 	queue.frontMutex.RLock()
 	defer queue.frontMutex.RUnlock()
 
 	if queue.front == nil {
-		return *new(T), ers.NewErrEmpty(queue)
+		return *new(T), false
 	}
 
-	return queue.front.Value, nil
+	return queue.front.Value, true
 }
 
 // IsEmpty is a method of the LimitedSafeQueue type. It is used to check if the queue is

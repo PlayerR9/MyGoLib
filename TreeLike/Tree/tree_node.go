@@ -124,19 +124,17 @@ func (n *TreeNode[T]) Leaves() []*TreeNode[T] {
 	S := Stacker.NewLinkedStack(n)
 
 	for {
-		top, err := S.Pop()
-		if err != nil {
+		top, ok := S.Pop()
+		if !ok {
 			break
 		}
 
-		if top.IsLeaf() {
+		ok = top.IsLeaf()
+		if ok {
 			leaves = append(leaves, top)
 		} else {
 			for _, child := range top.children {
-				err := S.Push(child)
-				if err != nil {
-					panic(err)
-				}
+				S.Push(child)
 			}
 		}
 	}
@@ -316,18 +314,15 @@ func (n *TreeNode[T]) Size() int {
 	S := Stacker.NewLinkedStack(n)
 
 	for {
-		top, err := S.Pop()
-		if err != nil {
+		top, ok := S.Pop()
+		if !ok {
 			break
 		}
 
 		size++
 
 		for _, child := range top.children {
-			err := S.Push(child)
-			if err != nil {
-				panic(err)
-			}
+			S.Push(child)
 		}
 	}
 

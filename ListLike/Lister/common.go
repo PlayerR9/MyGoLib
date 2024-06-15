@@ -9,56 +9,52 @@ type Lister[T any] interface {
 	// Append is a method that adds a value of type T to the end of the list.
 	//
 	// Parameters:
-	//
 	//   - value: The value of type T to add to the list.
 	//
 	// Returns:
-	//
-	//   - error: An error if the list is full.
-	Append(value T) error
+	//   - bool: True if the value was successfully added to the list, false otherwise.
+	Append(value T) bool
 
 	// DeleteFirst is a method that deletes an element from the front of the list and
-	// returns it. If the list is empty, it will panic.
+	// returns it.
 	//
 	// Returns:
-	//
 	//   - T: The value of type T that was deleted.
-	DeleteFirst() (T, error)
+	//   - bool: True if the value was successfully deleted, false otherwise.
+	DeleteFirst() (T, bool)
 
 	// PeekFirst is a method that returns the value at the front of the list without
-	// removing it. If the list is empty, it will panic.
+	// removing it.
 	//
 	// Returns:
-	//
 	//   - T: The value of type T at the front of the list.
-	PeekFirst() (T, error)
+	//   - bool: True if the value was successfully peeked, false otherwise.
+	PeekFirst() (T, bool)
 
 	// Prepend is a method that adds a value of type T to the end of the list.
 	//
 	// Parameters:
-	//
 	//   - value: The value of type T to add to the list.
 	//
 	// Returns:
-	//
-	//   - error: An error if the list is full.
-	Prepend(value T) error
+	//   - bool: True if the value was successfully added to the list, false otherwise.
+	Prepend(value T) bool
 
 	// DeleteLast is a method that deletes an element from the end of the list and
-	// returns it. If the list is empty, it will panic.
+	// returns it.
 	//
 	// Returns:
-	//
 	//   - T: The value of type T that was deleted.
-	DeleteLast() (T, error)
+	//   - bool: True if the value was successfully deleted, false otherwise.
+	DeleteLast() (T, bool)
 
 	// PeekLast is a method that returns the value at the end of the list without
-	// removing it. If the list is empty, it will panic.
+	// removing it.
 	//
 	// Returns:
-	//
 	//   - T: The value of type T at the end of the list.
-	PeekLast() (T, error)
+	//   - bool: True if the value was successfully peeked, false otherwise.
+	PeekLast() (T, bool)
 
 	ListLike.ListLike[T]
 }
@@ -114,65 +110,6 @@ func (node *ListNode[T]) SetPrev(prev *ListNode[T]) {
 //   - *ListNode: The previous node in the list.
 func (node *ListNode[T]) Prev() *ListNode[T] {
 	return node.prev
-}
-
-// Lister is an interface that defines methods for a list data structure.
-type SafeLister[T any] interface {
-	// Append is a method that adds a value of type T to the end of the list.
-	//
-	// Parameters:
-	//
-	//   - value: The value of type T to add to the list.
-	//
-	// Returns:
-	//
-	//   - error: An error if the list is full.
-	Append(value T) error
-
-	// DeleteFirst is a method that deletes an element from the front of the list and
-	// returns it. If the list is empty, it will panic.
-	//
-	// Returns:
-	//
-	//   - T: The value of type T that was deleted.
-	DeleteFirst() (T, error)
-
-	// PeekFirst is a method that returns the value at the front of the list without
-	// removing it. If the list is empty, it will panic.
-	//
-	// Returns:
-	//
-	//   - T: The value of type T at the front of the list.
-	PeekFirst() (T, error)
-
-	// Prepend is a method that adds a value of type T to the end of the list.
-	//
-	// Parameters:
-	//
-	//   - value: The value of type T to add to the list.
-	//
-	// Returns:
-	//
-	//   - error: An error if the list is full.
-	Prepend(value T) error
-
-	// DeleteLast is a method that deletes an element from the end of the list and
-	// returns it. If the list is empty, it will panic.
-	//
-	// Returns:
-	//
-	//   - T: The value of type T that was deleted.
-	DeleteLast() (T, error)
-
-	// PeekLast is a method that returns the value at the end of the list without
-	// removing it. If the list is empty, it will panic.
-	//
-	// Returns:
-	//
-	//   - T: The value of type T at the end of the list.
-	PeekLast() (T, error)
-
-	ListLike.ListLike[T]
 }
 
 // ListSafeNode represents a node in a linked list. It holds a value of a

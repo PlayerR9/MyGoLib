@@ -73,8 +73,8 @@ func (fe *FrontierEvaluator[T]) Evaluate(elem T) {
 	S := Stacker.NewArrayStack(p)
 
 	for {
-		p, err := S.Pop()
-		if err != nil {
+		p, ok := S.Pop()
+		if !ok {
 			break
 		}
 
@@ -99,10 +99,7 @@ func (fe *FrontierEvaluator[T]) Evaluate(elem T) {
 				h := us.NewWeightedHelper(pair.First, nil, pair.Second)
 				fe.solutions = []*us.WeightedHelper[T]{h}
 			} else {
-				err := S.Push(pair)
-				if err != nil {
-					panic(err)
-				}
+				S.Push(pair)
 			}
 		}
 	}

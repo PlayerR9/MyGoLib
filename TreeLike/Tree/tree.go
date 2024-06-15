@@ -134,18 +134,15 @@ func (t *Tree[T]) GetChildren() []T {
 	S := Stacker.NewLinkedStack(t.root)
 
 	for {
-		node, err := S.Pop()
-		if err != nil {
+		node, ok := S.Pop()
+		if !ok {
 			break
 		}
 
 		children = append(children, node.Data)
 
 		for _, child := range node.children {
-			err := S.Push(child)
-			if err != nil {
-				panic(err)
-			}
+			S.Push(child)
 		}
 	}
 
@@ -200,8 +197,8 @@ func (t *Tree[T]) RegenerateLeaves() []*TreeNode[T] {
 	t.size = 0
 
 	for {
-		top, err := S.Pop()
-		if err != nil {
+		top, ok := S.Pop()
+		if !ok {
 			break
 		}
 
@@ -211,10 +208,7 @@ func (t *Tree[T]) RegenerateLeaves() []*TreeNode[T] {
 			leaves = append(leaves, top)
 		} else {
 			for _, child := range top.children {
-				err := S.Push(child)
-				if err != nil {
-					panic(err)
-				}
+				S.Push(child)
 			}
 		}
 	}
@@ -248,8 +242,8 @@ func (t *Tree[T]) UpdateLeaves() []*TreeNode[T] {
 	t.size -= len(t.leaves)
 
 	for {
-		top, err := S.Pop()
-		if err != nil {
+		top, ok := S.Pop()
+		if !ok {
 			break
 		}
 
@@ -259,10 +253,7 @@ func (t *Tree[T]) UpdateLeaves() []*TreeNode[T] {
 			newLeaves = append(newLeaves, top)
 		} else {
 			for _, child := range top.children {
-				err := S.Push(child)
-				if err != nil {
-					panic(err)
-				}
+				S.Push(child)
 			}
 		}
 	}
@@ -304,20 +295,18 @@ func (t *Tree[T]) HasChild(filter us.PredicateFilter[T]) bool {
 	Q := Queuer.NewLinkedQueue(t.root)
 
 	for {
-		node, err := Q.Dequeue()
-		if err != nil {
+		node, ok := Q.Dequeue()
+		if !ok {
 			break
 		}
 
-		if filter(node.Data) {
+		ok = filter(node.Data)
+		if ok {
 			return true
 		}
 
 		for _, child := range node.children {
-			err := Q.Enqueue(child)
-			if err != nil {
-				panic(err)
-			}
+			Q.Enqueue(child)
 		}
 	}
 
@@ -342,20 +331,18 @@ func (t *Tree[T]) FilterChildren(filter us.PredicateFilter[T]) []*TreeNode[T] {
 	solutions := make([]*TreeNode[T], 0)
 
 	for {
-		node, err := Q.Dequeue()
-		if err != nil {
+		node, ok := Q.Dequeue()
+		if !ok {
 			break
 		}
 
-		if filter(node.Data) {
+		ok = filter(node.Data)
+		if ok {
 			solutions = append(solutions, node)
 		}
 
 		for _, child := range node.children {
-			err := Q.Enqueue(child)
-			if err != nil {
-				panic(err)
-			}
+			Q.Enqueue(child)
 		}
 	}
 
@@ -544,20 +531,18 @@ func (t *Tree[T]) SearchNodes(f us.PredicateFilter[T]) *TreeNode[T] {
 	Q := Queuer.NewLinkedQueue(t.root)
 
 	for {
-		first, err := Q.Dequeue()
-		if err != nil {
+		first, ok := Q.Dequeue()
+		if !ok {
 			break
 		}
 
-		if f(first.Data) {
+		ok = f(first.Data)
+		if ok {
 			return first
 		}
 
 		for _, child := range first.children {
-			err := Q.Enqueue(child)
-			if err != nil {
-				panic(err)
-			}
+			Q.Enqueue(child)
 		}
 	}
 

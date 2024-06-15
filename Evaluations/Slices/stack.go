@@ -137,8 +137,8 @@ func (se *StackEvaluator[T, E]) Evaluate(elem T) ([]E, error) {
 	S := lls.NewLinkedStack(first.(E))
 
 	for {
-		top, err := S.Pop()
-		if err != nil {
+		top, ok := S.Pop()
+		if !ok {
 			break
 		}
 
@@ -175,10 +175,7 @@ func (se *StackEvaluator[T, E]) Evaluate(elem T) ([]E, error) {
 
 			topCopy.Append(next)
 
-			err := S.Push(topCopy)
-			if err != nil {
-				return nil, err
-			}
+			S.Push(topCopy)
 		}
 	}
 

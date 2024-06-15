@@ -6,7 +6,6 @@ import (
 
 	itf "github.com/PlayerR9/MyGoLib/Units/Iterators"
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
-	ers "github.com/PlayerR9/MyGoLib/Units/errors"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
@@ -40,56 +39,35 @@ func NewLimitedArrayQueue[T any](values ...T) *LimitedArrayQueue[T] {
 	return queue
 }
 
-// Enqueue is a method of the LimitedArrayQueue type. It is used to add an element to the
-// end of the queue.
-//
-// Panics with an error of type *ErrCallFailed if the queue is full.
-//
-// Parameters:
-//
-//   - value: The value of type T to be added to the queue.
-func (queue *LimitedArrayQueue[T]) Enqueue(value T) error {
+// Enqueue implements the Queuer interface.
+func (queue *LimitedArrayQueue[T]) Enqueue(value T) bool {
 	if len(queue.values) >= queue.capacity {
-		return NewErrFullQueue(queue)
+		return false
 	}
 
 	queue.values = append(queue.values, value)
 
-	return nil
+	return true
 }
 
-// Dequeue is a method of the LimitedArrayQueue type. It is used to remove and return the
-// element at the front of the queue.
-//
-// Panics with an error of type *ErrCallFailed if the queue is empty.
-//
-// Returns:
-//
-//   - T: The element at the front of the queue.
-func (queue *LimitedArrayQueue[T]) Dequeue() (T, error) {
+// Dequeue implements the Queuer interface.
+func (queue *LimitedArrayQueue[T]) Dequeue() (T, bool) {
 	if len(queue.values) == 0 {
-		return *new(T), ers.NewErrEmpty(queue)
+		return *new(T), false
 	}
 
 	toRemove := queue.values[0]
 	queue.values = queue.values[1:]
-	return toRemove, nil
+	return toRemove, true
 }
 
-// Peek is a method of the LimitedArrayQueue type. It is used to return the element at the
-// front of the queue without removing it.
-//
-// Panics with an error of type *ErrCallFailed if the queue is empty.
-//
-// Returns:
-//
-//   - T: The element at the front of the queue.
-func (queue *LimitedArrayQueue[T]) Peek() (T, error) {
+// Peek implements the Queuer interface.
+func (queue *LimitedArrayQueue[T]) Peek() (T, bool) {
 	if len(queue.values) == 0 {
-		return *new(T), ers.NewErrEmpty(queue)
+		return *new(T), false
 	}
 
-	return queue.values[0], nil
+	return queue.values[0], true
 }
 
 // IsEmpty is a method of the LimitedArrayQueue type. It is used to check if the queue is

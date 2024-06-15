@@ -7,7 +7,6 @@ import (
 
 	itf "github.com/PlayerR9/MyGoLib/Units/Iterators"
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
-	ers "github.com/PlayerR9/MyGoLib/Units/errors"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
@@ -40,53 +39,36 @@ func NewArrayStack[T any](values ...T) *ArrayStack[T] {
 	return stack
 }
 
-// Push is a method of the ArrayStack type. It is used to add an element to the
-// end of the stack.
+// Push implements the Stacker interface.
 //
-// Panics with an error of type *ErrCaCommonFailed if the stack is fuCommon.
-//
-// Parameters:
-//
-//   - value: The value of type T to be added to the stack.
-func (stack *ArrayStack[T]) Push(value T) error {
+// Always returns true.
+func (stack *ArrayStack[T]) Push(value T) bool {
 	stack.values = append(stack.values, value)
 
-	return nil
+	return true
 }
 
-// Pop is a method of the ArrayStack type. It is used to remove and return the
-// element at the end of the stack.
-//
-// Panics with an error of type *ErrEmptyList if the stack is empty.
-//
-// Returns:
-//
-//   - T: The element at the end of the stack.
-func (stack *ArrayStack[T]) Pop() (T, error) {
+// Pop implements the Stacker interface.
+func (stack *ArrayStack[T]) Pop() (T, bool) {
 	if len(stack.values) == 0 {
-		return *new(T), ers.NewErrEmpty(stack)
+		return *new(T), false
 	}
 
 	toRemove := stack.values[len(stack.values)-1]
 	stack.values = stack.values[:len(stack.values)-1]
 
-	return toRemove, nil
+	return toRemove, true
 }
 
-// Peek is a method of the ArrayStack type. It is used to return the element at the
-// end of the stack without removing it.
-//
-// Panics with an error of type *ErrEmptyList if the stack is empty.
-//
-// Returns:
-//
-//   - T: The element at the end of the stack.
-func (stack *ArrayStack[T]) Peek() (T, error) {
+// Peek implements the Stacker interface.
+func (stack *ArrayStack[T]) Peek() (T, bool) {
 	if len(stack.values) == 0 {
-		return *new(T), ers.NewErrEmpty(stack)
+		return *new(T), false
 	}
 
-	return stack.values[len(stack.values)-1], nil
+	elem := stack.values[len(stack.values)-1]
+
+	return elem, true
 }
 
 // IsEmpty is a method of the ArrayStack type. It is used to check if the stack is

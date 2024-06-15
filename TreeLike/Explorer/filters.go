@@ -8,18 +8,28 @@ package TreeExplorer
 // Returns:
 //   - bool: True if the leaf is incomplete, false otherwise.
 func FilterIncompleteLeaves[O any](h *CurrentEval[O]) bool {
-	return h == nil || h.Status == EvalIncomplete
+	if h == nil {
+		return true
+	}
+
+	return h.Status == EvalIncomplete
 }
 
-// FilterIncompleteTokens is a filter that filters out incomplete tokens.
+// FilterCompleteTokens is a filter that filters complete helper tokens.
 //
 // Parameters:
 //   - h: The helper tokens to filter.
 //
 // Returns:
 //   - bool: True if the helper tokens are incomplete, false otherwise.
-func FilterIncompleteTokens[O any](h []*CurrentEval[O]) bool {
-	return len(h) != 0 && h[len(h)-1].Status == EvalComplete
+func FilterCompleteTokens[O any](h []*CurrentEval[O]) bool {
+	if len(h) == 0 {
+		return false
+	}
+
+	status := h[len(h)-1].GetStatus()
+
+	return status == EvalComplete
 }
 
 // HelperWeightFunc is a weight function that returns the length of the helper tokens.
@@ -32,4 +42,19 @@ func FilterIncompleteTokens[O any](h []*CurrentEval[O]) bool {
 //   - bool: True if the weight is valid, false otherwise.
 func HelperWeightFunc[O any](h []*CurrentEval[O]) (float64, bool) {
 	return float64(len(h)), true
+}
+
+// FilterErrorLeaves is a filter that filters out leaves that are in error.
+//
+// Parameters:
+//   - leaf: The leaf to filter.
+//
+// Returns:
+//   - bool: True if the leaf is in error, false otherwise.
+func FilterErrorLeaves[O any](h *CurrentEval[O]) bool {
+	if h == nil {
+		return true
+	}
+
+	return h.Status == EvalError
 }

@@ -1,7 +1,7 @@
 package TreeExplorer
 
 import (
-	"fmt"
+	"strings"
 
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
 )
@@ -46,7 +46,14 @@ type CurrentEval[T any] struct {
 // Returns:
 //   - string: The string representation of the CurrentEval.
 func (ce *CurrentEval[T]) String() string {
-	return fmt.Sprintf("%s [%s]", uc.StringOf(ce.Elem), ce.Status.String())
+	var builder strings.Builder
+
+	builder.WriteString(uc.StringOf(ce.Elem))
+	builder.WriteString(" [")
+	builder.WriteString(ce.Status.String())
+	builder.WriteRune(']')
+
+	return builder.String()
 }
 
 // NewCurrentEval creates a new CurrentEval with the given element.

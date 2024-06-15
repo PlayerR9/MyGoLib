@@ -6,7 +6,6 @@ import (
 
 	itf "github.com/PlayerR9/MyGoLib/Units/Iterators"
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
-	ers "github.com/PlayerR9/MyGoLib/Units/errors"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
@@ -63,19 +62,10 @@ func NewLimitedLinkedList[T any](values ...T) *LimitedLinkedList[T] {
 	return list
 }
 
-// Append is a method of the LimitedLinkedList type. It is used to add an element to
-// the end of the list.
-//
-// Parameters:
-//
-//   - value: An element of type T to be added to the list.
-//
-// Returns:
-//
-//   - error: An error if the list is full.
-func (list *LimitedLinkedList[T]) Append(value T) error {
+// Append implements the Lister interface.
+func (list *LimitedLinkedList[T]) Append(value T) bool {
 	if list.size >= list.capacity {
-		return NewErrFullList(list)
+		return false
 	}
 
 	list_node := NewListNode(value)
@@ -91,19 +81,13 @@ func (list *LimitedLinkedList[T]) Append(value T) error {
 
 	list.size++
 
-	return nil
+	return true
 }
 
-// DeleteFirst is a method of the LimitedLinkedList type. It is used to remove and return
-// the first element in the list.
-// Panics if the list is empty.
-//
-// Returns:
-//
-//   - T: The first element in the list.
-func (list *LimitedLinkedList[T]) DeleteFirst() (T, error) {
+// DeleteFirst implements the Lister interface.
+func (list *LimitedLinkedList[T]) DeleteFirst() (T, bool) {
 	if list.front == nil {
-		return *new(T), ers.NewErrEmpty(list)
+		return *new(T), false
 	}
 
 	toRemove := list.front
@@ -119,21 +103,16 @@ func (list *LimitedLinkedList[T]) DeleteFirst() (T, error) {
 
 	toRemove.SetNext(nil)
 
-	return toRemove.Value, nil
+	return toRemove.Value, true
 }
 
-// PeekFirst is a method of the LimitedLinkedList type. It is used to return the first
-// element in the list without removing it.
-//
-// Returns:
-//
-//   - value: The first element in the list.
-func (list *LimitedLinkedList[T]) PeekFirst() (T, error) {
+// PeekFirst implements the Lister interface.
+func (list *LimitedLinkedList[T]) PeekFirst() (T, bool) {
 	if list.front == nil {
-		return *new(T), ers.NewErrEmpty(list)
+		return *new(T), false
 	}
 
-	return list.front.Value, nil
+	return list.front.Value, true
 }
 
 // IsEmpty is a method of the LimitedLinkedList type. It is used to check if the list is
@@ -240,17 +219,10 @@ func (list *LimitedLinkedList[T]) GoString() string {
 	return builder.String()
 }
 
-// Prepend is a method of the LimitedLinkedList type. It is used to add an element to
-// the end of the list.
-//
-// Panics with an error of type *ErrInvalidOperation if the list is full.
-//
-// Parameters:
-//
-//   - value: An element of type T to be added to the list.
-func (list *LimitedLinkedList[T]) Prepend(value T) error {
+// Prepend implements the Lister interface.
+func (list *LimitedLinkedList[T]) Prepend(value T) bool {
 	if list.size >= list.capacity {
-		return NewErrFullList(list)
+		return false
 	}
 
 	list_node := NewListNode(value)
@@ -266,20 +238,13 @@ func (list *LimitedLinkedList[T]) Prepend(value T) error {
 
 	list.size++
 
-	return nil
+	return true
 }
 
-// DeleteLast is a method of the LimitedLinkedList type. It is used to remove and return
-// the last element in the list.
-//
-// Panics with an error of type *ErrCallFailed if the list is empty.
-//
-// Returns:
-//
-//   - T: The last element in the list.
-func (list *LimitedLinkedList[T]) DeleteLast() (T, error) {
+// DeleteLast implements the Lister interface.
+func (list *LimitedLinkedList[T]) DeleteLast() (T, bool) {
 	if list.front == nil {
-		return *new(T), ers.NewErrEmpty(list)
+		return *new(T), false
 	}
 
 	toRemove := list.back
@@ -295,23 +260,16 @@ func (list *LimitedLinkedList[T]) DeleteLast() (T, error) {
 
 	toRemove.SetPrev(nil)
 
-	return toRemove.Value, nil
+	return toRemove.Value, true
 }
 
-// PeekLast is a method of the LimitedLinkedList type. It is used to return the last
-// element in the list without removing it.
-//
-// Panics with an error of type *ErrCallFailed if the list is empty.
-//
-// Returns:
-//
-//   - value: The last element in the list.
-func (list *LimitedLinkedList[T]) PeekLast() (T, error) {
+// PeekLast implements the Lister interface.
+func (list *LimitedLinkedList[T]) PeekLast() (T, bool) {
 	if list.front == nil {
-		return *new(T), ers.NewErrEmpty(list)
+		return *new(T), false
 	}
 
-	return list.back.Value, nil
+	return list.back.Value, true
 }
 
 // CutNilValues is a method of the LimitedLinkedList type. It is used to remove all nil

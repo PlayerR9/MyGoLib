@@ -6,7 +6,6 @@ import (
 
 	itf "github.com/PlayerR9/MyGoLib/Units/Iterators"
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
-	ers "github.com/PlayerR9/MyGoLib/Units/errors"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
@@ -48,56 +47,37 @@ func NewLimitedArrayList[T any](capacity int, values ...T) *LimitedArrayList[T] 
 	return list
 }
 
-// Append is a method of the LimitedArrayList type. It is used to add an element to the
-// end of the list.
-//
-// Parameters:
-//
-//   - value: An element of type T to be added to the list.
-//
-// Returns:
-//
-//   - error: An error if the list is full.
-func (list *LimitedArrayList[T]) Append(value T) error {
+// Append implements the Lister interface.
+func (list *LimitedArrayList[T]) Append(value T) bool {
 	if len(list.values) >= list.capacity {
-		return NewErrFullList(list)
+		return false
 	}
 
 	list.values = append(list.values, value)
 
-	return nil
+	return true
 }
 
-// DeleteFirst is a method of the LimitedArrayList type. It is used to remove and return
-// the first element in the list.
-// If the list is empty, it will panic.
-//
-// Returns:
-//
-//   - T: The first element in the list.
-func (list *LimitedArrayList[T]) DeleteFirst() (T, error) {
+// DeleteFirst implements the Lister interface.
+func (list *LimitedArrayList[T]) DeleteFirst() (T, bool) {
 	if len(list.values) <= 0 {
-		return *new(T), ers.NewErrEmpty(list)
+		return *new(T), false
 	}
 
 	toRemove := list.values[0]
 	list.values = list.values[1:]
-	return toRemove, nil
+	return toRemove, true
 }
 
-// PeekFirst is a method of the LimitedArrayList type. It is used to return the first
-// element in the list without removing it.
-// If the list is empty, it will panic.
-//
-// Returns:
-//
-//   - T: A pointer to the first element in the list.
-func (list *LimitedArrayList[T]) PeekFirst() (T, error) {
+// PeekFirst implements the Lister interface.
+func (list *LimitedArrayList[T]) PeekFirst() (T, bool) {
 	if len(list.values) == 0 {
-		return *new(T), ers.NewErrEmpty(list)
+		return *new(T), false
 	}
 
-	return list.values[0], nil
+	elem := list.values[0]
+
+	return elem, true
 }
 
 // IsEmpty is a method of the LimitedArrayList type. It checks if the list is empty.
@@ -174,53 +154,35 @@ func (list *LimitedArrayList[T]) GoString() string {
 	return builder.String()
 }
 
-// Prepend is a method of the LimitedArrayList type. It is used to add an element to the
-// end of the list.
-//
-// Parameters:
-//
-//   - value: A pointer to an element of type T to be added to the list.
-//   - error: An error if the list is full.
-func (list *LimitedArrayList[T]) Prepend(value T) error {
+// Prepend implements the Lister interface.
+func (list *LimitedArrayList[T]) Prepend(value T) bool {
 	if len(list.values) >= list.capacity {
-		return NewErrFullList(list)
+		return false
 	}
 
 	list.values = append([]T{value}, list.values...)
 
-	return nil
+	return true
 }
 
-// DeleteLast is a method of the LimitedArrayList type. It is used to remove and return
-// the last element in the list.
-// If the list is empty, it will panic.
-//
-// Returns:
-//
-//   - T: The last element in the list.
-func (list *LimitedArrayList[T]) DeleteLast() (T, error) {
+// DeleteLast implements the Lister interface.
+func (list *LimitedArrayList[T]) DeleteLast() (T, bool) {
 	if len(list.values) == 0 {
-		return *new(T), ers.NewErrEmpty(list)
+		return *new(T), false
 	}
 
 	toRemove := list.values[len(list.values)-1]
 	list.values = list.values[:len(list.values)-1]
-	return toRemove, nil
+	return toRemove, true
 }
 
-// PeekLast is a method of the LimitedArrayList type. It is used to return the last
-// element in the list without removing it.
-// If the list is empty, it will panic.
-//
-// Returns:
-//
-//   - T: The last element in the list.
-func (list *LimitedArrayList[T]) PeekLast() (T, error) {
+// PeekLast implements the Lister interface.
+func (list *LimitedArrayList[T]) PeekLast() (T, bool) {
 	if len(list.values) == 0 {
-		return *new(T), ers.NewErrEmpty(list)
+		return *new(T), false
 	}
 
-	return list.values[len(list.values)-1], nil
+	return list.values[len(list.values)-1], true
 }
 
 // CutNilValues is a method of the LimitedArrayList type. It is used to remove all nil

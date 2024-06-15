@@ -1,12 +1,13 @@
 package DoubleLL
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/PlayerR9/MyGoLib/ListLike/Stacker"
-	itf "github.com/PlayerR9/MyGoLib/Units/Iterators"
-	itff "github.com/PlayerR9/MyGoLib/Units/common"
-	ers "github.com/PlayerR9/MyGoLib/Units/errors"
+	ui "github.com/PlayerR9/MyGoLib/Units/Iterators"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
+	ue "github.com/PlayerR9/MyGoLib/Units/errors"
 )
 
 // DoubleStack is a stack that can be accepted or refused.
@@ -36,7 +37,8 @@ func (ds *DoubleStack[T]) Clear() {
 //
 //   - bool: Whether the double stack is empty.
 func (ds *DoubleStack[T]) IsEmpty() bool {
-	return ds.mainStack.IsEmpty()
+	ok := ds.mainStack.IsEmpty()
+	return ok
 }
 
 // Push pushes a value onto the double stack.
@@ -45,43 +47,47 @@ func (ds *DoubleStack[T]) IsEmpty() bool {
 // the middle of the stack.
 //
 // Parameters:
-//
 //   - value (T): The value to push onto the double stack.
-func (ds *DoubleStack[T]) Push(value T) error {
-	return ds.mainStack.Push(value)
+//
+// Returns:
+//   - bool: True if the value was successfully pushed onto the double stack,
+//     false otherwise.
+func (ds *DoubleStack[T]) Push(value T) bool {
+	ok := ds.mainStack.Push(value)
+	return ok
 }
 
-// MustPop pops a value from the double stack.
+// Pop pops a value from the double stack.
 //
 // It stores the popped value in the auxiliary stack.
-// Panics with an error of type *common.ErrEmptyList if the main stack is empty.
 //
 // Returns:
-//
 //   - T: The value that was popped from the double stack.
-func (ds *DoubleStack[T]) Pop() (T, error) {
-	top, err := ds.mainStack.Pop()
-	if err != nil {
-		return *new(T), err
+//   - bool: True if the value was successfully popped from the double stack,
+//     false otherwise.
+func (ds *DoubleStack[T]) Pop() (T, bool) {
+	top, ok := ds.mainStack.Pop()
+	if !ok {
+		return *new(T), false
 	}
 
-	err = ds.auxStack.Push(top)
-	if err != nil {
-		return *new(T), err
-	}
+	ds.auxStack.Push(top)
 
-	return top, nil
+	return top, true
 }
 
-// MustPeek returns the value at the top of the double stack without removing it.
-//
-// Panics with an error of type *common.ErrEmptyList if the main stack is empty.
+// Peek returns the value at the top of the double stack without removing it.
 //
 // Returns:
-//
 //   - T: The value at the top of the double stack.
-func (ds *DoubleStack[T]) Peek() (T, error) {
-	return ds.mainStack.Peek()
+//   - bool: True if the value was successfully peeked, false otherwise.
+func (ds *DoubleStack[T]) Peek() (T, bool) {
+	top, ok := ds.mainStack.Peek()
+	if !ok {
+		return *new(T), false
+	}
+
+	return top, true
 }
 
 // Size returns the number of elements in the double stack.
@@ -112,7 +118,7 @@ func (ds *DoubleStack[T]) CutNilValues() {
 // Returns:
 //
 //   - Iterater[T]: A pointer to a new iterator over the double stack.
-func (ds *DoubleStack[T]) Iterator() itf.Iterater[T] {
+func (ds *DoubleStack[T]) Iterator() ui.Iterater[T] {
 	return ds.mainStack.Iterator()
 }
 
@@ -121,7 +127,7 @@ func (ds *DoubleStack[T]) Iterator() itf.Iterater[T] {
 // Returns:
 //
 //   - *DoubleStack: A pointer to a new double stack that is a copy of the original.
-func (ds *DoubleStack[T]) Copy() itff.Copier {
+func (ds *DoubleStack[T]) Copy() uc.Copier {
 	return &DoubleStack[T]{
 		mainStack: ds.mainStack.Copy().(Stacker.Stacker[T]),
 		auxStack:  ds.auxStack.Copy().(*Stacker.ArrayStack[T]),
@@ -159,7 +165,7 @@ func (ds *DoubleStack[T]) IsFull() bool {
 //     the end of the specified stack.
 func NewDoubleStack[T any](stack Stacker.Stacker[T], values ...T) (*DoubleStack[T], error) {
 	if stack == nil {
-		return nil, ers.NewErrNilParameter("stack")
+		return nil, ue.NewErrNilParameter("stack")
 	}
 
 	ds := &DoubleStack[T]{
@@ -167,10 +173,10 @@ func NewDoubleStack[T any](stack Stacker.Stacker[T], values ...T) (*DoubleStack[
 		auxStack:  Stacker.NewArrayStack[T](),
 	}
 
-	for _, value := range values {
-		err := ds.mainStack.Push(value)
-		if err != nil {
-			return nil, err
+	for i, value := range values {
+		ok := ds.mainStack.Push(value)
+		if !ok {
+			return nil, ue.NewErrWhileAt("pushing", i+1, "value", nil)
 		}
 	}
 
@@ -194,37 +200,43 @@ func (ds *DoubleStack[T]) GetExtracted() []T {
 // Refuse refuses the elements that have been popped from the stack.
 // The elements are pushed back onto the stack in the same order that they were
 // popped.
-func (ds *DoubleStack[T]) Refuse() error {
+//
+// Returns:
+//   - bool: True if the elements were successfully refused, false otherwise.
+func (ds *DoubleStack[T]) Refuse() bool {
 	for {
-		top, err := ds.auxStack.Pop()
-		if err != nil {
+		top, ok := ds.auxStack.Pop()
+		if !ok {
 			break
 		}
 
-		err = ds.mainStack.Push(top)
-		if err != nil {
-			return err
+		ok = ds.mainStack.Push(top)
+		if !ok {
+			return false
 		}
 	}
 
-	return nil
+	return true
 }
 
 // RefuseOne refuses one element that has been popped from the stack.
 // The element is pushed back onto the stack.
 //
 // Returns:
+//   - error: An error if the element could not be refused, nil otherwise.
 //
-//   - error: An error of type *ErrNoElementsHaveBeenPopped if the auxiliary stack is empty.
+// Errors:
+//   - *ErrNoElementsHaveBeenPopped: The auxiliary stack is empty.
+//   - *errors.ErrUnexpectedError: The main stack is full.
 func (ds *DoubleStack[T]) RefuseOne() error {
-	top, err := ds.auxStack.Pop()
-	if err != nil {
+	top, ok := ds.auxStack.Pop()
+	if !ok {
 		return NewErrNoElementsHaveBeenPopped()
 	}
 
-	err = ds.mainStack.Push(top)
-	if err != nil {
-		return err
+	ok = ds.mainStack.Push(top)
+	if !ok {
+		return ue.NewErrUnexpectedError(errors.New("main stack is full"))
 	}
 
 	return nil

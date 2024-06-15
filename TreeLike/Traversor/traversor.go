@@ -97,8 +97,8 @@ func DFS[T any](tree *tr.Tree[T], init uc.Copier, f ObserverFunc[T]) error {
 	S := Stacker.NewLinkedStack(newTraversor(tree.Root(), init))
 
 	for {
-		top, err := S.Pop()
-		if err != nil {
+		top, ok := S.Pop()
+		if !ok {
 			break
 		}
 
@@ -108,7 +108,7 @@ func DFS[T any](tree *tr.Tree[T], init uc.Copier, f ObserverFunc[T]) error {
 		}
 		topInfo := top.getInfo()
 
-		ok, err = f(topData, topInfo)
+		ok, err := f(topData, topInfo)
 		if err != nil {
 			return err
 		} else if !ok {
@@ -123,10 +123,7 @@ func DFS[T any](tree *tr.Tree[T], init uc.Copier, f ObserverFunc[T]) error {
 		for _, child := range children {
 			newT := newTraversor(child, topInfo)
 
-			err := S.Push(newT)
-			if err != nil {
-				panic(err)
-			}
+			S.Push(newT)
 		}
 	}
 
@@ -145,11 +142,14 @@ func BFS[T any](tree *tr.Tree[T], init uc.Copier, f ObserverFunc[T]) error {
 		return nil
 	}
 
-	Q := Queuer.NewLinkedQueue(newTraversor(tree.Root(), init))
+	root := tree.Root()
+	trav := newTraversor(root, init)
+
+	Q := Queuer.NewLinkedQueue(trav)
 
 	for {
-		first, err := Q.Dequeue()
-		if err != nil {
+		first, ok := Q.Dequeue()
+		if !ok {
 			break
 		}
 
@@ -159,7 +159,7 @@ func BFS[T any](tree *tr.Tree[T], init uc.Copier, f ObserverFunc[T]) error {
 		}
 		firstInfo := first.getInfo()
 
-		ok, err = f(firstData, firstInfo)
+		ok, err := f(firstData, firstInfo)
 		if err != nil {
 			return err
 		} else if !ok {
@@ -174,10 +174,7 @@ func BFS[T any](tree *tr.Tree[T], init uc.Copier, f ObserverFunc[T]) error {
 		for _, child := range children {
 			newT := newTraversor(child, firstInfo)
 
-			err := Q.Enqueue(newT)
-			if err != nil {
-				panic(err)
-			}
+			Q.Enqueue(newT)
 		}
 	}
 

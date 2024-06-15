@@ -64,17 +64,6 @@ type Matcher[R MatchResulter[O], O any] interface {
 	GetNext(elem O) int
 }
 
-// FilterErrorLeaves is a filter that filters out leaves that are in error.
-//
-// Parameters:
-//   - leaf: The leaf to filter.
-//
-// Returns:
-//   - bool: True if the leaf is in error, false otherwise.
-func FilterErrorLeaves[O any](h *CurrentEval[O]) bool {
-	return h == nil || h.Status == EvalError
-}
-
 // filterInvalidBranches filters out invalid branches.
 //
 // Parameters:
@@ -84,7 +73,7 @@ func FilterErrorLeaves[O any](h *CurrentEval[O]) bool {
 //   - [][]helperToken: The filtered branches.
 //   - int: The index of the last invalid token. -1 if no invalid token is found.
 func filterInvalidBranches[O any](branches [][]*CurrentEval[O]) ([][]*CurrentEval[O], int) {
-	branches, ok := us.SFSeparateEarly(branches, FilterIncompleteTokens)
+	branches, ok := us.SFSeparateEarly(branches, FilterCompleteTokens)
 	if ok {
 		return branches, -1
 	} else if len(branches) == 0 {

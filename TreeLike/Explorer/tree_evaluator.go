@@ -4,6 +4,7 @@ import (
 	tr "github.com/PlayerR9/MyGoLib/TreeLike/Tree"
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
 	ers "github.com/PlayerR9/MyGoLib/Units/errors"
+	us "github.com/PlayerR9/MyGoLib/Units/slice"
 )
 
 // TreeEvaluator is a tree evaluator that uses a grammar to tokenize a string.
@@ -45,8 +46,12 @@ func (te *TreeEvaluator[R, M, O]) addMatchLeaves(root *tr.Tree[*CurrentEval[O]],
 	children := make([]*tr.Tree[*CurrentEval[O]], 0, len(matches))
 
 	for _, match := range matches {
-		ht := NewCurrentEval(match.GetMatch())
-		children = append(children, tr.NewTree(ht))
+		currMatch := match.GetMatch()
+		ht := NewCurrentEval(currMatch)
+
+		tree := tr.NewTree(ht)
+
+		children = append(children, tree)
 	}
 
 	root.SetChildren(children)
@@ -61,7 +66,8 @@ func (te *TreeEvaluator[R, M, O]) processLeaves() uc.EvalManyFunc[*CurrentEval[O
 	filterFunc := func(data *CurrentEval[O]) ([]*CurrentEval[O], error) {
 		nextAt := te.matcher.GetNext(data.Elem)
 
-		if te.matcher.IsDone(nextAt) {
+		ok := te.matcher.IsDone(nextAt)
+		if ok {
 			data.SetStatus(EvalComplete)
 
 			return nil, nil
@@ -80,7 +86,9 @@ func (te *TreeEvaluator[R, M, O]) processLeaves() uc.EvalManyFunc[*CurrentEval[O
 		children := make([]*CurrentEval[O], 0, len(matches))
 
 		for _, match := range matches {
-			ht := NewCurrentEval(match.GetMatch())
+			curr := match.GetMatch()
+			ht := NewCurrentEval(curr)
+
 			children = append(children, ht)
 		}
 
@@ -97,10 +105,32 @@ func (te *TreeEvaluator[R, M, O]) processLeaves() uc.EvalManyFunc[*CurrentEval[O
 // Returns:
 //   - bool: True if the tree evaluator can continue, false otherwise.
 func (te *TreeEvaluator[R, M, O]) canContinue() bool {
-	for _, leaf := range te.root.GetLeaves() {
+	leaves := te.root.GetLeaves()
+
+	for _, leaf := range leaves {
 		if leaf.Data.Status == EvalIncomplete {
 			return true
 		}
+	}
+
+	return false
+}
+
+// pruneTree prunes the tree evaluator.
+//
+// Parameters:
+//   - filter: The filter to use to prune the tree.
+//
+// Returns:
+//   - bool: True if no nodes were pruned, false otherwise.
+func (te *TreeEvaluator[R, M, O]) pruneTree(filter us.PredicateFilter[*CurrentEval[O]]) bool {
+	for te.root.Size() != 0 {
+		target := te.root.SearchNodes(filter)
+		if target == nil {
+			return true
+		}
+
+		te.root.DeleteBranchContaining(target)
 	}
 
 	return false
@@ -122,7 +152,8 @@ func (te *TreeEvaluator[R, M, O]) canContinue() bool {
 func (te *TreeEvaluator[R, M, O]) Evaluate(matcher M, root O) error {
 	te.matcher = matcher
 
-	te.root = tr.NewTree(NewCurrentEval(root))
+	ce := NewCurrentEval(root)
+	te.root = tr.NewTree(ce)
 
 	matches, err := te.matcher.Match(0)
 	if err != nil {
@@ -133,44 +164,28 @@ func (te *TreeEvaluator[R, M, O]) Evaluate(matcher M, root O) error {
 
 	te.root.Root().Data.SetStatus(EvalComplete)
 
-	for {
+	shouldContinue := true
+
+	for shouldContinue {
 		err := te.root.ProcessLeaves(te.processLeaves())
 		if err != nil {
 			return err
 		}
 
-		for {
-			target := te.root.SearchNodes(FilterErrorLeaves)
-			if target == nil {
-				break
-			}
-
-			err = te.root.DeleteBranchContaining(target)
-			if err != nil {
-				return err
-			}
-		}
-
-		if te.root.Size() == 0 {
+		ok := te.pruneTree(FilterErrorLeaves)
+		if !ok {
 			return NewErrAllMatchesFailed()
 		}
 
-		if !te.canContinue() {
-			break
-		}
+		shouldContinue = te.canContinue()
 	}
 
-	for {
-		target := te.root.SearchNodes(FilterIncompleteLeaves)
-		if target == nil {
-			return nil
-		}
-
-		err = te.root.DeleteBranchContaining(target)
-		if err != nil {
-			return err
-		}
+	ok := te.pruneTree(FilterIncompleteLeaves)
+	if !ok {
+		return NewErrAllMatchesFailed()
 	}
+
+	return nil
 }
 
 // GetBranches returns the tokens that have been lexed.

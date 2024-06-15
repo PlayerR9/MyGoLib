@@ -8,7 +8,6 @@ import (
 	rws "github.com/PlayerR9/MyGoLib/Safe/RWSafe"
 	itf "github.com/PlayerR9/MyGoLib/Units/Iterators"
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
-	ers "github.com/PlayerR9/MyGoLib/Units/errors"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
@@ -66,15 +65,10 @@ func NewSafeQueue[T any](values ...T) *SafeQueue[T] {
 	return queue
 }
 
-// Enqueue is a method of the SafeQueue type. It is used to add an element to the
-// back of the queue.
+// Enqueue implements the Queuer interface.
 //
-// Panics with an error of type *ErrCallFailed if the queue is fu
-//
-// Parameters:
-//
-//   - value: The value of type T to be added to the queue.
-func (queue *SafeQueue[T]) Enqueue(value T) error {
+// Always returns true.
+func (queue *SafeQueue[T]) Enqueue(value T) bool {
 	queue.mu.Lock()
 	defer queue.mu.Unlock()
 
@@ -92,23 +86,16 @@ func (queue *SafeQueue[T]) Enqueue(value T) error {
 		return size + 1
 	})
 
-	return nil
+	return true
 }
 
-// Dequeue is a method of the SafeQueue type. It is used to remove and return the
-// element at the front of the queue.
-//
-// Panics with an error of type *ErrCallFailed if the queue is empty.
-//
-// Returns:
-//
-//   - T: The value of the element at the front of the queue.
-func (queue *SafeQueue[T]) Dequeue() (T, error) {
+// Dequeue implements the Queuer interface.
+func (queue *SafeQueue[T]) Dequeue() (T, bool) {
 	queue.mu.Lock()
 	defer queue.mu.Unlock()
 
 	if queue.front == nil {
-		return *new(T), ers.NewErrEmpty(queue)
+		return *new(T), false
 	}
 
 	toRemove := queue.front
@@ -124,26 +111,19 @@ func (queue *SafeQueue[T]) Dequeue() (T, error) {
 		return size - 1
 	})
 
-	return toRemove.Value, nil
+	return toRemove.Value, true
 }
 
-// Peek is a method of the SafeQueue type. It is used to return the element at the
-// front of the queue without removing it.
-//
-// Panics with an error of type *ErrCallFailed if the queue is empty.
-//
-// Returns:
-//
-//   - T: The value of the element at the front of the queue.
-func (queue *SafeQueue[T]) Peek() (T, error) {
+// Peek implements the Queuer interface.
+func (queue *SafeQueue[T]) Peek() (T, bool) {
 	queue.mu.RLock()
 	defer queue.mu.RUnlock()
 
 	if queue.front == nil {
-		return *new(T), ers.NewErrEmpty(queue)
+		return *new(T), false
 	}
 
-	return queue.front.Value, nil
+	return queue.front.Value, true
 }
 
 // IsEmpty is a method of the SafeQueue type. It is used to check if the queue is

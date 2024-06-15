@@ -79,15 +79,12 @@ func (b *Builder[T]) Build(elem T) (*tr.Tree[T], error) {
 	for _, next := range nexts {
 		se := newStackElement(tree.Root(), next, b.info)
 
-		err := S.Push(se)
-		if err != nil {
-			panic(err)
-		}
+		S.Push(se)
 	}
 
 	for {
-		top, err := S.Pop()
-		if err != nil {
+		top, ok := S.Pop()
+		if !ok {
 			break
 		}
 
@@ -116,10 +113,7 @@ func (b *Builder[T]) Build(elem T) (*tr.Tree[T], error) {
 		for _, next := range nexts {
 			se := newStackElement(topElem, next, topInfo)
 
-			err := S.Push(se)
-			if err != nil {
-				panic(err)
-			}
+			S.Push(se)
 		}
 	}
 

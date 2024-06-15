@@ -1,7 +1,6 @@
 package Buffer
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/PlayerR9/MyGoLib/ListLike/Queuer"
@@ -153,10 +152,7 @@ func (b *Buffer[T]) listenForIncomingMessages() {
 	defer b.wg.Done()
 
 	for msg := range b.sendTo {
-		err := b.q.Enqueue(msg)
-		if err != nil {
-			panic(fmt.Errorf("error enqueuing message: %T", msg))
-		}
+		b.q.Enqueue(msg)
 	}
 
 	b.locker.ChangeValue(IsRunning, false)
@@ -212,15 +208,15 @@ func (b *Buffer[T]) sendMessagesFromBuffer() {
 //   - bool: A boolean indicating if the queue is empty.
 //   - bool: A boolean indicating if a message was sent successfully.
 func (b *Buffer[T]) sendSingleMessage() (bool, bool) {
-	msg, err := b.q.Peek()
-	if err != nil {
+	msg, ok := b.q.Peek()
+	if !ok {
 		return true, true
 	}
 
 	select {
 	case b.receiveFrom <- msg:
-		_, err := b.q.Dequeue()
-		if err != nil {
+		_, ok := b.q.Dequeue()
+		if !ok {
 			return true, false
 		}
 

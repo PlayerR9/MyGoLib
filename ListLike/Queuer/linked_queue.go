@@ -6,7 +6,6 @@ import (
 
 	itf "github.com/PlayerR9/MyGoLib/Units/Iterators"
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
-	ers "github.com/PlayerR9/MyGoLib/Units/errors"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
@@ -57,16 +56,10 @@ func NewLinkedQueue[T any](values ...T) *LinkedQueue[T] {
 	return queue
 }
 
-// Enqueue is a method of the LinkedQueue type. It is used to add an element to
-// the end of the queue.
+// Enqueue implements the Queuer interface.
 //
-// Panics with an error of type *ErrCaCommonFailed if the queue is fuCommon.
-//
-// Parameters:
-//
-//   - value: A pointer to a value of type T, which is the element to be added to the
-//     queue.
-func (queue *LinkedQueue[T]) Enqueue(value T) error {
+// Always returns true.
+func (queue *LinkedQueue[T]) Enqueue(value T) bool {
 	queue_node := NewQueueNode(value)
 
 	if queue.back == nil {
@@ -79,20 +72,13 @@ func (queue *LinkedQueue[T]) Enqueue(value T) error {
 
 	queue.size++
 
-	return nil
+	return true
 }
 
-// Dequeue is a method of the LinkedQueue type. It is used to remove and return
-// the element at the front of the queue.
-//
-// Panics with an error of type *ErrEmptyList if the queue is empty.
-//
-// Returns:
-//
-//   - T: The value of the element at the front of the queue.
-func (queue *LinkedQueue[T]) Dequeue() (T, error) {
+// Dequeue implements the Queuer interface.
+func (queue *LinkedQueue[T]) Dequeue() (T, bool) {
 	if queue.front == nil {
-		return *new(T), ers.NewErrEmpty(queue)
+		return *new(T), false
 	}
 
 	toRemove := queue.front
@@ -105,23 +91,16 @@ func (queue *LinkedQueue[T]) Dequeue() (T, error) {
 	queue.size--
 	toRemove.SetNext(nil)
 
-	return toRemove.Value, nil
+	return toRemove.Value, true
 }
 
-// Peek is a method of the LinkedQueue type. It is used to return the element at
-// the front of the queue without removing it.
-//
-// Panics with an error of type *ErrEmptyList if the queue is empty.
-//
-// Returns:
-//
-//   - T: The value of the element at the front of the queue.
-func (queue *LinkedQueue[T]) Peek() (T, error) {
+// Peek implements the Queuer interface.
+func (queue *LinkedQueue[T]) Peek() (T, bool) {
 	if queue.front == nil {
-		return *new(T), ers.NewErrEmpty(queue)
+		return *new(T), false
 	}
 
-	return queue.front.Value, nil
+	return queue.front.Value, true
 }
 
 // IsEmpty is a method of the LinkedQueue type. It is used to check if the queue

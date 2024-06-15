@@ -6,7 +6,6 @@ import (
 
 	itf "github.com/PlayerR9/MyGoLib/Units/Iterators"
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
-	ers "github.com/PlayerR9/MyGoLib/Units/errors"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
@@ -55,15 +54,10 @@ func NewLinkedStack[T any](values ...T) *LinkedStack[T] {
 	return stack
 }
 
-// Push is a method of the LinkedStack type. It is used to add an element to
-// the end of the stack.
+// Push implements the Stacker interface.
 //
-// Panics with an error of type *ErrCaCommonFailed if the stack is fuCommon.
-//
-// Parameters:
-//
-//   - value: The value to be added to the stack.
-func (stack *LinkedStack[T]) Push(value T) error {
+// Always returns true.
+func (stack *LinkedStack[T]) Push(value T) bool {
 	node := NewStackNode(value)
 
 	if stack.front != nil {
@@ -73,20 +67,13 @@ func (stack *LinkedStack[T]) Push(value T) error {
 	stack.front = node
 	stack.size++
 
-	return nil
+	return true
 }
 
-// Pop is a method of the LinkedStack type. It is used to remove and return the
-// last element in the stack.
-//
-// Panics with an error of type *ErrEmptyList if the stack is empty.
-//
-// Returns:
-//
-//   - T: The value of the last element in the stack.
-func (stack *LinkedStack[T]) Pop() (T, error) {
+// Pop implements the Stacker interface.
+func (stack *LinkedStack[T]) Pop() (T, bool) {
 	if stack.front == nil {
-		return *new(T), ers.NewErrEmpty(stack)
+		return *new(T), false
 	}
 
 	toRemove := stack.front
@@ -95,23 +82,16 @@ func (stack *LinkedStack[T]) Pop() (T, error) {
 	stack.size--
 	toRemove.SetNext(nil)
 
-	return toRemove.Value, nil
+	return toRemove.Value, true
 }
 
-// Peek is a method of the LinkedStack type. It is used to return the last element
-// in the stack without removing it.
-//
-// Panics with an error of type *ErrEmptyList if the stack is empty.
-//
-// Returns:
-//
-//   - T: The value of the last element in the stack.
-func (stack *LinkedStack[T]) Peek() (T, error) {
+// Peek implements the Stacker interface.
+func (stack *LinkedStack[T]) Peek() (T, bool) {
 	if stack.front == nil {
-		return *new(T), ers.NewErrEmpty(stack)
+		return *new(T), false
 	}
 
-	return stack.front.Value, nil
+	return stack.front.Value, true
 }
 
 // IsEmpty is a method of the LinkedStack type. It is used to check if the stack

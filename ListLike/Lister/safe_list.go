@@ -7,7 +7,6 @@ import (
 
 	itf "github.com/PlayerR9/MyGoLib/Units/Iterators"
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
-	ers "github.com/PlayerR9/MyGoLib/Units/errors"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
@@ -64,15 +63,10 @@ func NewSafeList[T any](values ...T) *SafeList[T] {
 	return list
 }
 
-// Append is a method of the SafeList type. It is used to add an element to the
-// end of the list.
+// Append implements the Lister interface.
 //
-// Panics with an error of type *ErrCallFailed if the list is fu
-//
-// Parameters:
-//
-//   - value: The value of type T to be added to the list.
-func (list *SafeList[T]) Append(value T) error {
+// Always returns true.
+func (list *SafeList[T]) Append(value T) bool {
 	list.backMutex.Lock()
 	defer list.backMutex.Unlock()
 
@@ -92,23 +86,16 @@ func (list *SafeList[T]) Append(value T) error {
 
 	list.size++
 
-	return nil
+	return true
 }
 
-// DeleteFirst is a method of the SafeList type. It is used to remove and return
-// the first element from the list.
-//
-// Panics with an error of type *ErrCallFailed if the list is empty.
-//
-// Returns:
-//
-//   - T: The first element in the list.
-func (list *SafeList[T]) DeleteFirst() (T, error) {
+// DeleteFirst implements the Lister interface.
+func (list *SafeList[T]) DeleteFirst() (T, bool) {
 	list.frontMutex.Lock()
 	defer list.frontMutex.Unlock()
 
 	if list.front == nil {
-		return *new(T), ers.NewErrEmpty(list)
+		return *new(T), false
 	}
 
 	toRemove := list.front
@@ -129,26 +116,19 @@ func (list *SafeList[T]) DeleteFirst() (T, error) {
 
 	toRemove.SetNext(nil)
 
-	return toRemove.Value, nil
+	return toRemove.Value, true
 }
 
-// PeekFirst is a method of the SafeList type. It is used to return the first
-// element from the list without removing it.
-//
-// Panics with an error of type *ErrCallFailed if the list is empty.
-//
-// Returns:
-//
-//   - T: The first element in the list.
-func (list *SafeList[T]) PeekFirst() (T, error) {
+// PeekFirst implements the Lister interface.
+func (list *SafeList[T]) PeekFirst() (T, bool) {
 	list.frontMutex.RLock()
 	defer list.frontMutex.RUnlock()
 
 	if list.front == nil {
-		return *new(T), ers.NewErrEmpty(list)
+		return *new(T), false
 	}
 
-	return list.front.Value, nil
+	return list.front.Value, true
 }
 
 // IsEmpty is a method of the SafeList type. It checks if the list is empty.
@@ -281,15 +261,10 @@ func (list *SafeList[T]) GoString() string {
 	return builder.String()
 }
 
-// Prepend is a method of the SafeList type. It is used to add an element to the
-// front of the list.
+// Prepend implements the Lister interface.
 //
-// Panics with an error of type *ErrCallFailed if the list is fu
-//
-// Parameters:
-//
-//   - value: The value of type T to be added to the list.
-func (list *SafeList[T]) Prepend(value T) error {
+// Always returns true.
+func (list *SafeList[T]) Prepend(value T) bool {
 	list.frontMutex.Lock()
 	defer list.frontMutex.Unlock()
 
@@ -309,23 +284,16 @@ func (list *SafeList[T]) Prepend(value T) error {
 
 	list.size++
 
-	return nil
+	return true
 }
 
-// DeleteLast is a method of the SafeList type. It is used to remove and return the
-// last element from the list.
-//
-// Panics with an error of type *ErrCallFailed if the list is empty.
-//
-// Returns:
-//
-//   - T: The last element in the list.
-func (list *SafeList[T]) DeleteLast() (T, error) {
+// DeleteLast implements the Lister interface.
+func (list *SafeList[T]) DeleteLast() (T, bool) {
 	list.backMutex.Lock()
 	defer list.backMutex.Unlock()
 
 	if list.back == nil {
-		return *new(T), ers.NewErrEmpty(list)
+		return *new(T), false
 	}
 
 	toRemove := list.back
@@ -346,26 +314,19 @@ func (list *SafeList[T]) DeleteLast() (T, error) {
 
 	toRemove.SetPrev(nil)
 
-	return toRemove.Value, nil
+	return toRemove.Value, true
 }
 
-// PeekLast is a method of the SafeList type. It is used to return the last element
-// from the list without removing it.
-//
-// Panics with an error of type *ErrCallFailed if the list is empty.
-//
-// Returns:
-//
-//   - T: The last element in the list.
-func (list *SafeList[T]) PeekLast() (T, error) {
+// PeekLast implements the Lister interface.
+func (list *SafeList[T]) PeekLast() (T, bool) {
 	list.backMutex.RLock()
 	defer list.backMutex.RUnlock()
 
 	if list.back == nil {
-		return *new(T), ers.NewErrEmpty(list)
+		return *new(T), true
 	}
 
-	return list.back.Value, nil
+	return list.back.Value, false
 }
 
 // CutNilValues is a method of the SafeList type. It is used to remove all nil

@@ -6,7 +6,6 @@ import (
 
 	itf "github.com/PlayerR9/MyGoLib/Units/Iterators"
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
-	ers "github.com/PlayerR9/MyGoLib/Units/errors"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
@@ -60,18 +59,10 @@ func NewLimitedLinkedQueue[T any](values ...T) *LimitedLinkedQueue[T] {
 	return queue
 }
 
-// Enqueue is a method of the LimitedLinkedQueue type. It is used to add an element to
-// the end of the queue.
-//
-// Panics with an error of type *ErrCallFailed if the queue is full.
-//
-// Parameters:
-//
-//   - value: A pointer to a value of type T, which is the element to be added to the
-//     queue.
-func (queue *LimitedLinkedQueue[T]) Enqueue(value T) error {
+// Enqueue implements the Queuer interface.
+func (queue *LimitedLinkedQueue[T]) Enqueue(value T) bool {
 	if queue.size >= queue.capacity {
-		return NewErrFullQueue(queue)
+		return false
 	}
 
 	queue_node := NewQueueNode(value)
@@ -86,20 +77,13 @@ func (queue *LimitedLinkedQueue[T]) Enqueue(value T) error {
 
 	queue.size++
 
-	return nil
+	return true
 }
 
-// Dequeue is a method of the LimitedLinkedQueue type. It is used to remove and return
-// the element at the front of the queue.
-//
-// Panics with an error of type *ErrCallFailed if the queue is empty.
-//
-// Returns:
-//
-//   - T: The value of the element at the front of the queue.
-func (queue *LimitedLinkedQueue[T]) Dequeue() (T, error) {
+// Dequeue implements the Queuer interface.
+func (queue *LimitedLinkedQueue[T]) Dequeue() (T, bool) {
 	if queue.front == nil {
-		return *new(T), ers.NewErrEmpty(queue)
+		return *new(T), false
 	}
 
 	toRemove := queue.front
@@ -112,23 +96,16 @@ func (queue *LimitedLinkedQueue[T]) Dequeue() (T, error) {
 	queue.size--
 	toRemove.SetNext(nil)
 
-	return toRemove.Value, nil
+	return toRemove.Value, true
 }
 
-// Peek is a method of the LimitedLinkedQueue type. It is used to return the element at
-// the front of the queue without removing it.
-//
-// Panics with an error of type *ErrCallFailed if the queue is empty.
-//
-// Returns:
-//
-//   - T: The value of the element at the front of the queue.
-func (queue *LimitedLinkedQueue[T]) Peek() (T, error) {
+// Peek implements the Queuer interface.
+func (queue *LimitedLinkedQueue[T]) Peek() (T, bool) {
 	if queue.front == nil {
-		return *new(T), ers.NewErrEmpty(queue)
+		return *new(T), false
 	}
 
-	return queue.front.Value, nil
+	return queue.front.Value, true
 }
 
 // IsEmpty is a method of the LimitedLinkedQueue type. It is used to check if the queue
