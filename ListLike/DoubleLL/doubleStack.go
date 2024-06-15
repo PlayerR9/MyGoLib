@@ -1,7 +1,6 @@
 package DoubleLL
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/PlayerR9/MyGoLib/ListLike/Stacker"
@@ -223,21 +222,13 @@ func (ds *DoubleStack[T]) Refuse() bool {
 // The element is pushed back onto the stack.
 //
 // Returns:
-//   - error: An error if the element could not be refused, nil otherwise.
-//
-// Errors:
-//   - *ErrNoElementsHaveBeenPopped: The auxiliary stack is empty.
-//   - *errors.ErrUnexpectedError: The main stack is full.
-func (ds *DoubleStack[T]) RefuseOne() error {
+//   - bool: True if the element was successfully refused, false otherwise.
+func (ds *DoubleStack[T]) RefuseOne() bool {
 	top, ok := ds.auxStack.Pop()
 	if !ok {
-		return NewErrNoElementsHaveBeenPopped()
+		return false
 	}
 
 	ok = ds.mainStack.Push(top)
-	if !ok {
-		return ue.NewErrUnexpectedError(errors.New("main stack is full"))
-	}
-
-	return nil
+	return ok
 }
