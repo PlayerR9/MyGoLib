@@ -1,6 +1,7 @@
 package TreeExplorer
 
 import (
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
 	us "github.com/PlayerR9/MyGoLib/Units/slice"
 )
 
@@ -12,7 +13,7 @@ import (
 // Returns:
 //   - [][]*CurrentEval: The filtered branches.
 //   - error: An error if the branches are invalid.
-type FilterBranchesFunc[O any] func(branches [][]*CurrentEval[O]) ([][]*CurrentEval[O], error)
+type FilterBranchesFunc[O any] func(branches [][]*uc.Pair[EvalStatus, O]) ([][]*uc.Pair[EvalStatus, O], error)
 
 // MatchResult is an interface that represents a match result.
 type MatchResulter[O any] interface {
@@ -72,7 +73,7 @@ type Matcher[R MatchResulter[O], O any] interface {
 // Returns:
 //   - [][]helperToken: The filtered branches.
 //   - int: The index of the last invalid token. -1 if no invalid token is found.
-func filterInvalidBranches[O any](branches [][]*CurrentEval[O]) ([][]*CurrentEval[O], int) {
+func filterInvalidBranches[O any](branches [][]*uc.Pair[EvalStatus, O]) ([][]*uc.Pair[EvalStatus, O], int) {
 	branches, ok := us.SFSeparateEarly(branches, FilterCompleteTokens)
 	if ok {
 		return branches, -1
@@ -86,5 +87,5 @@ func filterInvalidBranches[O any](branches [][]*CurrentEval[O]) ([][]*CurrentEva
 
 	elems := weights[0].GetData().First
 
-	return [][]*CurrentEval[O]{elems}, len(elems)
+	return [][]*uc.Pair[EvalStatus, O]{elems}, len(elems)
 }

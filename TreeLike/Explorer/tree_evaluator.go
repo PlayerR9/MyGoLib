@@ -1,7 +1,7 @@
 package TreeExplorer
 
 import (
-	tr "github.com/PlayerR9/MyGoLib/TreeLike/Tree"
+	tr "github.com/PlayerR9/MyGoLib/TreeLike/StatusTree"
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
 	ers "github.com/PlayerR9/MyGoLib/Units/errors"
 	us "github.com/PlayerR9/MyGoLib/Units/slice"
@@ -10,7 +10,7 @@ import (
 // TreeEvaluator is a tree evaluator that uses a grammar to tokenize a string.
 type TreeEvaluator[R MatchResulter[O], M Matcher[R, O], O any] struct {
 	// root is the root node of the tree evaluator.
-	root *tr.Tree[*CurrentEval[O]]
+	root *tr.Tree[EvalStatus, O]
 
 	// matcher is the matcher used by the tree evaluator.
 	matcher M
@@ -39,17 +39,16 @@ func NewTreeEvaluator[R MatchResulter[O], M Matcher[R, O], O any](filters ...Fil
 // Parameters:
 //   - root: The root of the tree to add the leaves to.
 //   - matches: The matches to add to the tree evaluator.
-func (te *TreeEvaluator[R, M, O]) addMatchLeaves(root *tr.Tree[*CurrentEval[O]], matches []R) {
+func (te *TreeEvaluator[R, M, O]) addMatchLeaves(root *tr.Tree[EvalStatus, O], matches []R) {
 	// Get the longest match.
 	matches = te.matcher.SelectBestMatches(matches)
 
-	children := make([]*tr.Tree[*CurrentEval[O]], 0, len(matches))
+	children := make([]*tr.Tree[EvalStatus, O], 0, len(matches))
 
 	for _, match := range matches {
 		currMatch := match.GetMatch()
-		ht := NewCurrentEval(currMatch)
 
-		tree := tr.NewTree(ht)
+		tree := tr.NewTree(EvalIncomplete, currMatch)
 
 		children = append(children, tree)
 	}
@@ -62,20 +61,20 @@ func (te *TreeEvaluator[R, M, O]) addMatchLeaves(root *tr.Tree[*CurrentEval[O]],
 // Returns:
 //   - bool: True if all leaves are complete, false otherwise.
 //   - error: An error of type *ErrAllMatchesFailed if all matches failed.
-func (te *TreeEvaluator[R, M, O]) processLeaves() uc.EvalManyFunc[*CurrentEval[O], *CurrentEval[O]] {
-	filterFunc := func(data *CurrentEval[O]) ([]*CurrentEval[O], error) {
-		nextAt := te.matcher.GetNext(data.Elem)
+func (te *TreeEvaluator[R, M, O]) processLeaves() uc.EvalManyFunc[*uc.Pair[EvalStatus, O], *uc.Pair[EvalStatus, O]] {
+	filterFunc := func(data *uc.Pair[EvalStatus, O]) ([]*uc.Pair[EvalStatus, O], error) {
+		nextAt := te.matcher.GetNext(data.Second)
 
 		ok := te.matcher.IsDone(nextAt)
 		if ok {
-			data.SetStatus(EvalComplete)
+			data.First = EvalComplete
 
 			return nil, nil
 		}
 
 		matches, err := te.matcher.Match(nextAt)
 		if err != nil {
-			data.SetStatus(EvalError)
+			data.First = EvalError
 
 			return nil, nil
 		}
@@ -83,16 +82,17 @@ func (te *TreeEvaluator[R, M, O]) processLeaves() uc.EvalManyFunc[*CurrentEval[O
 		// Get the longest match.
 		matches = te.matcher.SelectBestMatches(matches)
 
-		children := make([]*CurrentEval[O], 0, len(matches))
+		children := make([]*uc.Pair[EvalStatus, O], 0, len(matches))
 
 		for _, match := range matches {
 			curr := match.GetMatch()
-			ht := NewCurrentEval(curr)
 
-			children = append(children, ht)
+			p := uc.NewPair(EvalIncomplete, curr)
+
+			children = append(children, p)
 		}
 
-		data.SetStatus(EvalComplete)
+		data.First = EvalComplete
 
 		return children, nil
 	}
@@ -108,7 +108,9 @@ func (te *TreeEvaluator[R, M, O]) canContinue() bool {
 	leaves := te.root.GetLeaves()
 
 	for _, leaf := range leaves {
-		if leaf.Data.Status == EvalIncomplete {
+		s := leaf.GetStatus()
+
+		if s == EvalIncomplete {
 			return true
 		}
 	}
@@ -123,7 +125,7 @@ func (te *TreeEvaluator[R, M, O]) canContinue() bool {
 //
 // Returns:
 //   - bool: True if no nodes were pruned, false otherwise.
-func (te *TreeEvaluator[R, M, O]) pruneTree(filter us.PredicateFilter[*CurrentEval[O]]) bool {
+func (te *TreeEvaluator[R, M, O]) pruneTree(filter us.PredicateFilter[*uc.Pair[EvalStatus, O]]) bool {
 	for te.root.Size() != 0 {
 		target := te.root.SearchNodes(filter)
 		if target == nil {
@@ -152,8 +154,7 @@ func (te *TreeEvaluator[R, M, O]) pruneTree(filter us.PredicateFilter[*CurrentEv
 func (te *TreeEvaluator[R, M, O]) Evaluate(matcher M, root O) error {
 	te.matcher = matcher
 
-	ce := NewCurrentEval(root)
-	te.root = tr.NewTree(ce)
+	te.root = tr.NewTree(EvalIncomplete, root)
 
 	matches, err := te.matcher.Match(0)
 	if err != nil {
@@ -162,12 +163,14 @@ func (te *TreeEvaluator[R, M, O]) Evaluate(matcher M, root O) error {
 
 	te.addMatchLeaves(te.root, matches)
 
-	te.root.Root().Data.SetStatus(EvalComplete)
+	te.root.Root().ChangeStatus(EvalComplete)
 
 	shouldContinue := true
 
 	for shouldContinue {
-		err := te.root.ProcessLeaves(te.processLeaves())
+		pl := te.processLeaves()
+
+		err := te.root.ProcessLeaves(pl)
 		if err != nil {
 			return err
 		}
@@ -196,7 +199,7 @@ func (te *TreeEvaluator[R, M, O]) Evaluate(matcher M, root O) error {
 // Returns:
 //   - result: The tokens that have been lexed.
 //   - reason: An error if the tree evaluator has not been run yet.
-func (te *TreeEvaluator[R, M, O]) GetBranches() ([][]*CurrentEval[O], error) {
+func (te *TreeEvaluator[R, M, O]) GetBranches() ([][]*uc.Pair[EvalStatus, O], error) {
 	if te.root == nil {
 		return nil, ers.NewErrInvalidUsage(
 			ers.NewErrNilValue(),

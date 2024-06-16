@@ -1,5 +1,9 @@
 package TreeExplorer
 
+import (
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
+)
+
 // FilterIncompleteLeaves is a filter that filters out incomplete leaves.
 //
 // Parameters:
@@ -7,12 +11,12 @@ package TreeExplorer
 //
 // Returns:
 //   - bool: True if the leaf is incomplete, false otherwise.
-func FilterIncompleteLeaves[O any](h *CurrentEval[O]) bool {
+func FilterIncompleteLeaves[O any](h *uc.Pair[EvalStatus, O]) bool {
 	if h == nil {
 		return true
 	}
 
-	return h.Status == EvalIncomplete
+	return h.First == EvalIncomplete
 }
 
 // FilterCompleteTokens is a filter that filters complete helper tokens.
@@ -22,12 +26,12 @@ func FilterIncompleteLeaves[O any](h *CurrentEval[O]) bool {
 //
 // Returns:
 //   - bool: True if the helper tokens are incomplete, false otherwise.
-func FilterCompleteTokens[O any](h []*CurrentEval[O]) bool {
+func FilterCompleteTokens[O any](h []*uc.Pair[EvalStatus, O]) bool {
 	if len(h) == 0 {
 		return false
 	}
 
-	status := h[len(h)-1].GetStatus()
+	status := h[len(h)-1].First
 
 	return status == EvalComplete
 }
@@ -40,7 +44,7 @@ func FilterCompleteTokens[O any](h []*CurrentEval[O]) bool {
 // Returns:
 //   - float64: The weight of the helper tokens.
 //   - bool: True if the weight is valid, false otherwise.
-func HelperWeightFunc[O any](h []*CurrentEval[O]) (float64, bool) {
+func HelperWeightFunc[O any](h []*uc.Pair[EvalStatus, O]) (float64, bool) {
 	return float64(len(h)), true
 }
 
@@ -51,10 +55,10 @@ func HelperWeightFunc[O any](h []*CurrentEval[O]) (float64, bool) {
 //
 // Returns:
 //   - bool: True if the leaf is in error, false otherwise.
-func FilterErrorLeaves[O any](h *CurrentEval[O]) bool {
+func FilterErrorLeaves[O any](h *uc.Pair[EvalStatus, O]) bool {
 	if h == nil {
 		return true
 	}
 
-	return h.Status == EvalError
+	return h.First == EvalError
 }

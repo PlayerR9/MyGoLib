@@ -1,4 +1,4 @@
-package Tree
+package StatusTree
 
 import (
 	fsp "github.com/PlayerR9/MyGoLib/Formatting/FString"
@@ -9,12 +9,12 @@ import (
 )
 
 // Tree is a generic data structure that represents a tree.
-type Tree[T any] struct {
+type Tree[S uc.Enumer, T any] struct {
 	// root is the root of the tree.
-	root *TreeNode[T]
+	root *TreeNode[S, T]
 
 	// leaves is the leaves of the tree.
-	leaves []*TreeNode[T]
+	leaves []*TreeNode[S, T]
 
 	// size is the number of nodes in the tree.
 	size int
@@ -27,7 +27,7 @@ type Tree[T any] struct {
 //
 // Returns:
 //   - []string: A slice of strings that represent the tree.
-func (t *Tree[T]) FString(trav *fsp.Traversor) error {
+func (t *Tree[S, T]) FString(trav *fsp.Traversor) error {
 	if t.root == nil {
 		return nil
 	}
@@ -50,13 +50,13 @@ func (t *Tree[T]) FString(trav *fsp.Traversor) error {
 //   - data: The value of the root.
 //
 // Returns:
-//   - *Tree[T]: A pointer to the newly created tree.
-func NewTree[T any](data T) *Tree[T] {
-	root := NewTreeNode(data)
+//   - *Tree[S, T]: A pointer to the newly created tree.
+func NewTree[S uc.Enumer, T any](status S, data T) *Tree[S, T] {
+	root := NewTreeNode(status, data)
 
-	return &Tree[T]{
+	return &Tree[S, T]{
 		root:   root,
-		leaves: []*TreeNode[T]{root},
+		leaves: []*TreeNode[S, T]{root},
 		size:   1,
 	}
 }
@@ -68,7 +68,7 @@ func NewTree[T any](data T) *Tree[T] {
 //
 // Returns:
 //   - error: An error of type *ErrMissingRoot if the tree does not have a root.
-func (t *Tree[T]) SetChildren(children []*Tree[T]) error {
+func (t *Tree[S, T]) SetChildren(children []*Tree[S, T]) error {
 	children = us.SliceFilter(children, FilterNilTree)
 	if len(children) == 0 {
 		return nil
@@ -78,9 +78,9 @@ func (t *Tree[T]) SetChildren(children []*Tree[T]) error {
 		return NewErrMissingRoot()
 	}
 
-	t.leaves = make([]*TreeNode[T], 0)
+	t.leaves = make([]*TreeNode[S, T], 0)
 	t.size = 1
-	t.root.children = make([]*TreeNode[T], 0)
+	t.root.children = make([]*TreeNode[S, T], 0)
 
 	for _, child := range children {
 		t.leaves = append(t.leaves, child.leaves...)
@@ -96,7 +96,7 @@ func (t *Tree[T]) SetChildren(children []*Tree[T]) error {
 //
 // Returns:
 //   - bool: True if the tree has only one node, false otherwise.
-func (t *Tree[T]) IsSingleton() bool {
+func (t *Tree[S, T]) IsSingleton() bool {
 	return t.size == 1
 }
 
@@ -104,7 +104,7 @@ func (t *Tree[T]) IsSingleton() bool {
 //
 // Returns:
 //   - int: The number of nodes in the tree.
-func (t *Tree[T]) Size() int {
+func (t *Tree[S, T]) Size() int {
 	return t.size
 }
 
@@ -112,7 +112,7 @@ func (t *Tree[T]) Size() int {
 //
 // Returns:
 //   - *Node[T]: A pointer to the root of the tree.
-func (t *Tree[T]) Root() *TreeNode[T] {
+func (t *Tree[S, T]) Root() *TreeNode[S, T] {
 	return t.root
 }
 
@@ -124,25 +124,27 @@ func (t *Tree[T]) Root() *TreeNode[T] {
 // Behaviors:
 //   - The root is the first element in the slice.
 //   - If the tree does not have a root, it returns nil.
-func (t *Tree[T]) GetChildren() []T {
+func (t *Tree[S, T]) GetChildren() []*uc.Pair[S, T] {
 	if t.root == nil {
 		return nil
 	}
 
-	children := make([]T, 0)
+	var children []*uc.Pair[S, T]
 
-	S := Stacker.NewLinkedStack(t.root)
+	St := Stacker.NewLinkedStack(t.root)
 
 	for {
-		node, ok := S.Pop()
+		node, ok := St.Pop()
 		if !ok {
 			break
 		}
 
-		children = append(children, node.Data)
+		p := uc.NewPair(node.status, node.Data)
+
+		children = append(children, p)
 
 		for _, child := range node.children {
-			S.Push(child)
+			St.Push(child)
 		}
 	}
 
@@ -153,7 +155,7 @@ func (t *Tree[T]) GetChildren() []T {
 //
 // Behaviors:
 //   - This function is recursive and so, it is expensive.
-func (t *Tree[T]) Cleanup() {
+func (t *Tree[S, T]) Cleanup() {
 	recCleanup(t.root)
 
 	t.root = nil
@@ -169,7 +171,7 @@ func (t *Tree[T]) Cleanup() {
 //   - It returns the leaves that are stored in the tree. Make sure to call
 //     any update function before calling this function if the tree has been modified
 //     unexpectedly.
-func (t *Tree[T]) GetLeaves() []*TreeNode[T] {
+func (t *Tree[S, T]) GetLeaves() []*TreeNode[S, T] {
 	return t.leaves
 }
 
@@ -182,22 +184,22 @@ func (t *Tree[T]) GetLeaves() []*TreeNode[T] {
 //   - The leaves are updated in a DFS order.
 //   - Expensive operation; use it only when necessary (i.e., leaves changed unexpectedly.)
 //   - This also updates the size of the tree.
-func (t *Tree[T]) RegenerateLeaves() []*TreeNode[T] {
+func (t *Tree[S, T]) RegenerateLeaves() []*TreeNode[S, T] {
 	if t.root == nil {
-		t.leaves = make([]*TreeNode[T], 0)
+		t.leaves = make([]*TreeNode[S, T], 0)
 		t.size = 0
 
 		return t.leaves
 	}
 
-	leaves := make([]*TreeNode[T], 0)
+	leaves := make([]*TreeNode[S, T], 0)
 
-	S := Stacker.NewLinkedStack(t.root)
+	St := Stacker.NewLinkedStack(t.root)
 
 	t.size = 0
 
 	for {
-		top, ok := S.Pop()
+		top, ok := St.Pop()
 		if !ok {
 			break
 		}
@@ -208,7 +210,7 @@ func (t *Tree[T]) RegenerateLeaves() []*TreeNode[T] {
 			leaves = append(leaves, top)
 		} else {
 			for _, child := range top.children {
-				S.Push(child)
+				St.Push(child)
 			}
 		}
 	}
@@ -228,21 +230,21 @@ func (t *Tree[T]) RegenerateLeaves() []*TreeNode[T] {
 //   - Less expensive than RegenerateLeaves. However, if nodes has been deleted
 //     from the tree, this may give unexpected results.
 //   - This also updates the size of the tree.
-func (t *Tree[T]) UpdateLeaves() []*TreeNode[T] {
+func (t *Tree[S, T]) UpdateLeaves() []*TreeNode[S, T] {
 	if len(t.leaves) == 0 {
 		t.size = 0
 
 		return t.leaves
 	}
 
-	newLeaves := make([]*TreeNode[T], 0)
+	newLeaves := make([]*TreeNode[S, T], 0)
 
-	S := Stacker.NewLinkedStack(t.leaves...)
+	St := Stacker.NewLinkedStack(t.leaves...)
 
 	t.size -= len(t.leaves)
 
 	for {
-		top, ok := S.Pop()
+		top, ok := St.Pop()
 		if !ok {
 			break
 		}
@@ -253,7 +255,7 @@ func (t *Tree[T]) UpdateLeaves() []*TreeNode[T] {
 			newLeaves = append(newLeaves, top)
 		} else {
 			for _, child := range top.children {
-				S.Push(child)
+				St.Push(child)
 			}
 		}
 	}
@@ -271,7 +273,7 @@ func (t *Tree[T]) UpdateLeaves() []*TreeNode[T] {
 // Behaviors:
 //   - The paths are returned in the order of a DFS traversal.
 //   - If the tree is empty, it returns an empty slice.
-func (t *Tree[T]) SnakeTraversal() [][]T {
+func (t *Tree[S, T]) SnakeTraversal() [][]*uc.Pair[S, T] {
 	if t.root == nil {
 		return nil
 	}
@@ -287,7 +289,7 @@ func (t *Tree[T]) SnakeTraversal() [][]T {
 //
 // Returns:
 //   - bool: True if the tree has the child, false otherwise.
-func (t *Tree[T]) HasChild(filter us.PredicateFilter[T]) bool {
+func (t *Tree[S, T]) HasChild(filter us.PredicateFilter[*uc.Pair[S, T]]) bool {
 	if filter == nil || t.root == nil {
 		return false
 	}
@@ -300,7 +302,9 @@ func (t *Tree[T]) HasChild(filter us.PredicateFilter[T]) bool {
 			break
 		}
 
-		ok = filter(node.Data)
+		p := uc.NewPair(node.status, node.Data)
+
+		ok = filter(p)
 		if ok {
 			return true
 		}
@@ -321,14 +325,14 @@ func (t *Tree[T]) HasChild(filter us.PredicateFilter[T]) bool {
 //
 // Returns:
 //   - []*Node[T]: A slice of pointers to the children of the node.
-func (t *Tree[T]) FilterChildren(filter us.PredicateFilter[T]) []*TreeNode[T] {
+func (t *Tree[S, T]) FilterChildren(filter us.PredicateFilter[*uc.Pair[S, T]]) []*TreeNode[S, T] {
 	if filter == nil || t.root == nil {
 		return nil
 	}
 
 	Q := Queuer.NewLinkedQueue(t.root)
 
-	solutions := make([]*TreeNode[T], 0)
+	solutions := make([]*TreeNode[S, T], 0)
 
 	for {
 		node, ok := Q.Dequeue()
@@ -336,7 +340,9 @@ func (t *Tree[T]) FilterChildren(filter us.PredicateFilter[T]) []*TreeNode[T] {
 			break
 		}
 
-		ok = filter(node.Data)
+		p := uc.NewPair(node.status, node.Data)
+
+		ok = filter(p)
 		if ok {
 			solutions = append(solutions, node)
 		}
@@ -362,7 +368,7 @@ func (t *Tree[T]) FilterChildren(filter us.PredicateFilter[T]) []*TreeNode[T] {
 // Behaviors:
 //   - If the root satisfies the filter, the tree is cleaned up.
 //   - It is a recursive function.
-func (t *Tree[T]) PruneBranches(filter us.PredicateFilter[T]) bool {
+func (t *Tree[S, T]) PruneBranches(filter us.PredicateFilter[*uc.Pair[S, T]]) bool {
 	if filter == nil || t.root == nil {
 		return false
 	}
@@ -385,31 +391,34 @@ func (t *Tree[T]) PruneBranches(filter us.PredicateFilter[T]) bool {
 //   - filter: The filter to apply.
 //
 // Returns:
-//   - []*Tree[T]: A slice of pointers to the trees obtained after removing the nodes.
+//   - []*Tree[S, T]: A slice of pointers to the trees obtained after removing the nodes.
 //
 // Behaviors:
 //   - If this function returns only one tree, this is the updated tree. But, if
 //     it returns more than one tree, then we have deleted the root of the tree and
 //     obtained a forest.
-func (t *Tree[T]) SkipFilter(filter us.PredicateFilter[T]) []*Tree[T] {
-	frontier := make([]*TreeNode[T], len(t.leaves))
+func (t *Tree[S, T]) SkipFilter(filter us.PredicateFilter[*uc.Pair[S, T]]) []*Tree[S, T] {
+	frontier := make([]*TreeNode[S, T], len(t.leaves))
 	copy(frontier, t.leaves)
 
-	seen := make(map[*TreeNode[T]]bool)
-	newLeaves := make([]*TreeNode[T], 0)
+	seen := make(map[*TreeNode[S, T]]bool)
+	newLeaves := make([]*TreeNode[S, T], 0)
 
-	forest := make([]*Tree[T], 0)
+	forest := make([]*Tree[S, T], 0)
 
 	for len(frontier) > 0 {
 		leaf := frontier[0]
 		seen[leaf] = true
 
 		// Remove any node that has been seen from the frontier.
-		frontier = us.SliceFilter(frontier, func(n *TreeNode[T]) bool {
+		frontier = us.SliceFilter(frontier, func(n *TreeNode[S, T]) bool {
 			return !seen[n]
 		})
 
-		if !filter(leaf.Data) {
+		p := uc.NewPair(leaf.status, leaf.Data)
+
+		ok := filter(p)
+		if !ok {
 			if leaf.parent == nil {
 				// We reached the root
 				frontier = frontier[1:]
@@ -451,7 +460,7 @@ func (t *Tree[T]) SkipFilter(filter us.PredicateFilter[T]) []*Tree[T] {
 	if len(forest) == 0 {
 		t.leaves = newLeaves
 
-		return []*Tree[T]{t}
+		return []*Tree[S, T]{t}
 	} else {
 		return forest
 	}
@@ -466,13 +475,13 @@ func (t *Tree[T]) SkipFilter(filter us.PredicateFilter[T]) []*Tree[T] {
 // Behaviors:
 //   - The leaf is replaced with the children.
 //   - The size of the tree is updated.
-func (t *Tree[T]) replaceLeafWithTree(at int, children []T) {
+func (t *Tree[S, T]) replaceLeafWithTree(at int, children []*uc.Pair[S, T]) {
 	leaf := t.leaves[at]
 
 	// Make the subtree
-	leaf.children = make([]*TreeNode[T], 0, len(children))
+	leaf.children = make([]*TreeNode[S, T], 0, len(children))
 	for _, child := range children {
-		node := NewTreeNode(child)
+		node := NewTreeNode(child.First, child.Second)
 		node.parent = leaf
 
 		leaf.children = append(leaf.children, node)
@@ -505,9 +514,11 @@ func (t *Tree[T]) replaceLeafWithTree(at int, children []T) {
 //   - The function must return a slice of values of type T.
 //   - If the function returns an error, the process stops and the error is returned.
 //   - The leaves are replaced with the children returned by the function.
-func (t *Tree[T]) ProcessLeaves(f uc.EvalManyFunc[T, T]) error {
+func (t *Tree[S, T]) ProcessLeaves(f uc.EvalManyFunc[*uc.Pair[S, T], *uc.Pair[S, T]]) error {
 	for i, leaf := range t.leaves {
-		children, err := f(leaf.Data)
+		p := uc.NewPair(leaf.status, leaf.Data)
+
+		children, err := f(p)
 		if err != nil {
 			return err
 		}
@@ -527,7 +538,7 @@ func (t *Tree[T]) ProcessLeaves(f uc.EvalManyFunc[T, T]) error {
 //
 // Returns:
 //   - *treeNode[T]: A pointer to the node that satisfies the filter.
-func (t *Tree[T]) SearchNodes(f us.PredicateFilter[T]) *TreeNode[T] {
+func (t *Tree[S, T]) SearchNodes(f us.PredicateFilter[*uc.Pair[S, T]]) *TreeNode[S, T] {
 	Q := Queuer.NewLinkedQueue(t.root)
 
 	for {
@@ -536,7 +547,9 @@ func (t *Tree[T]) SearchNodes(f us.PredicateFilter[T]) *TreeNode[T] {
 			break
 		}
 
-		ok = f(first.Data)
+		p := uc.NewPair(first.status, first.Data)
+
+		ok = f(p)
 		if ok {
 			return first
 		}
@@ -556,7 +569,7 @@ func (t *Tree[T]) SearchNodes(f us.PredicateFilter[T]) *TreeNode[T] {
 //
 // Returns:
 //   - error: An error if the node is not a part of the tree.
-func (t *Tree[T]) DeleteBranchContaining(tn *TreeNode[T]) error {
+func (t *Tree[S, T]) DeleteBranchContaining(tn *TreeNode[S, T]) error {
 	child, parent, hasBranching := tn.FindBranchingPoint()
 	if !hasBranching {
 		if parent != t.root {
@@ -581,7 +594,7 @@ func (t *Tree[T]) DeleteBranchContaining(tn *TreeNode[T]) error {
 //
 // Returns:
 //   - []*Node[T]: A slice of pointers to the direct children of the root.
-func (t *Tree[T]) GetDirectChildren() []*TreeNode[T] {
+func (t *Tree[S, T]) GetDirectChildren() []*TreeNode[S, T] {
 	if t.root == nil {
 		return nil
 	}
@@ -596,7 +609,7 @@ func (t *Tree[T]) GetDirectChildren() []*TreeNode[T] {
 //
 // Returns:
 //   - bool: True if no nodes were pruned, false otherwise.
-func (t *Tree[T]) Prune(filter us.PredicateFilter[T]) bool {
+func (t *Tree[S, T]) Prune(filter us.PredicateFilter[*uc.Pair[S, T]]) bool {
 	for t.Size() != 0 {
 		target := t.SearchNodes(filter)
 		if target == nil {
