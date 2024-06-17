@@ -271,13 +271,41 @@ func (b *buffer) getPages() [][][][]string {
 		sectionLines := make([][][]string, 0)
 
 		for _, section := range page {
-			sectionLines = append(sectionLines, section.getLines())
+			lines := section.getLines()
+
+			sectionLines = append(sectionLines, lines)
 		}
 
 		allStrings = append(allStrings, sectionLines)
 	}
 
 	return allStrings
+}
+
+func finalizeLines(tabSize, fieldSpacing int, line []string) []string {
+	if len(line) == 0 {
+		return line
+	}
+
+	elem := line[0]
+
+	index := strings.Index(elem, "\t")
+	if index == -1 {
+
+	} else {
+
+	}
+
+	count := utf8.RuneCountInString(elem)
+
+	for _, elem := range line[1:] {
+		index := strings.Index(elem, "\t")
+		if index == -1 {
+			count += utf8.RuneCountInString(elem)
+		} else {
+
+		}
+	}
 }
 
 // isFirstOfLine is a private function that returns true if the current position is the first
@@ -333,13 +361,9 @@ func (b *buffer) write(char rune) {
 		// Tab : Add spaces until the next tab stop
 		if b.buff == nil {
 			b.buff = newSectionBuilder()
-		} else {
-			b.buff.acceptWord()
 		}
 
-		b.buff.writeRune(char)
-
-		b.buff.acceptWord()
+		b.buff.writeRune(char) // deal with this in later stages
 	case '\v':
 		// vertical tab : Add vertical tabulation
 

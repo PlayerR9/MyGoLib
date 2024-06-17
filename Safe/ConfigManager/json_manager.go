@@ -16,7 +16,7 @@ type JSONEncoder interface {
 // JSONManager is a manager for saving and loading data to and from a JSON file.
 type JSONManager[T JSONEncoder] struct {
 	// data is the data to save and load.
-	data T
+	data *T
 
 	// loc is the location of the JSON file.
 	loc string
@@ -35,7 +35,17 @@ type JSONManager[T JSONEncoder] struct {
 //
 // Returns:
 //   - error: An error if one occurred while creating the file.
-func (m *JSONManager[T]) Create(empty T) error {
+//
+// Behaviors:
+//   - If empty is nil, a new instance of T is created.
+func (m *JSONManager[T]) Create(empty *T) error {
+	if empty == nil {
+		empty = new(T)
+	}
+
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	err := m.writeData(empty)
 	if err != nil {
 		return err
@@ -44,17 +54,16 @@ func (m *JSONManager[T]) Create(empty T) error {
 	return nil
 }
 
-// NewJSONManager creates a new JSONManager.
+// NewJSONManager creates a new JSONManager. T must not be a pointer.
 //
 // Parameters:
 //   - loc: The path to the JSON file.
-//   - elem: The data to save and load. (only used for type inference)
 //
 // Returns:
 //   - *JSONManager[T]: The new JSONManager.
-func NewJSONManager[T JSONEncoder](loc string, elem T) *JSONManager[T] {
+func NewJSONManager[T JSONEncoder](loc string) *JSONManager[T] {
 	return &JSONManager[T]{
-		data:     elem,
+		data:     new(T),
 		loc:      loc,
 		dirPerm:  0777,
 		filePerm: 0666,
@@ -87,9 +96,16 @@ func (m *JSONManager[T]) SetFilePermissions(perm os.FileMode) {
 //
 // Parameters:
 //   - data: The new data to save and load.
-func (m *JSONManager[T]) ChangeData(data T) {
+//
+// Behaviors:
+//   - If data is nil, a new instance of T is created.
+func (m *JSONManager[T]) ChangeData(data *T) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
+
+	if data == nil {
+		data = new(T)
+	}
 
 	m.data = data
 }
@@ -107,15 +123,17 @@ func (m *JSONManager[T]) ChangePath(path string) {
 
 // Load loads the data from the JSON file.
 //
+// The data is stored in the JSONManager[T] and can be accessed with GetData.
+//
 // Returns:
 //   - error: An error if there was an issue loading the data.
-func (m *JSONManager[T]) Load() (T, error) {
+func (m *JSONManager[T]) Load() (*T, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	res, err := m.openFile()
 	if err != nil {
-		return *new(T), err
+		return nil, err
 	}
 
 	m.data = res
@@ -126,8 +144,11 @@ func (m *JSONManager[T]) Load() (T, error) {
 // GetData returns the data of the JSONManager[T].
 //
 // Returns:
-//   - T: The data of the JSONManager[T].
-func (m *JSONManager[T]) GetData() T {
+//   - *T: The data of the JSONManager[T].
+//
+// Behaviors:
+//   - Never returns nil.
+func (m *JSONManager[T]) GetData() *T {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 

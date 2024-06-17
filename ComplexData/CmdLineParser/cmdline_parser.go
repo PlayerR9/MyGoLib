@@ -91,7 +91,7 @@ func (cns *CmdLineParser) FString(trav *ffs.Traversor, opts ...ffs.Option) error
 
 		err = ffs.ApplyForm(
 			trav.GetConfig(
-				ffs.WithIncreasedIndent(),
+				ffs.WithModifiedIndent(1),
 			),
 			trav,
 			pkg.NewDescriptionPrinter(cns.description),
@@ -128,7 +128,7 @@ func (cns *CmdLineParser) FString(trav *ffs.Traversor, opts ...ffs.Option) error
 		for at, command := range cns.commandList {
 			err := ffs.ApplyForm(
 				trav.GetConfig(
-					ffs.WithIncreasedIndent(),
+					ffs.WithModifiedIndent(1),
 				),
 				trav,
 				command,

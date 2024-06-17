@@ -137,7 +137,7 @@ func (cci *CommandInfo) FString(trav *ffs.Traversor, opts ...ffs.Option) error {
 
 		err = ffs.ApplyForm(
 			trav.GetConfig(
-				ffs.WithIncreasedIndent(),
+				ffs.WithModifiedIndent(1),
 			),
 			trav,
 			NewDescriptionPrinter(cci.description),
@@ -165,7 +165,7 @@ func (cci *CommandInfo) FString(trav *ffs.Traversor, opts ...ffs.Option) error {
 		for at, flag := range cci.flags {
 			err := ffs.ApplyForm(
 				trav.GetConfig(
-					ffs.WithIncreasedIndent(),
+					ffs.WithModifiedIndent(1),
 				),
 				trav,
 				flag,

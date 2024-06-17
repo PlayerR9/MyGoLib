@@ -139,7 +139,7 @@ func (fd *FunctionDecl[T]) FString(trav *ffs.Traversor, opts ...ffs.Option) erro
 	for _, v := range fd.Body {
 		err := ffs.ApplyForm(
 			trav.GetConfig(
-				ffs.WithIncreasedIndent(),
+				ffs.WithModifiedIndent(1),
 			),
 			trav,
 			v,
@@ -177,7 +177,7 @@ func (s *SliceDecl[T]) FString(trav *ffs.Traversor, opts ...ffs.Option) error {
 	for _, v := range s.Slice {
 		err := ffs.ApplyForm(
 			trav.GetConfig(
-				ffs.WithIncreasedIndent(),
+				ffs.WithModifiedIndent(1),
 				ffs.WithRightDelimiter(","),
 			),
 			trav,

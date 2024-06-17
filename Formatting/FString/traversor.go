@@ -490,45 +490,6 @@ func (trav *Traversor) Println(a ...interface{}) error {
 // ConfigOption is a type that represents a configuration option for a formatter.
 type ConfigOption func(FormatConfig)
 
-// WithIncreasedIndent is a function that increases the indentation level of the formatter
-// by one.
-//
-// Returns:
-//   - ConfigOption: The configuration option.
-func WithIncreasedIndent() ConfigOption {
-	return func(f FormatConfig) {
-		config, ok := f[ConfInd_Idx].(*IndentConfig)
-		if !ok {
-			return
-		}
-
-		if config != nil {
-			config.level++
-		}
-	}
-}
-
-// WithDecreasedIndent is a function that decreases the indentation level of the formatter
-// by one.
-//
-// Returns:
-//   - ConfigOption: The configuration option.
-//
-// Behaviors:
-//   - If the indentation level is already 0, it is not decreased.
-func WithDecreasedIndent() ConfigOption {
-	return func(f FormatConfig) {
-		config, ok := f[ConfInd_Idx].(*IndentConfig)
-		if !ok {
-			panic(fmt.Errorf("invalid configuration type for indentation: %T", f[ConfInd_Idx]))
-		}
-
-		if config != nil && config.level > 0 {
-			config.level--
-		}
-	}
-}
-
 // WithModifiedIndent is a function that modifies the indentation level of the formatter
 // by a specified amount relative to the current indentation level.
 //

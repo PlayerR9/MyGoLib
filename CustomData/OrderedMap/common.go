@@ -73,7 +73,7 @@ func (mip *MapIterPrinter[T]) FString(trav *ffs.Traversor, opts ...ffs.Option) e
 
 		err = ffs.ApplyForm(
 			trav.GetConfig(
-				ffs.WithIncreasedIndent(),
+				ffs.WithModifiedIndent(1),
 			),
 			trav,
 			entry.Second,
@@ -165,7 +165,7 @@ func (p *OrderedMapPrinter[T]) FString(trav *ffs.Traversor, opts ...ffs.Option) 
 
 		err := ffs.ApplyForm(
 			trav.GetConfig(
-				ffs.WithIncreasedIndent(),
+				ffs.WithModifiedIndent(1),
 			),
 			trav,
 			mip,

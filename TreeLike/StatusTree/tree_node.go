@@ -52,7 +52,7 @@ func (t *TreeNode[S, T]) FString(trav *ffs.Traversor, opts ...ffs.Option) error 
 
 	err = ffs.ApplyFormMany(
 		trav.GetConfig(
-			ffs.WithIncreasedIndent(),
+			ffs.WithModifiedIndent(1),
 		),
 		trav,
 		t.children,
