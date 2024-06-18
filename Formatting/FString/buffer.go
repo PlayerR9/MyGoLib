@@ -256,12 +256,89 @@ func newBuffer() *buffer {
 	}
 }
 
+// fixTabStop is a private function that fixes the tab stops in a string.
+//
+// The initial level and the integer return are used for
+// chaining multiple calls to this function.
+//
+// Parameters:
+//   - init: The initial level of the tab stop.
+//   - tabSize: The size of the tab.
+//   - spacing: The spacing to use for the tab stop.
+//   - str: The string to fix the tab stops for.
+//
+// Returns:
+//   - string: The string with the tab stops fixed.
+//   - int: The total number of characters in the string.
+//
+// Behaviors:
+//   - If the tabSize is less than 1, it is set to 1.
+//   - If the initial tab stop is less than 0, it is set to 0.
+//   - If the string is empty, an empty string is returned.
+func fixTabStop(init, tabSize int, spacing, str string) (string, int) {
+	total := init
+	init = tabSize - (init % tabSize)
+
+	if tabSize < 1 {
+		tabSize = 1
+	}
+
+	var builder strings.Builder
+
+	if init > 0 {
+		init = tabSize - (init % tabSize)
+
+		for i := init; i > 0; i-- {
+			r, size := utf8.DecodeRuneInString(str)
+			str = str[size:]
+
+			if r == '\t' {
+				repStr := strings.Repeat(spacing, i)
+				total += i
+
+				builder.WriteString(repStr)
+				break
+			} else {
+				total++
+				builder.WriteRune(r)
+			}
+
+			if len(str) == 0 {
+				return builder.String(), total
+			}
+		}
+	}
+
+	for {
+		for i := tabSize; i > 0; i-- {
+			r, size := utf8.DecodeRuneInString(str)
+			str = str[size:]
+
+			if r == '\t' {
+				repStr := strings.Repeat(spacing, i)
+				total += i
+
+				builder.WriteString(repStr)
+				break
+			} else {
+				total++
+				builder.WriteRune(r)
+			}
+
+			if len(str) == 0 {
+				return builder.String(), total
+			}
+		}
+	}
+}
+
 // getPages returns the pages of the StdPrinter.
 //
 // Returns:
 //   - [][][][]string: The pages of the StdPrinter.
-func (b *buffer) getPages() [][][][]string {
+func (b *buffer) getPages(tabSize int, fieldSpacing int) [][][][]string {
 	b.finalize()
+	spacing := strings.Repeat(" ", fieldSpacing)
 
 	pages := b.pages
 
@@ -273,6 +350,15 @@ func (b *buffer) getPages() [][][][]string {
 		for _, section := range page {
 			lines := section.getLines()
 
+			for i := 0; i < len(lines); i++ {
+				line := lines[i]
+
+				var level int
+				for j := 0; j < len(line); j++ {
+					line[j], level = fixTabStop(level, tabSize, spacing, line[j])
+				}
+			}
+
 			sectionLines = append(sectionLines, lines)
 		}
 
@@ -280,32 +366,6 @@ func (b *buffer) getPages() [][][][]string {
 	}
 
 	return allStrings
-}
-
-func finalizeLines(tabSize, fieldSpacing int, line []string) []string {
-	if len(line) == 0 {
-		return line
-	}
-
-	elem := line[0]
-
-	index := strings.Index(elem, "\t")
-	if index == -1 {
-
-	} else {
-
-	}
-
-	count := utf8.RuneCountInString(elem)
-
-	for _, elem := range line[1:] {
-		index := strings.Index(elem, "\t")
-		if index == -1 {
-			count += utf8.RuneCountInString(elem)
-		} else {
-
-		}
-	}
 }
 
 // isFirstOfLine is a private function that returns true if the current position is the first

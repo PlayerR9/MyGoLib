@@ -202,7 +202,7 @@ func NewStdPrinter(form FormatConfig) *StdPrinter {
 //   - If the configuration is nil, the function uses the default configuration.
 //   - Panics if an invalid configuration type is given (i.e., not IndentConfig, DelimiterConfig,
 //     or SeparatorConfig).
-func NewStdPrinterFromConfig(opts ...Configer) *StdPrinter {
+func NewStdPrinterFromConfig(opts ...uc.Copier) *StdPrinter {
 	return &StdPrinter{
 		buff:      newBuffer(),
 		formatter: NewFormatter(opts...),
@@ -214,7 +214,9 @@ func NewStdPrinterFromConfig(opts ...Configer) *StdPrinter {
 // Returns:
 //   - [][][][]string: The pages of the StdPrinter.
 func (p *StdPrinter) GetPages() [][][][]string {
-	pages := p.buff.getPages()
+	tabSize, fieldSpacing := p.formatter.GetTabSize(), p.formatter.GetSpacingSize()
+
+	pages := p.buff.getPages(tabSize, fieldSpacing)
 
 	// Reset the buffer
 	p.buff = newBuffer()
@@ -240,7 +242,11 @@ func SprintFString[T FStringer](form FormatConfig, elem T) ([][][][]string, erro
 		return nil, err
 	}
 
-	return buff.getPages(), nil
+	tabSize, fieldSpacing := form.GetTabSize(), form.GetSpacingSize()
+
+	pages := buff.getPages(tabSize, fieldSpacing)
+
+	return pages, nil
 }
 
 // Sprint prints strings.
@@ -267,7 +273,11 @@ func Sprint(form FormatConfig, strs ...string) ([][][][]string, error) {
 		}
 	}
 
-	return buff.getPages(), nil
+	tabSize, fieldSpacing := form.GetTabSize(), form.GetSpacingSize()
+
+	pages := buff.getPages(tabSize, fieldSpacing)
+
+	return pages, nil
 }
 
 // Sprintj prints a joined string.
@@ -295,7 +305,11 @@ func Sprintj(form FormatConfig, sep string, strs ...string) ([][][][]string, err
 		return nil, err
 	}
 
-	return buff.getPages(), nil
+	tabSize, fieldSpacing := form.GetTabSize(), form.GetSpacingSize()
+
+	pages := buff.getPages(tabSize, fieldSpacing)
+
+	return pages, nil
 }
 
 // Sfprint prints a formatted string.
@@ -320,7 +334,11 @@ func Sfprint(form FormatConfig, a ...interface{}) ([][][][]string, error) {
 		return nil, err
 	}
 
-	return buff.getPages(), nil
+	tabSize, fieldSpacing := form.GetTabSize(), form.GetSpacingSize()
+
+	pages := buff.getPages(tabSize, fieldSpacing)
+
+	return pages, nil
 }
 
 // Sfprintf prints a formatted string.
@@ -346,7 +364,11 @@ func Sfprintf(form FormatConfig, format string, a ...interface{}) ([][][][]strin
 		return nil, err
 	}
 
-	return buff.getPages(), nil
+	tabSize, fieldSpacing := form.GetTabSize(), form.GetSpacingSize()
+
+	pages := buff.getPages(tabSize, fieldSpacing)
+
+	return pages, nil
 }
 
 // Sprintln prints a string with a newline.
@@ -373,7 +395,11 @@ func Sprintln(form FormatConfig, lines ...string) ([][][][]string, error) {
 		}
 	}
 
-	return buff.getPages(), nil
+	tabSize, fieldSpacing := form.GetTabSize(), form.GetSpacingSize()
+
+	pages := buff.getPages(tabSize, fieldSpacing)
+
+	return pages, nil
 }
 
 // Sprintjln prints a joined string with a newline.
@@ -401,7 +427,11 @@ func Sprintjln(form FormatConfig, sep string, lines ...string) ([][][][]string, 
 		return nil, err
 	}
 
-	return buff.getPages(), nil
+	tabSize, fieldSpacing := form.GetTabSize(), form.GetSpacingSize()
+
+	pages := buff.getPages(tabSize, fieldSpacing)
+
+	return pages, nil
 }
 
 // Sfprintln prints a formatted string with a newline.
@@ -426,7 +456,11 @@ func Sfprintln(form FormatConfig, a ...interface{}) ([][][][]string, error) {
 		return nil, err
 	}
 
-	return buff.getPages(), nil
+	tabSize, fieldSpacing := form.GetTabSize(), form.GetSpacingSize()
+
+	pages := buff.getPages(tabSize, fieldSpacing)
+
+	return pages, nil
 }
 
 // FilePrinter is a type that represents a formatted string.
@@ -490,7 +524,7 @@ func NewFilePrinter(out io.Writer, form FormatConfig) *FilePrinter {
 //
 // Behaviors:
 //   - If the writer is nil, the function uses os.Stdout.
-func NewFilePrinterFromConfig(out io.Writer, opts ...Configer) *FilePrinter {
+func NewFilePrinterFromConfig(out io.Writer, opts ...uc.Copier) *FilePrinter {
 	fp := &FilePrinter{
 		buff:      newBuffer(),
 		formatter: NewFormatter(opts...),
@@ -507,7 +541,9 @@ func NewFilePrinterFromConfig(out io.Writer, opts ...Configer) *FilePrinter {
 
 // Update updates the FilePrinter by writing the buffer to the file.
 func (p *FilePrinter) Update() {
-	pages := p.buff.getPages()
+	tabSize, fieldSpacing := p.formatter.GetTabSize(), p.formatter.GetSpacingSize()
+
+	pages := p.buff.getPages(tabSize, fieldSpacing)
 
 	// Reset the buffer
 	p.buff = newBuffer()
@@ -540,7 +576,9 @@ func FprintFString[T FStringer](out io.Writer, form FormatConfig, elem T) error 
 		out = os.Stdout
 	}
 
-	pages := buff.getPages()
+	tabSize, fieldSpacing := form.GetTabSize(), form.GetSpacingSize()
+
+	pages := buff.getPages(tabSize, fieldSpacing)
 
 	out.Write([]byte(strings.Join(Stringfy(pages), "\f")))
 
@@ -578,7 +616,9 @@ func Fprint(out io.Writer, form FormatConfig, strs ...string) error {
 		out = os.Stdout
 	}
 
-	pages := buff.getPages()
+	tabSize, fieldSpacing := form.GetTabSize(), form.GetSpacingSize()
+
+	pages := buff.getPages(tabSize, fieldSpacing)
 
 	out.Write([]byte(strings.Join(Stringfy(pages), "\f")))
 
@@ -617,7 +657,9 @@ func Fprintj(out io.Writer, form FormatConfig, sep string, strs ...string) error
 		out = os.Stdout
 	}
 
-	pages := buff.getPages()
+	tabSize, fieldSpacing := form.GetTabSize(), form.GetSpacingSize()
+
+	pages := buff.getPages(tabSize, fieldSpacing)
 
 	out.Write([]byte(strings.Join(Stringfy(pages), "\f")))
 
@@ -653,7 +695,9 @@ func Ffprint(out io.Writer, form FormatConfig, a ...interface{}) error {
 		out = os.Stdout
 	}
 
-	pages := buff.getPages()
+	tabSize, fieldSpacing := form.GetTabSize(), form.GetSpacingSize()
+
+	pages := buff.getPages(tabSize, fieldSpacing)
 
 	out.Write([]byte(strings.Join(Stringfy(pages), "\f")))
 
@@ -690,7 +734,9 @@ func Ffprintf(out io.Writer, form FormatConfig, format string, a ...interface{})
 		out = os.Stdout
 	}
 
-	pages := buff.getPages()
+	tabSize, fieldSpacing := form.GetTabSize(), form.GetSpacingSize()
+
+	pages := buff.getPages(tabSize, fieldSpacing)
 
 	out.Write([]byte(strings.Join(Stringfy(pages), "\f")))
 
@@ -728,7 +774,9 @@ func Fprintln(out io.Writer, form FormatConfig, lines ...string) error {
 		out = os.Stdout
 	}
 
-	pages := buff.getPages()
+	tabSize, fieldSpacing := form.GetTabSize(), form.GetSpacingSize()
+
+	pages := buff.getPages(tabSize, fieldSpacing)
 
 	out.Write([]byte(strings.Join(Stringfy(pages), "\f")))
 
@@ -767,7 +815,9 @@ func Fprintjln(out io.Writer, form FormatConfig, sep string, lines ...string) er
 		out = os.Stdout
 	}
 
-	pages := buff.getPages()
+	tabSize, fieldSpacing := form.GetTabSize(), form.GetSpacingSize()
+
+	pages := buff.getPages(tabSize, fieldSpacing)
 
 	out.Write([]byte(strings.Join(Stringfy(pages), "\f")))
 
@@ -803,7 +853,9 @@ func Ffprintln(out io.Writer, form FormatConfig, a ...interface{}) error {
 		out = os.Stdout
 	}
 
-	pages := buff.getPages()
+	tabSize, fieldSpacing := form.GetTabSize(), form.GetSpacingSize()
+
+	pages := buff.getPages(tabSize, fieldSpacing)
 
 	out.Write([]byte(strings.Join(Stringfy(pages), "\f")))
 

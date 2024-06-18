@@ -6,8 +6,6 @@ import (
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
 )
 
-/////////////////////////////////////////////////
-
 const (
 	// DefaultIndentation is the default indentation string.
 	DefaultIndentation string = "   "
@@ -18,15 +16,19 @@ const (
 
 var (
 	// DefaultIndentationConfig is the default indentation configuration.
-	DefaultIndentationConfig *IndentConfig = NewIndentConfig(DefaultIndentation, 0)
+	DefaultIndentationConfig *IndentConfig
 
 	// DefaultSeparatorConfig is the default separator configuration.
-	DefaultSeparatorConfig *SeparatorConfig = NewSeparator(DefaultSeparator, false)
+	DefaultSeparatorConfig *SeparatorConfig
+
+	// DefaultFormatterConfig is the default formatter configuration.
+	DefaultFormatterConfig *FormatterConfig
 )
 
-// Configer is an interface that defines the behavior of a type that can be copied.
-type Configer interface {
-	uc.Copier
+func init() {
+	DefaultIndentationConfig = NewIndentConfig(DefaultIndentation, 0)
+	DefaultSeparatorConfig = NewSeparator(DefaultSeparator, false)
+	DefaultFormatterConfig = NewFormatterConfig(3, 1)
 }
 
 // IndentConfig is a type that represents the configuration for indentation.
@@ -38,10 +40,7 @@ type IndentConfig struct {
 	level int
 }
 
-// Copy is a method of uc.Copier interface.
-//
-// Returns:
-//   - uc.Copier: A copy of the indentation configuration.
+// Copy implements the uc.Copier interface.
 func (c *IndentConfig) Copy() uc.Copier {
 	return &IndentConfig{
 		str:   c.str,
@@ -66,9 +65,14 @@ func (c *IndentConfig) Copy() uc.Copier {
 //
 // Behaviors:
 //   - If initialLevel is negative, it is set to 0.
+//   - If indentation is empty, it is set to DefaultIndentation.
 func NewIndentConfig(str string, initialLevel int) *IndentConfig {
 	if initialLevel < 0 {
 		initialLevel = 0
+	}
+
+	if str == "" {
+		str = DefaultIndentation
 	}
 
 	config := &IndentConfig{
@@ -104,10 +108,7 @@ type SeparatorConfig struct {
 	includeFinal bool
 }
 
-// Copy is a method of uc.Copier interface.
-//
-// Returns:
-//   - uc.Copier: A copy of the separator configuration.
+// Copy implements the uc.Copier interface.
 func (c *SeparatorConfig) Copy() uc.Copier {
 	return &SeparatorConfig{
 		str:          c.str,
@@ -129,7 +130,14 @@ func (c *SeparatorConfig) Copy() uc.Copier {
 //		==SeparatorConfig==
 //	  - Separator: DefaultSeparator
 //	  - HasFinalSeparator: false
+//
+// Behaviors:
+//   - If separator is empty, it is set to DefaultSeparator.
 func NewSeparator(sep string, includeFinal bool) *SeparatorConfig {
+	if sep == "" {
+		sep = DefaultSeparator
+	}
+
 	return &SeparatorConfig{
 		str:          sep,
 		includeFinal: includeFinal,
@@ -148,10 +156,7 @@ type DelimiterConfig struct {
 	left bool
 }
 
-// Copy is a method of uc.Copier interface.
-//
-// Returns:
-//   - uc.Copier: A copy of the delimiter configuration.
+// Copy implements the uc.Copier interface.
 func (c *DelimiterConfig) Copy() uc.Copier {
 	return &DelimiterConfig{
 		str:      c.str,
@@ -178,6 +183,56 @@ func NewDelimiterConfig(str string, isInline, left bool) *DelimiterConfig {
 		str:      str,
 		isInline: isInline,
 		left:     left,
+	}
+}
+
+// FormatterConfig is a type that represents the configuration for formatting.
+type FormatterConfig struct {
+	// tabSize is the size of the tab.
+	tabSize int
+
+	// spacingSize is the size of the spacing.
+	spacingSize int
+}
+
+// Copy implements the uc.Copier interface.
+func (c *FormatterConfig) Copy() uc.Copier {
+	return &FormatterConfig{
+		tabSize:     c.tabSize,
+		spacingSize: c.spacingSize,
+	}
+}
+
+// NewFormatterConfig is a function that creates a new formatter configuration.
+//
+// Parameters:
+//   - tabSize: The size of the tab.
+//   - spacingSize: The size of the spacing.
+//
+// Returns:
+//   - *FormatterConfig: A pointer to the new formatter configuration.
+//
+// Default values:
+//
+//		==FormatterConfig==
+//	  - TabSize: 3
+//	  - SpacingSize: 1
+//
+// Behaviors:
+//   - If tabSize is less than 1, it is set to 3.
+//   - If spacingSize is less than 1, it is set to 1.
+func NewFormatterConfig(tabSize, spacingSize int) *FormatterConfig {
+	if tabSize < 1 {
+		tabSize = 3
+	}
+
+	if spacingSize < 1 {
+		spacingSize = 1
+	}
+
+	return &FormatterConfig{
+		tabSize:     tabSize,
+		spacingSize: spacingSize,
 	}
 }
 

@@ -164,6 +164,93 @@ func findTabStop(s string, tabSize int) int {
 	return tabSize * ((count / tabSize) + 1)
 }
 
+// FixTabStop fixes the tab stops in a string.
+//
+// The initial level and the integer return are used for
+// chaining multiple calls to this function.
+//
+// Parameters:
+//   - init: The initial level of the tab stop.
+//   - tabSize: The size of the tab.
+//   - spacing: The spacing to use for the tab stop.
+//   - str: The string to fix the tab stops for.
+//
+// Returns:
+//   - string: The string with the tab stops fixed.
+//   - int: The total number of characters in the string.
+//
+// Behaviors:
+//   - If the tabSize is less than 1, it is set to 1.
+//   - If the initial tab stop is less than 0, it is set to 0.
+//   - If the string is empty, an empty string is returned.
+func FixTabStop(init, tabSize int, spacing, str string) (string, int) {
+	var total int
+
+	if init < 0 {
+		total = 0
+		init = 0
+	} else {
+		total = init
+		init = tabSize - (init % tabSize)
+	}
+
+	if len(str) == 0 {
+		return "", total
+	}
+
+	if tabSize < 1 {
+		tabSize = 1
+	}
+
+	var builder strings.Builder
+
+	if init > 0 {
+		init = tabSize - (init % tabSize)
+
+		for i := init; i > 0; i-- {
+			r, size := utf8.DecodeRuneInString(str)
+			str = str[size:]
+
+			if r == '\t' {
+				repStr := strings.Repeat(spacing, i)
+				total += i
+
+				builder.WriteString(repStr)
+				break
+			} else {
+				total++
+				builder.WriteRune(r)
+			}
+
+			if len(str) == 0 {
+				return builder.String(), total
+			}
+		}
+	}
+
+	for {
+		for i := tabSize; i > 0; i-- {
+			r, size := utf8.DecodeRuneInString(str)
+			str = str[size:]
+
+			if r == '\t' {
+				repStr := strings.Repeat(spacing, i)
+				total += i
+
+				builder.WriteString(repStr)
+				break
+			} else {
+				total++
+				builder.WriteRune(r)
+			}
+
+			if len(str) == 0 {
+				return builder.String(), total
+			}
+		}
+	}
+}
+
 // padRight is a helper function to pad a string to the right.
 //
 // Parameters:

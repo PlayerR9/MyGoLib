@@ -3,6 +3,7 @@ package FString
 import (
 	"fmt"
 
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
 	ue "github.com/PlayerR9/MyGoLib/Units/errors"
 )
 
@@ -26,8 +27,8 @@ var (
 )
 
 // FormatConfig is a type that represents a configuration for formatting.
-// [Indentation] [Left Delimiter] [Right Delimiter] [Separator]
-type FormatConfig [4]Configer
+// [Indentation] [Left Delimiter] [Right Delimiter] [Separator] [General Formatter]
+type FormatConfig [5]uc.Copier
 
 const (
 	// ConfInd_Idx is the index for the indentation configuration.
@@ -41,6 +42,9 @@ const (
 
 	// ConfSep_Idx is the index for the separator configuration.
 	ConfSep_Idx
+
+	// ConfFmt_Idx is the index for the general formatter configuration.
+	ConfFmt_Idx
 )
 
 // NewFormatter is a function that creates a new formatter with the given configuration.
@@ -54,11 +58,8 @@ const (
 // Behaviors:
 //   - The function panics if an invalid configuration type is given. (i.e., not IndentConfig,
 //     DelimiterConfig, or SeparatorConfig)
-func NewFormatter(options ...Configer) (form FormatConfig) {
-	if len(options) == 0 {
-		return
-	}
-
+//   - If no formatter configuration is given, the default formatter configuration is used.
+func NewFormatter(options ...uc.Copier) (form FormatConfig) {
 	for _, opt := range options {
 		switch opt := opt.(type) {
 		case *IndentConfig:
@@ -71,12 +72,34 @@ func NewFormatter(options ...Configer) (form FormatConfig) {
 			}
 		case *SeparatorConfig:
 			form[ConfSep_Idx] = opt
+		case *FormatterConfig:
+			form[ConfFmt_Idx] = opt
 		default:
 			panic(fmt.Errorf("invalid configuration type: %T", opt))
 		}
 	}
 
+	if form[ConfFmt_Idx] == nil {
+		form[ConfFmt_Idx] = DefaultFormatterConfig
+	}
+
 	return
+}
+
+// GetTabSize is a function that returns the tab size of the formatter.
+//
+// Returns:
+//   - int: The tab size.
+func (form FormatConfig) GetTabSize() int {
+	return form[ConfFmt_Idx].(*FormatterConfig).tabSize
+}
+
+// GetIndentationSize is a function that returns the indentation size of the formatter.
+//
+// Returns:
+//   - int: The indentation size.
+func (form FormatConfig) GetSpacingSize() int {
+	return form[ConfFmt_Idx].(*FormatterConfig).spacingSize
 }
 
 // ApplyForm is a function that applies the format to an element.
