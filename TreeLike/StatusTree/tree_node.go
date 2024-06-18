@@ -224,19 +224,26 @@ func (n *TreeNode[S, T]) GetChildren() []*TreeNode[S, T] {
 // Behaviors:
 //   - If there is no branching point, it returns the root of the tree.
 func (tn *TreeNode[S, T]) FindBranchingPoint() (*TreeNode[S, T], *TreeNode[S, T], bool) {
-	node := tn
-	var prev *TreeNode[S, T] = nil
-
-	for node.parent != nil {
-		if len(node.parent.children) > 1 {
-			return prev, node.parent, true
-		}
-
-		prev = node
-		node = node.parent
+	if tn.parent == nil {
+		return nil, tn, false
 	}
 
-	return prev, node, false
+	node := tn
+	parent := tn.parent
+
+	hasBranchingPoint := false
+
+	for parent.parent != nil {
+		if len(parent.children) > 1 {
+			hasBranchingPoint = true
+			break
+		}
+
+		node = parent
+		parent = parent.parent
+	}
+
+	return node, parent, hasBranchingPoint
 }
 
 // HasChild returns true if the node has the given child.

@@ -614,7 +614,10 @@ func (t *Tree[S, T]) Prune(filter us.PredicateFilter[*uc.Pair[S, T]]) bool {
 			return true
 		}
 
-		t.DeleteBranchContaining(target)
+		err := t.DeleteBranchContaining(target)
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	return false
