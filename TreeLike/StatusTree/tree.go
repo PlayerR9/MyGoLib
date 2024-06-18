@@ -514,11 +514,9 @@ func (t *Tree[S, T]) replaceLeafWithTree(at int, children []*uc.Pair[S, T]) {
 //   - The function must return a slice of values of type T.
 //   - If the function returns an error, the process stops and the error is returned.
 //   - The leaves are replaced with the children returned by the function.
-func (t *Tree[S, T]) ProcessLeaves(f uc.EvalManyFunc[*uc.Pair[S, T], *uc.Pair[S, T]]) error {
+func (t *Tree[S, T]) ProcessLeaves(f uc.EvalManyFunc[*TreeNode[S, T], *uc.Pair[S, T]]) error {
 	for i, leaf := range t.leaves {
-		p := uc.NewPair(leaf.status, leaf.Data)
-
-		children, err := f(p)
+		children, err := f(leaf)
 		if err != nil {
 			return err
 		}

@@ -61,20 +61,20 @@ func (te *TreeEvaluator[R, M, O]) addMatchLeaves(root *tr.Tree[EvalStatus, O], m
 // Returns:
 //   - bool: True if all leaves are complete, false otherwise.
 //   - error: An error of type *ErrAllMatchesFailed if all matches failed.
-func (te *TreeEvaluator[R, M, O]) processLeaves() uc.EvalManyFunc[*uc.Pair[EvalStatus, O], *uc.Pair[EvalStatus, O]] {
-	filterFunc := func(data *uc.Pair[EvalStatus, O]) ([]*uc.Pair[EvalStatus, O], error) {
-		nextAt := te.matcher.GetNext(data.Second)
+func (te *TreeEvaluator[R, M, O]) processLeaves() uc.EvalManyFunc[*tr.TreeNode[EvalStatus, O], *uc.Pair[EvalStatus, O]] {
+	filterFunc := func(leaf *tr.TreeNode[EvalStatus, O]) ([]*uc.Pair[EvalStatus, O], error) {
+		nextAt := te.matcher.GetNext(leaf.Data)
 
 		ok := te.matcher.IsDone(nextAt)
 		if ok {
-			data.First = EvalComplete
+			leaf.ChangeStatus(EvalComplete)
 
 			return nil, nil
 		}
 
 		matches, err := te.matcher.Match(nextAt)
 		if err != nil {
-			data.First = EvalError
+			leaf.ChangeStatus(EvalError)
 
 			return nil, nil
 		}
@@ -92,7 +92,7 @@ func (te *TreeEvaluator[R, M, O]) processLeaves() uc.EvalManyFunc[*uc.Pair[EvalS
 			children = append(children, p)
 		}
 
-		data.First = EvalComplete
+		leaf.ChangeStatus(EvalComplete)
 
 		return children, nil
 	}
