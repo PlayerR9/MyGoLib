@@ -213,39 +213,6 @@ func (n *TreeNode[S, T]) GetChildren() []*TreeNode[S, T] {
 	return n.children
 }
 
-// FindBranchingPoint returns the first node in the path from n to the root
-// such that has more than one sibling.
-//
-// Returns:
-//   - *treeNode[T]: A pointer to the one node before the branching point.
-//   - *treeNode[T]: A pointer to the branching point.
-//   - bool: True if the node has a branching point, false otherwise.
-//
-// Behaviors:
-//   - If there is no branching point, it returns the root of the tree.
-func (tn *TreeNode[S, T]) FindBranchingPoint() (*TreeNode[S, T], *TreeNode[S, T], bool) {
-	if tn.parent == nil {
-		return nil, tn, false
-	}
-
-	node := tn
-	parent := tn.parent
-
-	hasBranchingPoint := false
-
-	for parent.parent != nil {
-		if len(parent.children) > 1 {
-			hasBranchingPoint = true
-			break
-		}
-
-		node = parent
-		parent = parent.parent
-	}
-
-	return node, parent, hasBranchingPoint
-}
-
 // HasChild returns true if the node has the given child.
 //
 // Parameters:
@@ -438,4 +405,12 @@ func (tn *TreeNode[S, T]) ChangeStatus(status S) {
 //   - S: The status of the tree node.
 func (tn *TreeNode[S, T]) GetStatus() S {
 	return tn.status
+}
+
+// setParent sets the parent of the tree node.
+//
+// Parameters:
+//   - parent: The parent to set.
+func (tn *TreeNode[S, T]) setParent(parent *TreeNode[S, T]) {
+	tn.parent = parent
 }
