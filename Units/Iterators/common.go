@@ -2,7 +2,10 @@ package Iterators
 
 // Slicer is an interface that provides a method to convert a data structure to a slice.
 type Slicer[T any] interface {
-	// The Slice method returns a slice containing all the elements in the data structure.
+	// Slice returns a slice containing all the elements in the data structure.
+	//
+	// Returns:
+	//   - []T: A slice containing all the elements in the data structure.
 	Slice() []T
 
 	Iterable[T]
@@ -30,7 +33,8 @@ func SliceOf[T any](elem any) []T {
 	case []T:
 		return elem
 	case Slicer[T]:
-		return elem.Slice()
+		slice := elem.Slice()
+		return slice
 	default:
 		return []T{elem.(T)}
 	}
@@ -40,6 +44,10 @@ func SliceOf[T any](elem any) []T {
 // collection of elements of type T. It is implemented by data structures that
 // can be iterated over.
 type Iterable[T any] interface {
+	// Iterator returns an iterator over the collection of elements.
+	//
+	// Returns:
+	//   - Iterater[T]: An iterator over the collection of elements.
 	Iterator() Iterater[T]
 }
 
@@ -64,22 +72,26 @@ func IteratorOf[T any](elem any) Iterater[T] {
 		return builder.Build()
 	}
 
+	var iter Iterater[T]
+
 	switch elem := elem.(type) {
 	case Iterater[T]:
-		return elem
+		iter = elem
 	case Iterable[T]:
-		return elem.Iterator()
+		iter = elem.Iterator()
 	case []T:
-		return &SimpleIterator[T]{
+		iter = &SimpleIterator[T]{
 			values: &elem,
 			index:  0,
 		}
 	default:
-		return &SimpleIterator[T]{
+		iter = &SimpleIterator[T]{
 			values: &[]T{elem.(T)},
 			index:  0,
 		}
 	}
+
+	return iter
 }
 
 // Iterater is an interface that defines methods for an iterator over a
@@ -88,15 +100,16 @@ type Iterater[T any] interface {
 	// Size returns the number of elements in the collection.
 	//
 	// Returns:
-	//  - int: The number of elements in the collection.
-	Size() int
+	//  - count: The number of elements in the collection.
+	Size() (count int)
 
 	// The Consume method advances the iterator to the next element in the
 	// collection and returns the current element.
 	//
 	// Returns:
 	//  - T: The current element in the collection.
-	//  - error: An error if the iterator is exhausted.
+	//  - error: An error if the iterator is exhausted or if an error occurred
+	//    while consuming the element.
 	Consume() (T, error)
 
 	// The Restart method resets the iterator to the beginning of the

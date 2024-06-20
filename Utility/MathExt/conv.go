@@ -4,7 +4,7 @@ import (
 	"math"
 	"math/big"
 
-	ers "github.com/PlayerR9/MyGoLib/Units/errors"
+	ue "github.com/PlayerR9/MyGoLib/Units/errors"
 )
 
 // IsValidNumber checks if the given number is valid for the given base.
@@ -39,11 +39,10 @@ func IsValidNumber(n []int, base int) bool {
 //   - base: The base of the result number.
 //
 // Returns:
-//   - []int: The number in the given base.
-//   - error: An error if the base is invalid.
-func DecToBase(n, base int) ([]int, error) {
+//   - []int: The number in the given base. Nil if base is less than or equal to 0.
+func DecToBase(n, base int) []int {
 	if base <= 0 {
-		return nil, ers.NewErrInvalidParameter("base", ers.NewErrGT(0))
+		return nil
 	}
 
 	if n < 0 {
@@ -52,9 +51,9 @@ func DecToBase(n, base int) ([]int, error) {
 
 	// Immediate cases
 	if base == 1 {
-		return make([]int, n), nil
+		return make([]int, n)
 	} else if n < base {
-		return []int{n}, nil
+		return []int{n}
 	}
 
 	logBase := math.Log(float64(base))
@@ -65,10 +64,11 @@ func DecToBase(n, base int) ([]int, error) {
 		n /= base
 	}
 
-	return result, nil
+	return result
 }
 
-// Add adds two numbers of the same base. Both numbers are Least Significant Digit (LSD) first.
+// Add adds two numbers of the same base. Both numbers are Least Significant Digit
+// (LSD) first.
 //
 // Parameters:
 //   - n1: The first number to add.
@@ -76,15 +76,14 @@ func DecToBase(n, base int) ([]int, error) {
 //   - base: The base of the numbers.
 //
 // Returns:
-//   - []int: The sum of the two numbers.
-//   - error: An error if the base is invalid.
-func Add(n1, n2 []int, base int) ([]int, error) {
+//   - []int: The sum of the two numbers. Nil if the base is less than or equal to 0.
+func Add(n1, n2 []int, base int) []int {
 	if base <= 0 {
-		return nil, ers.NewErrInvalidParameter("base", ers.NewErrGT(0))
+		return nil
 	}
 
 	if base == 1 {
-		return make([]int, len(n1)+len(n2)), nil
+		return make([]int, len(n1)+len(n2))
 	}
 
 	maxLen := len(n1)
@@ -120,10 +119,11 @@ func Add(n1, n2 []int, base int) ([]int, error) {
 		result = append(result, carry)
 	}
 
-	return result, nil
+	return result
 }
 
-// Subtract subtracts two numbers of the same base. Both numbers are Least Significant Digit (LSD) first.
+// Subtract subtracts two numbers of the same base. Both numbers are Least Significant
+// Digit (LSD) first.
 //
 // Parameters:
 //   - n1: The number to subtract from.
@@ -132,10 +132,14 @@ func Add(n1, n2 []int, base int) ([]int, error) {
 //
 // Returns:
 //   - []int: The result of the subtraction.
-//   - error: An error if the base is invalid or the subtraction resulted in a negative number.
+//   - error: An error if the subtraction failed.
+//
+// Errors:
+//   - *ErrSubtractionUnderflow: The subtraction resulted in a negative number.
+//   - *errors.ErrInvalidParameter: The base is less than or equal to 0.
 func Subtract(n1, n2 []int, base int) ([]int, error) {
 	if base <= 0 {
-		return nil, ers.NewErrInvalidParameter("base", ers.NewErrGT(0))
+		return nil, ue.NewErrInvalidParameter("base", ue.NewErrGT(0))
 	}
 
 	if base == 1 {
@@ -196,10 +200,14 @@ func Subtract(n1, n2 []int, base int) ([]int, error) {
 //
 // Returns:
 //   - int: The decimal number.
-//   - error: An error if the base is invalid or the number is invalid for the given base.
+//   - error: An error if the conversion failed.
+//
+// Errors:
+//   - *errors.ErrInvalidParameter: The base is less than or equal to 0.
+//   - *errors.ErrOutOfBounds: A digit in the number is out of bounds for the given base.
 func BaseToDec(n []int, base int) (int, error) {
 	if base <= 0 {
-		return 0, ers.NewErrInvalidParameter("base", ers.NewErrGT(0))
+		return 0, ue.NewErrInvalidParameter("base", ue.NewErrGT(0))
 	}
 
 	if base == 1 {
@@ -210,7 +218,7 @@ func BaseToDec(n []int, base int) (int, error) {
 
 	for i, digit := range n {
 		if digit < 0 || digit >= base {
-			return 0, ers.NewErrOutOfBounds(digit, 0, base)
+			return 0, ue.NewErrOutOfBounds(digit, 0, base)
 		}
 
 		result += digit * int(math.Pow(float64(base), float64(i)))
@@ -219,6 +227,13 @@ func BaseToDec(n []int, base int) (int, error) {
 	return result, nil
 }
 
+// IntToBigInt converts an integer to a big.Int.
+//
+// Parameters:
+//   - n: The integer to convert.
+//
+// Returns:
+//   - *big.Int: The big.Int representation of the integer.
 func IntToBigInt(n int) *big.Int {
 	return new(big.Int).SetInt64(int64(n))
 }

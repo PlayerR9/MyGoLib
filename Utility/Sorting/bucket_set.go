@@ -1,6 +1,8 @@
 package Sorting
 
 import (
+	"slices"
+
 	ui "github.com/PlayerR9/MyGoLib/Units/Iterators"
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
 	us "github.com/PlayerR9/MyGoLib/Units/slice"
@@ -9,20 +11,25 @@ import (
 // BucketSet is a type that represents a set of buckets.
 type BucketSet[K comparable, E any] struct {
 	// buckets is the map of buckets.
-	buckets map[K]*Bucket[E]
+	buckets map[K][]E
 }
 
 // Copy implements the common.Copier interface.
 func (bs *BucketSet[K, E]) Copy() uc.Copier {
-	buckets := make(map[K]*Bucket[E])
+	buckets := make(map[K][]E)
 
 	for size, bucket := range bs.buckets {
-		buckets[size] = bucket.Copy().(*Bucket[E])
+		bucketCopy := make([]E, len(bucket))
+		copy(bucketCopy, bucket)
+
+		buckets[size] = bucketCopy
 	}
 
-	return &BucketSet[K, E]{
+	bsCopy := &BucketSet[K, E]{
 		buckets: buckets,
 	}
+
+	return bsCopy
 }
 
 // Iterator implements the Iterators.Iterable interface.
@@ -33,15 +40,13 @@ func (bs *BucketSet[K, E]) Iterator() ui.Iterater[E] {
 		builder.Add(size)
 	}
 
-	di, err := ui.NewDynamicIterator(
+	di := ui.NewDynamicIterator(
 		builder.Build(),
 		func(size K) *ui.SimpleIterator[E] {
-			return bs.buckets[size].Iterator().(*ui.SimpleIterator[E])
+			iter := ui.NewSimpleIterator(bs.buckets[size])
+			return iter
 		},
 	)
-	if err != nil {
-		return nil
-	}
 
 	return di
 }
@@ -54,15 +59,20 @@ func (bs *BucketSet[K, E]) Iterator() ui.Iterater[E] {
 // Returns:
 //   - *BucketSet: the new bucket set.
 func NewBucketSet[K comparable, E any](m map[K][]E) *BucketSet[K, E] {
-	buckets := make(map[K]*Bucket[E])
+	buckets := make(map[K][]E)
 
 	for size, elems := range m {
-		buckets[size] = NewBucket(elems)
+		bucket := make([]E, len(elems))
+		copy(bucket, elems)
+
+		buckets[size] = bucket
 	}
 
-	return &BucketSet[K, E]{
+	bs := &BucketSet[K, E]{
 		buckets: buckets,
 	}
+
+	return bs
 }
 
 // MakeBucketSet creates a map of buckets from the given elements using the given
@@ -75,22 +85,26 @@ func NewBucketSet[K comparable, E any](m map[K][]E) *BucketSet[K, E] {
 // Returns:
 //   - map[int]*Bucket: the map of buckets.
 func MakeBucketSet[K comparable, E any](elems []E, f func(E) K) *BucketSet[K, E] {
-	buckets := make(map[K]*Bucket[E])
+	buckets := make(map[K][]E)
 
 	for _, elem := range elems {
 		size := f(elem)
 
 		val, ok := buckets[size]
 		if !ok {
-			buckets[size] = NewBucket([]E{elem})
+			val = []E{elem}
 		} else {
-			val.Add(elem)
+			val = append(val, elem)
 		}
+
+		buckets[size] = val
 	}
 
-	return &BucketSet[K, E]{
+	bs := &BucketSet[K, E]{
 		buckets: buckets,
 	}
+
+	return bs
 }
 
 // KeepIfBuckets keeps the elements in the buckets that satisfy the given
@@ -101,16 +115,15 @@ func MakeBucketSet[K comparable, E any](elems []E, f func(E) K) *BucketSet[K, E]
 func (bs *BucketSet[K, E]) KeepIfBuckets(f us.PredicateFilter[E]) {
 	var todo []K // buckets to remove.
 
-	for size, bucket := range bs.buckets {
-		bucket.LinearKeep(f)
-
-		if bucket.GetSize() == 0 {
-			todo = append(todo, size)
+	for key, bucket := range bs.buckets {
+		bucket := us.SliceFilter(bucket, f)
+		if len(bucket) == 0 {
+			todo = append(todo, key)
 		}
 	}
 
-	for _, size := range todo {
-		delete(bs.buckets, size)
+	for _, key := range todo {
+		delete(bs.buckets, key)
 	}
 }
 
@@ -120,12 +133,15 @@ func (bs *BucketSet[K, E]) KeepIfBuckets(f us.PredicateFilter[E]) {
 //   - n: number of buckets to return.
 func (bs *BucketSet[K, E]) ViewTopNBuckets(n int) {
 	if n <= 0 {
-		bs.buckets = make(map[K]*Bucket[E])
+		bs.buckets = make(map[K][]E)
 		return
 	}
 
 	for size, bucket := range bs.buckets {
-		bucket.Limit(n)
+		if len(bucket) > n {
+			bucket = bucket[:n]
+		}
+
 		bs.buckets[size] = bucket
 	}
 }
@@ -148,7 +164,7 @@ func (bs *BucketSet[K, E]) Sort(sf SortFunc[E], isAsc bool) {
 	}
 
 	for _, bucket := range bs.buckets {
-		bucket.Sort(sf, isAsc)
+		slices.SortStableFunc(bucket, sf)
 	}
 }
 
@@ -156,7 +172,7 @@ func (bs *BucketSet[K, E]) Sort(sf SortFunc[E], isAsc bool) {
 //
 // Returns:
 //   - map[int]*Bucket: the map of buckets.
-func (bs *BucketSet[K, E]) GetBuckets() map[K]*Bucket[E] {
+func (bs *BucketSet[K, E]) GetBuckets() map[K][]E {
 	return bs.buckets
 }
 
@@ -170,7 +186,7 @@ func (bs *BucketSet[K, E]) GetBuckets() map[K]*Bucket[E] {
 //
 // Behaviors:
 //   - If the bucket does not exist, nil is returned.
-func (bs *BucketSet[K, E]) GetBucket(size K) *Bucket[E] {
+func (bs *BucketSet[K, E]) GetBucket(size K) []E {
 	b, ok := bs.buckets[size]
 	if !ok {
 		return nil
@@ -186,7 +202,7 @@ func (bs *BucketSet[K, E]) GetBucket(size K) *Bucket[E] {
 //
 // Returns:
 //   - error: the first error encountered.
-func (bs *BucketSet[K, E]) DoBuckets(f func(K, *Bucket[E]) error) error {
+func (bs *BucketSet[K, E]) DoBuckets(f func(K, []E) error) error {
 	for size, bucket := range bs.buckets {
 		err := f(size, bucket)
 		if err != nil {

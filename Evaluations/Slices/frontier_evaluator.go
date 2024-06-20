@@ -85,7 +85,7 @@ func (fe *FrontierEvaluator[T]) Evaluate(elem T) {
 			continue
 		}
 
-		newPairs := make([]*uc.Pair[T, float64], 0, len(nexts))
+		newPairs := make([]uc.Pair[T, float64], 0, len(nexts))
 
 		for _, next := range nexts {
 			p := uc.NewPair(next, p.Second+1.0)

@@ -5,18 +5,15 @@ package Iterators
 // SimpleIterator is a struct that allows iterating over a slice of
 // elements of any type.
 type SimpleIterator[T any] struct {
-	// The slice of elements.
+	// values is a slice of elements of type T.
 	values *[]T
 
-	// The current index in the values slice.
-	index int // 0 means not initialized
+	// index is the current index of the iterator.
+	// 0 means not initialized.
+	index int
 }
 
-// Size is a method of the GenericIterator type that returns the number of
-// elements in the collection.
-//
-// Returns:
-//   - int: The number of elements in the collection.
+// Size implements the Iterater interface.
 func (iter *SimpleIterator[T]) Size() int {
 	if iter.values == nil {
 		return 0
@@ -25,17 +22,7 @@ func (iter *SimpleIterator[T]) Size() int {
 	return len(*iter.values)
 }
 
-// Consume is a method of the GenericIterator type that advances the
-// iterator to the next element in the collection and returns the current
-// element.
-//
-// Errors:
-//   - *ErrNotInitialized: If the iterator is not initialized.
-//   - *ErrExhaustedIter: If the iterator is exhausted.
-//
-// Returns:
-//   - T: The current element in the collection.
-//   - error: An error if it is not possible to consume the next element.
+// Consume implements the Iterater interface.
 func (iter *SimpleIterator[T]) Consume() (T, error) {
 	if iter.values == nil {
 		return *new(T), NewErrNotInitialized()
@@ -50,8 +37,7 @@ func (iter *SimpleIterator[T]) Consume() (T, error) {
 	return value, nil
 }
 
-// Restart is a method of the GenericIterator type that resets the iterator to the
-// beginning of the collection.
+// Restart implements the Iterater interface.
 func (iter *SimpleIterator[T]) Restart() {
 	iter.index = 0
 }
@@ -62,7 +48,7 @@ func (iter *SimpleIterator[T]) Restart() {
 //   - values: The slice of elements to iterate over.
 //
 // Return:
-//   - *GenericIterator[T]: A new iterator over the given slice of elements.
+//   - *SimpleIterator[T]: A new iterator over the given slice of elements.
 //
 // Behaviors:
 //   - If values is nil, the iterator is initialized with an empty slice.
@@ -73,8 +59,9 @@ func NewSimpleIterator[T any](values []T) *SimpleIterator[T] {
 		values = make([]T, 0)
 	}
 
-	return &SimpleIterator[T]{
+	si := &SimpleIterator[T]{
 		values: &values,
 		index:  0,
 	}
+	return si
 }

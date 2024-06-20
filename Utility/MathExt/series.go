@@ -1,9 +1,8 @@
 package MathExt
 
 import (
-	"errors"
-	"fmt"
 	"math/big"
+	"strings"
 
 	ue "github.com/PlayerR9/MyGoLib/Units/errors"
 )
@@ -21,12 +20,6 @@ type Serieser interface {
 	Term(n int) (*big.Int, error)
 }
 
-// ConvergenceResult is a struct that holds the values of the convergence of a series.
-type ConvergenceResult struct {
-	// values is a slice of the convergence values.
-	values []*big.Float
-}
-
 // ApproximateConvergence approximates the convergence of a series.
 // It calculates the average of the last n values.
 //
@@ -36,16 +29,23 @@ type ConvergenceResult struct {
 // Returns:
 //   - *big.Float: The average of the last n values.
 //   - error: An error if the calculation fails.
-func (cr *ConvergenceResult) ApproximateConvergence(n int) (*big.Float, error) {
+//
+// Errors:
+//   - *ue.ErrInvalidParameter: If n is less than or equal to 0 or if
+//     there are not enough values to calculate the average.
+func ApproximateConvergence(values []*big.Float, n int) (*big.Float, error) {
 	if n <= 0 {
 		return nil, ue.NewErrInvalidParameter("n", ue.NewErrGT(0))
-	} else if len(cr.values) < n {
-		return nil, ue.NewErrInvalidParameter("n", errors.New("not enough values to calculate average"))
+	} else if len(values) < n {
+		return nil, ue.NewErrInvalidParameter(
+			"n",
+			ue.NewErrOutOfBounds(n, 0, len(values)),
+		)
 	}
 
 	sum := new(big.Float)
-	for i := len(cr.values) - n; i < len(cr.values); i++ {
-		sum.Add(sum, cr.values[i])
+	for i := len(values) - n; i < len(values); i++ {
+		sum.Add(sum, values[i])
 	}
 
 	average := new(big.Float).Quo(sum, new(big.Float).SetFloat64(float64(n)))
@@ -63,20 +63,18 @@ func (cr *ConvergenceResult) ApproximateConvergence(n int) (*big.Float, error) {
 // Returns:
 //   - *ConvergenceResult: The convergence result.
 //   - error: An error if the calculation fails.
-func CalculateConvergence(series Serieser, upperLimit int, delta int) (*ConvergenceResult, error) {
-	result := &ConvergenceResult{
-		values: make([]*big.Float, 0),
-	}
-
+func CalculateConvergence(series Serieser, upperLimit int, delta int) (values []*big.Float, err error) {
 	for i := 0; i < upperLimit-delta; i++ {
-		ithTerm, err := series.Term(i)
-		if err != nil {
-			return result, fmt.Errorf("cannot get %dth term: %s", i, err.Error())
+		ithTerm, reason := series.Term(i)
+		if reason != nil {
+			err = ue.NewErrAt(i+1, "term", reason)
+			return
 		}
 
-		ithPlusDeltaTerm, err := series.Term(i + delta)
-		if err != nil {
-			return result, fmt.Errorf("cannot get %dth term: %s", i+delta, err.Error())
+		ithPlusDeltaTerm, reason := series.Term(i + delta)
+		if reason != nil {
+			err = ue.NewErrAt(i+delta+1, "term", reason)
+			return
 		}
 
 		quotient := new(big.Float).Quo(
@@ -84,10 +82,10 @@ func CalculateConvergence(series Serieser, upperLimit int, delta int) (*Converge
 			new(big.Float).SetInt(ithTerm),
 		)
 
-		result.values = append(result.values, quotient)
+		values = append(values, quotient)
 	}
 
-	return result, nil
+	return
 }
 
 // LinearRegression is a struct that holds the equation of a linear regression.
@@ -103,7 +101,14 @@ type LinearRegression struct {
 //
 // Format: y = a * x^b
 func (lr *LinearRegression) String() string {
-	return fmt.Sprintf("y = %s * x ^ %s", lr.A.String(), lr.B.String())
+	var builder strings.Builder
+
+	builder.WriteString("y = ")
+	builder.WriteString(lr.A.String())
+	builder.WriteString(" * x ^ ")
+	builder.WriteString(lr.B.String())
+
+	return builder.String()
 }
 
 // NewLinearRegression creates a new LinearRegression.
@@ -123,25 +128,20 @@ func NewLinearRegression() *LinearRegression {
 // The equation is of the form y = a * x^b.
 //
 // Returns:
-//   - float64: The value of a.
-//   - float64: The value of b.
-//   - error: An error if the calculation fails.
-func (l *LinearRegression) FindEquation(cr *ConvergenceResult) error {
-	if cr == nil {
-		return ue.NewErrNilParameter("cr")
-	}
-
-	if len(cr.values) < 2 {
-		return fmt.Errorf("not enough values to calculate equation")
+//   - bool: False if there are less than 2 values to calculate the equation.
+//     True otherwise.
+func (l *LinearRegression) FindEquation(values []*big.Float) bool {
+	if len(values) < 2 {
+		return false
 	}
 
 	sumX := new(big.Float)
 	sumY := new(big.Float)
 	sumXY := new(big.Float)
 	sumX2 := new(big.Float)
-	n := big.NewFloat(float64(len(cr.values)))
+	n := big.NewFloat(float64(len(values)))
 
-	for i, v := range cr.values {
+	for i, v := range values {
 		x := big.NewFloat(float64(i))
 		y := new(big.Float).Set(v)
 
@@ -170,5 +170,5 @@ func (l *LinearRegression) FindEquation(cr *ConvergenceResult) error {
 	l.B = l.B.Quo(l.B, n)
 	l.B = new(big.Float).SetPrec(1000).Set(l.B)
 
-	return nil
+	return true
 }

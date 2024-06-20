@@ -28,7 +28,8 @@ func CopyOf(elem any) any {
 
 	switch elem := elem.(type) {
 	case Objecter:
-		return elem.Copy()
+		c := elem.Copy()
+		return c
 	default:
 		x := elem
 
@@ -61,7 +62,8 @@ func EqualOf(a, b any) bool {
 			return false
 		}
 
-		return a.Equals(otherB)
+		ok = a.Equals(otherB)
+		return ok
 	default:
 		return a == b
 	}

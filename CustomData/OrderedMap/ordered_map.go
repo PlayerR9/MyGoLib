@@ -190,8 +190,8 @@ func (s *OrderedMap[K, V]) Keys() []K {
 //   - There are no nil pairs in the returned slice.
 //   - Prefer using Iterator() method for iterating over the entries
 //     instead of this method.
-func (s *OrderedMap[K, V]) GetEntries() []*uc.Pair[K, V] {
-	entries := make([]*uc.Pair[K, V], 0, len(s.keys))
+func (s *OrderedMap[K, V]) GetEntries() []uc.Pair[K, V] {
+	entries := make([]uc.Pair[K, V], 0, len(s.keys))
 
 	for _, key := range s.keys {
 		entries = append(entries, uc.NewPair(key, s.mapping[key]))
@@ -272,8 +272,8 @@ func (s *OrderedMap[K, V]) SortKeys(less func(K, K) int) {
 //
 // Behaviors:
 //   - The iterator returns the entries in the order of the keys as pairs.
-func (s *OrderedMap[K, V]) Iterator() ll.Iterater[*uc.Pair[K, V]] {
-	var builder ll.Builder[*uc.Pair[K, V]]
+func (s *OrderedMap[K, V]) Iterator() ll.Iterater[uc.Pair[K, V]] {
+	var builder ll.Builder[uc.Pair[K, V]]
 
 	for _, key := range s.keys {
 		builder.Add(uc.NewPair(key, s.mapping[key]))

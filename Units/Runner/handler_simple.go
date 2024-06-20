@@ -1,10 +1,11 @@
 package Runner
 
 import (
+	"context"
 	"sync"
 
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
-	ers "github.com/PlayerR9/MyGoLib/Units/errors"
+	ue "github.com/PlayerR9/MyGoLib/Units/errors"
 )
 
 // HandlerSimple is a struct that represents a Go routine handler.
@@ -19,34 +20,39 @@ type HandlerSimple struct {
 	// routine is the Go routine that is run by the handler.
 	routine uc.MainFunc
 
-	// stopChan is a channel that is used to stop the Go routine.
-	stopChan chan struct{}
+	// ctx is the context of the Go routine.
+	ctx context.Context
+
+	// cancel is the cancel function of the Go routine.
+	cancel context.CancelFunc
 }
 
 // Start implements the Runner interface.
 func (h *HandlerSimple) Start() {
-	if h.stopChan != nil {
-		return
+	select {
+	case <-h.ctx.Done():
+		h.errChan = make(chan error)
+
+		h.ctx, h.cancel = context.WithCancel(context.Background())
+
+		h.wg.Add(1)
+
+		go h.run()
+	default:
+		// Do nothing as the context is already running.
 	}
-
-	h.errChan = make(chan error)
-	h.stopChan = make(chan struct{})
-
-	h.wg.Add(1)
-
-	go h.run()
 }
 
 // Close implements the Runner interface.
 func (h *HandlerSimple) Close() {
-	if h.stopChan == nil {
-		return
+	select {
+	case <-h.ctx.Done():
+		// Do nothing as the context is already done.
+	default:
+		h.cancel()
+
+		h.wg.Wait()
 	}
-
-	close(h.stopChan)
-	h.stopChan = nil
-
-	h.wg.Wait()
 }
 
 // IsClosed implements the Runner interface.
@@ -71,7 +77,7 @@ func (h *HandlerSimple) ReceiveErr() (error, bool) {
 // run is a private method of HandlerSimple that is runned by the Go routine.
 //
 // Behaviors:
-//   - Use ers.ErrNoError to exit the Go routine as nil is used to signal
+//   - Use ue.ErrNoError to exit the Go routine as nil is used to signal
 //     that the function has finished successfully but the Go routine is still running.
 func (h *HandlerSimple) run() {
 	defer h.wg.Done()
@@ -80,7 +86,7 @@ func (h *HandlerSimple) run() {
 		r := recover()
 
 		if r != nil {
-			h.errChan <- ers.NewErrPanic(r)
+			h.errChan <- ue.NewErrPanic(r)
 		}
 
 		h.clean()
@@ -88,7 +94,7 @@ func (h *HandlerSimple) run() {
 
 	for {
 		select {
-		case <-h.stopChan:
+		case <-h.ctx.Done():
 			return
 		default:
 			err := h.routine()
@@ -111,16 +117,18 @@ func (h *HandlerSimple) run() {
 // Behaviors:
 //   - If routine is nil, this function returns nil.
 //   - The Go routine is not started automatically.
-//   - In routine, use *ers.ErrNoError to exit the Go routine as nil is used to signal
+//   - In routine, use *ue.ErrNoError to exit the Go routine as nil is used to signal
 //     that the function has finished successfully but the Go routine is still running.
 func NewHandlerSimple(routine uc.MainFunc) *HandlerSimple {
 	if routine == nil {
 		return nil
 	}
 
-	return &HandlerSimple{
+	hs := &HandlerSimple{
 		routine: routine,
 	}
+
+	return hs
 }
 
 // clean is a private method of HandlerSimple that cleans up the handler.
@@ -128,10 +136,5 @@ func (h *HandlerSimple) clean() {
 	if h.errChan != nil {
 		close(h.errChan)
 		h.errChan = nil
-	}
-
-	if h.stopChan != nil {
-		close(h.stopChan)
-		h.stopChan = nil
 	}
 }

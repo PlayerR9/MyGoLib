@@ -28,15 +28,12 @@ type Table[T any] struct {
 // Behaviors:
 //   - For efficiency, the iterator is procedural. It is not a generator.
 func (t *Table[T]) Iterator() ll.Iterater[T] {
-	iter, err := ll.NewDynamicIterator(
+	iter := ll.NewDynamicIterator(
 		ll.NewSimpleIterator(t.table),
 		func(row []T) *ll.SimpleIterator[T] {
 			return ll.NewSimpleIterator(row)
 		},
 	)
-	if err != nil {
-		panic(err)
-	}
 
 	return iter
 }

@@ -19,7 +19,7 @@ type SearchCriteria struct {
 	Data *string
 
 	// Attrs is a slice of attribute key-value pairs to match.
-	Attrs []*uc.Pair[string, slext.PredicateFilter[string]]
+	Attrs []uc.Pair[string, slext.PredicateFilter[string]]
 }
 
 // NewSearchCriteria constructs a new SearchCriteria instance using the provided

@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
 	ue "github.com/PlayerR9/MyGoLib/Units/errors"
 )
 
@@ -23,7 +24,8 @@ func FileExists(loc string) (bool, error) {
 		return true, nil
 	}
 
-	if errors.Is(err, os.ErrNotExist) {
+	ok := errors.Is(err, os.ErrExist)
+	if ok {
 		return false, nil
 	} else {
 		return false, err
@@ -32,21 +34,28 @@ func FileExists(loc string) (bool, error) {
 
 // Create creates the file at the location.
 //
+// Parameters:
+//   - loc: A string representing the path to the file to be created.
+//   - dirPerm: The permission to set for the directory containing the file.
+//   - filePerm: The permission to set for the file.
+//
 // Returns:
 //   - error: An error if one occurred while creating the file.
 //
 // Behaviors:
+//   - dirPerm and filePerm are optional. If 0 is provided, the default permissions
+//     are used: DP_OwnerRestrictOthers for directories and FP_OwnerRestrictOthers for files.
 //   - If the file already exists, it closes the previous file and creates a new one.
 //   - Once the file is opened, it is kept open until the FileManager is closed.
 func Create(loc string, dirPerm, filePerm os.FileMode) (*os.File, error) {
 	dir := filepath.Dir(loc)
 
 	if dirPerm == 0 {
-		dirPerm = os.ModePerm
+		dirPerm = DP_OwnerRestrictOthers
 	}
 
 	if filePerm == 0 {
-		filePerm = os.ModePerm
+		filePerm = FP_OwnerRestrictOthers
 	}
 
 	err := os.MkdirAll(dir, dirPerm)
@@ -67,6 +76,7 @@ func Create(loc string, dirPerm, filePerm os.FileMode) (*os.File, error) {
 //
 // Parameters:
 //   - filePath: A string representing the path to the file to be read.
+//   - create: A boolean indicating whether to create the file if it does not exist.
 //
 // Returns:
 //   - string: A string representing the content of the file.
@@ -119,6 +129,10 @@ func Read(loc string, create bool) (string, error) {
 
 // Lines reads the file line by line and returns a slice of strings, where each
 // string represents a line from the file.
+//
+// Parameters:
+//   - loc: The location of the file.
+//   - create: A boolean indicating whether to create the file if it does not exist.
 //
 // Returns:
 //   - []string: A slice of strings where each string is a line from the file.
@@ -174,7 +188,7 @@ func Lines(loc string, create bool) ([]string, error) {
 // Behaviors:
 //   - The function reads the file line by line and applies the function f to each line.
 //   - If an error occurs, the function returns the error and the values processed up to that point.
-func PerLine[T any](loc string, create bool, f func(string) (T, error)) ([]T, error) {
+func PerLine[T any](loc string, create bool, f uc.EvalOneFunc[string, T]) ([]T, error) {
 	exists, err := FileExists(loc)
 	if err != nil {
 		return nil, err
@@ -232,5 +246,6 @@ func CheckPath(loc string, isDir bool) (bool, error) {
 		return false, err
 	}
 
-	return isDir == stat.IsDir(), nil
+	ok := isDir == stat.IsDir()
+	return ok, nil
 }

@@ -4,10 +4,9 @@ package Runner
 // a process is already running.
 type ErrAlreadyRunning struct{}
 
-// Error returns the error message: "the process is already running".
+// Error implements the error interface.
 //
-// Returns:
-//   - string: The error message.
+// Message: "the process is already running"
 func (e *ErrAlreadyRunning) Error() string {
 	return "the process is already running"
 }

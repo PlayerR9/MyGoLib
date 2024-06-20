@@ -3,10 +3,9 @@ package Tree
 // ErrMissingRoot is an error that is returned when the root of a tree is missing.
 type ErrMissingRoot struct{}
 
-// Error returns the error message: "missing root".
+// Error implements the error interface.
 //
-// Returns:
-//   - string: The error message.
+// Message: "missing root".
 func (e *ErrMissingRoot) Error() string {
 	return "missing root"
 }
@@ -22,10 +21,9 @@ func NewErrMissingRoot() *ErrMissingRoot {
 // ErrNodeNotPartOfTree is an error that is returned when a node is not part of a tree.
 type ErrNodeNotPartOfTree struct{}
 
-// Error returns the error message: "node is not part of the tree".
+// Error implements the error interface.
 //
-// Returns:
-//   - string: The error message.
+// Message: "node is not part of the tree".
 func (e *ErrNodeNotPartOfTree) Error() string {
 	return "node is not part of the tree"
 }

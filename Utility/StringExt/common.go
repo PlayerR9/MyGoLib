@@ -9,11 +9,30 @@ import (
 	"encoding/hex"
 	"slices"
 
-	com "github.com/PlayerR9/MyGoLib/Units/common"
 	ue "github.com/PlayerR9/MyGoLib/Units/errors"
 	us "github.com/PlayerR9/MyGoLib/Units/slice"
 	mext "github.com/PlayerR9/MyGoLib/Utility/MathExt"
 )
+
+var (
+	// calculateSplitRatio is a function that calculates the split ratio of a
+	// TextSplit instance.
+	calculateSplitRatio us.WeightFunc[*TextSplit]
+)
+
+func init() {
+	calculateSplitRatio = func(candidate *TextSplit) (float64, bool) {
+		values := make([]float64, 0, candidate.GetHeight())
+
+		for _, line := range candidate.lines {
+			values = append(values, float64(line.len))
+		}
+
+		sqm, ok := mext.SQM(values)
+
+		return sqm, ok
+	}
+}
 
 // ToUTF8Runes converts a string to a slice of runes.
 //
@@ -21,7 +40,7 @@ import (
 //   - s: The string to convert.
 //
 // Returns:
-//   - []rune: The slice of runes
+//   - runes: The slice of runes.
 //   - error: An error of type *ErrInvalidUTF8Encoding if the string contains
 //     invalid UTF-8 encoding.
 //
@@ -29,16 +48,24 @@ import (
 //   - An empty string returns a nil slice with no errors.
 //   - The function stops at the first invalid UTF-8 encoding; returning an
 //     error and the runes found up to that point.
-func ToUTF8Runes(s string) ([]rune, error) {
+func ToUTF8Runes(s string) (runes []rune, err error) {
 	if s == "" {
-		return nil, nil
+		return
 	}
 
-	if !utf8.ValidString(s) {
-		return nil, NewErrInvalidUTF8Encoding()
+	for len(s) > 0 {
+		r, size := utf8.DecodeRuneInString(s)
+
+		if r == utf8.RuneError {
+			err = NewErrInvalidUTF8Encoding()
+			return
+		}
+
+		runes = append(runes, r)
+		s = s[size:]
 	}
 
-	return []rune(s), nil
+	return
 }
 
 // ReplaceSuffix replaces the end of the given string with the provided suffix.
@@ -168,30 +195,6 @@ func FindContentIndexes(openingToken, closingToken string, contentTokens []strin
 	return
 }
 
-// Fields splits a string into fields.
-//
-// Returns:
-//   - []*String: The fields of the string.
-func Fields(str string) []string {
-	fields := make([]string, 0)
-	var builder strings.Builder
-
-	for _, r := range str {
-		if r == ' ' {
-			fields = append(fields, builder.String())
-			builder.Reset()
-		} else {
-			builder.WriteRune(r)
-		}
-	}
-
-	if builder.Len() > 0 {
-		fields = append(fields, builder.String())
-	}
-
-	return fields
-}
-
 // GenerateID generates a random ID of the specified size (in bytes).
 //
 // Parameters:
@@ -221,7 +224,9 @@ func GenerateID(size int) (string, error) {
 		return "", err
 	}
 
-	return hex.EncodeToString(b), nil
+	encoded := hex.EncodeToString(b)
+
+	return encoded, nil
 }
 
 // FitString fits a string to the specified width by adding spaces to the end
@@ -248,17 +253,29 @@ func FitString(s string, width int) (string, error) {
 
 	if width == 0 {
 		return "", nil
-	} else if len == 0 {
-		return strings.Repeat(" ", width), nil
-	} else if len == width {
+	}
+
+	if len == 0 {
+		spacing := strings.Repeat(" ", width)
+
+		return spacing, nil
+	}
+
+	if len == width {
 		return s, nil
 	}
 
 	if len > width {
 		return s[:width], nil
-	} else {
-		return s + strings.Repeat(" ", width-len), nil
 	}
+
+	var builder strings.Builder
+	spacing := strings.Repeat(" ", width-len)
+
+	builder.WriteString(s)
+	builder.WriteString(spacing)
+
+	return builder.String(), nil
 }
 
 // CalculateNumberOfLines is a function that calculates the minimum number
@@ -442,7 +459,9 @@ func SplitInEqualSizedLines(text []string, width, height int) (*TextSplit, error
 	}
 
 	for _, word := range text {
-		if !group.InsertWord(word) {
+		ok := group.InsertWord(word)
+
+		if !ok {
 			return nil, NewErrLinesGreaterThanWords(width, utf8.RuneCountInString(word))
 		}
 	}
@@ -487,7 +506,8 @@ func SplitInEqualSizedLines(text []string, width, height int) (*TextSplit, error
 		for j := 1; j < height; j++ {
 			// Check if the first word of the line can be moved to the above line.
 			// If yes, then it is a candidate for the optimal solution.
-			if !candidates[i].canShiftUp(j) {
+			ok := candidates[i].canShiftUp(j)
+			if !ok {
 				continue
 			}
 
@@ -499,20 +519,8 @@ func SplitInEqualSizedLines(text []string, width, height int) (*TextSplit, error
 	}
 
 	// 4.2. Calculate the SQM of each candidate and returns the ones with the lowest SQM.
-	weights := us.ApplyWeightFunc(candidates, func(candidate *TextSplit) (float64, bool) {
-		values := make([]float64, 0, candidate.GetHeight())
 
-		for _, line := range candidate.lines {
-			values = append(values, float64(line.len))
-		}
-
-		sqm, err := mext.SQM(values)
-		if err != nil {
-			return 0, false
-		}
-
-		return sqm, true
-	})
+	weights := us.ApplyWeightFunc(candidates, calculateSplitRatio)
 	if len(weights) == 0 {
 		return nil, NewErrNoCandidateFound()
 	}
@@ -528,61 +536,4 @@ func SplitInEqualSizedLines(text []string, width, height int) (*TextSplit, error
 	// TODO: Choose the best candidate by following other criteria.
 
 	return candidates[0], nil
-}
-
-// StringToLines splits a string into lines.
-//
-// Parameters:
-//   - str: The string to split into lines.
-//
-// Returns:
-//   - []string: The lines of the string.
-func StringToLines(str string) []string {
-	lines := make([]string, 0)
-	var builder strings.Builder
-
-	for _, c := range str {
-		if c == '\n' {
-			lines = append(lines, builder.String())
-			builder.Reset()
-		} else {
-			builder.WriteRune(c)
-		}
-	}
-
-	if builder.Len() > 0 {
-		lines = append(lines, builder.String())
-	}
-
-	return lines
-}
-
-// StringToLines splits a string into lines.
-//
-// Parameters:
-//   - elem: The element to split into lines.
-//   - f: The function to execute on each rune to convert it to the desired type.
-//
-// Returns:
-//   - [][]O: The lines of the elements.
-//   - error: An error if it occurs during the conversion.
-func AnyToLines[I com.Runer, O any](elem I, f func(rune) (O, error)) ([][]O, error) {
-	lines := [][]O{make([]O, 0)}
-	lastLine := 0
-
-	for _, c := range elem.Runes() {
-		if c == '\n' {
-			lines = append(lines, make([]O, 0))
-			lastLine++
-		} else {
-			newO, err := f(c)
-			if err != nil {
-				return lines, err
-			}
-
-			lines[lastLine] = append(lines[lastLine], newO)
-		}
-	}
-
-	return lines, nil
 }

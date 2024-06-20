@@ -61,8 +61,8 @@ func (te *TreeEvaluator[R, M, O]) addMatchLeaves(root *tr.Tree[EvalStatus, O], m
 // Returns:
 //   - bool: True if all leaves are complete, false otherwise.
 //   - error: An error of type *ErrAllMatchesFailed if all matches failed.
-func (te *TreeEvaluator[R, M, O]) processLeaves() uc.EvalManyFunc[*tr.TreeNode[EvalStatus, O], *uc.Pair[EvalStatus, O]] {
-	filterFunc := func(leaf *tr.TreeNode[EvalStatus, O]) ([]*uc.Pair[EvalStatus, O], error) {
+func (te *TreeEvaluator[R, M, O]) processLeaves() uc.EvalManyFunc[*tr.TreeNode[EvalStatus, O], uc.Pair[EvalStatus, O]] {
+	filterFunc := func(leaf *tr.TreeNode[EvalStatus, O]) ([]uc.Pair[EvalStatus, O], error) {
 		nextAt := te.matcher.GetNext(leaf.Data)
 
 		ok := te.matcher.IsDone(nextAt)
@@ -82,7 +82,7 @@ func (te *TreeEvaluator[R, M, O]) processLeaves() uc.EvalManyFunc[*tr.TreeNode[E
 		// Get the longest match.
 		matches = te.matcher.SelectBestMatches(matches)
 
-		children := make([]*uc.Pair[EvalStatus, O], 0, len(matches))
+		children := make([]uc.Pair[EvalStatus, O], 0, len(matches))
 
 		for _, match := range matches {
 			curr := match.GetMatch()
@@ -125,7 +125,7 @@ func (te *TreeEvaluator[R, M, O]) canContinue() bool {
 //
 // Returns:
 //   - bool: True if no nodes were pruned, false otherwise.
-func (te *TreeEvaluator[R, M, O]) pruneTree(filter us.PredicateFilter[*uc.Pair[EvalStatus, O]]) bool {
+func (te *TreeEvaluator[R, M, O]) pruneTree(filter us.PredicateFilter[uc.Pair[EvalStatus, O]]) bool {
 	for te.root.Size() != 0 {
 		target := te.root.SearchNodes(filter)
 		if target == nil {
@@ -199,7 +199,7 @@ func (te *TreeEvaluator[R, M, O]) Evaluate(matcher M, root O) error {
 // Returns:
 //   - result: The tokens that have been lexed.
 //   - reason: An error if the tree evaluator has not been run yet.
-func (te *TreeEvaluator[R, M, O]) GetBranches() ([][]*uc.Pair[EvalStatus, O], error) {
+func (te *TreeEvaluator[R, M, O]) GetBranches() ([][]uc.Pair[EvalStatus, O], error) {
 	if te.root == nil {
 		return nil, ers.NewErrInvalidUsage(
 			ers.NewErrNilValue(),

@@ -96,7 +96,7 @@ func MediaDownloader(dest, url string, force bool) (string, error) {
 func GetAllFileNamesInDirectory(directoryPath string) (map[string]string, error) {
 	fileExtensionMap := make(map[string]string)
 
-	walkError := filepath.Walk(directoryPath, func(currentPath string, info os.FileInfo, err error) error {
+	walkFunc := func(currentPath string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -104,8 +104,9 @@ func GetAllFileNamesInDirectory(directoryPath string) (map[string]string, error)
 			fileExtensionMap[currentPath] = filepath.Ext(info.Name())
 		}
 		return nil
-	})
+	}
 
+	walkError := filepath.Walk(directoryPath, walkFunc)
 	if walkError != nil {
 		return nil, fmt.Errorf("could not read directory: %w", walkError)
 	}
@@ -123,19 +124,28 @@ func GetAllFileNamesInDirectory(directoryPath string) (map[string]string, error)
 //     to match.
 //
 // Returns:
-//   - []string: A slice of strings representing the paths to the matching files.
-//   - error: An error if it fails to read the directory.
-func GetFilesEndingIn(directoryPath string, extensions ...string) ([]string, error) {
-	matchingFiles := make([]string, 0)
-
+//   - matchingFiles: A slice of strings representing the paths to the matching files.
+//   - err: An error if it fails to read the directory.
+func GetFilesEndingIn(directoryPath string, extensions ...string) (matchingFiles []string, err error) {
 	entries, readError := os.ReadDir(directoryPath)
 	if readError != nil {
-		return nil, fmt.Errorf("could not read directory: %w", readError)
+		err = fmt.Errorf("could not read directory: %w", readError)
+
+		return
 	}
 
 	for _, entry := range entries {
-		if !entry.IsDir() && slices.Contains(extensions, filepath.Ext(entry.Name())) {
-			matchingFiles = append(matchingFiles, filepath.Join(directoryPath, entry.Name()))
+		isDir := entry.IsDir()
+		if isDir {
+			continue
+		}
+
+		entryName := entry.Name()
+
+		ok := slices.Contains(extensions, filepath.Ext(entryName))
+		if ok {
+			joinedPath := filepath.Join(directoryPath, entryName)
+			matchingFiles = append(matchingFiles, joinedPath)
 		}
 	}
 
@@ -149,10 +159,8 @@ func GetFilesEndingIn(directoryPath string, extensions ...string) ([]string, err
 //   - filePath: A string representing the path to the file.
 //
 // Returns:
-//   - []string: A slice of strings representing the parts of the file path.
-func SplitPath(filePath string) []string {
-	var parts []string
-
+//   - parts: A slice of strings representing the components of the file path.
+func SplitPath(filePath string) (parts []string) {
 	for filePath != "" {
 		var part string
 
@@ -164,7 +172,7 @@ func SplitPath(filePath string) []string {
 
 	slices.Reverse(parts)
 
-	return parts
+	return
 }
 
 // GroupFilesByExtension is a function that groups files in a directory by their
@@ -214,10 +222,8 @@ func GroupFilesByExtension(dir string) error {
 //   - loc: A string representing the path to the file.
 //
 // Returns:
-//   - int: The depth of the file path.
-func CountDepth(loc string) int {
-	var count int
-
+//   - count: An integer representing the depth of the file path.
+func CountDepth(loc string) (count int) {
 	for loc != "" {
 		var part string
 
@@ -227,5 +233,5 @@ func CountDepth(loc string) int {
 		}
 	}
 
-	return count
+	return
 }

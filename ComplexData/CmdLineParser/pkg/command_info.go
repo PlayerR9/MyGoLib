@@ -284,7 +284,7 @@ func (inf *CommandInfo) GetFlag(name string) *FlagInfo {
 // Returns:
 //   - *ParsedCommand: A pointer to the parsed command.
 //   - error: An error, if any.
-func (inf *CommandInfo) Parse(branches []*resultBranch, args []string) ([]*uc.Pair[*ParsedCommand, error], error) {
+func (inf *CommandInfo) Parse(branches []*resultBranch, args []string) ([]uc.Pair[*ParsedCommand, error], error) {
 	// TODO: Handle the case where pos is not 0.
 
 	uts.StableSort(branches, ResultBranchSortFunc, false)
@@ -301,7 +301,7 @@ func (inf *CommandInfo) Parse(branches []*resultBranch, args []string) ([]*uc.Pa
 		// No valid arguments is also a valid solution. Albeit, it is questionable.
 		command := newParsedCommand(inf.name, nil, inf.callback)
 
-		return []*uc.Pair[*ParsedCommand, error]{
+		return []uc.Pair[*ParsedCommand, error]{
 			uc.NewPair(command, error(ue.NewErrIgnorable(
 				errors.New("no valid arguments were found"),
 			))),
@@ -315,7 +315,7 @@ func (inf *CommandInfo) Parse(branches []*resultBranch, args []string) ([]*uc.Pa
 		// No valid arguments is also a valid solution. Albeit, it is questionable.
 		command := newParsedCommand(inf.name, nil, inf.callback)
 
-		return []*uc.Pair[*ParsedCommand, error]{
+		return []uc.Pair[*ParsedCommand, error]{
 			uc.NewPair(command, error(ue.NewErrIgnorable(
 				errors.New("no valid arguments were found"),
 			))),
@@ -326,14 +326,14 @@ func (inf *CommandInfo) Parse(branches []*resultBranch, args []string) ([]*uc.Pa
 		// No valid arguments is also a valid solution. Albeit, it is questionable.
 		command := newParsedCommand(inf.name, nil, inf.callback)
 
-		return []*uc.Pair[*ParsedCommand, error]{
+		return []uc.Pair[*ParsedCommand, error]{
 			uc.NewPair(command, error(ue.NewErrIgnorable(
 				errors.New("no valid arguments were found"),
 			))),
 		}, nil
 	}
 
-	var possibleCommands []*uc.Pair[*ParsedCommand, error]
+	var possibleCommands []uc.Pair[*ParsedCommand, error]
 
 	for _, branch := range branches {
 		var reason error

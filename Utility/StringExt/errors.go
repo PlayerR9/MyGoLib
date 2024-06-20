@@ -1,14 +1,16 @@
 package StringExt
 
-import "fmt"
+import (
+	"strconv"
+	"strings"
+)
 
 // ErrInvalidUTF8Encoding is an error type for invalid UTF-8 encoding.
 type ErrInvalidUTF8Encoding struct{}
 
-// Error is a method of the error interface that returns the error message.
+// Error implements the error interface.
 //
-// Returns:
-//   - string: The error message.
+// Message: "invalid UTF-8 encoding"
 func (e *ErrInvalidUTF8Encoding) Error() string {
 	return "invalid UTF-8 encoding"
 }
@@ -31,12 +33,19 @@ type ErrLongerSuffix struct {
 	Suffix string
 }
 
-// Error is a method of error interface that returns the error message.
+// Error implements the error interface.
 //
-// Returns:
-//  	- string: The error message.
+// Message: "suffix ({Suffix}) is longer than the string ({Str})"
 func (e *ErrLongerSuffix) Error() string {
-	return fmt.Sprintf("suffix (%s) is longer than the string (%s)", e.Suffix, e.Str)
+	var builder strings.Builder
+
+	builder.WriteString("suffix (")
+	builder.WriteString(strconv.Quote(e.Suffix))
+	builder.WriteString(") is longer than the string (")
+	builder.WriteString(strconv.Quote(e.Str))
+	builder.WriteRune(')')
+
+	return builder.String()
 }
 
 // NewErrLongerSuffix is a constructor of ErrLongerSuffix.
@@ -61,12 +70,18 @@ type ErrTokenNotFound struct {
 	Type TokenType
 }
 
-// Error is a method of the error interface that returns the error message.
+// Error implements the error interface.
 //
-// Returns:
-//   - string: The error message.
+// Message: "{Type} token ({Token}) is not in the content"
 func (e *ErrTokenNotFound) Error() string {
-	return fmt.Sprintf("%s token (%q) is not in the content", e.Type.String(), e.Token)
+	var builder strings.Builder
+
+	builder.WriteString(e.Type.String())
+	builder.WriteString(" token (")
+	builder.WriteString(strconv.Quote(e.Token))
+	builder.WriteString(") is not in the content")
+
+	return builder.String()
 }
 
 // NewErrTokenNotFound is a constructor of ErrTokenNotFound.
@@ -78,24 +93,37 @@ func (e *ErrTokenNotFound) Error() string {
 // Returns:
 //   - *ErrTokenNotFound: A pointer to the newly created error.
 func NewErrTokenNotFound(token string, tokenType TokenType) *ErrTokenNotFound {
-	return &ErrTokenNotFound{Token: token, Type: tokenType}
+	return &ErrTokenNotFound{
+		Token: token,
+		Type:  tokenType,
+	}
 }
 
 // ErrNeverOpened is a struct that represents an error when a closing
 // token is found without a corresponding opening token.
 type ErrNeverOpened struct {
-	// OpeningToken and ClosingToken are the opening and closing tokens,
-	// respectively.
-	OpeningToken, ClosingToken string
+	// OpeningToken is the opening token that was never closed.
+	OpeningToken string
+
+	// ClosingToken is the closing token that was found without a corresponding
+	// opening token.
+	ClosingToken string
 }
 
-// Error is a method of the error interface that returns the error message.
+// Error implements the error interface.
 //
-// Returns:
-//   - string: The error message.
+// Message:
+// "closing token ({ClosingToken}) found without a corresponding opening token ({OpeningToken})"
 func (e *ErrNeverOpened) Error() string {
-	return fmt.Sprintf("closing token (%q) found without a corresponding opening token (%q)",
-		e.ClosingToken, e.OpeningToken)
+	var builder strings.Builder
+
+	builder.WriteString("closing token (")
+	builder.WriteString(strconv.Quote(e.ClosingToken))
+	builder.WriteString(") found without a corresponding opening token (")
+	builder.WriteString(strconv.Quote(e.OpeningToken))
+	builder.WriteRune(')')
+
+	return builder.String()
 }
 
 // NewErrNeverOpened is a constructor of ErrNeverOpened.
@@ -107,7 +135,10 @@ func (e *ErrNeverOpened) Error() string {
 // Returns:
 //   - *ErrNeverOpened: A pointer to the newly created error.
 func NewErrNeverOpened(openingToken, closingToken string) *ErrNeverOpened {
-	return &ErrNeverOpened{OpeningToken: openingToken, ClosingToken: closingToken}
+	return &ErrNeverOpened{
+		OpeningToken: openingToken,
+		ClosingToken: closingToken,
+	}
 }
 
 // ErrLinesGreaterThanWords is an error type that is returned when the
@@ -120,15 +151,18 @@ type ErrLinesGreaterThanWords struct {
 	NumberOfWords int
 }
 
-// Error is a method of the error interface that returns the error message.
+// Error implements the error interface.
 //
-// Returns:
-//  	- string: The error message.
+// Message: "number of lines ({NumberOfLines}) is greater than the number of words ({NumberOfWords})"
 func (e *ErrLinesGreaterThanWords) Error() string {
-	return fmt.Sprintf(
-		"number of lines (%d) is greater than the number of words (%d)",
-		e.NumberOfLines, e.NumberOfWords,
-	)
+	var builder strings.Builder
+
+	builder.WriteString("number of lines (")
+	builder.WriteString(strconv.Itoa(e.NumberOfLines))
+	builder.WriteString(") is greater than the number of words (")
+	builder.WriteString(strconv.Itoa(e.NumberOfWords))
+
+	return builder.String()
 }
 
 // NewErrLinesGreaterThanWords is a constructor of ErrLinesGreaterThanWords.
@@ -140,16 +174,18 @@ func (e *ErrLinesGreaterThanWords) Error() string {
 // Returns:
 //   - *ErrLinesGreaterThanWords: A pointer to the newly created error.
 func NewErrLinesGreaterThanWords(numberOfLines, numberOfWords int) *ErrLinesGreaterThanWords {
-	return &ErrLinesGreaterThanWords{NumberOfLines: numberOfLines, NumberOfWords: numberOfWords}
+	return &ErrLinesGreaterThanWords{
+		NumberOfLines: numberOfLines,
+		NumberOfWords: numberOfWords,
+	}
 }
 
 // ErrNoCandidateFound is an error type that is returned when no candidate is found.
 type ErrNoCandidateFound struct{}
 
-// Error is a method of the error interface that returns the error message.
+// Error implements the error interface.
 //
-// Returns:
-//   - string: The error message.
+// Message: "no candidate found"
 func (e *ErrNoCandidateFound) Error() string {
 	return "no candidate found"
 }

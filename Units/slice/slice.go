@@ -41,7 +41,8 @@ func FindEquals[T uc.Equaler](S []T, elem T) int {
 	}
 
 	for i, e := range S {
-		if e.Equals(elem) {
+		ok := e.Equals(elem)
+		if ok {
 			return i
 		}
 	}
@@ -112,7 +113,8 @@ func uniquefyLeft[T uc.Equaler](S []T) []T {
 		top := i + 1
 
 		for j := i + 1; j < len(S); j++ {
-			if !elem.Equals(S[j]) {
+			ok := elem.Equals(S[j])
+			if !ok {
 				S[top] = S[j]
 				top++
 			}
@@ -220,11 +222,8 @@ func MergeUniqueEquals[T uc.Equaler](S1, S2 []T) []T {
 	for _, e := range S2 {
 		found := false
 
-		for i := 0; i < limit; i++ {
-			if elems[i].Equals(e) {
-				found = true
-				break
-			}
+		for i := 0; i < limit && !found; i++ {
+			found = elems[i].Equals(e)
 		}
 
 		if !found {
@@ -276,7 +275,8 @@ func IndexOfDuplicateEquals[T uc.Equaler](S []T) int {
 		elem := S[i]
 
 		for j := i + 1; j < len(S); j++ {
-			if elem.Equals(S[j]) {
+			ok := elem.Equals(S[j])
+			if ok {
 				return j
 			}
 		}
@@ -391,7 +391,8 @@ func computeLPSArrayEquals[T uc.Equaler](subS []T, lps []int) {
 
 	// the loop calculates lps[i] for i = 1 to len(subS)-1
 	for i < len(subS) {
-		if subS[i].Equals(subS[length]) {
+		ok := subS[i].Equals(subS[length])
+		if ok {
 			length++
 			lps[i] = length
 			i++
@@ -437,18 +438,22 @@ func FindSubsliceFromEquals[T uc.Equaler](S []T, subS []T, at int) int {
 	i := at
 	j := 0
 	for i < len(S) {
-		if S[i].Equals(subS[j]) {
+		ok := S[i].Equals(subS[j])
+		if ok {
 			i++
 			j++
 		}
 
 		if j == len(subS) {
 			return i - j
-		} else if i < len(S) && !S[i].Equals(subS[j]) {
-			if j != 0 {
-				j = lps[j-1]
-			} else {
-				i = i + 1
+		} else if i < len(S) {
+			ok := S[i].Equals(subS[j])
+			if !ok {
+				if j != 0 {
+					j = lps[j-1]
+				} else {
+					i = i + 1
+				}
 			}
 		}
 	}

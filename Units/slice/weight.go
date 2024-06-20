@@ -20,17 +20,14 @@ type WeightFunc[O any] func(elem O) (float64, bool)
 //   - f: the weight function.
 //
 // Returns:
-//   - []WeightResult[O]: slice of elements with their corresponding weights.
+//   - weighted: slice of WeightedElement. Nil if S is empty or f is nil.
 //
 // Behaviors:
-//   - If S is empty or f is nil, the function returns nil.
 //   - If the weight function returns false, the element is not included in the result.
-func ApplyWeightFunc[O any](S []O, f WeightFunc[O]) []*WeightedElement[O] {
+func ApplyWeightFunc[O any](S []O, f WeightFunc[O]) (weighted []*WeightedElement[O]) {
 	if len(S) == 0 || f == nil {
 		return nil
 	}
-
-	trimmed := make([]*WeightedElement[O], 0)
 
 	for _, e := range S {
 		weight, ok := f(e)
@@ -38,10 +35,12 @@ func ApplyWeightFunc[O any](S []O, f WeightFunc[O]) []*WeightedElement[O] {
 			continue
 		}
 
-		trimmed = append(trimmed, NewWeightedElement(e, weight))
+		we := NewWeightedElement(e, weight)
+
+		weighted = append(weighted, we)
 	}
 
-	return trimmed
+	return
 }
 
 // WeightedElement is a type that represents an element with a weight.
@@ -60,8 +59,9 @@ type WeightedElement[O any] struct {
 //
 // Behaviors:
 //   - The second value of the pair is always nil.
-func (we *WeightedElement[O]) GetData() *uc.Pair[O, error] {
-	return uc.NewPair[O, error](we.elem, nil)
+func (we *WeightedElement[O]) GetData() uc.Pair[O, error] {
+	p := uc.NewPair[O, error](we.elem, nil)
+	return p
 }
 
 // GetWeight returns the weight of the element.
@@ -81,8 +81,10 @@ func (we *WeightedElement[O]) GetWeight() float64 {
 // Returns:
 //   - *WeightedElement: The new WeightedElement.
 func NewWeightedElement[O any](elem O, weight float64) *WeightedElement[O] {
-	return &WeightedElement[O]{
+	we := &WeightedElement[O]{
 		elem:   elem,
 		weight: weight,
 	}
+
+	return we
 }

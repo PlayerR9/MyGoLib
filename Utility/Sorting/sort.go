@@ -89,7 +89,6 @@ func sortQuick[T any](S []T, l, r int, sf SortFunc[T]) {
 //
 // Returns:
 //   - int: The index of the pivot element.
-//   - error: An error of type *ErrNotComparable if the elements are not comparable.
 func partition[T any](S []T, l, r int, sf SortFunc[T]) int {
 	pivot := S[r]
 	i := l

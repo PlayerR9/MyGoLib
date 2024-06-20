@@ -14,21 +14,20 @@ import (
 //
 // Returns:
 //   - map[int]int: A map where the keys are the prime factors and the values
-//     are their respective powers.
-//   - error: An error of type *ErrInvalidParameter if the input number is 0.
+//     are their respective powers. Nil if the input number is 0.
 //
 // Behaviors:
 //   - The input number is converted to a positive number.
 //   - The prime factors are sorted in ascending order.
 //   - -1 and 1 are represented as [1: 1].
 //   - The resulting map does not contain any prime factor with a value of 1.
-func PrimeFactorization(inputNumber int) (map[int]int, error) {
+func PrimeFactorization(inputNumber int) map[int]int {
 	if inputNumber == 0 {
-		return nil, ers.NewErrInvalidParameter("inputNumber", ers.NewErrUnexpectedValue(0))
+		return nil
 	}
 
 	if inputNumber == 1 || inputNumber == -1 {
-		return map[int]int{1: 1}, nil
+		return map[int]int{1: 1}
 	}
 
 	if inputNumber < 0 {
@@ -73,7 +72,7 @@ func PrimeFactorization(inputNumber int) (map[int]int, error) {
 		currentPrimeFactor++
 	}
 
-	return primeFactors, nil
+	return primeFactors
 }
 
 // GreatestCommonDivisor is a function that calculates the greatest common divisor

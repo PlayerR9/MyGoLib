@@ -25,9 +25,12 @@ type Item struct {
 //   - de: The directory entry.
 //
 // Returns:
-//   - *Item: The new item.
+//   - Item: The new item.
 func NewItem(loc string, de fs.DirEntry) Item {
-	return Item{loc: loc, DirEntry: de}
+	return Item{
+		loc:      loc,
+		DirEntry: de,
+	}
 }
 
 // Path returns the path to the directory. This
@@ -45,7 +48,9 @@ func (item *Item) Path() string {
 // Returns:
 //   - string: The full path to the directory entry.
 func (item *Item) FullPath() string {
-	return path.Join(item.loc, item.Name())
+	joined := path.Join(item.loc, item.Name())
+
+	return joined
 }
 
 // DEWalkerIter is an iterator that reads directories and all of its subdirectories
@@ -78,19 +83,27 @@ func (iter *DEWalkerIter) Consume() (*ItemList, error) {
 		return nil, ui.NewErrExhaustedIter()
 	}
 
-	for len(iter.toSee) > 0 && iter.toSee[0].IsDir() {
+	for len(iter.toSee) > 0 {
+		ok := iter.toSee[0].IsDir()
+		if !ok {
+			break
+		}
+
 		currentPath := iter.toSee[0].FullPath()
 
 		subEntries, err := os.ReadDir(currentPath)
 		iter.toSee = iter.toSee[1:]
 
 		if err != nil {
-			iter.el.AddErr(err, CountDepth(currentPath))
+			depth := CountDepth(currentPath)
+
+			iter.el.AddErr(err, depth)
 		} else {
 			var tmp []Item
 
 			for _, entry := range subEntries {
-				tmp = append(tmp, NewItem(currentPath, entry))
+				item := NewItem(currentPath, entry)
+				tmp = append(tmp, item)
 			}
 
 			iter.toSee = append(tmp, iter.toSee...)
@@ -106,7 +119,8 @@ func (iter *DEWalkerIter) Consume() (*ItemList, error) {
 	firstDirIndex := -1
 
 	for j := 1; j < len(iter.toSee); j++ {
-		if iter.toSee[j].IsDir() {
+		ok := iter.toSee[j].IsDir()
+		if ok {
 			firstDirIndex = j
 			break
 		}
@@ -120,7 +134,11 @@ func (iter *DEWalkerIter) Consume() (*ItemList, error) {
 		iter.toSee = iter.toSee[firstDirIndex:]
 	}
 
-	return &ItemList{items: todo}, nil
+	il := &ItemList{
+		items: todo,
+	}
+
+	return il, nil
 }
 
 // Restart implements the Iterators.Iterater interface.
@@ -128,7 +146,8 @@ func (iter *DEWalkerIter) Restart() {
 	var toSee []Item
 
 	for _, item := range iter.source {
-		toSee = append(toSee, NewItem(iter.loc, item))
+		tmp := NewItem(iter.loc, item)
+		toSee = append(toSee, tmp)
 	}
 
 	iter.toSee = toSee
@@ -169,14 +188,18 @@ func NewDEWalkerIter(loc string) (ui.Iterater[Item], error) {
 	var toSee []Item
 
 	for _, entry := range entries {
-		toSee = append(toSee, NewItem(loc, entry))
+		item := NewItem(loc, entry)
+
+		toSee = append(toSee, item)
 	}
 
-	iter := ui.NewProceduralIterator(&DEWalkerIter{
+	w := &DEWalkerIter{
 		loc:    loc,
 		source: entries,
 		toSee:  toSee,
-	})
+	}
+
+	iter := ui.NewProceduralIterator(w)
 
 	return iter, nil
 }

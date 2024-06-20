@@ -2,8 +2,6 @@ package General
 
 import (
 	"reflect"
-
-	ers "github.com/PlayerR9/MyGoLib/Units/errors"
 )
 
 // SplitIntoGroups splits the slice into n groups and returns a 2D slice where
@@ -14,8 +12,8 @@ import (
 //   - n: The number of groups to split the slice into.
 //
 // Return:
-//   - [][]T: A 2D slice where each inner slice represents a group.
-//   - error: An error of type *ers.ErrInvalidParameter if n is less than or equal to 0.
+//   - [][]T: A 2D slice where each inner slice represents a group. Nil if
+//     n is less than or equal to 0.
 //
 // Example:
 //
@@ -23,15 +21,15 @@ import (
 //	n := 3
 //	groups := SplitIntoGroups(slice, n)
 //	fmt.Println(groups) // Output: [[1 4] [2 5] [3]]
-func SplitIntoGroups[T any](slice []T, n int) ([][]T, error) {
+func SplitIntoGroups[T any](slice []T, n int) [][]T {
 	if len(slice) == 0 {
-		return [][]T{}, nil
+		return [][]T{}
 	} else if len(slice) == 1 || n == 1 {
-		return [][]T{slice}, nil
+		return [][]T{slice}
 	}
 
 	if n <= 0 {
-		return nil, ers.NewErrInvalidParameter("n", ers.NewErrGT(0))
+		return nil
 	}
 
 	groups := make([][]T, n)
@@ -42,7 +40,7 @@ func SplitIntoGroups[T any](slice []T, n int) ([][]T, error) {
 		groups[groupNumber] = append(groups[groupNumber], element)
 	}
 
-	return groups, nil
+	return groups
 }
 
 // IsNil is a function that checks if a value is nil.
@@ -53,10 +51,13 @@ func SplitIntoGroups[T any](slice []T, n int) ([][]T, error) {
 // Return:
 //   - bool: True if the value is nil, false otherwise.
 func IsNil[T any](value T) bool {
-	switch reflect.ValueOf(value).Kind() {
+	kind := reflect.ValueOf(value).Kind()
+
+	switch kind {
 	case reflect.Ptr, reflect.Interface,
 		reflect.Map, reflect.Slice, reflect.Chan:
-		if reflect.ValueOf(value).IsNil() {
+		ok := reflect.ValueOf(value).IsNil()
+		if ok {
 			return true
 		}
 	}

@@ -32,11 +32,11 @@ func (sm *SafeMap[T, U]) Copy() uc.Copier {
 }
 
 // Iterator implements the Iterable interface.
-func (sm *SafeMap[T, U]) Iterator() ui.Iterater[*uc.Pair[T, U]] {
+func (sm *SafeMap[T, U]) Iterator() ui.Iterater[uc.Pair[T, U]] {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
 
-	entries := make([]*uc.Pair[T, U], 0, len(sm.m))
+	entries := make([]uc.Pair[T, U], 0, len(sm.m))
 
 	for key, value := range sm.m {
 		entries = append(entries, uc.NewPair(key, value))

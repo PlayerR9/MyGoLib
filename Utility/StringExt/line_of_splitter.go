@@ -1,9 +1,10 @@
 package StringExt
 
 import (
+	"strings"
 	"unicode/utf8"
 
-	intf "github.com/PlayerR9/MyGoLib/Units/common"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
 )
 
 // lineOfSplitter is a helper struct used in the SplitTextInEqualSizedLines function.
@@ -17,21 +18,22 @@ type lineOfSplitter struct {
 	len int
 }
 
-// Copy is a method of intf.Copier that creates a shallow copy of the SpltLine.
-//
-// Returns:
-//   - intf.Copier: A shallow copy of the SpltLine.
-func (sl *lineOfSplitter) Copy() intf.Copier {
+// Copy implements the common.Copier interface.
+func (sl *lineOfSplitter) Copy() uc.Copier {
 	newLine := make([]string, len(sl.line))
 	copy(newLine, sl.line)
 
-	return &lineOfSplitter{
+	losCopy := &lineOfSplitter{
 		line: newLine,
 		len:  sl.len,
 	}
+
+	return losCopy
 }
 
 // GetRunes is a method of SpltLine that returns the runes of the line.
+//
+// Always returns a slice of runes with one line.
 //
 // Returns:
 //   - [][]rune: A slice of runes representing the words in the line.
@@ -43,14 +45,9 @@ func (sl *lineOfSplitter) GetRunes() [][]rune {
 		return [][]rune{{}}
 	}
 
-	runes := []rune(sl.line[0])
+	str := strings.Join(sl.line, " ")
 
-	for _, word := range sl.line[1:] {
-		runes = append(runes, ' ')
-		runes = append(runes, []rune(word)...)
-	}
-
-	return [][]rune{runes}
+	return [][]rune{[]rune(str)}
 }
 
 // newLineOfSplitter is a helper function that creates a new line of

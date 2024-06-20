@@ -2,38 +2,29 @@
 // collections of elements in a generic and procedural manner.
 package Iterators
 
-import (
-	ers "github.com/PlayerR9/MyGoLib/Units/errors"
-)
-
 // DynamicIterator is a struct that allows iterating over a collection of iterators
 // of type Iterater[T].
 // The major difference between this and the GenericIterator is that this iterator is
 // designed to iterate over a collection of elements in a progressive manner; reducing
 // the need to store the entire collection in memory.
 type DynamicIterator[E, T any] struct {
-	// The iterator over the collection of iterators.
+	// source is the iterator over the collection of iterators.
 	source Iterater[E]
 
-	// The current iterator in the collection.
+	// current is the current iterator in the collection.
 	current *SimpleIterator[T]
 
-	// Transition function between iterators.
+	// transition is the transition function that takes an element of type E and
+	// returns an iterator.
 	transition func(E) *SimpleIterator[T]
 }
 
-// Size is a method of the DynamicIterator type that returns the number of
-// elements in the collection.
+// Size implements the Iterater interface for the DynamicIterator type.
 //
 // Size is evaluated by summing the sizes of the current iterator and the source
 // iterator. Of course, this is just an estimate of the total number of elements
 // in the collection.
-//
-// Returns:
-//   - int: The number of elements in the collection.
-func (iter *DynamicIterator[E, T]) Size() int {
-	var count int
-
+func (iter *DynamicIterator[E, T]) Size() (count int) {
 	if iter.current != nil {
 		count += iter.current.Size()
 	}
@@ -42,20 +33,10 @@ func (iter *DynamicIterator[E, T]) Size() int {
 		count += iter.source.Size()
 	}
 
-	return count
+	return
 }
 
-// Consume is a method of the DynamicIterator type that advances the
-// iterator to the next element in the collection and returns the current
-// element.
-//
-// Errors:
-//   - *ErrNotInitialized: If the iterator is not initialized.
-//   - *ErrExhaustedIter: If the iterator is exhausted.
-//
-// Returns:
-//   - T: The current element in the collection.
-//   - error: An error if it is not possible to consume the next element.
+// Consume implements the Iterater interface.
 func (iter *DynamicIterator[E, T]) Consume() (T, error) {
 	if iter.source == nil {
 		return *new(T), NewErrNotInitialized()
@@ -75,11 +56,11 @@ func (iter *DynamicIterator[E, T]) Consume() (T, error) {
 
 	iter.current = iter.transition(next1)
 
-	return iter.current.Consume()
+	elem, err := iter.current.Consume()
+	return elem, err
 }
 
-// Restart is a method of the DynamicIterator type that resets the
-// iterator to the beginning of the collection.
+// Restart implements the Iterater interface.
 func (iter *DynamicIterator[E, T]) Restart() {
 	iter.current = nil
 	iter.source.Restart()
@@ -96,12 +77,10 @@ func (iter *DynamicIterator[E, T]) Restart() {
 //     an iterator.
 //
 // Return:
-//   - Iterater[T]: The new iterator over the collection of elements.
-//   - error: An error of type *ers.ErrInvalidParameter if the transition function
-//     is nil.
-func NewDynamicIterator[E, T any](source Iterater[E], f func(E) *SimpleIterator[T]) (*DynamicIterator[E, T], error) {
+//   - *DynamicIterator[E, T]: The new iterator. Nil if f is nil.
+func NewDynamicIterator[E, T any](source Iterater[E], f func(E) *SimpleIterator[T]) *DynamicIterator[E, T] {
 	if f == nil {
-		return nil, ers.NewErrNilParameter("f")
+		return nil
 	}
 
 	iter := &DynamicIterator[E, T]{
@@ -111,5 +90,5 @@ func NewDynamicIterator[E, T any](source Iterater[E], f func(E) *SimpleIterator[
 
 	iter.transition = f
 
-	return iter, nil
+	return iter
 }

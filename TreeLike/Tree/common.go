@@ -67,7 +67,8 @@ func FindCommonAncestor[T any](n1, n2 *TreeNode[T]) *TreeNode[T] {
 	}
 
 	for _, node := range ancestors1 {
-		if slices.Contains(ancestors2, node) {
+		ok := slices.Contains(ancestors2, node)
+		if ok {
 			return node
 		}
 	}

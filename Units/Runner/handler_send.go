@@ -95,7 +95,8 @@ func (h *HandlerSend[T]) run() {
 			continue
 		}
 
-		if ers.As[*ers.ErrNoError](err) {
+		ok := ers.As[*ers.ErrNoError](err)
+		if ok {
 			return
 		}
 
@@ -121,9 +122,11 @@ func NewHandlerSend[T any](routine uc.ErrorIfFunc[T]) *HandlerSend[T] {
 		return nil
 	}
 
-	return &HandlerSend[T]{
+	hs := &HandlerSend[T]{
 		routine: routine,
 	}
+
+	return hs
 }
 
 // Send is a method of HandlerSend that sends a message to the Go routine.

@@ -1,7 +1,7 @@
 package Keyboard
 
 import (
-	"fmt"
+	"context"
 	_ "image/png"
 	"sync"
 
@@ -17,8 +17,11 @@ type Keyboard struct {
 	// errChan is the error channel for the Keyboard.
 	errChan chan error
 
-	// closeChan is the close channel for the Keyboard.
-	closeChan chan struct{}
+	// ctx is the context for the Keyboard.
+	ctx context.Context
+
+	// cancel is the cancel function for the Keyboard.
+	cancel context.CancelFunc
 
 	// wg is the wait group for the Keyboard.
 	wg sync.WaitGroup
@@ -29,10 +32,7 @@ type Keyboard struct {
 // Returns:
 //   - *Keyboard: The new Keyboard.
 func NewKeyboard() *Keyboard {
-	k := &Keyboard{
-		errChan:   make(chan error),
-		closeChan: make(chan struct{}),
-	}
+	k := &Keyboard{}
 
 	k.buffer = sfb.NewBuffer[keyboard.Key]()
 
@@ -59,29 +59,28 @@ func (k *Keyboard) GetKeyReceiver() sfb.Receiver[keyboard.Key] {
 //
 // Returns:
 //   - error: An error if the Keyboard could not be closed.
-func (k *Keyboard) Close() error {
-	if k.buffer == nil {
-		return fmt.Errorf("keyboard already closed")
+func (k *Keyboard) Close() {
+	select {
+	case <-k.ctx.Done():
+		// Do nothing as the Keyboard is already closed.
+	default:
+		k.buffer.Close()
+
+		k.cancel()
+
+		k.wg.Wait()
+
+		close(k.errChan)
+
+		// Clean up
+
+		k.buffer = nil
+
+		err := keyboard.Close()
+		if err != nil {
+			panic(err)
+		}
 	}
-
-	k.buffer.Close()
-
-	close(k.closeChan)
-
-	k.wg.Wait()
-
-	close(k.errChan)
-
-	// Clean up
-
-	k.buffer = nil
-
-	err := keyboard.Close()
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // Start starts the Keyboard.
@@ -89,14 +88,23 @@ func (k *Keyboard) Close() error {
 // Returns:
 //   - error: An error if the Keyboard could not be started.
 func (k *Keyboard) Start() error {
-	err := keyboard.Open()
-	if err != nil {
-		return err
+	select {
+	case <-k.ctx.Done():
+		k.ctx, k.cancel = context.WithCancel(context.Background())
+
+		k.errChan = make(chan error)
+
+		err := keyboard.Open()
+		if err != nil {
+			return err
+		}
+
+		k.wg.Add(1)
+
+		go k.keyListener()
+	default:
+		// Do nothing as the Keyboard is already started.
 	}
-
-	k.wg.Add(1)
-
-	go k.keyListener()
 
 	return nil
 }
@@ -113,7 +121,7 @@ func (k *Keyboard) keyListener() {
 
 	for {
 		select {
-		case <-k.closeChan:
+		case <-k.ctx.Done():
 			return
 		default:
 			_, key, err := keyboard.GetKey()

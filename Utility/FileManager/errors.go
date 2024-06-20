@@ -5,7 +5,9 @@ import "strings"
 // ErrFileNotOpen is an error type for when a file was not opened.
 type ErrFileNotOpen struct{}
 
-// Error returns the error message: "file was not opened".
+// Error implements the error interface.
+//
+// Message: "file was not opened"
 func (e *ErrFileNotOpen) Error() string {
 	return "file was not opened"
 }
@@ -27,10 +29,9 @@ type ErrPathNot struct {
 	Expected string
 }
 
-// Error returns the error message: "path <path> is not <expected>".
+// Error implements the error interface.
 //
-// Returns:
-//   - string: The error message.
+// Message: "path {Path} is not {Expected}"
 func (e *ErrPathNot) Error() string {
 	var builder strings.Builder
 

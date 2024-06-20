@@ -4,8 +4,8 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	intf "github.com/PlayerR9/MyGoLib/Units/common"
-	ers "github.com/PlayerR9/MyGoLib/Units/errors"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
+	ue "github.com/PlayerR9/MyGoLib/Units/errors"
 )
 
 // TextSplit represents a split text with a maximum width and height.
@@ -20,22 +20,17 @@ type TextSplit struct {
 	maxHeight int
 }
 
-// Copy is a method of intf.Copier that creates a shallow copy of the TextSplit.
-//
-// Returns:
-//   - intf.Copier: A shallow copy of the TextSplit.
-func (ts *TextSplit) Copy() intf.Copier {
-	newTs := &TextSplit{
+// Copy implements the common.Copier interface.
+func (ts *TextSplit) Copy() uc.Copier {
+	linesCopy := uc.SliceCopy(ts.lines)
+
+	tsCopy := &TextSplit{
 		maxWidth:  ts.maxWidth,
-		lines:     make([]*lineOfSplitter, 0, ts.maxHeight),
+		lines:     linesCopy,
 		maxHeight: ts.maxHeight,
 	}
 
-	for _, line := range ts.lines {
-		newTs.lines = append(newTs.lines, line.Copy().(*lineOfSplitter))
-	}
-
-	return newTs
+	return tsCopy
 }
 
 // GetRunes is a method of TextSplit that returns the runes of the TextSplit.
@@ -50,13 +45,14 @@ func (ts *TextSplit) GetRunes() [][]rune {
 		return [][]rune{{}}
 	}
 
-	runes := ts.lines[0].GetRunes()
+	runeTable := make([][]rune, 0, len(ts.lines))
 
-	for _, line := range ts.lines[1:] {
-		runes = append(runes, line.GetRunes()[0])
+	for _, line := range ts.lines {
+		row := line.GetRunes()
+		runeTable = append(runeTable, row[0])
 	}
 
-	return runes
+	return runeTable
 }
 
 // NewTextSplit creates a new TextSplit with the given maximum width and height.
@@ -67,28 +63,30 @@ func (ts *TextSplit) GetRunes() [][]rune {
 //
 // Returns:
 //   - *TextSplit: A pointer to the newly created TextSplit.
-//   - error: An error of type *ers.ErrInvalidParameter if the maxWidth or
+//   - error: An error of type *ue.ErrInvalidParameter if the maxWidth or
 //     maxHeight is less than 0.
 func NewTextSplit(maxWidth, maxHeight int) (*TextSplit, error) {
 	if maxWidth < 0 {
-		return nil, ers.NewErrInvalidParameter(
+		return nil, ue.NewErrInvalidParameter(
 			"maxWidth",
-			ers.NewErrGTE(0),
+			ue.NewErrGTE(0),
 		)
 	}
 
 	if maxHeight < 0 {
-		return nil, ers.NewErrInvalidParameter(
+		return nil, ue.NewErrInvalidParameter(
 			"maxHeight",
-			ers.NewErrGTE(0),
+			ue.NewErrGTE(0),
 		)
 	}
 
-	return &TextSplit{
+	ts := &TextSplit{
 		maxWidth:  maxWidth,
 		lines:     make([]*lineOfSplitter, 0, maxHeight),
 		maxHeight: maxHeight,
-	}, nil
+	}
+
+	return ts, nil
 }
 
 // canInsertWordAt is a helper method that checks if a given word can be inserted
@@ -106,7 +104,10 @@ func (ts *TextSplit) canInsertWordAt(word string, lineIndex int) bool {
 		return false
 	}
 
-	return ts.lines[lineIndex].len+utf8.RuneCountInString(word)+1 <= ts.maxWidth
+	wordLen := utf8.RuneCountInString(word)
+	totalLen := ts.lines[lineIndex].len + wordLen
+
+	return totalLen+1 <= ts.maxWidth
 }
 
 // InsertWord is a method that attempts to insert a given word into
@@ -120,11 +121,15 @@ func (ts *TextSplit) canInsertWordAt(word string, lineIndex int) bool {
 //     too long to fit within the width of the TextSplit.
 func (ts *TextSplit) InsertWord(word string) bool {
 	if len(ts.lines) < ts.maxHeight {
-		if utf8.RuneCountInString(word) > ts.maxWidth {
+		wordLen := utf8.RuneCountInString(word)
+
+		if wordLen > ts.maxWidth {
 			return false
 		}
 
-		ts.lines = append(ts.lines, newLineOfSplitter(word))
+		los := newLineOfSplitter(word)
+
+		ts.lines = append(ts.lines, los)
 
 		return true
 	}
@@ -133,20 +138,26 @@ func (ts *TextSplit) InsertWord(word string) bool {
 
 	// Check if adding the next word to the last line exceeds the width.
 	// If it does, we shift the words of the last line to the left.
-	for !ts.canInsertWordAt(word, lastLineIndex) && lastLineIndex >= 0 {
-		firstWord := ts.lines[lastLineIndex].shiftLeft()
-		ts.lines[lastLineIndex].insertWord(word)
+	ok := ts.canInsertWordAt(word, lastLineIndex)
+
+	for !ok && lastLineIndex >= 0 {
+		lastLine := ts.lines[lastLineIndex]
+
+		firstWord := lastLine.shiftLeft()
+		lastLine.insertWord(word)
+
 		word = firstWord
 
 		lastLineIndex--
 	}
 
-	ok := ts.canInsertWordAt(word, lastLineIndex)
+	ok = ts.canInsertWordAt(word, lastLineIndex)
 	if !ok {
 		return false
 	}
 
-	ts.lines[lastLineIndex].insertWord(word)
+	lastLine := ts.lines[lastLineIndex]
+	lastLine.insertWord(word)
 
 	return true
 }
@@ -160,7 +171,8 @@ func (ts *TextSplit) InsertWord(word string) bool {
 //   - int: The index of the first word that could not be inserted, or -1 if all words were inserted.
 func (ts *TextSplit) InsertWords(words []string) int {
 	for i, word := range words {
-		if !ts.InsertWord(word) {
+		ok := ts.InsertWord(word)
+		if !ok {
 			return i
 		}
 	}
@@ -178,7 +190,9 @@ func (ts *TextSplit) InsertWords(words []string) int {
 //   - bool: True if the first word of the line at lineIndex can be shifted up to the
 //     previous line without exceeding the width, and false otherwise.
 func (ts *TextSplit) canShiftUp(lineIndex int) bool {
-	return ts.canInsertWordAt(ts.lines[lineIndex].line[0], lineIndex-1)
+	ok := ts.canInsertWordAt(ts.lines[lineIndex].line[0], lineIndex-1)
+
+	return ok
 }
 
 // shiftUp is an helper method that shifts the first word of a given line up to
@@ -187,7 +201,11 @@ func (ts *TextSplit) canShiftUp(lineIndex int) bool {
 // Parameters:
 //   - lineIndex: The index of the line to shift up.
 func (ts *TextSplit) shiftUp(lineIndex int) {
-	ts.lines[lineIndex-1].insertWord(ts.lines[lineIndex].shiftLeft())
+	lastLine := ts.lines[lineIndex]
+	firstWord := lastLine.shiftLeft()
+
+	secondLastLine := ts.lines[lineIndex-1]
+	secondLastLine.insertWord(firstWord)
 }
 
 // GetHeight is a method that returns the height of the TextSplit.
@@ -195,7 +213,8 @@ func (ts *TextSplit) shiftUp(lineIndex int) {
 // Returns:
 //   - int: The height of the TextSplit.
 func (ts *TextSplit) GetHeight() int {
-	return len(ts.lines)
+	height := len(ts.lines)
+	return height
 }
 
 // GetLines is a method that returns the lines of the TextSplit.
@@ -210,7 +229,8 @@ func (ts *TextSplit) GetLines() []string {
 	lines := make([]string, 0, len(ts.lines))
 
 	for _, line := range ts.lines {
-		lines = append(lines, strings.Join(line.line, " "))
+		str := strings.Join(line.line, " ")
+		lines = append(lines, str)
 	}
 
 	return lines

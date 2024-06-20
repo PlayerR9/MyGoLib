@@ -9,6 +9,8 @@ import (
 
 // Batch is a struct that represents a batch of Go routines.
 type Batch struct {
+	// handlers is a map of the identifiers of the Go routines to the GRHandler
+	// instances that handle them.
 	handlers map[string]*HandlerSimple
 }
 
@@ -17,9 +19,11 @@ type Batch struct {
 // Returns:
 //   - *Batch: The new batch.
 func NewBatch() *Batch {
-	return &Batch{
+	b := &Batch{
 		handlers: make(map[string]*HandlerSimple),
 	}
+
+	return b
 }
 
 // Add is a method of Batch that adds a Go routine to the batch.
@@ -112,5 +116,6 @@ func (b *Batch) WaitAll() map[string]error {
 
 	wg.Wait()
 
-	return errMap.GetMap()
+	m := errMap.GetMap()
+	return m
 }

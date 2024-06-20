@@ -31,11 +31,13 @@ func NewSlice[T any](elems []T, sf SortFunc[T], isAsc bool) *Slice[T] {
 
 	Sort(elems, sf, isAsc)
 
-	return &Slice[T]{
+	res := &Slice[T]{
 		elems: elems,
 		sf:    sf,
 		isAsc: isAsc,
 	}
+
+	return res
 }
 
 // Insert inserts an element into the sorted slice.
@@ -73,7 +75,6 @@ func (s *Slice[T]) Insert(elem T, force bool) int {
 //   - bool: True if the element is already in the slice, false otherwise.
 func (s *Slice[T]) TryInsert(elem T) (int, bool) {
 	pos, ok := slices.BinarySearchFunc(s.elems, elem, s.sf)
-
 	return pos, ok
 }
 
@@ -157,11 +158,13 @@ func (s *Slice[T]) MergeUnique(other *Slice[T]) *Slice[T] {
 		}
 	}
 
-	return &Slice[T]{
+	unique := &Slice[T]{
 		elems: newElems,
 		sf:    s.sf,
 		isAsc: s.isAsc,
 	}
+
+	return unique
 }
 
 // IndexOfDuplicate returns the index of the first duplicate element in the slice.
@@ -301,9 +304,11 @@ func (s *Slice[T]) Difference(other *Slice[T]) *Slice[T] {
 		}
 	}
 
-	return &Slice[T]{
+	diff := &Slice[T]{
 		elems: newElems,
 		sf:    s.sf,
 		isAsc: s.isAsc,
 	}
+
+	return diff
 }

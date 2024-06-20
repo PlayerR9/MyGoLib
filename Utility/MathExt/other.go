@@ -2,8 +2,6 @@ package MathExt
 
 import (
 	"math"
-
-	ers "github.com/PlayerR9/MyGoLib/Units/errors"
 )
 
 // AVG calculates the average of a slice of float64 elements.
@@ -13,10 +11,10 @@ import (
 //
 // Returns:
 //   - float64: The average of the elements.
-//   - error: An error of type *ErrInvalidParameter if the slice is empty.
-func AVG(elems []float64) (float64, error) {
+//   - bool: False if the slice is empty. True otherwise.
+func AVG(elems []float64) (float64, bool) {
 	if len(elems) == 0 {
-		return 0, ers.NewErrInvalidParameter("elems", ers.NewErrEmpty(elems))
+		return 0, false
 	}
 
 	L := float64(len(elems))
@@ -27,7 +25,7 @@ func AVG(elems []float64) (float64, error) {
 		sum += elem
 	}
 
-	return sum / L, nil
+	return sum / L, true
 }
 
 // SQM calculates the Standard Quadratic Mean of a slice of float64 elements.
@@ -37,10 +35,10 @@ func AVG(elems []float64) (float64, error) {
 //
 // Returns:
 //   - float64: The SQM of the elements.
-//   - error: An error of type *ErrInvalidParameter if the slice is empty.
-func SQM(elems []float64) (float64, error) {
+//   - bool: False if the slice is empty. True otherwise.
+func SQM(elems []float64) (float64, bool) {
 	if len(elems) == 0 {
-		return 0, ers.NewErrInvalidParameter("elems", ers.NewErrEmpty(elems))
+		return 0, false
 	}
 
 	L := float64(len(elems))
@@ -59,5 +57,5 @@ func SQM(elems []float64) (float64, error) {
 		sqm += math.Pow(elem-average, 2)
 	}
 
-	return math.Sqrt(sqm / L), nil
+	return math.Sqrt(sqm / L), true
 }

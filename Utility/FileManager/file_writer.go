@@ -25,6 +25,24 @@ type FileWriter struct {
 	flag int
 }
 
+// Write implements io.Writer.
+func (fw *FileWriter) Write(p []byte) (int, error) {
+	if fw.file == nil {
+		// Create the file if it does not exist
+		err := fw.Create()
+		if err != nil {
+			return 0, fmt.Errorf("could not create file: %w", err)
+		}
+	}
+
+	n, err := fw.file.Write(p)
+	if err != nil {
+		return n, fmt.Errorf("could not write to file: %w", err)
+	}
+
+	return n, nil
+}
+
 // NewFileWriter creates a new FileWriter with the given location.
 //
 // Parameters:
@@ -72,7 +90,8 @@ func (fw *FileWriter) GetLocation() string {
 // GetPermissions returns the permissions of the file.
 //
 // Returns:
-//   - [2]os.FileMode: An array of os.FileMode representing the permissions of the directory and file.
+//   - [2]os.FileMode: An array of os.FileMode representing the permissions of
+//     the directory and file.
 func (fw *FileWriter) GetPermissions() [2]os.FileMode {
 	return [2]os.FileMode{fw.dirPerm, fw.filePerm}
 }
@@ -140,7 +159,8 @@ func (fw *FileWriter) Exists() (bool, error) {
 		return true, nil
 	}
 
-	if errors.Is(err, os.ErrNotExist) {
+	ok := errors.Is(err, os.ErrExist)
+	if ok {
 		return false, nil
 	}
 
@@ -154,12 +174,20 @@ func (fw *FileWriter) Exists() (bool, error) {
 //
 // Behaviors:
 //   - If the file is already open, the function closes the file and opens it again.
+//   - It creates the file if it does not exist.
 func (fw *FileWriter) Open() error {
 	if fw.file != nil {
 		err := fw.file.Close()
 		if err != nil {
 			return err
 		}
+	}
+
+	dir := filepath.Dir(fw.loc)
+
+	err := os.MkdirAll(dir, fw.dirPerm)
+	if err != nil {
+		return err
 	}
 
 	file, err := os.OpenFile(fw.loc, fw.flag, fw.filePerm)
@@ -184,7 +212,12 @@ func (fw *FileWriter) Delete() error {
 		}
 	}
 
-	return os.Remove(fw.loc)
+	err := os.Remove(fw.loc)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // ChangePath changes the path of the file.
@@ -277,17 +310,4 @@ func (fw *FileWriter) Clear() error {
 	}
 
 	return nil
-}
-
-// Write implements the io.Writer interface for the FileWriter.
-func (fw *FileWriter) Write(p []byte) (n int, err error) {
-	if fw.file == nil {
-		// Create the file if it does not exist
-		err := fw.Create()
-		if err != nil {
-			return 0, fmt.Errorf("could not create file: %w", err)
-		}
-	}
-
-	return fw.file.Write(p)
 }

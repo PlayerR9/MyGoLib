@@ -32,16 +32,16 @@ func recCleanup[S uc.Enumer, T any](n *TreeNode[S, T]) {
 // Behaviors:
 //   - The paths are returned in the order of a BFS traversal.
 //   - It is a recursive function.
-func recSnakeTraversal[S uc.Enumer, T any](n *TreeNode[S, T]) [][]*uc.Pair[S, T] {
+func recSnakeTraversal[S uc.Enumer, T any](n *TreeNode[S, T]) [][]uc.Pair[S, T] {
 	if len(n.children) == 0 {
 		p := uc.NewPair(n.status, n.Data)
 
-		return [][]*uc.Pair[S, T]{
+		return [][]uc.Pair[S, T]{
 			{p},
 		}
 	}
 
-	var result [][]*uc.Pair[S, T]
+	var result [][]uc.Pair[S, T]
 
 	for _, child := range n.children {
 		subResults := recSnakeTraversal(child)
@@ -49,7 +49,7 @@ func recSnakeTraversal[S uc.Enumer, T any](n *TreeNode[S, T]) [][]*uc.Pair[S, T]
 		p := uc.NewPair(n.status, n.Data)
 
 		for _, tmp := range subResults {
-			result = append(result, append([]*uc.Pair[S, T]{p}, tmp...))
+			result = append(result, append([]uc.Pair[S, T]{p}, tmp...))
 		}
 	}
 
@@ -69,7 +69,7 @@ func recSnakeTraversal[S uc.Enumer, T any](n *TreeNode[S, T]) [][]*uc.Pair[S, T]
 //
 // Behaviors:
 //   - This function is recursive.
-func recPruneFunc[S uc.Enumer, T any](filter us.PredicateFilter[*uc.Pair[S, T]], highest *TreeNode[S, T], n *TreeNode[S, T]) (*TreeNode[S, T], bool) {
+func recPruneFunc[S uc.Enumer, T any](filter us.PredicateFilter[uc.Pair[S, T]], highest *TreeNode[S, T], n *TreeNode[S, T]) (*TreeNode[S, T], bool) {
 	p := uc.NewPair(n.status, n.Data)
 
 	ok := filter(p)

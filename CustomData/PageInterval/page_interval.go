@@ -432,7 +432,7 @@ func (pi *PageInterval) ReverseIterator() itf.Iterater[int] {
 
 	slices.Reverse(reversed)
 
-	iter, err := itf.NewDynamicIterator(
+	iter := itf.NewDynamicIterator(
 		itf.NewSimpleIterator(reversed),
 		func(pr *PageRange) *itf.SimpleIterator[int] {
 			var builder itf.Builder[int]
@@ -444,9 +444,6 @@ func (pi *PageInterval) ReverseIterator() itf.Iterater[int] {
 			return builder.Build()
 		},
 	)
-	if err != nil {
-		panic(err)
-	}
 
 	return iter
 }

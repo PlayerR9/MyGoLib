@@ -79,7 +79,9 @@ func (t *traversor[T]) getChildren() []*tr.TreeNode[T] {
 		return nil
 	}
 
-	return t.elem.GetChildren()
+	children := t.elem.GetChildren()
+
+	return children
 }
 
 // DFS traverses the tree in depth-first order.
@@ -94,7 +96,10 @@ func DFS[T any](tree *tr.Tree[T], init uc.Copier, f ObserverFunc[T]) error {
 		return nil
 	}
 
-	S := Stacker.NewLinkedStack(newTraversor(tree.Root(), init))
+	root := tree.Root()
+	trav := newTraversor(root, init)
+
+	S := Stacker.NewLinkedStack(trav)
 
 	for {
 		top, ok := S.Pop()

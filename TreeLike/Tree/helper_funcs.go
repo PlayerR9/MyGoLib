@@ -24,19 +24,17 @@ func recCleanup[T any](n *TreeNode[T]) {
 // from n to the leaves of the tree rooted at n.
 //
 // Returns:
-//   - [][]T: A slice of slices of the values of the nodes in the paths.
+//   - result: A slice of slices of elements.
 //
 // Behaviors:
 //   - The paths are returned in the order of a BFS traversal.
 //   - It is a recursive function.
-func recSnakeTraversal[T any](n *TreeNode[T]) [][]T {
+func recSnakeTraversal[T any](n *TreeNode[T]) (result [][]T) {
 	if len(n.children) == 0 {
 		return [][]T{
 			{n.Data},
 		}
 	}
-
-	result := make([][]T, 0)
 
 	for _, child := range n.children {
 		subResults := recSnakeTraversal(child)
@@ -46,7 +44,7 @@ func recSnakeTraversal[T any](n *TreeNode[T]) [][]T {
 		}
 	}
 
-	return result
+	return
 }
 
 // recPruneFunc is an helper function that removes all the children of the
@@ -67,7 +65,9 @@ func recPruneFunc[T any](filter us.PredicateFilter[T], highest *TreeNode[T], n *
 		// Delete all children
 		recCleanup(n)
 
-		return FindCommonAncestor(highest, n), true
+		ancestors := FindCommonAncestor(highest, n)
+
+		return ancestors, true
 	}
 
 	top := 0

@@ -33,7 +33,8 @@ func Intersect[T any](funcs ...PredicateFilter[T]) PredicateFilter[T] {
 
 	return func(elem T) bool {
 		for _, f := range funcs {
-			if !f(elem) {
+			ok := f(elem)
+			if !ok {
 				return false
 			}
 		}
@@ -103,7 +104,8 @@ func Union[T any](funcs ...PredicateFilter[T]) PredicateFilter[T] {
 
 	return func(elem T) bool {
 		for _, f := range funcs {
-			if f(elem) {
+			ok := f(elem)
+			if ok {
 				return true
 			}
 		}
@@ -175,10 +177,11 @@ func SliceFilter[T any](S []T, filter PredicateFilter[T]) []T {
 		return S
 	}
 
-	top := 0
+	var top int
 
 	for i := 0; i < len(S); i++ {
-		if filter(S[i]) {
+		ok := filter(S[i])
+		if ok {
 			S[top] = S[i]
 			top++
 		}
@@ -203,7 +206,7 @@ func FilterNilValues[T any](S []*T) []*T {
 		return nil
 	}
 
-	top := 0
+	var top int
 
 	for i := 0; i < len(S); i++ {
 		if S[i] != nil {
@@ -231,7 +234,7 @@ func FilterNilPredicates[T any](S []PredicateFilter[T]) []PredicateFilter[T] {
 		return nil
 	}
 
-	top := 0
+	var top int
 
 	for i := 0; i < len(S); i++ {
 		if S[i] != nil {
@@ -263,11 +266,11 @@ func SFSeparate[T any](S []T, filter PredicateFilter[T]) ([]T, []T) {
 	}
 
 	var failed []T
-
-	top := 0
+	var top int
 
 	for i := 0; i < len(S); i++ {
-		if filter(S[i]) {
+		ok := filter(S[i])
+		if ok {
 			S[top] = S[i]
 			top++
 		} else {
@@ -296,10 +299,11 @@ func SFSeparateEarly[T any](S []T, filter PredicateFilter[T]) ([]T, bool) {
 		return []T{}, true
 	}
 
-	top := 0
+	var top int
 
 	for i := 0; i < len(S); i++ {
-		if filter(S[i]) {
+		ok := filter(S[i])
+		if ok {
 			S[top] = S[i]
 			top++
 		}
@@ -323,7 +327,8 @@ func SFSeparateEarly[T any](S []T, filter PredicateFilter[T]) ([]T, bool) {
 // Behaviors:
 //   - It assumes that the h is not nil.
 func FilterIsSuccess[T Helperer[O], O any](h T) bool {
-	return h.GetData().Second == nil
+	ok := h.GetData().Second == nil
+	return ok
 }
 
 // FilterByPositiveWeight is a function that iterates over weight results and
@@ -358,10 +363,10 @@ func FilterByPositiveWeight[T Helperer[O], O any](S []T) []T {
 		}
 	}
 
-	solution := make([]T, len(indices))
+	solution := make([]T, 0, len(indices))
 
-	for i, index := range indices {
-		solution[i] = S[index]
+	for _, index := range indices {
+		solution = append(solution, S[index])
 	}
 
 	return solution
@@ -399,9 +404,9 @@ func FilterByNegativeWeight[T Helperer[O], O any](S []T) []T {
 		}
 	}
 
-	solution := make([]T, len(indices))
-	for i, index := range indices {
-		solution[i] = S[index]
+	solution := make([]T, 0, len(indices))
+	for _, index := range indices {
+		solution = append(solution, S[index])
 	}
 
 	return solution
@@ -546,10 +551,11 @@ func EvaluateWeightHelpers[T any, O any](batch []T, f uc.EvalOneFunc[T, O], wf W
 // Returns:
 //   - []T: The slice of elements without the empty elements.
 func RemoveEmpty[T comparable](elems []T) []T {
-	top := 0
+	var top int
 
 	for i := 0; i < len(elems); i++ {
-		if elems[i] != *new(T) {
+		empty := *new(T)
+		if elems[i] != empty {
 			elems[top] = elems[i]
 			top++
 		}

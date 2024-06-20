@@ -142,15 +142,15 @@ func IsEmpty(elem any) bool {
 // GetOrdinalSuffix returns the ordinal suffix for a given integer.
 //
 // Parameters:
-//
-//   - number: The integer for which to get the ordinal suffix.
+//   - number: The integer for which to get the ordinal suffix. Negative
+//     numbers are treated as positive.
 //
 // Returns:
-//
 //   - string: The ordinal suffix for the number.
 //
-// For example, for the number 1, the function returns "1st"; for the number 2,
-// it returns "2nd"; and so on.
+// Example:
+//   - GetOrdinalSuffix(1) returns "1st"
+//   - GetOrdinalSuffix(2) returns "2nd"
 func GetOrdinalSuffix(number int) string {
 	var builder strings.Builder
 

@@ -15,7 +15,7 @@ type Helperer[O any] interface {
 	//
 	// Returns:
 	//   - *uc.Pair[O, error]: The data of the element.
-	GetData() *uc.Pair[O, error]
+	GetData() uc.Pair[O, error]
 
 	// GetWeight returns the weight of the element.
 	//
@@ -100,18 +100,15 @@ type SimpleHelper[O any] struct {
 	reason error
 }
 
-// GetData returns the result of the function evaluation.
-//
-// Returns:
-//   - *uc.Pair[O, error]: The result of the function evaluation.
-func (h *SimpleHelper[O]) GetData() *uc.Pair[O, error] {
-	return uc.NewPair(h.result, h.reason)
+// GetData implements the Helperer interface.
+func (h *SimpleHelper[O]) GetData() uc.Pair[O, error] {
+	p := uc.NewPair(h.result, h.reason)
+	return p
 }
 
-// GetWeight returns the weight of the element.
+// GetWeight implements the Helperer interface.
 //
-// Returns:
-//   - float64: The weight of the element.
+// Always returns 0.0.
 func (h *SimpleHelper[O]) GetWeight() float64 {
 	return 0.0
 }
@@ -125,10 +122,11 @@ func (h *SimpleHelper[O]) GetWeight() float64 {
 // Returns:
 //   - SimpleHelper: The new SimpleHelper.
 func NewSimpleHelper[O any](result O, reason error) *SimpleHelper[O] {
-	return &SimpleHelper[O]{
+	sh := &SimpleHelper[O]{
 		result: result,
 		reason: reason,
 	}
+	return sh
 }
 
 // WeightedHelper is a generic type that represents the result of a function
@@ -145,18 +143,13 @@ type WeightedHelper[O any] struct {
 	weight float64
 }
 
-// GetData returns the result of the function evaluation.
-//
-// Returns:
-//   - O: The result of the function evaluation.
-func (h *WeightedHelper[O]) GetData() *uc.Pair[O, error] {
-	return uc.NewPair(h.result, h.reason)
+// GetData implements the Helperer interface.
+func (h *WeightedHelper[O]) GetData() uc.Pair[O, error] {
+	p := uc.NewPair(h.result, h.reason)
+	return p
 }
 
-// GetReason returns the error that occurred during the function evaluation.
-//
-// Returns:
-//   - error: The error that occurred during the function evaluation.
+// GetWeight implements the Helperer interface.
 func (h *WeightedHelper[O]) GetWeight() float64 {
 	return h.weight
 }
@@ -172,9 +165,10 @@ func (h *WeightedHelper[O]) GetWeight() float64 {
 // Returns:
 //   - WeightedHelper: The new WeightedHelper.
 func NewWeightedHelper[O any](result O, reason error, weight float64) *WeightedHelper[O] {
-	return &WeightedHelper[O]{
+	we := &WeightedHelper[O]{
 		result: result,
 		reason: reason,
 		weight: weight,
 	}
+	return we
 }

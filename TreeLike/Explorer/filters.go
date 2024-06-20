@@ -11,11 +11,7 @@ import (
 //
 // Returns:
 //   - bool: True if the leaf is incomplete, false otherwise.
-func FilterIncompleteLeaves[O any](h *uc.Pair[EvalStatus, O]) bool {
-	if h == nil {
-		return true
-	}
-
+func FilterIncompleteLeaves[O any](h uc.Pair[EvalStatus, O]) bool {
 	return h.First == EvalIncomplete
 }
 
@@ -26,7 +22,7 @@ func FilterIncompleteLeaves[O any](h *uc.Pair[EvalStatus, O]) bool {
 //
 // Returns:
 //   - bool: True if the helper tokens are incomplete, false otherwise.
-func FilterCompleteTokens[O any](h []*uc.Pair[EvalStatus, O]) bool {
+func FilterCompleteTokens[O any](h []uc.Pair[EvalStatus, O]) bool {
 	if len(h) == 0 {
 		return false
 	}
@@ -44,7 +40,7 @@ func FilterCompleteTokens[O any](h []*uc.Pair[EvalStatus, O]) bool {
 // Returns:
 //   - float64: The weight of the helper tokens.
 //   - bool: True if the weight is valid, false otherwise.
-func HelperWeightFunc[O any](h []*uc.Pair[EvalStatus, O]) (float64, bool) {
+func HelperWeightFunc[O any](h []uc.Pair[EvalStatus, O]) (float64, bool) {
 	return float64(len(h)), true
 }
 
@@ -55,10 +51,6 @@ func HelperWeightFunc[O any](h []*uc.Pair[EvalStatus, O]) (float64, bool) {
 //
 // Returns:
 //   - bool: True if the leaf is in error, false otherwise.
-func FilterErrorLeaves[O any](h *uc.Pair[EvalStatus, O]) bool {
-	if h == nil {
-		return true
-	}
-
+func FilterErrorLeaves[O any](h uc.Pair[EvalStatus, O]) bool {
 	return h.First == EvalError
 }

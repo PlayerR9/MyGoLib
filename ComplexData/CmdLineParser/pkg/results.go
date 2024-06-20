@@ -210,7 +210,9 @@ func (inf *ciEvaluator) Core(index int, lp int) (*uc.Pair[[]*FlagParseResult, er
 		err = err.(*ue.ErrIgnorable).Err
 	}
 
-	return uc.NewPair(result, err), nil
+	p := uc.NewPair(result, err)
+
+	return &p, nil
 
 }
 
@@ -396,7 +398,9 @@ func (inf *flgEvaluator) Core(index int, lp *ArgInfo) (*uc.Pair[[]*resultArg, er
 
 	results, err := lp.Parse(inf.args[newPosition:])
 
-	return uc.NewPair(results, err), nil
+	p := uc.NewPair(results, err)
+
+	return &p, nil
 }
 
 func (inf *flgEvaluator) Next(pair *uc.Pair[[]*resultArg, error], branch *FlagParseResult) ([]*FlagParseResult, error) {

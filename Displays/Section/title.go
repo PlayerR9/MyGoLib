@@ -185,7 +185,7 @@ func (t *Title) tryToFitLines(fullTitle string, width int) ([]string, error) {
 //   - []string: The lines of the title.
 //   - error: An error if the full title could not be split in lines.
 func generateLines(fullTitle string, width int) ([]string, error) {
-	contents := sext.Fields(fullTitle)
+	contents := strings.Fields(fullTitle) // FIXME: Use a better method to split the text
 
 	numberOfLines, err := sext.CalculateNumberOfLines(contents, width-TitleMinWidth)
 	if err != nil && !ers.As[*sext.ErrLinesGreaterThanWords](err) {
