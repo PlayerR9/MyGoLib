@@ -10,49 +10,6 @@ import (
 	ue "github.com/PlayerR9/MyGoLib/Units/errors"
 )
 
-// Printer is an interface that defines the behavior of a printer.
-type Printer interface {
-	// TraversorOf returns a traversor for the printer.
-	//
-	// Returns:
-	//   - *Traversor: The traversor for the printer.
-	TraversorOf() *Traversor
-
-	uc.Cleaner
-}
-
-// Apply applies a format to a stringer.
-//
-// Parameters:
-//   - p: The StdPrinter to use.
-//   - elem: The element to format.
-//
-// Returns:
-//   - error: An error if the formatting fails.
-//
-// Errors:
-//   - *ErrInvalidParameter: If the StdPrinter is nil.
-//   - *ErrFinalization: If the finalization of the page fails.
-//   - any error returned by the element's FString method.
-//
-// Behaviors:
-//   - If the formatter is nil, the function uses the nil formatter.
-//   - If the element is nil, the function does nothing.
-func Apply[T FStringer](p Printer, elem T) error {
-	if p == nil {
-		return ue.NewErrNilParameter("p")
-	}
-
-	trav := p.TraversorOf()
-
-	err := elem.FString(trav)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 // ApplyMany applies a format to a stringer.
 //
 // Parameters:
@@ -71,50 +28,16 @@ func Apply[T FStringer](p Printer, elem T) error {
 //   - If the formatter is nil, the function uses the nil formatter.
 //   - If an element is nil, the function skips the element.
 //   - If all elements are nil, the function does nothing.
-func ApplyMany[T FStringer](p Printer, elems []T) error {
+func ApplyMany[T FStringer](trav *Traversor, elems []T) error {
 	if len(elems) == 0 {
 		return nil
 	}
-
-	if p == nil {
-		return ue.NewErrNilParameter("p")
-	}
-
-	trav := p.TraversorOf()
 
 	for i, elem := range elems {
 		err := elem.FString(trav)
 		if err != nil {
 			return ue.NewErrAt(i+1, "FStringer element", err)
 		}
-	}
-
-	return nil
-}
-
-// ApplyFunc applies a format function to the StdPrinter.
-//
-// Parameters:
-//   - p: The StdPrinter to use.
-//   - elem: The element to apply the function to.
-//   - f: The function to apply.
-//
-// Returns:
-//   - error: An error if the function fails.
-//
-// Errors:
-//   - *ErrInvalidParameter: If the StdPrinter is nil.
-//   - any error returned by the function.
-func ApplyFunc[T any](p Printer, elem T, f FStringFunc[T]) error {
-	if p == nil {
-		return ue.NewErrNilParameter("p")
-	}
-
-	trav := p.TraversorOf()
-
-	err := f(trav, elem)
-	if err != nil {
-		return err
 	}
 
 	return nil
@@ -134,16 +57,10 @@ func ApplyFunc[T any](p Printer, elem T, f FStringFunc[T]) error {
 //   - *ErrInvalidParameter: If the StdPrinter is nil.
 //   - *Errors.ErrAt: If an error occurs on a specific element.
 //   - any error returned by the function.
-func ApplyFuncMany[T any](p Printer, f FStringFunc[T], elems []T) error {
+func ApplyFuncMany[T any](trav *Traversor, f FStringFunc[T], elems []T) error {
 	if len(elems) == 0 {
 		return nil
 	}
-
-	if p == nil {
-		return ue.NewErrNilParameter("p")
-	}
-
-	trav := p.TraversorOf()
 
 	for i, elem := range elems {
 		err := f(trav, elem)
@@ -164,11 +81,6 @@ type StdPrinter struct {
 	formatter FormatConfig
 }
 
-// TraversorOf implements the Printer interface.
-func (p *StdPrinter) TraversorOf() *Traversor {
-	return newTraversor(p.formatter, p.buff)
-}
-
 // Cleanup implements the Cleaner interface.
 func (p *StdPrinter) Clean() {
 	p.buff.Clean()
@@ -183,11 +95,16 @@ func (p *StdPrinter) Clean() {
 //
 // Returns:
 //   - *StdPrinter: The new StdPrinter.
-func NewStdPrinter(form FormatConfig) *StdPrinter {
-	return &StdPrinter{
+//   - *Traversor: The traversor of the StdPrinter.
+func NewStdPrinter(form FormatConfig) (*StdPrinter, *Traversor) {
+	p := &StdPrinter{
 		buff:      newBuffer(),
 		formatter: form,
 	}
+
+	trav := newTraversor(p.formatter, p.buff)
+
+	return p, trav
 }
 
 // NewStdPrinterFromConfig creates a new StdPrinter from a configuration.
@@ -197,16 +114,21 @@ func NewStdPrinter(form FormatConfig) *StdPrinter {
 //
 // Returns:
 //   - *StdPrinter: The new StdPrinter.
+//   - *Traversor: The traversor of the StdPrinter.
 //
 // Behaviors:
 //   - If the configuration is nil, the function uses the default configuration.
 //   - Panics if an invalid configuration type is given (i.e., not IndentConfig, DelimiterConfig,
 //     or SeparatorConfig).
-func NewStdPrinterFromConfig(opts ...uc.Copier) *StdPrinter {
-	return &StdPrinter{
+func NewStdPrinterFromConfig(opts ...uc.Copier) (*StdPrinter, *Traversor) {
+	p := &StdPrinter{
 		buff:      newBuffer(),
 		formatter: NewFormatter(opts...),
 	}
+
+	trav := newTraversor(p.formatter, p.buff)
+
+	return p, trav
 }
 
 // GetPages returns the pages of the StdPrinter.
@@ -475,11 +397,6 @@ type FilePrinter struct {
 	out io.Writer
 }
 
-// TraversorOf implements the Printer interface.
-func (p *FilePrinter) TraversorOf() *Traversor {
-	return newTraversor(p.formatter, p.buff)
-}
-
 // Cleanup implements the Cleaner interface.
 func (p *FilePrinter) Clean() {
 	p.buff.Clean()
@@ -498,7 +415,7 @@ func (p *FilePrinter) Clean() {
 //
 // Behaviors:
 //   - If the writer is nil, the function uses os.Stdout.
-func NewFilePrinter(out io.Writer, form FormatConfig) *FilePrinter {
+func NewFilePrinter(out io.Writer, form FormatConfig) (*FilePrinter, *Traversor) {
 	fp := &FilePrinter{
 		buff:      newBuffer(),
 		formatter: form,
@@ -510,7 +427,9 @@ func NewFilePrinter(out io.Writer, form FormatConfig) *FilePrinter {
 		fp.out = os.Stdout
 	}
 
-	return fp
+	trav := newTraversor(form, fp.buff)
+
+	return fp, trav
 }
 
 // NewFilePrinterFromConfig creates a new FilePrinter from a configuration.
@@ -521,10 +440,11 @@ func NewFilePrinter(out io.Writer, form FormatConfig) *FilePrinter {
 //
 // Returns:
 //   - *FilePrinter: The new FilePrinter.
+//   - *Traversor: The traversor of the FilePrinter.
 //
 // Behaviors:
 //   - If the writer is nil, the function uses os.Stdout.
-func NewFilePrinterFromConfig(out io.Writer, opts ...uc.Copier) *FilePrinter {
+func NewFilePrinterFromConfig(out io.Writer, opts ...uc.Copier) (*FilePrinter, *Traversor) {
 	fp := &FilePrinter{
 		buff:      newBuffer(),
 		formatter: NewFormatter(opts...),
@@ -536,7 +456,9 @@ func NewFilePrinterFromConfig(out io.Writer, opts ...uc.Copier) *FilePrinter {
 		fp.out = os.Stdout
 	}
 
-	return fp
+	trav := newTraversor(fp.formatter, fp.buff)
+
+	return fp, trav
 }
 
 // Update updates the FilePrinter by writing the buffer to the file.

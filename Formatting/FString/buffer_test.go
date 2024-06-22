@@ -19,11 +19,9 @@ func (m *MockElement) FString(trav *Traversor, opts ...Option) error {
 }
 
 func TestBufferIndent(t *testing.T) {
-	p := NewStdPrinter(
+	p, trav := NewStdPrinter(
 		NewFormatter(NewIndentConfig("   ", 1)),
 	)
-
-	trav := p.TraversorOf()
 
 	err := trav.AddJoinedLine(" ", "\t", "a", "\t", "b", "c")
 	if err != nil {
