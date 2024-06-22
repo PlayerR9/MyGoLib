@@ -13,7 +13,7 @@ require (
 )
 
 require (
-	github.com/chromedp/cdproto v0.0.0-20240614221651-cc28c8fb63e7
+	github.com/chromedp/cdproto v0.0.0-20240602235142-49d0e97b7881
 	github.com/chromedp/sysutil v1.0.0 // indirect
 	github.com/eiannone/keyboard v0.0.0-20220611211555-0d226195f203
 	github.com/gdamore/tcell v1.4.0

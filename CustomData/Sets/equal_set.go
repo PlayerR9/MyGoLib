@@ -312,7 +312,7 @@ func (s *EqualSet[T]) Copy() uc.Copier {
 //
 // Returns:
 //   - []T: A slice of the elements in the set.
-func (s *EqualSet[T]) slice() []T {
+func (s *EqualSet[T]) Slice() []T {
 	return s.elems
 }
 
