@@ -3,6 +3,7 @@ package FString
 import (
 	"fmt"
 	"strings"
+	"sync"
 	"unicode/utf8"
 
 	ue "github.com/PlayerR9/MyGoLib/Units/errors"
@@ -91,6 +92,9 @@ type Traversor struct {
 
 	// form is the formatter of the traversor.
 	form FormatConfig
+
+	// mu is the mutex of the traversor.
+	mu *sync.Mutex
 }
 
 // Cleanup implements the Cleaner interface.
@@ -604,6 +608,16 @@ func (trav *Traversor) GetConfig(options ...ConfigOption) FormatConfig {
 	}
 
 	return configCopy
+}
+
+// Lock locks the traversor. Be aware of deadlocks.
+func (trav *Traversor) Lock() {
+	trav.mu.Lock()
+}
+
+// Unlock unlocks the traversor. Be aware of deadlocks.
+func (trav *Traversor) Unlock() {
+	trav.mu.Unlock()
 }
 
 //////////////////////////////////////////////////////////////

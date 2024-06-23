@@ -24,7 +24,7 @@ func FileExists(loc string) (bool, error) {
 		return true, nil
 	}
 
-	ok := errors.Is(err, os.ErrExist)
+	ok := errors.Is(err, os.ErrNotExist)
 	if ok {
 		return false, nil
 	} else {
@@ -32,7 +32,8 @@ func FileExists(loc string) (bool, error) {
 	}
 }
 
-// Create creates the file at the location.
+// Create creates the file at the location; including the directory if
+// it does not exist.
 //
 // Parameters:
 //   - loc: A string representing the path to the file to be created.
@@ -40,13 +41,14 @@ func FileExists(loc string) (bool, error) {
 //   - filePerm: The permission to set for the file.
 //
 // Returns:
+//   - *os.File: A pointer to the file that was created.
 //   - error: An error if one occurred while creating the file.
 //
 // Behaviors:
 //   - dirPerm and filePerm are optional. If 0 is provided, the default permissions
-//     are used: DP_OwnerRestrictOthers for directories and FP_OwnerRestrictOthers for files.
-//   - If the file already exists, it closes the previous file and creates a new one.
-//   - Once the file is opened, it is kept open until the FileManager is closed.
+//     are used: DP_OwnerRestrictOthers for directories and FP_OwnerRestrictOthers
+//     for files.
+//   - It doesn't create the file if it already exists.
 func Create(loc string, dirPerm, filePerm os.FileMode) (*os.File, error) {
 	dir := filepath.Dir(loc)
 
