@@ -224,7 +224,9 @@ func ApplyFormManyFunc[T any](form FormatConfig, trav *Traversor, elems []T, f F
 func MergeForm(form1, form2 FormatConfig) FormatConfig {
 	var form FormatConfig
 
-	for i := 0; i < 4; i++ {
+	size := len(form1)
+
+	for i := 0; i < size; i++ {
 		if form1[i] != nil {
 			form[i] = form1[i]
 		} else {
