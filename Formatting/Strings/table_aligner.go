@@ -38,19 +38,23 @@ func (ta *TableAligner) SetHead(head string) {
 // AddRow adds a row to the table.
 //
 // Parameters:
-//   - row: The row to add.
-func (ta *TableAligner) AddRow(row []string) {
-	ta.table = append(ta.table, row)
+//   - elems: The elements of the row.
+func (ta *TableAligner) AddRow(elems ...string) {
+	if len(elems) == 0 {
+		ta.table = append(ta.table, []string{""})
+	} else {
+		ta.table = append(ta.table, elems)
+	}
 }
 
-// AlignRow specifies a row to align.
+// AlignColumn specifies a row to align.
 //
 // Parameters:
 //   - idx: The index of the row to align.
 //
 // Behaviors:
 //   - If the index is less than 0, the function does nothing.
-func (ta *TableAligner) AlignRow(idx int) {
+func (ta *TableAligner) AlignColumn(idx int) {
 	if idx < 0 {
 		return
 	}
