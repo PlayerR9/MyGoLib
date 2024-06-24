@@ -542,8 +542,8 @@ func NewDeleteBranchContainingCmd[S uc.Enumer, T any](tn *TreeNode[S, T]) *Delet
 	return cmd
 }
 
-// PruneTreeCmd is a command that prunes the tree using the given filter.
-type PruneTreeCmd[S uc.Enumer, T any] struct {
+// PruneCmd is a command that prunes the tree using the given filter.
+type PruneCmd[S uc.Enumer, T any] struct {
 	// tree is a pointer to the tree before pruning.
 	tree *Tree[S, T]
 
@@ -555,7 +555,7 @@ type PruneTreeCmd[S uc.Enumer, T any] struct {
 }
 
 // Execute implements the Debugging.Commander interface.
-func (c *PruneTreeCmd[S, T]) Execute(data *Tree[S, T]) error {
+func (c *PruneCmd[S, T]) Execute(data *Tree[S, T]) error {
 	c.tree = data.Copy().(*Tree[S, T])
 
 	c.ok = data.Prune(c.filter)
@@ -564,7 +564,7 @@ func (c *PruneTreeCmd[S, T]) Execute(data *Tree[S, T]) error {
 }
 
 // Undo implements the Debugging.Commander interface.
-func (c *PruneTreeCmd[S, T]) Undo(data *Tree[S, T]) error {
+func (c *PruneCmd[S, T]) Undo(data *Tree[S, T]) error {
 	data.root = c.tree.root
 	data.leaves = c.tree.leaves
 	data.size = c.tree.size
@@ -573,10 +573,10 @@ func (c *PruneTreeCmd[S, T]) Undo(data *Tree[S, T]) error {
 }
 
 // Copy implements the Debugging.Commander interface.
-func (c *PruneTreeCmd[S, T]) Copy() uc.Copier {
+func (c *PruneCmd[S, T]) Copy() uc.Copier {
 	tree := c.tree.Copy().(*Tree[S, T])
 
-	cmdCopy := &PruneTreeCmd[S, T]{
+	cmdCopy := &PruneCmd[S, T]{
 		tree:   tree,
 		filter: c.filter,
 		ok:     c.ok,
@@ -585,19 +585,19 @@ func (c *PruneTreeCmd[S, T]) Copy() uc.Copier {
 	return cmdCopy
 }
 
-// NewPruneTreeCmd creates a new PruneTreeCmd.
+// NewPruneCmd creates a new PruneTreeCmd.
 //
 // Parameters:
 //   - filter: The filter to use to prune the tree.
 //
 // Returns:
-//   - *PruneTreeCmd: A pointer to the new PruneTreeCmd.
-func NewPruneTreeCmd[S uc.Enumer, T any](filter us.PredicateFilter[uc.Pair[S, T]]) *PruneTreeCmd[S, T] {
+//   - *PruneCmd: A pointer to the new PruneTreeCmd.
+func NewPruneCmd[S uc.Enumer, T any](filter us.PredicateFilter[uc.Pair[S, T]]) *PruneCmd[S, T] {
 	if filter == nil {
 		return nil
 	}
 
-	cmd := &PruneTreeCmd[S, T]{
+	cmd := &PruneCmd[S, T]{
 		filter: filter,
 	}
 
@@ -610,6 +610,6 @@ func NewPruneTreeCmd[S uc.Enumer, T any](filter us.PredicateFilter[uc.Pair[S, T]
 //
 // Returns:
 //   - bool: The value of the ok field.
-func (c *PruneTreeCmd[S, T]) GetOk() bool {
+func (c *PruneCmd[S, T]) GetOk() bool {
 	return c.ok
 }
