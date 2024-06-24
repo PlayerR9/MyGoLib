@@ -83,10 +83,12 @@ func NewCommand[T any](execute, undo func(data T) error) Commander[T] {
 		return nil
 	}
 
-	return &Command[T]{
+	cmd := &Command[T]{
 		execute: execute,
 		undo:    undo,
 	}
+
+	return cmd
 }
 
 // History represents a history of commands that can be executed and undone.
@@ -105,7 +107,8 @@ func (h *History[T]) Copy() uc.Copier {
 	}
 
 	for i, cmd := range h.commands {
-		hCopy.commands[i] = cmd.Copy().(Commander[T])
+		cmdCopy := cmd.Copy().(Commander[T])
+		hCopy.commands[i] = cmdCopy
 	}
 
 	return hCopy
@@ -143,11 +146,11 @@ func (h *History[T]) ExecuteCommand(cmd Commander[T]) error {
 	}
 
 	err := cmd.Execute(h.data)
+	h.commands = append(h.commands, cmd)
+
 	if err != nil {
 		return err
 	}
-
-	h.commands = append(h.commands, cmd)
 
 	return nil
 }
@@ -165,13 +168,11 @@ func (h *History[T]) UndoLastCommand() error {
 	}
 
 	lc := h.commands[len(h.commands)-1]
-
 	err := lc.Undo(h.data)
+	h.commands = h.commands[:len(h.commands)-1]
 	if err != nil {
 		return err
 	}
-
-	h.commands = h.commands[:len(h.commands)-1]
 
 	return nil
 }
