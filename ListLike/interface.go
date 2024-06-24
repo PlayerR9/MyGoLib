@@ -44,6 +44,12 @@ type ListLike[T any] interface {
 	// It is useful for cleaning up the list and removing any empty or nil elements.
 	CutNilValues()
 
+	// Slice is a method that returns a slice of the elements in the list.
+	//
+	// Returns:
+	//  	- []T: A slice of the elements in the list.
+	Slice() []T
+
 	itr.Iterable[T]
 
 	intf.Copier

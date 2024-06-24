@@ -153,8 +153,6 @@ func (stack *ArrayStack[T]) Slice() []T {
 	slice := make([]T, len(stack.values))
 	copy(slice, stack.values)
 
-	slices.Reverse(slice)
-
 	return slice
 }
 

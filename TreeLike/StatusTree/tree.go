@@ -38,6 +38,31 @@ func (t *Tree[S, T]) FString(trav *fsp.Traversor, opts ...fsp.Option) error {
 	return nil
 }
 
+// Copy creates a deep copy of the tree.
+//
+// Returns:
+//   - uc.Copier: A deep copy of the tree.
+func (t *Tree[S, T]) Copy() uc.Copier {
+	if t.root == nil {
+		return &Tree[S, T]{
+			root:   nil,
+			leaves: make([]*TreeNode[S, T], 0),
+			size:   0,
+		}
+	}
+
+	root := t.root.Copy().(*TreeNode[S, T])
+
+	tree := &Tree[S, T]{
+		root: root,
+		size: t.size,
+	}
+
+	tree.leaves = tree.RegenerateLeaves()
+
+	return tree
+}
+
 // NewTree creates a new tree with the given root.
 //
 // Parameters:
@@ -631,10 +656,10 @@ func (tn *TreeNode[S, T]) FindBranchingPoint() (*TreeNode[S, T], *TreeNode[S, T]
 // Returns:
 //   - error: An error if the node is not a part of the tree.
 func (t *Tree[S, T]) DeleteBranchContaining(tn *TreeNode[S, T]) error {
+	root := t.root
+
 	child, parent, hasBranching := tn.FindBranchingPoint()
 	if !hasBranching {
-		root := t.root
-
 		if parent != root {
 			return NewErrNodeNotPartOfTree()
 		}

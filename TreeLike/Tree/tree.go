@@ -39,6 +39,22 @@ func (t *Tree[T]) FString(trav *fsp.Traversor, opts ...fsp.Option) error {
 	return nil
 }
 
+// Copy creates a deep copy of the tree.
+//
+// Returns:
+//   - uc.Copier: A deep copy of the tree.
+func (t *Tree[T]) Copy() uc.Copier {
+	root := t.root.Copy().(*TreeNode[T])
+
+	tree := &Tree[T]{
+		root:   root,
+		leaves: t.leaves,
+		size:   t.size,
+	}
+
+	return tree
+}
+
 // NewTree creates a new tree with the given root.
 //
 // Parameters:

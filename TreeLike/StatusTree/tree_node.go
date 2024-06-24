@@ -314,15 +314,11 @@ func (n *TreeNode[S, T]) Size() int {
 
 // GetAncestors returns all the ancestors of the node.
 //
-// Returns:
-//   - []*Node[T]: A slice of pointers to the ancestors of the node.
+// This excludes the node itself.
 //
-// Behaviors:
-//   - The ancestors are returned in the opposite order of a DFS traversal.
-//     Therefore, the first element is the parent of the node.
-func (n *TreeNode[S, T]) GetAncestors() []*TreeNode[S, T] {
-	ancestors := make([]*TreeNode[S, T], 0)
-
+// Returns:
+//   - ancestors: A slice of pointers to the ancestors of the node.
+func (n *TreeNode[S, T]) GetAncestors() (ancestors []*TreeNode[S, T]) {
 	for node := n; node.parent != nil; node = node.parent {
 		ancestors = append(ancestors, node.parent)
 	}
@@ -413,4 +409,23 @@ func (tn *TreeNode[S, T]) GetStatus() S {
 //   - parent: The parent to set.
 func (tn *TreeNode[S, T]) setParent(parent *TreeNode[S, T]) {
 	tn.parent = parent
+}
+
+// GetBranch works like GetAncestors but includes the node itself.
+//
+// The nodes are returned as a slice where [0] is the root node
+// and [len(branch)-1] is the leaf node.
+//
+// Returns:
+//   - []*TreeNode[T]: A slice of pointers to the nodes in the branch.
+func (n *TreeNode[S, T]) GetBranch() []*TreeNode[S, T] {
+	branch := []*TreeNode[S, T]{n}
+
+	for node := n; node.parent != nil; node = node.parent {
+		branch = append(branch, node.parent)
+	}
+
+	slices.Reverse(branch)
+
+	return branch
 }

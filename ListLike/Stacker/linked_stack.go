@@ -233,7 +233,6 @@ func (stack *LinkedStack[T]) CutNilValues() {
 // elements in the stack.
 //
 // Returns:
-//
 //   - []T: A slice of the elements in the stack.
 func (stack *LinkedStack[T]) Slice() []T {
 	slice := make([]T, 0, stack.size)

@@ -303,6 +303,8 @@ func (n *TreeNode[T]) Size() (size int) {
 
 // GetAncestors returns all the ancestors of the node.
 //
+// This excludes the node itself.
+//
 // Returns:
 //   - ancestors: A slice of pointers to the ancestors of the node.
 //
@@ -377,4 +379,31 @@ func (n *TreeNode[T]) removeNode() []*TreeNode[T] {
 //   - T: The data of the node.
 func (n *TreeNode[T]) GetData() T {
 	return n.Data
+}
+
+// GetBranch works like GetAncestors but includes the node itself.
+//
+// The nodes are returned as a slice where [0] is the root node
+// and [len(branch)-1] is the leaf node.
+//
+// Returns:
+//   - []*TreeNode[T]: A slice of pointers to the nodes in the branch.
+func (n *TreeNode[T]) GetBranch() []*TreeNode[T] {
+	branch := []*TreeNode[T]{n}
+
+	for node := n; node.parent != nil; node = node.parent {
+		branch = append(branch, node.parent)
+	}
+
+	slices.Reverse(branch)
+
+	return branch
+}
+
+// setParent sets the parent of the node.
+//
+// Parameters:
+//   - parent: The parent to set.
+func (n *TreeNode[T]) setParent(parent *TreeNode[T]) {
+	n.parent = parent
 }
