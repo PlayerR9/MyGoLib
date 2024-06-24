@@ -210,3 +210,8 @@ func (h *History[T]) Reject() error {
 
 	return nil
 }
+
+// GetData returns the data from the history.
+func (h *History[T]) GetData() T {
+	return h.data
+}
