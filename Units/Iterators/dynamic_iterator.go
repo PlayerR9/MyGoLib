@@ -23,12 +23,10 @@ type DynamicIterator[E, T any] struct {
 // in the collection.
 func (di *DynamicIterator[E, T]) Size() (count int) {
 	if di.iter != nil {
-		count += di.iter.Size()
+		count = di.iter.Size()
 	}
 
-	if di.source != nil {
-		count += di.source.Size()
-	}
+	count += di.source.Size()
 
 	return
 }

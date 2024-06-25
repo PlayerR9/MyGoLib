@@ -19,12 +19,10 @@ type ProceduralIterator[E Iterable[T], T any] struct {
 // in the collection.
 func (pi *ProceduralIterator[E, T]) Size() (count int) {
 	if pi.iter != nil {
-		count += pi.iter.Size()
+		count = pi.iter.Size()
 	}
 
-	if pi.source != nil {
-		count += pi.source.Size()
-	}
+	count += pi.source.Size()
 
 	return
 }
