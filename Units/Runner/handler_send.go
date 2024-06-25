@@ -4,7 +4,6 @@ import (
 	"sync"
 
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
-	ers "github.com/PlayerR9/MyGoLib/Units/errors"
 )
 
 // HandlerSend is a handler that, unlike HandlerSimple, whenever
@@ -74,7 +73,7 @@ func (h *HandlerSend[T]) ReceiveErr() (error, bool) {
 // run is a private method of HandlerSend that is runned by the Go routine.
 //
 // Behaviors:
-//   - Use ers.ErrNoError to exit the Go routine as nil is used to signal
+//   - Use uc.ErrNoError to exit the Go routine as nil is used to signal
 //     that the function has finished successfully but the Go routine is still running.
 func (h *HandlerSend[T]) run() {
 	defer h.wg.Done()
@@ -83,7 +82,7 @@ func (h *HandlerSend[T]) run() {
 		r := recover()
 
 		if r != nil {
-			h.errChan <- ers.NewErrPanic(r)
+			h.errChan <- uc.NewErrPanic(r)
 		}
 
 		h.clean()
@@ -95,7 +94,7 @@ func (h *HandlerSend[T]) run() {
 			continue
 		}
 
-		ok := ers.Is[*ers.ErrNoError](err)
+		ok := uc.Is[*uc.ErrNoError](err)
 		if ok {
 			return
 		}
@@ -114,7 +113,7 @@ func (h *HandlerSend[T]) run() {
 //
 // Behaviors:
 //   - The Go routine is not started automatically.
-//   - In routine, use *ers.ErrNoError to exit the Go routine as nil is used to signal
+//   - In routine, use *uc.ErrNoError to exit the Go routine as nil is used to signal
 //     that the function has finished successfully but the Go routine is still running.
 //   - If routine is nil, this function returns nil.
 func NewHandlerSend[T any](routine uc.ErrorIfFunc[T]) *HandlerSend[T] {

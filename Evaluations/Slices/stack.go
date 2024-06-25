@@ -3,7 +3,6 @@ package Slices
 import (
 	lls "github.com/PlayerR9/MyGoLib/ListLike/Stacker"
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
-	ue "github.com/PlayerR9/MyGoLib/Units/errors"
 )
 
 // Laster is an interface for a stack of elements.
@@ -85,9 +84,9 @@ type StackEvaluator[T any, E Laster[T]] struct {
 //     will return nil.
 func NewStackEvaluator[T any, E Laster[T]](eval uc.EvalOneFunc[T, bool], nexts NextsFunc[T]) (*StackEvaluator[T, E], error) {
 	if eval == nil {
-		return nil, ue.NewErrNilParameter("eval")
+		return nil, uc.NewErrNilParameter("eval")
 	} else if nexts == nil {
-		return nil, ue.NewErrNilParameter("nexts")
+		return nil, uc.NewErrNilParameter("nexts")
 	}
 
 	return &StackEvaluator[T, E]{

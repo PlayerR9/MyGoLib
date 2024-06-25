@@ -2,7 +2,7 @@ package SiteNavigator
 
 import (
 	lls "github.com/PlayerR9/MyGoLib/ListLike/Stacker"
-	ue "github.com/PlayerR9/MyGoLib/Units/errors"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
 	us "github.com/PlayerR9/MyGoLib/Units/slice"
 	"golang.org/x/net/html"
 )
@@ -84,7 +84,7 @@ func FilterTextNode(checkFirstChild bool) FilterErrFunc {
 //   - list has at least one element.
 //   - filter is not nil.
 func filterValidNodes(list []*html.Node, filter FilterErrFunc) ([]*html.Node, error) {
-	var el ue.ErrOrSol[*html.Node]
+	var el uc.ErrOrSol[*html.Node]
 
 	for i := 0; i < len(list); i++ {
 		err := filter(list[i])
@@ -120,7 +120,7 @@ func FilterValidNodes(list []*html.Node, filters []FilterErrFunc) ([]*html.Node,
 		return list, nil
 	}
 
-	var el ue.ErrOrSol[*html.Node]
+	var el uc.ErrOrSol[*html.Node]
 
 	for level, filter := range filters {
 		if len(list) == 0 {
@@ -172,7 +172,7 @@ type NodeListParser[T any] func(list []*html.Node) (T, error)
 func CreateExtractor[T any](parse NodeListParser[T], filters ...FilterErrFunc) NodeListParser[T] {
 	if parse == nil {
 		return func(list []*html.Node) (T, error) {
-			return *new(T), ue.NewErrNilParameter("parse")
+			return *new(T), uc.NewErrNilParameter("parse")
 		}
 	}
 
@@ -293,7 +293,7 @@ func GenericTreeExtraction(search *SearchCriteria, action ActionType) GTEFunc {
 func CEWithSearch[T any](search *SearchCriteria, action ActionType, parse NodeListParser[T], filters ...FilterErrFunc) NodeListParser[T] {
 	if parse == nil {
 		return func(list []*html.Node) (T, error) {
-			return *new(T), ue.NewErrNilParameter("parse")
+			return *new(T), uc.NewErrNilParameter("parse")
 		}
 	}
 
@@ -307,7 +307,7 @@ func CEWithSearch[T any](search *SearchCriteria, action ActionType, parse NodeLi
 
 		S := lls.NewArrayStack(list...)
 
-		var el ue.ErrOrSol[*html.Node]
+		var el uc.ErrOrSol[*html.Node]
 
 		for {
 			node, ok := S.Pop()
@@ -341,6 +341,6 @@ func CEWithSearch[T any](search *SearchCriteria, action ActionType, parse NodeLi
 
 		errList := el.GetErrors()
 
-		return *new(T), ue.NewErrPossibleError(NewErrNoNodesFound(), errList[0])
+		return *new(T), uc.NewErrPossibleError(NewErrNoNodesFound(), errList[0])
 	}
 }

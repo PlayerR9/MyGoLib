@@ -1,7 +1,6 @@
 package Slices
 
 import (
-	ui "github.com/PlayerR9/MyGoLib/Units/Iterators"
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
 )
 
@@ -39,7 +38,7 @@ type LeafEvaluater[A, T, E, R any] interface {
 	//   - error: An error if the evaluation fails (reserved for panic-level of critical errors).
 	Next(pair *uc.Pair[R, error], branch T) ([]T, error)
 
-	ui.Iterable[E]
+	uc.Iterable[E]
 }
 
 // LeafEvaluable is an interface that represents a leaf evaluable.

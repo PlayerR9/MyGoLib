@@ -5,7 +5,6 @@ import (
 	"unicode/utf8"
 
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
-	ue "github.com/PlayerR9/MyGoLib/Units/errors"
 )
 
 // TextSplit represents a split text with a maximum width and height.
@@ -63,20 +62,20 @@ func (ts *TextSplit) GetRunes() [][]rune {
 //
 // Returns:
 //   - *TextSplit: A pointer to the newly created TextSplit.
-//   - error: An error of type *ue.ErrInvalidParameter if the maxWidth or
+//   - error: An error of type *uc.ErrInvalidParameter if the maxWidth or
 //     maxHeight is less than 0.
 func NewTextSplit(maxWidth, maxHeight int) (*TextSplit, error) {
 	if maxWidth < 0 {
-		return nil, ue.NewErrInvalidParameter(
+		return nil, uc.NewErrInvalidParameter(
 			"maxWidth",
-			ue.NewErrGTE(0),
+			uc.NewErrGTE(0),
 		)
 	}
 
 	if maxHeight < 0 {
-		return nil, ue.NewErrInvalidParameter(
+		return nil, uc.NewErrInvalidParameter(
 			"maxHeight",
-			ue.NewErrGTE(0),
+			uc.NewErrGTE(0),
 		)
 	}
 

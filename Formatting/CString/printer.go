@@ -1,7 +1,7 @@
 package CString
 
 import (
-	ue "github.com/PlayerR9/MyGoLib/Units/errors"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
 	"github.com/gdamore/tcell"
 )
 
@@ -77,7 +77,7 @@ func (p *Printer) GetTraversor() *Traversor {
 //   - If the element is nil, the function does nothing.
 func Apply[T CStringer](p *Printer, elem T) error {
 	if p == nil {
-		return ue.NewErrNilParameter("p")
+		return uc.NewErrNilParameter("p")
 	}
 
 	trav := newTraversor(p.formatter, p.buff)
@@ -114,13 +114,13 @@ func ApplyMany[T CStringer](p *Printer, elems []T) error {
 	}
 
 	if p == nil {
-		return ue.NewErrNilParameter("p")
+		return uc.NewErrNilParameter("p")
 	}
 
 	for i, elem := range elems {
 		err := elem.CString(newTraversor(p.formatter, p.buff))
 		if err != nil {
-			return ue.NewErrAt(i+1, "CStringer element", err)
+			return uc.NewErrAt(i+1, "CStringer element", err)
 		}
 	}
 
@@ -142,7 +142,7 @@ func ApplyMany[T CStringer](p *Printer, elems []T) error {
 //   - any error returned by the function.
 func ApplyFunc[T any](p *Printer, elem T, f CStringFunc[T]) error {
 	if p == nil {
-		return ue.NewErrNilParameter("p")
+		return uc.NewErrNilParameter("p")
 	}
 
 	trav := newTraversor(p.formatter, p.buff)
@@ -175,13 +175,13 @@ func ApplyFuncMany[T any](p *Printer, f CStringFunc[T], elems []T) error {
 	}
 
 	if p == nil {
-		return ue.NewErrNilParameter("p")
+		return uc.NewErrNilParameter("p")
 	}
 
 	for i, elem := range elems {
 		err := f(newTraversor(p.formatter, p.buff), elem)
 		if err != nil {
-			return ue.NewErrAt(i+1, "element", err)
+			return uc.NewErrAt(i+1, "element", err)
 		}
 	}
 

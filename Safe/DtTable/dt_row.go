@@ -4,7 +4,7 @@ import (
 	"errors"
 	"sync"
 
-	ers "github.com/PlayerR9/MyGoLib/Units/errors"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
 )
 
 // DtRow represents a row in a data table.
@@ -27,11 +27,11 @@ type DtRow struct {
 //
 // Returns:
 //   - *DtRow: A pointer to the new DtRow.
-//   - error: An error of type *ers.ErrInvalidParameter if the width
+//   - error: An error of type *uc.ErrInvalidParameter if the width
 //     is less than 0.
 func NewDtRow(width int) (*DtRow, error) {
 	if width < 0 {
-		return nil, ers.NewErrInvalidParameter(
+		return nil, uc.NewErrInvalidParameter(
 			"width",
 			errors.New("value must be non-negative"),
 		)
@@ -61,16 +61,16 @@ func (r *DtRow) GetWidth() int {
 //   - x: The x-coordinate of the cell.
 //
 // Returns:
-//   - error: An error of type *ers.ErrInvalidParameter if the index
+//   - error: An error of type *uc.ErrInvalidParameter if the index
 //     is out of bounds.
 func (r *DtRow) SetCell(cell *DtCell, x int) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
 	if x < 0 || x >= r.width {
-		return ers.NewErrInvalidParameter(
+		return uc.NewErrInvalidParameter(
 			"x",
-			ers.NewErrOutOfBounds(x, 0, r.width),
+			uc.NewErrOutOfBounds(x, 0, r.width),
 		)
 	}
 
@@ -86,16 +86,16 @@ func (r *DtRow) SetCell(cell *DtCell, x int) error {
 //   - from: The index to start setting the cells.
 //
 // Returns:
-//   - error: An error of type *ers.ErrInvalidParameter if cells
+//   - error: An error of type *uc.ErrInvalidParameter if cells
 //     cannot be set at the given index.
 func (r *DtRow) SetCells(cells []*DtCell, from int) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
 	if from < 0 || from+len(cells) > r.width {
-		return ers.NewErrInvalidParameter(
+		return uc.NewErrInvalidParameter(
 			"from",
-			ers.NewErrOutOfBounds(from, 0, r.width-len(cells)),
+			uc.NewErrOutOfBounds(from, 0, r.width-len(cells)),
 		)
 	}
 
@@ -143,14 +143,14 @@ func (r *DtRow) GetCellAt(x int) *DtCell {
 //   - newWidth: The new width of the row.
 //
 // Returns:
-//   - error: An error of type *ers.ErrInvalidParameter if the new width
+//   - error: An error of type *uc.ErrInvalidParameter if the new width
 //     is less than 0.
 func (r *DtRow) Resize(newWidth int) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
 	if newWidth < 0 {
-		return ers.NewErrInvalidParameter(
+		return uc.NewErrInvalidParameter(
 			"newWidth",
 			errors.New("value must be greater than 0"),
 		)

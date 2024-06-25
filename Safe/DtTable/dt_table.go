@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	rws "github.com/PlayerR9/MyGoLib/Safe/RWSafe"
-	ers "github.com/PlayerR9/MyGoLib/Units/errors"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
 )
 
 // DtTable represents a table of cells.
@@ -61,20 +61,20 @@ func (dt *DtTable) GetHeight() int {
 //   - cell: The cell to set.
 //
 // Returns:
-//   - error: An error of type *ers.ErrInvalidParameter if x and y are out of bounds.
+//   - error: An error of type *uc.ErrInvalidParameter if x and y are out of bounds.
 func (dt *DtTable) SetCellAt(x, y int, cell *DtCell) error {
 	height := dt.height.Get()
 	width := dt.width.Get()
 
 	if y < 0 || y >= height {
-		return ers.NewErrInvalidParameter(
+		return uc.NewErrInvalidParameter(
 			"y",
-			ers.NewErrOutOfBounds(y, 0, height),
+			uc.NewErrOutOfBounds(y, 0, height),
 		)
 	} else if x < 0 || x >= width {
-		return ers.NewErrInvalidParameter(
+		return uc.NewErrInvalidParameter(
 			"x",
-			ers.NewErrOutOfBounds(x, 0, width),
+			uc.NewErrOutOfBounds(x, 0, width),
 		)
 	}
 
@@ -94,16 +94,16 @@ func (dt *DtTable) SetCellAt(x, y int, cell *DtCell) error {
 //
 // Returns:
 //   - *DtTable: A pointer to the new table.
-//   - error: An error of type *ers.ErrInvalidParameter if height or
+//   - error: An error of type *uc.ErrInvalidParameter if height or
 //     width is less than 0.
 func NewDtTable(height, width int) (*DtTable, error) {
 	if height < 0 {
-		return nil, ers.NewErrInvalidParameter(
+		return nil, uc.NewErrInvalidParameter(
 			"height",
 			errors.New("value must be non-negative"),
 		)
 	} else if width < 0 {
-		return nil, ers.NewErrInvalidParameter(
+		return nil, uc.NewErrInvalidParameter(
 			"width",
 			errors.New("value must be non-negative"),
 		)
@@ -216,10 +216,10 @@ func TransformIntoTable(highlights []DtCell) (*DtTable, error) {
 //   - newHeight: The new height of the table.
 //
 // Returns:
-//   - error: An error of type *ers.ErrInvalidParameter if newHeight is less than 0.
+//   - error: An error of type *uc.ErrInvalidParameter if newHeight is less than 0.
 func (dt *DtTable) ResizeHeight(newHeight int) error {
 	if newHeight < 0 {
-		return ers.NewErrInvalidParameter(
+		return uc.NewErrInvalidParameter(
 			"newHeight",
 			errors.New("value must be non-negative"),
 		)
@@ -257,10 +257,10 @@ func (dt *DtTable) ResizeHeight(newHeight int) error {
 //   - newWidth: The new width of the table.
 //
 // Returns:
-//   - error: An error of type *ers.ErrInvalidParameter if newWidth is less than 0.
+//   - error: An error of type *uc.ErrInvalidParameter if newWidth is less than 0.
 func (dt *DtTable) ResizeWidth(newWidth int) error {
 	if newWidth < 0 {
-		return ers.NewErrInvalidParameter(
+		return uc.NewErrInvalidParameter(
 			"newWidth",
 			errors.New("value must be non-negative"),
 		)

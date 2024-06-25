@@ -1,6 +1,8 @@
 package Tree
 
 import (
+	"errors"
+
 	ud "github.com/PlayerR9/MyGoLib/Units/Debugging"
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
 	us "github.com/PlayerR9/MyGoLib/Units/slice"
@@ -612,4 +614,119 @@ func NewPruneTreeCmd[T any](filter us.PredicateFilter[T]) *PruneTreeCmd[T] {
 //   - bool: The value of the ok field.
 func (c *PruneTreeCmd[T]) GetOk() bool {
 	return c.ok
+}
+
+// ExtractBranchCmd is a command that extracts the branch containing the
+// given node.
+type ExtractBranchCmd[T any] struct {
+	// leaf is a pointer to the leaf to extract the branch from.
+	leaf *TreeNode[T]
+
+	// branch is a pointer to the branch extracted.
+	branch *Branch[T]
+}
+
+// Execute implements the Debugging.Commander interface.
+func (c *ExtractBranchCmd[T]) Execute(data *Tree[T]) error {
+	c.branch = data.ExtractBranch(c.leaf, true)
+
+	return nil
+}
+
+// Undo implements the Debugging.Commander interface.
+func (c *ExtractBranchCmd[T]) Undo(data *Tree[T]) error {
+	return nil
+}
+
+// Copy implements the Debugging.Commander interface.
+func (c *ExtractBranchCmd[T]) Copy() uc.Copier {
+	leafCopy := c.leaf.Copy().(*TreeNode[T])
+	branchCopy := c.branch.Copy().(*Branch[T])
+
+	cmdCopy := &ExtractBranchCmd[T]{
+		leaf:   leafCopy,
+		branch: branchCopy,
+	}
+
+	return cmdCopy
+}
+
+// NewExtractBranchCmd creates a new ExtractBranchCmd.
+//
+// Parameters:
+//   - leaf: The leaf to extract the branch from.
+//
+// Returns:
+//   - *ExtractBranchCmd: A pointer to the new ExtractBranchCmd.
+func NewExtractBranchCmd[T any](leaf *TreeNode[T]) *ExtractBranchCmd[T] {
+	cmd := &ExtractBranchCmd[T]{
+		leaf: leaf,
+	}
+	return cmd
+}
+
+// InsertBranchCmd is a command that inserts a branch into the tree.
+type InsertBranchCmd[T any] struct {
+	// branch is a pointer to the branch to insert.
+	branch *Branch[T]
+
+	// hasError is true if an error occurred during execution, false otherwise.
+	hasError bool
+}
+
+// Execute implements the Debugging.Commander interface.
+func (c *InsertBranchCmd[T]) Execute(data *Tree[T]) error {
+	ok := data.InsertBranch(c.branch)
+	if !ok {
+		c.hasError = true
+	}
+
+	return nil
+}
+
+// Undo implements the Debugging.Commander interface.
+func (c *InsertBranchCmd[T]) Undo(data *Tree[T]) error {
+	err := data.DeleteBranchContaining(c.branch.fromNode)
+	if err != nil {
+		if c.hasError {
+			return nil
+		}
+
+		return err
+	} else if c.hasError {
+		return errors.New("error occurred during execution")
+	}
+
+	return nil
+}
+
+// Copy implements the Debugging.Commander interface.
+func (c *InsertBranchCmd[T]) Copy() uc.Copier {
+	branchCopy := c.branch.Copy().(*Branch[T])
+
+	cmdCopy := &InsertBranchCmd[T]{
+		branch:   branchCopy,
+		hasError: c.hasError,
+	}
+
+	return cmdCopy
+}
+
+// NewInsertBranchCmd creates a new InsertBranchCmd.
+//
+// Parameters:
+//   - branch: The branch to insert.
+//
+// Returns:
+//   - *InsertBranchCmd: A pointer to the new InsertBranchCmd.
+func NewInsertBranchCmd[T any](branch *Branch[T]) *InsertBranchCmd[T] {
+	if branch == nil {
+		return nil
+	}
+
+	cmd := &InsertBranchCmd[T]{
+		branch: branch,
+	}
+
+	return cmd
 }

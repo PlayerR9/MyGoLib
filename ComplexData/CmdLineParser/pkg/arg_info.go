@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
-	ue "github.com/PlayerR9/MyGoLib/Units/errors"
 	us "github.com/PlayerR9/MyGoLib/Units/slice"
 )
 
@@ -171,9 +170,9 @@ func checkArgumentFormat(format string) ([2]int, error) {
 
 func NewArgument(format string, fn ArgumentParserFunc) (*ArgInfo, error) {
 	if format == "" {
-		return nil, ue.NewErrInvalidParameter(
+		return nil, uc.NewErrInvalidParameter(
 			"format",
-			ue.NewErrEmpty(format),
+			uc.NewErrEmpty(format),
 		)
 	}
 
@@ -249,7 +248,7 @@ func (a *ArgInfo) Parse(args []string) ([]*resultArg, error) {
 
 	solutions, ok := us.EvaluateSimpleHelpers(subslices, f)
 	if !ok {
-		return nil, ue.NewErrPossibleError(errors.New("no valid arguments"), solutions[0].GetData().Second)
+		return nil, uc.NewErrPossibleError(errors.New("no valid arguments"), solutions[0].GetData().Second)
 	}
 
 	return us.ExtractResults(solutions), nil

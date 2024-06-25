@@ -5,7 +5,6 @@ import (
 
 	ut "github.com/PlayerR9/MyGoLib/Units/Tray"
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
-	ue "github.com/PlayerR9/MyGoLib/Units/errors"
 )
 
 // FSM is a struct that represents a finite state machine.
@@ -40,7 +39,7 @@ type FSM[I any, S any, R any, E uc.Enumer] struct {
 //   - error: An error if the function fails.
 func (fsm *FSM[I, S, R, E]) Run(inputStream ut.Trayable[I]) ([]R, error) {
 	if inputStream == nil {
-		return nil, ue.NewErrNilParameter("inputStream")
+		return nil, uc.NewErrNilParameter("inputStream")
 	}
 
 	var solution []R

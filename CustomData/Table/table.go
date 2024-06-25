@@ -1,8 +1,7 @@
 package Table
 
 import (
-	ll "github.com/PlayerR9/MyGoLib/Units/Iterators"
-	ers "github.com/PlayerR9/MyGoLib/Units/errors"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
 )
 
 // Table[T] represents a table of cells that can be drawn to the screen.
@@ -23,15 +22,15 @@ type Table[T any] struct {
 // as if it were an array of elements of type T.
 //
 // Returns:
-//   - ll.Iterater[T]: An iterator for the table.
+//   - uc.Iterater[T]: An iterator for the table.
 //
 // Behaviors:
 //   - For efficiency, the iterator is procedural. It is not a generator.
-func (t *Table[T]) Iterator() ll.Iterater[T] {
-	iter := ll.NewDynamicIterator(
-		ll.NewSimpleIterator(t.table),
-		func(row []T) ll.Iterater[T] {
-			return ll.NewSimpleIterator(row)
+func (t *Table[T]) Iterator() uc.Iterater[T] {
+	iter := uc.NewDynamicIterator(
+		uc.NewSimpleIterator(t.table),
+		func(row []T) uc.Iterater[T] {
+			return uc.NewSimpleIterator(row)
 		},
 	)
 
@@ -214,10 +213,10 @@ func (dt *Table[T]) GetFullTable() [][]T {
 //   - x: The x-coordinate to check.
 //
 // Returns:
-//   - error: An error of type *ers.ErrOutOfBounds if the x-coordinate is out of bounds.
+//   - error: An error of type *uc.ErrOutOfBounds if the x-coordinate is out of bounds.
 func (dt *Table[T]) IsXInBounds(x int) error {
 	if x < 0 || x >= dt.width {
-		return ers.NewErrOutOfBounds(x, 0, dt.width)
+		return uc.NewErrOutOfBounds(x, 0, dt.width)
 	} else {
 		return nil
 	}
@@ -229,10 +228,10 @@ func (dt *Table[T]) IsXInBounds(x int) error {
 //   - y: The y-coordinate to check.
 //
 // Returns:
-//   - error: An error of type *ers.ErrOutOfBounds if the y-coordinate is out of bounds.
+//   - error: An error of type *uc.ErrOutOfBounds if the y-coordinate is out of bounds.
 func (dt *Table[T]) IsYInBounds(y int) error {
 	if y < 0 || y >= dt.height {
-		return ers.NewErrOutOfBounds(y, 0, dt.height)
+		return uc.NewErrOutOfBounds(y, 0, dt.height)
 	} else {
 		return nil
 	}

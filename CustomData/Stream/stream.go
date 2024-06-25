@@ -1,8 +1,7 @@
 package Stream
 
 import (
-	ll "github.com/PlayerR9/MyGoLib/Units/Iterators"
-	ers "github.com/PlayerR9/MyGoLib/Units/errors"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
 )
 
 // Stream is a stream of items.
@@ -21,9 +20,9 @@ type Stream[T any] struct {
 // Iterator returns an iterator for the stream.
 //
 // Returns:
-//   - ll.Iterater[T]: An iterator for the stream.
-func (s *Stream[T]) Iterator() ll.Iterater[T] {
-	return ll.NewSimpleIterator(s.items)
+//   - uc.Iterater[T]: An iterator for the stream.
+func (s *Stream[T]) Iterator() uc.Iterater[T] {
+	return uc.NewSimpleIterator(s.items)
 }
 
 // NewStream creates a new stream with the given items.
@@ -77,9 +76,9 @@ func (s *Stream[T]) IsEmpty() bool {
 //   - Use qty -1 to get all items from 'from' to the end of the stream.
 func (s *Stream[T]) Get(from int, qty int) ([]T, error) {
 	if from < 0 {
-		return nil, ers.NewErrInvalidParameter("from", ers.NewErrGTE(0))
+		return nil, uc.NewErrInvalidParameter("from", uc.NewErrGTE(0))
 	} else if qty < -1 {
-		return nil, ers.NewErrInvalidParameter("qty", ers.NewErrGTE(-1))
+		return nil, uc.NewErrInvalidParameter("qty", uc.NewErrGTE(-1))
 	}
 
 	if qty == 0 {
@@ -105,11 +104,11 @@ func (s *Stream[T]) Get(from int, qty int) ([]T, error) {
 //   - error: An error if the index is negative or out of bounds.
 func (s *Stream[T]) GetOne(index int) (T, error) {
 	if index < 0 {
-		return *new(T), ers.NewErrInvalidParameter("index", ers.NewErrGTE(0))
+		return *new(T), uc.NewErrInvalidParameter("index", uc.NewErrGTE(0))
 	}
 
 	if index >= s.size {
-		return *new(T), ers.NewErrInvalidParameter("index", ers.NewErrLT(s.size))
+		return *new(T), uc.NewErrInvalidParameter("index", uc.NewErrLT(s.size))
 	}
 
 	return s.items[index], nil

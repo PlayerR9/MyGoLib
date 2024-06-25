@@ -4,7 +4,6 @@ import (
 	"slices"
 
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
-	ers "github.com/PlayerR9/MyGoLib/Units/errors"
 )
 
 // SimpleTray is a struct that represents a tape.
@@ -105,7 +104,7 @@ func (t *SimpleTray[T]) Move(n int) int {
 // Write implements the Trayer interface.
 func (t *SimpleTray[T]) Write(elem T) error {
 	if len(t.tape) == 0 {
-		return ers.NewErrEmpty(t)
+		return uc.NewErrEmpty(t)
 	}
 
 	t.tape[t.arrow] = elem
@@ -116,7 +115,7 @@ func (t *SimpleTray[T]) Write(elem T) error {
 // Read implements the Trayer interface.
 func (t *SimpleTray[T]) Read() (T, error) {
 	if len(t.tape) == 0 {
-		return *new(T), ers.NewErrEmpty(t)
+		return *new(T), uc.NewErrEmpty(t)
 	}
 
 	return t.tape[t.arrow], nil
@@ -284,7 +283,7 @@ func (t *SimpleTray[T]) Backup() *TrayBackup[T] {
 // Restore implements the Trayer interface.
 func (t *SimpleTray[T]) Restore(backup *TrayBackup[T]) error {
 	if backup == nil {
-		return ers.NewErrNilParameter("backup")
+		return uc.NewErrNilParameter("backup")
 	}
 
 	t.tape = backup.tape

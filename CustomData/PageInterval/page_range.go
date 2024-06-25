@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	ffs "github.com/PlayerR9/MyGoLib/Formatting/FString"
-	itf "github.com/PlayerR9/MyGoLib/Units/Iterators"
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
 )
 
@@ -83,9 +82,9 @@ func (pr *PageRange) String() string {
 // Iterator returns an iterator that iterates over the pages in the interval.
 //
 // Returns:
-//   - itf.Iterater[int]: The iterator that iterates over the pages in the interval.
-func (pr *PageRange) Iterator() itf.Iterater[int] {
-	var builder itf.Builder[int]
+//   - uc.Iterater[int]: The iterator that iterates over the pages in the interval.
+func (pr *PageRange) Iterator() uc.Iterater[int] {
+	var builder uc.Builder[int]
 
 	for page := pr.First; page <= pr.Second; page++ {
 		builder.Add(page)

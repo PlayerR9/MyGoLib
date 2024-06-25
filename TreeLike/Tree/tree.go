@@ -1,6 +1,8 @@
 package Tree
 
 import (
+	"slices"
+
 	fsp "github.com/PlayerR9/MyGoLib/Formatting/FString"
 	"github.com/PlayerR9/MyGoLib/ListLike/Queuer"
 	"github.com/PlayerR9/MyGoLib/ListLike/Stacker"
@@ -44,18 +46,31 @@ func (t *Tree[T]) FString(trav *fsp.Traversor, opts ...fsp.Option) error {
 // Returns:
 //   - uc.Copier: A deep copy of the tree.
 func (t *Tree[T]) Copy() uc.Copier {
-	root := t.root.Copy().(*TreeNode[T])
+	root := t.root
 
-	tree := &Tree[T]{
-		root:   root,
-		leaves: t.leaves,
-		size:   t.size,
+	var tree *Tree[T]
+
+	if root == nil {
+		tree = &Tree[T]{
+			root:   nil,
+			leaves: nil,
+			size:   0,
+		}
+	} else {
+		rootCopy := root.Copy().(*TreeNode[T])
+		leaves := rootCopy.Leaves()
+
+		tree = &Tree[T]{
+			root:   rootCopy,
+			leaves: leaves,
+			size:   t.size,
+		}
 	}
 
 	return tree
 }
 
-// NewTree creates a new tree with the given root.
+// NewTree creates a new tree with the given value as the root.
 //
 // Parameters:
 //   - data: The value of the root.
@@ -99,8 +114,10 @@ func (t *Tree[T]) SetChildren(children []*Tree[T]) error {
 	for _, child := range children {
 		leaves = append(leaves, child.leaves...)
 		t.size += child.Size()
-		child.root.parent = root
-		subchildren = append(subchildren, child.root)
+
+		croot := child.root
+		croot.setParent(root)
+		subchildren = append(subchildren, croot)
 	}
 
 	root.children = subchildren
@@ -413,6 +430,87 @@ func (t *Tree[T]) PruneBranches(filter us.PredicateFilter[T]) bool {
 	return false
 }
 
+// SearchNodes searches for the first node that satisfies the given filter in a BFS order.
+//
+// Parameters:
+//   - f: The filter to apply.
+//
+// Returns:
+//   - *treeNode[T]: A pointer to the node that satisfies the filter.
+func (t *Tree[T]) SearchNodes(f us.PredicateFilter[T]) *TreeNode[T] {
+	root := t.root
+
+	Q := Queuer.NewLinkedQueue(root)
+
+	for {
+		first, ok := Q.Dequeue()
+		if !ok {
+			break
+		}
+
+		ok = f(first.Data)
+		if ok {
+			return first
+		}
+
+		for _, child := range first.children {
+			Q.Enqueue(child)
+		}
+	}
+
+	return nil
+}
+
+// DeleteBranchContaining deletes the branch containing the given node.
+//
+// Parameters:
+//   - tn: The node to delete.
+//
+// Returns:
+//   - error: An error if the node is not a part of the tree.
+func (t *Tree[T]) DeleteBranchContaining(tn *TreeNode[T]) error {
+	root := t.root
+
+	child, parent, hasBranching := tn.FindBranchingPoint()
+	if !hasBranching {
+		if parent != root {
+			return NewErrNodeNotPartOfTree()
+		}
+
+		t.Cleanup()
+	}
+
+	children := parent.DeleteChild(child)
+
+	for _, child := range children {
+		recCleanup(child)
+	}
+
+	t.leaves = t.RegenerateLeaves()
+
+	return nil
+}
+
+// PruneTree prunes the tree using the given filter.
+//
+// Parameters:
+//   - filter: The filter to use to prune the tree.
+//
+// Returns:
+//   - bool: True if no nodes were pruned, false otherwise.
+func (t *Tree[T]) Prune(filter us.PredicateFilter[T]) bool {
+	for t.Size() != 0 {
+		target := t.SearchNodes(filter)
+		if target == nil {
+			return true
+		}
+
+		t.DeleteBranchContaining(target)
+	}
+
+	return false
+}
+
 // SkipFunc removes all the children of the tree that satisfy the given filter
 // without removing any of their children. Useful for removing unwanted nodes from the tree.
 //
@@ -559,67 +657,6 @@ func (t *Tree[T]) ProcessLeaves(f uc.EvalManyFunc[T, T]) error {
 	return nil
 }
 
-// SearchNodes searches for the first node that satisfies the given filter in a BFS order.
-//
-// Parameters:
-//   - f: The filter to apply.
-//
-// Returns:
-//   - *treeNode[T]: A pointer to the node that satisfies the filter.
-func (t *Tree[T]) SearchNodes(f us.PredicateFilter[T]) *TreeNode[T] {
-	root := t.root
-
-	Q := Queuer.NewLinkedQueue(root)
-
-	for {
-		first, ok := Q.Dequeue()
-		if !ok {
-			break
-		}
-
-		ok = f(first.Data)
-		if ok {
-			return first
-		}
-
-		for _, child := range first.children {
-			Q.Enqueue(child)
-		}
-	}
-
-	return nil
-}
-
-// DeleteBranchContaining deletes the branch containing the given node.
-//
-// Parameters:
-//   - tn: The node to delete.
-//
-// Returns:
-//   - error: An error if the node is not a part of the tree.
-func (t *Tree[T]) DeleteBranchContaining(tn *TreeNode[T]) error {
-	root := t.root
-
-	child, parent, hasBranching := tn.FindBranchingPoint()
-	if !hasBranching {
-		if parent != root {
-			return NewErrNodeNotPartOfTree()
-		}
-
-		t.Cleanup()
-	}
-
-	children := parent.DeleteChild(child)
-
-	for _, child := range children {
-		recCleanup(child)
-	}
-
-	t.leaves = t.RegenerateLeaves()
-
-	return nil
-}
-
 // GetDirectChildren returns the direct children of the root of the tree.
 //
 // Returns:
@@ -633,22 +670,99 @@ func (t *Tree[T]) GetDirectChildren() []*TreeNode[T] {
 	return root.children
 }
 
-// PruneTree prunes the tree using the given filter.
+// ExtractBranch extracts the branch of the tree that contains the given leaf.
 //
 // Parameters:
-//   - filter: The filter to use to prune the tree.
+//   - leaf: The leaf to extract the branch from.
+//   - delete: If true, the branch is deleted from the tree.
 //
 // Returns:
-//   - bool: True if no nodes were pruned, false otherwise.
-func (t *Tree[T]) Prune(filter us.PredicateFilter[T]) bool {
-	for t.Size() != 0 {
-		target := t.SearchNodes(filter)
-		if target == nil {
-			return true
-		}
-
-		t.DeleteBranchContaining(target)
+//   - *Branch[T]: A pointer to the branch extracted. Nil if the leaf is not a part
+//     of the tree.
+func (t *Tree[T]) ExtractBranch(leaf *TreeNode[T], delete bool) *Branch[T] {
+	found := slices.Contains(t.leaves, leaf)
+	if !found {
+		return nil
 	}
 
-	return false
+	branch := leaf.GetBranch()
+
+	if !delete {
+		return branch
+	}
+
+	child, parent, ok := leaf.FindBranchingPoint()
+	if !ok {
+		parent.DeleteChild(child)
+	}
+
+	t.leaves = t.RegenerateLeaves()
+
+	return branch
+}
+
+// InsertBranch inserts the given branch into the tree.
+//
+// Parameters:
+//   - branch: The branch to insert.
+//
+// Returns:
+//   - bool: True if the branch was inserted, false otherwise.
+func (t *Tree[T]) InsertBranch(branch *Branch[T]) bool {
+	if branch == nil {
+		return true
+	}
+
+	ref := t.root
+
+	if ref == nil {
+		otherTree := branch.fromNode.ToTree()
+
+		t.root = otherTree.root
+		t.leaves = otherTree.leaves
+		t.size = otherTree.size
+
+		return true
+	}
+
+	from := branch.fromNode
+	if ref != from {
+		return false
+	}
+
+	size := branch.size - 1
+
+	for from != branch.toNode {
+		from = from.children[0]
+
+		index := slices.Index(ref.children, from)
+
+		if index == -1 {
+			break
+		}
+
+		// from is a child of the root. Keep going
+		ref = ref.children[index]
+
+		size--
+	}
+
+	if size == 0 {
+		return true
+	}
+
+	// From this point onward, anything from 'from' up to 'to' must be
+	// added in the tree as new children.
+	ref.AddChild(from)
+	leaves := from.Leaves()
+
+	if len(leaves) == 0 {
+		t.leaves = append(t.leaves, from)
+	} else {
+		t.leaves = append(t.leaves, leaves...)
+	}
+
+	t.size += size
+
+	return true
 }

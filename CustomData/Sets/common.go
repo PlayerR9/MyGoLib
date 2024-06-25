@@ -3,7 +3,6 @@ package Sets
 import (
 	"fmt"
 
-	ui "github.com/PlayerR9/MyGoLib/Units/Iterators"
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
 )
 
@@ -98,5 +97,5 @@ type Seter[T any] interface {
 
 	fmt.Stringer
 	uc.Objecter
-	ui.Slicer[T]
+	uc.Slicer[T]
 }

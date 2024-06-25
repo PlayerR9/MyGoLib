@@ -6,7 +6,7 @@ import (
 
 	pkg "github.com/PlayerR9/MyGoLib/ComplexData/CmdLineParser/pkg"
 	ffs "github.com/PlayerR9/MyGoLib/Formatting/FString"
-	ue "github.com/PlayerR9/MyGoLib/Units/errors"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
 )
 
 func generateHelpDoc(opcode string) ([]string, error) {
@@ -104,7 +104,7 @@ func generateHelpCommand(console *CmdLineParser) (*pkg.CommandInfo, error) {
 			make([]*pkg.ArgInfo, 0),
 		)
 		if err != nil {
-			return nil, ue.NewErrAt(i+1, "flag", err)
+			return nil, uc.NewErrAt(i+1, "flag", err)
 		}
 
 		flagList = append(flagList, flag)

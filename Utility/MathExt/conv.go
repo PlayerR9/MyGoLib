@@ -4,7 +4,7 @@ import (
 	"math"
 	"math/big"
 
-	ue "github.com/PlayerR9/MyGoLib/Units/errors"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
 )
 
 // IsValidNumber checks if the given number is valid for the given base.
@@ -139,7 +139,7 @@ func Add(n1, n2 []int, base int) []int {
 //   - *errors.ErrInvalidParameter: The base is less than or equal to 0.
 func Subtract(n1, n2 []int, base int) ([]int, error) {
 	if base <= 0 {
-		return nil, ue.NewErrInvalidParameter("base", ue.NewErrGT(0))
+		return nil, uc.NewErrInvalidParameter("base", uc.NewErrGT(0))
 	}
 
 	if base == 1 {
@@ -207,7 +207,7 @@ func Subtract(n1, n2 []int, base int) ([]int, error) {
 //   - *errors.ErrOutOfBounds: A digit in the number is out of bounds for the given base.
 func BaseToDec(n []int, base int) (int, error) {
 	if base <= 0 {
-		return 0, ue.NewErrInvalidParameter("base", ue.NewErrGT(0))
+		return 0, uc.NewErrInvalidParameter("base", uc.NewErrGT(0))
 	}
 
 	if base == 1 {
@@ -218,7 +218,7 @@ func BaseToDec(n []int, base int) (int, error) {
 
 	for i, digit := range n {
 		if digit < 0 || digit >= base {
-			return 0, ue.NewErrOutOfBounds(digit, 0, base)
+			return 0, uc.NewErrOutOfBounds(digit, 0, base)
 		}
 
 		result += digit * int(math.Pow(float64(base), float64(i)))

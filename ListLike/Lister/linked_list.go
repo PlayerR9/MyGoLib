@@ -4,7 +4,6 @@ import (
 	"strconv"
 	"strings"
 
-	itf "github.com/PlayerR9/MyGoLib/Units/Iterators"
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
@@ -145,9 +144,9 @@ func (list *LinkedList[T]) Capacity() int {
 //
 // Returns:
 //
-//   - itf.Iterater[T]: An iterator for the list.
-func (list *LinkedList[T]) Iterator() itf.Iterater[T] {
-	var builder itf.Builder[T]
+//   - uc.Iterater[T]: An iterator for the list.
+func (list *LinkedList[T]) Iterator() uc.Iterater[T] {
+	var builder uc.Builder[T]
 
 	for list_node := list.front; list_node != nil; list_node = list_node.Next() {
 		builder.Add(list_node.Value)
@@ -343,7 +342,7 @@ func (list *LinkedList[T]) Slice() []T {
 //
 // Returns:
 //
-//   - itf.Copier: A copy of the list.
+//   - uc.Copier: A copy of the list.
 func (list *LinkedList[T]) Copy() uc.Copier {
 	listCopy := &LinkedList[T]{
 		size: list.size,

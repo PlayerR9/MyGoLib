@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
-	ers "github.com/PlayerR9/MyGoLib/Units/errors"
 )
 
 // DownCounter represents a counter that decrements downwards until it
@@ -157,13 +156,13 @@ func (c *DownCounter) Copy() uc.Copier {
 //
 // Returns:
 //   - *DownCounter: A pointer to the new DownCounter.
-//   - error: An error of type *ers.ErrInvalidParameter if the starting count is
+//   - error: An error of type *uc.ErrInvalidParameter if the starting count is
 //     less than zero.
 func NewDownCounter(startingCount int) (*DownCounter, error) {
 	if startingCount < 0 {
-		return nil, ers.NewErrInvalidParameter(
+		return nil, uc.NewErrInvalidParameter(
 			"startingCount",
-			ers.NewErrGTE(0),
+			uc.NewErrGTE(0),
 		)
 	}
 

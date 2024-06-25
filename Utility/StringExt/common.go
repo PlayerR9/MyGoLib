@@ -1,15 +1,14 @@
 package StringExt
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"math"
+	"slices"
 	"strings"
 	"unicode/utf8"
 
-	"crypto/rand"
-	"encoding/hex"
-	"slices"
-
-	ue "github.com/PlayerR9/MyGoLib/Units/errors"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
 	us "github.com/PlayerR9/MyGoLib/Units/slice"
 	mext "github.com/PlayerR9/MyGoLib/Utility/MathExt"
 )
@@ -129,7 +128,7 @@ func ReplaceSuffix(str, suffix string) (string, bool) {
 //   - err: Any error that occurred while searching for the tokens.
 //
 // Errors:
-//   - *ue.ErrInvalidParameter: If the openingToken or closingToken is an
+//   - *uc.ErrInvalidParameter: If the openingToken or closingToken is an
 //     empty string.
 //   - *ErrTokenNotFound: If the opening or closing token is not found in the
 //     content.
@@ -147,10 +146,10 @@ func FindContentIndexes(openingToken, closingToken string, contentTokens []strin
 	result[1] = -1
 
 	if openingToken == "" {
-		err = ue.NewErrInvalidParameter("openingToken", ue.NewErrEmpty(openingToken))
+		err = uc.NewErrInvalidParameter("openingToken", uc.NewErrEmpty(openingToken))
 		return
 	} else if closingToken == "" {
-		err = ue.NewErrInvalidParameter("closingToken", ue.NewErrEmpty(closingToken))
+		err = uc.NewErrInvalidParameter("closingToken", uc.NewErrEmpty(closingToken))
 		return
 	}
 
@@ -205,7 +204,7 @@ func FindContentIndexes(openingToken, closingToken string, contentTokens []strin
 //   - error: An error if the ID cannot be generated.
 //
 // Errors:
-//   - *ue.ErrInvalidParameter: If the size is less than 1.
+//   - *uc.ErrInvalidParameter: If the size is less than 1.
 //   - Any error returned by the rand.Read function.
 //
 // Behaviors:
@@ -214,7 +213,7 @@ func FindContentIndexes(openingToken, closingToken string, contentTokens []strin
 //   - The ID is returned as a hexadecimal string.
 func GenerateID(size int) (string, error) {
 	if size < 1 {
-		return "", ue.NewErrInvalidParameter("size", ue.NewErrGT(0))
+		return "", uc.NewErrInvalidParameter("size", uc.NewErrGT(0))
 	}
 
 	b := make([]byte, size) // 128 bits
@@ -246,7 +245,7 @@ func GenerateID(size int) (string, error) {
 //     to the end of the string until the width is reached.
 func FitString(s string, width int) (string, error) {
 	if width < 0 {
-		return "", ue.NewErrInvalidParameter("width", ue.NewErrGTE(0))
+		return "", uc.NewErrInvalidParameter("width", uc.NewErrGTE(0))
 	}
 
 	len := len([]rune(s))
@@ -282,7 +281,7 @@ func FitString(s string, width int) (string, error) {
 // of lines needed to fit a given text within a specified width.
 //
 // Errors:
-//   - *ue.ErrInvalidParameter: If the width is less than or equal to 0.
+//   - *uc.ErrInvalidParameter: If the width is less than or equal to 0.
 //   - *ErrLinesGreaterThanWords: If the calculated number of lines is greater
 //     than the number of words in the text.
 //
@@ -303,9 +302,9 @@ func FitString(s string, width int) (string, error) {
 // It also returns the calculated number of lines when it errors out
 func CalculateNumberOfLines(text []string, width int) (int, error) {
 	if width <= 0 {
-		return 0, ue.NewErrInvalidParameter(
+		return 0, uc.NewErrInvalidParameter(
 			"width",
-			ue.NewErrGT(0),
+			uc.NewErrGT(0),
 		)
 	} else if len(text) == 0 {
 		return 0, nil
@@ -393,7 +392,7 @@ func CalculateNumberOfLines(text []string, width int) (int, error) {
 // equal width.
 //
 // Errors:
-//   - *ue.ErrInvalidParameter: If the input text is empty or the width is less than
+//   - *uc.ErrInvalidParameter: If the input text is empty or the width is less than
 //     or equal to 0.
 //   - *ErrLinesGreaterThanWords: If the number of lines needed to fit the text
 //     within the width is greater than the number of words in the text.
@@ -416,7 +415,7 @@ func CalculateNumberOfLines(text []string, width int) (int, error) {
 // the text within the width using the CalculateNumberOfLines function.
 func SplitInEqualSizedLines(text []string, width, height int) (*TextSplit, error) {
 	if len(text) == 0 {
-		return nil, ue.NewErrInvalidParameter("text", ue.NewErrEmpty(text))
+		return nil, uc.NewErrInvalidParameter("text", uc.NewErrEmpty(text))
 	}
 
 	if height == -1 {

@@ -4,7 +4,6 @@ import (
 	"strconv"
 	"strings"
 
-	itf "github.com/PlayerR9/MyGoLib/Units/Iterators"
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
@@ -90,10 +89,10 @@ func (queue *ArrayQueue[T]) Size() int {
 //
 // Returns:
 //
-//   - itf.Iterater[T]: An iterator that can be used to iterate over the elements
+//   - uc.Iterater[T]: An iterator that can be used to iterate over the elements
 //     in the queue.
-func (queue *ArrayQueue[T]) Iterator() itf.Iterater[T] {
-	return itf.NewSimpleIterator(queue.values)
+func (queue *ArrayQueue[T]) Iterator() uc.Iterater[T] {
+	return uc.NewSimpleIterator(queue.values)
 }
 
 // Clear is a method of the ArrayQueue type. It is used to remove aCommon the elements
@@ -150,7 +149,7 @@ func (queue *ArrayQueue[T]) Slice() []T {
 //
 // Returns:
 //
-//   - itf.Copier: A copy of the queue.
+//   - uc.Copier: A copy of the queue.
 func (queue *ArrayQueue[T]) Copy() uc.Copier {
 	queueCopy := &ArrayQueue[T]{
 		values: make([]T, len(queue.values)),

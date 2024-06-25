@@ -5,7 +5,6 @@ import (
 	"strconv"
 	"strings"
 
-	itf "github.com/PlayerR9/MyGoLib/Units/Iterators"
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
@@ -96,9 +95,9 @@ func (stack *ArrayStack[T]) Size() int {
 //
 // Returns:
 //
-//   - itf.Iterater[T]: An iterator that iterates over the elements in the stack.
-func (stack *ArrayStack[T]) Iterator() itf.Iterater[T] {
-	var builder itf.Builder[T]
+//   - uc.Iterater[T]: An iterator that iterates over the elements in the stack.
+func (stack *ArrayStack[T]) Iterator() uc.Iterater[T] {
+	var builder uc.Builder[T]
 
 	for i := len(stack.values) - 1; i >= 0; i-- {
 		builder.Add(stack.values[i])
@@ -161,7 +160,7 @@ func (stack *ArrayStack[T]) Slice() []T {
 //
 // Returns:
 //
-//   - itf.Copier: A copy of the stack.
+//   - uc.Copier: A copy of the stack.
 func (stack *ArrayStack[T]) Copy() uc.Copier {
 	stackCopy := &ArrayStack[T]{
 		values: make([]T, len(stack.values)),

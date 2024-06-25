@@ -11,7 +11,6 @@ import (
 	evalSlc "github.com/PlayerR9/MyGoLib/Evaluations/Slices"
 	ffs "github.com/PlayerR9/MyGoLib/Formatting/FString"
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
-	ue "github.com/PlayerR9/MyGoLib/Units/errors"
 	us "github.com/PlayerR9/MyGoLib/Units/slice"
 )
 
@@ -106,7 +105,7 @@ func (cns *CmdLineParser) FString(trav *ffs.Traversor, opts ...ffs.Option) error
 		doc := fsd.NewDocumentPrinter("Description", cns.description, )
 		err = doc.FString(trav)
 		if err != nil {
-			return ue.NewErrWhile("FString printing description", err)
+			return uc.NewErrWhile("FString printing description", err)
 		}
 	*/
 
@@ -134,7 +133,7 @@ func (cns *CmdLineParser) FString(trav *ffs.Traversor, opts ...ffs.Option) error
 				command,
 			)
 			if err != nil {
-				return ue.NewErrAt(at+1, "command", err)
+				return uc.NewErrAt(at+1, "command", err)
 			}
 		}
 	}
@@ -288,7 +287,7 @@ func (cns *CmdLineParser) GetCommandByOpcode(opcode string) *pkg.CommandInfo {
 // and returns a ParsedCommand ready to be executed.
 //
 // Errors:
-//   - *ue.ErrInvalidParameter: No arguments provided.
+//   - *uc.ErrInvalidParameter: No arguments provided.
 //   - *ErrCommandNotFound: Command not found.
 //   - *ErrParsingFlags: Error parsing flags.
 //
@@ -301,7 +300,7 @@ func (cns *CmdLineParser) GetCommandByOpcode(opcode string) *pkg.CommandInfo {
 //   - error: An error, if any.
 func (cns *CmdLineParser) Parse(args []string) (*pkg.ParsedCommand, error) {
 	if len(args) == 0 {
-		return nil, ue.NewErrInvalidParameter("args", ue.NewErrEmpty(args))
+		return nil, uc.NewErrInvalidParameter("args", uc.NewErrEmpty(args))
 	}
 
 	command := cns.GetCommandByOpcode(args[0])
@@ -323,7 +322,7 @@ func (cns *CmdLineParser) Parse(args []string) (*pkg.ParsedCommand, error) {
 
 	// Split betweem ignorable and non-ignorable errors
 	f := func(pc uc.Pair[*pkg.ParsedCommand, error]) bool {
-		ok := ue.Is[*ue.ErrIgnorable](pc.Second)
+		ok := uc.Is[*uc.ErrIgnorable](pc.Second)
 		return !ok
 	}
 
@@ -331,7 +330,7 @@ func (cns *CmdLineParser) Parse(args []string) (*pkg.ParsedCommand, error) {
 	if !ok {
 		return solutions[0].First, solutions[0].Second
 	} else if len(solutions) > 1 {
-		return solutions[0].First, ue.NewErrIgnorable(
+		return solutions[0].First, uc.NewErrIgnorable(
 			errors.New("ambiguous command"),
 		)
 	} else {
@@ -365,13 +364,13 @@ func (cns *CmdLineParser) GetCommand(opcode string) (*pkg.CommandInfo, bool) {
 //   - height: The height of the console.
 //
 // Returns:
-//   - error: An error of type *ue.ErrInvalidParameter if width or height is less than
+//   - error: An error of type *uc.ErrInvalidParameter if width or height is less than
 //     or equal to 0.
 func (cns *CmdLineParser) SetDimensions(width, height int) error {
 	if width <= 0 {
-		return ue.NewErrInvalidParameter("width", ue.NewErrGT(0))
+		return uc.NewErrInvalidParameter("width", uc.NewErrGT(0))
 	} else if height <= 0 {
-		return ue.NewErrInvalidParameter("height", ue.NewErrGT(0))
+		return uc.NewErrInvalidParameter("height", uc.NewErrGT(0))
 	}
 
 	cns.width = width

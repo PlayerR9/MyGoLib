@@ -5,7 +5,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	ers "github.com/PlayerR9/MyGoLib/Units/errors"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
 	sext "github.com/PlayerR9/MyGoLib/Utility/StringExt"
 )
 
@@ -189,7 +189,7 @@ func generateLines(fullTitle string, width int) ([]string, error) {
 
 	numberOfLines, err := sext.CalculateNumberOfLines(contents, width-TitleMinWidth)
 	if err != nil {
-		ok := ers.Is[*sext.ErrLinesGreaterThanWords](err)
+		ok := uc.Is[*sext.ErrLinesGreaterThanWords](err)
 		if !ok {
 			return nil, fmt.Errorf("could not calculate number of lines: %s", err.Error())
 		}

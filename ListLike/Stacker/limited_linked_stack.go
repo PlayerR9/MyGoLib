@@ -4,7 +4,6 @@ import (
 	"strconv"
 	"strings"
 
-	itf "github.com/PlayerR9/MyGoLib/Units/Iterators"
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
@@ -134,9 +133,9 @@ func (stack *LimitedLinkedStack[T]) Capacity() int {
 //
 // Returns:
 //
-//   - itf.Iterater[T]: An iterator for the elements in the stack.
-func (stack *LimitedLinkedStack[T]) Iterator() itf.Iterater[T] {
-	var builder itf.Builder[T]
+//   - uc.Iterater[T]: An iterator for the elements in the stack.
+func (stack *LimitedLinkedStack[T]) Iterator() uc.Iterater[T] {
+	var builder uc.Builder[T]
 
 	for stack_node := stack.front; stack_node != nil; stack_node = stack_node.Next() {
 		builder.Add(stack_node.Value)
@@ -277,7 +276,7 @@ func (stack *LimitedLinkedStack[T]) Slice() []T {
 //
 // Returns:
 //
-//   - itf.Copier: A copy of the stack.
+//   - uc.Copier: A copy of the stack.
 func (stack *LimitedLinkedStack[T]) Copy() uc.Copier {
 	stackCopy := &LimitedLinkedStack[T]{
 		size:     stack.size,

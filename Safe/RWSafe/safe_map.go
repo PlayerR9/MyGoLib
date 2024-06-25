@@ -3,7 +3,6 @@ package RWSafe
 import (
 	"sync"
 
-	ui "github.com/PlayerR9/MyGoLib/Units/Iterators"
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
 )
 
@@ -32,7 +31,7 @@ func (sm *SafeMap[T, U]) Copy() uc.Copier {
 }
 
 // Iterator implements the Iterable interface.
-func (sm *SafeMap[T, U]) Iterator() ui.Iterater[uc.Pair[T, U]] {
+func (sm *SafeMap[T, U]) Iterator() uc.Iterater[uc.Pair[T, U]] {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
 
@@ -42,7 +41,7 @@ func (sm *SafeMap[T, U]) Iterator() ui.Iterater[uc.Pair[T, U]] {
 		entries = append(entries, uc.NewPair(key, value))
 	}
 
-	return ui.NewSimpleIterator(entries)
+	return uc.NewSimpleIterator(entries)
 }
 
 // NewSafeMap creates a new SafeMap.

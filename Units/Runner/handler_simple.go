@@ -5,7 +5,6 @@ import (
 	"sync"
 
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
-	ue "github.com/PlayerR9/MyGoLib/Units/errors"
 )
 
 // HandlerSimple is a struct that represents a Go routine handler.
@@ -77,7 +76,7 @@ func (h *HandlerSimple) ReceiveErr() (error, bool) {
 // run is a private method of HandlerSimple that is runned by the Go routine.
 //
 // Behaviors:
-//   - Use ue.ErrNoError to exit the Go routine as nil is used to signal
+//   - Use uc.ErrNoError to exit the Go routine as nil is used to signal
 //     that the function has finished successfully but the Go routine is still running.
 func (h *HandlerSimple) run() {
 	defer h.wg.Done()
@@ -86,7 +85,7 @@ func (h *HandlerSimple) run() {
 		r := recover()
 
 		if r != nil {
-			h.errChan <- ue.NewErrPanic(r)
+			h.errChan <- uc.NewErrPanic(r)
 		}
 
 		h.clean()
@@ -117,7 +116,7 @@ func (h *HandlerSimple) run() {
 // Behaviors:
 //   - If routine is nil, this function returns nil.
 //   - The Go routine is not started automatically.
-//   - In routine, use *ue.ErrNoError to exit the Go routine as nil is used to signal
+//   - In routine, use *uc.ErrNoError to exit the Go routine as nil is used to signal
 //     that the function has finished successfully but the Go routine is still running.
 func NewHandlerSimple(routine uc.MainFunc) *HandlerSimple {
 	if routine == nil {

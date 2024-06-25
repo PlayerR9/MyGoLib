@@ -1,4 +1,4 @@
-package errors
+package common
 
 // ErrOrSol is a struct that holds a list of errors and a list of solutions.
 type ErrOrSol[T any] struct {

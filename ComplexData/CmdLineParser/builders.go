@@ -1,10 +1,9 @@
 package CmdLineParser
 
 import (
-	ue "github.com/PlayerR9/MyGoLib/Units/errors"
-	us "github.com/PlayerR9/MyGoLib/Units/slice"
-
 	pkg "github.com/PlayerR9/MyGoLib/ComplexData/CmdLineParser/pkg"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
+	us "github.com/PlayerR9/MyGoLib/Units/slice"
 )
 
 type ArgBuilder struct {
@@ -43,7 +42,7 @@ func (b *ArgBuilder) Build() ([]*pkg.ArgInfo, error) {
 	for i, header := range b.headers {
 		arg, err := pkg.NewArgument(header, b.fns[i])
 		if err != nil {
-			return nil, ue.NewErrAt(i+1, "argument", err)
+			return nil, uc.NewErrAt(i+1, "argument", err)
 		}
 
 		arguments = append(arguments, arg)
@@ -107,17 +106,17 @@ func (b *CmdBuilder) Build() ([]*pkg.CommandInfo, error) {
 
 	for i, name := range b.names {
 		if name == HelpOpcode {
-			return nil, ue.NewErrAt(i+1, "command", NewErrOpcodeHelp())
+			return nil, uc.NewErrAt(i+1, "command", NewErrOpcodeHelp())
 		}
 
 		flagInfos, err := b.flagBuilders[i].Build()
 		if err != nil {
-			return nil, ue.NewErrAt(i+1, "command", err)
+			return nil, uc.NewErrAt(i+1, "command", err)
 		}
 
 		newCommand, err := pkg.NewCommandInfo(name, b.descriptions[i], b.callbacks[i], flagInfos)
 		if err != nil {
-			return nil, ue.NewErrAt(i+1, "command", err)
+			return nil, uc.NewErrAt(i+1, "command", err)
 		}
 
 		index := us.FindEquals(commands, newCommand)
@@ -207,7 +206,7 @@ func (b *FlagBuilder) Build() ([]*pkg.FlagInfo, error) {
 
 			argInfos, err = b.argBuilders[i].Build()
 			if err != nil {
-				return nil, ue.NewErrAt(i+1, "flag", err)
+				return nil, uc.NewErrAt(i+1, "flag", err)
 			}
 		}
 
@@ -219,7 +218,7 @@ func (b *FlagBuilder) Build() ([]*pkg.FlagInfo, error) {
 			argInfos,
 		)
 		if err != nil {
-			return nil, ue.NewErrAt(i+1, "flag", err)
+			return nil, uc.NewErrAt(i+1, "flag", err)
 		}
 
 		index := us.FindEquals(flagList, newFlag)

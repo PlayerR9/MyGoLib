@@ -2,7 +2,7 @@ package PageInterval
 
 import (
 	ffs "github.com/PlayerR9/MyGoLib/Formatting/FString"
-	itf "github.com/PlayerR9/MyGoLib/Units/Iterators"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
 )
 
 var (
@@ -12,8 +12,8 @@ var (
 	//   - pr: The page range.
 	//
 	// Returns:
-	//   - itf.Iterater[int]: The iterator that iterates over the pages in the interval.
-	PageRangeIterator func(pr *PageRange) itf.Iterater[int] = func(pr *PageRange) itf.Iterater[int] {
+	//   - uc.Iterater[int]: The iterator that iterates over the pages in the interval.
+	PageRangeIterator func(pr *PageRange) uc.Iterater[int] = func(pr *PageRange) uc.Iterater[int] {
 		return pr.Iterator()
 	}
 )

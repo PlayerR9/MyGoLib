@@ -4,7 +4,6 @@ import (
 	"strconv"
 	"strings"
 
-	itf "github.com/PlayerR9/MyGoLib/Units/Iterators"
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
@@ -101,9 +100,9 @@ func (list *ArrayList[T]) Capacity() int {
 //
 // Returns:
 //
-//   - itf.Iterater[T]: An iterator for the list.
-func (list *ArrayList[T]) Iterator() itf.Iterater[T] {
-	return itf.NewSimpleIterator(list.values)
+//   - uc.Iterater[T]: An iterator for the list.
+func (list *ArrayList[T]) Iterator() uc.Iterater[T] {
+	return uc.NewSimpleIterator(list.values)
 }
 
 // Clear is a method of the ArrayList type. It is used to remove all elements from
@@ -200,7 +199,7 @@ func (list *ArrayList[T]) Slice() []T {
 //
 // Returns:
 //
-//   - itf.Copier: A copy of the list.
+//   - uc.Copier: A copy of the list.
 func (list *ArrayList[T]) Copy() uc.Copier {
 	listCopy := &ArrayList[T]{
 		values: make([]T, len(list.values)),

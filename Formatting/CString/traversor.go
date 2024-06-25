@@ -5,7 +5,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	ue "github.com/PlayerR9/MyGoLib/Units/errors"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
 	"github.com/gdamore/tcell"
 )
 
@@ -60,7 +60,7 @@ func ApplyTravFuncMany[T any](trav *Traversor, f CStringFunc[T], elems []T) erro
 	for i, elem := range elems {
 		err := f(trav, elem)
 		if err != nil {
-			return ue.NewErrAt(i+1, "element", err)
+			return uc.NewErrAt(i+1, "element", err)
 		}
 	}
 
@@ -148,7 +148,7 @@ func (trav *Traversor) writeRune(r rune, style tcell.Style) error {
 
 	switch r {
 	case utf8.RuneError:
-		return ue.NewErrInvalidRune(nil)
+		return uc.NewErrInvalidRune(nil)
 	case NBSP:
 		trav.source.writeString(string(r), style)
 	default:
@@ -174,7 +174,7 @@ func (trav *Traversor) writeString(str string, style tcell.Style) error {
 
 	n := checkString(str)
 	if n != -1 {
-		return ue.NewErrAt(n, "rune", ue.NewErrInvalidRune(nil))
+		return uc.NewErrAt(n, "rune", uc.NewErrInvalidRune(nil))
 	}
 
 	trav.source.writeString(str, style)
@@ -204,7 +204,7 @@ func (trav *Traversor) writeLine(line string, style tcell.Style) error {
 	} else {
 		n := checkString(line)
 		if n != -1 {
-			return ue.NewErrAt(n, "rune", ue.NewErrInvalidRune(nil))
+			return uc.NewErrAt(n, "rune", uc.NewErrInvalidRune(nil))
 		}
 
 		trav.source.writeString(line, style)
@@ -273,7 +273,7 @@ func (trav *Traversor) AppendStrings(strs []string, style tcell.Style) error {
 	for i, str := range strs {
 		err := trav.writeString(str, style)
 		if err != nil {
-			return ue.NewErrAt(i, "string", err)
+			return uc.NewErrAt(i, "string", err)
 		}
 	}
 
@@ -368,7 +368,7 @@ func (trav *Traversor) AddLines(lines []string, style tcell.Style) error {
 	for i, line := range lines {
 		err := trav.writeLine(line, style)
 		if err != nil {
-			return ue.NewErrAt(i, "line", err)
+			return uc.NewErrAt(i, "line", err)
 		}
 	}
 

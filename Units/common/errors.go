@@ -1,12 +1,10 @@
 // Package errors provides a custom error type for out-of-bound errors.
-package errors
+package common
 
 import (
 	"fmt"
 	"strconv"
 	"strings"
-
-	com "github.com/PlayerR9/MyGoLib/Units/common"
 )
 
 // ErrPanic represents an error when a panic occurs.
@@ -211,7 +209,7 @@ type ErrEmpty[T any] struct {
 func (e *ErrEmpty[T]) Error() string {
 	var builder strings.Builder
 
-	builder.WriteString(com.TypeOf(e.Value))
+	builder.WriteString(TypeOf(e.Value))
 	builder.WriteString(" must not be empty")
 
 	return builder.String()
@@ -396,7 +394,7 @@ func (e *ErrInvalidValues[T]) Error() string {
 
 	values := make([]string, 0, len(e.Values))
 	for _, v := range e.Values {
-		values = append(values, com.StringOf(v))
+		values = append(values, StringOf(v))
 	}
 
 	var builder strings.Builder
@@ -498,4 +496,23 @@ func (e *ErrNilValue) Error() string {
 //   - *ErrNilValue: The new ErrNilValue error.
 func NewErrNilValue() *ErrNilValue {
 	return &ErrNilValue{}
+}
+
+// ErrExhaustedIter is an error type that is returned when an iterator
+// is exhausted (i.e., there are no more elements to consume).
+type ErrExhaustedIter struct{}
+
+// Error implements the error interface.
+//
+// Message: "iterator is exhausted"
+func (e *ErrExhaustedIter) Error() string {
+	return "iterator is exhausted"
+}
+
+// NewErrExhaustedIter creates a new ErrExhaustedIter error.
+//
+// Returns:
+//   - *ErrExhaustedIter: A pointer to the new error.
+func NewErrExhaustedIter() *ErrExhaustedIter {
+	return &ErrExhaustedIter{}
 }

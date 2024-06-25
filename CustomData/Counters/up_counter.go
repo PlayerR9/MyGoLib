@@ -4,8 +4,7 @@ import (
 	"strconv"
 	"strings"
 
-	intf "github.com/PlayerR9/MyGoLib/Units/common"
-	ers "github.com/PlayerR9/MyGoLib/Units/errors"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
 )
 
 // UpCounter represents a counter that increments upwards until it
@@ -22,7 +21,7 @@ type UpCounter struct {
 }
 
 // Equals implements common.Objecter.
-func (c *UpCounter) Equals(other intf.Equaler) bool {
+func (c *UpCounter) Equals(other uc.Equaler) bool {
 	if other == nil {
 		return false
 	}
@@ -146,8 +145,8 @@ func (c *UpCounter) Reset() {
 // Copy creates a shallow copy of the UpCounter.
 //
 // Returns:
-//   - intf.Copier: A shallow copy of the UpCounter.
-func (c *UpCounter) Copy() intf.Copier {
+//   - uc.Copier: A shallow copy of the UpCounter.
+func (c *UpCounter) Copy() uc.Copier {
 	return &UpCounter{
 		upperLimit:   c.upperLimit,
 		currentCount: c.currentCount,
@@ -162,13 +161,13 @@ func (c *UpCounter) Copy() intf.Copier {
 //
 // Returns:
 //   - *UpCounter: A pointer to the newly created UpCounter.
-//   - error: An error of type *ers.ErrInvalidParameter if the upper limit is
+//   - error: An error of type *uc.ErrInvalidParameter if the upper limit is
 //     less than zero.
 func NewUpCounter(upperLimit int) (*UpCounter, error) {
 	if upperLimit < 0 {
-		return nil, ers.NewErrInvalidParameter(
+		return nil, uc.NewErrInvalidParameter(
 			"upperLimit",
-			ers.NewErrGTE(0),
+			uc.NewErrGTE(0),
 		)
 	}
 

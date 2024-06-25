@@ -4,7 +4,6 @@ import (
 	"strconv"
 	"strings"
 
-	itf "github.com/PlayerR9/MyGoLib/Units/Iterators"
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
@@ -137,9 +136,9 @@ func (queue *LimitedLinkedQueue[T]) Capacity() int {
 //
 // Returns:
 //
-//   - itf.Iterater[T]: An iterator for the queue.
-func (queue *LimitedLinkedQueue[T]) Iterator() itf.Iterater[T] {
-	var builder itf.Builder[T]
+//   - uc.Iterater[T]: An iterator for the queue.
+func (queue *LimitedLinkedQueue[T]) Iterator() uc.Iterater[T] {
+	var builder uc.Builder[T]
 
 	for queue_node := queue.front; queue_node != nil; queue_node = queue_node.Next() {
 		builder.Add(queue_node.Value)
@@ -281,7 +280,7 @@ func (queue *LimitedLinkedQueue[T]) Slice() []T {
 //
 // Returns:
 //
-//   - itf.Copier: A copy of the queue.
+//   - uc.Copier: A copy of the queue.
 func (queue *LimitedLinkedQueue[T]) Copy() uc.Copier {
 	queueCopy := &LimitedLinkedQueue[T]{
 		size:     queue.size,

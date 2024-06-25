@@ -5,7 +5,7 @@ import (
 	"sync"
 	"unicode/utf8"
 
-	ue "github.com/PlayerR9/MyGoLib/Units/errors"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
 )
 
 /////////////////////////////////////////////////
@@ -26,7 +26,7 @@ func checkString(str string) ([]rune, error) {
 		str = str[size:]
 
 		if char == utf8.RuneError {
-			return nil, ue.NewErrAt(j, "character", ue.NewErrInvalidRune(nil))
+			return nil, uc.NewErrAt(j, "character", uc.NewErrInvalidRune(nil))
 		}
 
 		if char == '\r' && size != 0 {

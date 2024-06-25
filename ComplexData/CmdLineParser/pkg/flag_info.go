@@ -8,7 +8,6 @@ import (
 	evalSlc "github.com/PlayerR9/MyGoLib/Evaluations/Slices"
 	ffs "github.com/PlayerR9/MyGoLib/Formatting/FString"
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
-	ue "github.com/PlayerR9/MyGoLib/Units/errors"
 	us "github.com/PlayerR9/MyGoLib/Units/slice"
 	uts "github.com/PlayerR9/MyGoLib/Utility/Sorting"
 )
@@ -186,9 +185,9 @@ func (cfi *FlagInfo) FString(trav *ffs.Traversor, opts ...ffs.Option) error {
 
 func NewFlagInfo(name string, doc []string, isRequired bool, fn FlagCallbackFunc, argInfs []*ArgInfo) (*FlagInfo, error) {
 	if name == "" {
-		return nil, ue.NewErrInvalidParameter(
+		return nil, uc.NewErrInvalidParameter(
 			"name",
-			ue.NewErrEmpty(name),
+			uc.NewErrEmpty(name),
 		)
 	}
 
@@ -252,7 +251,7 @@ func (flag *FlagInfo) Parse(branches []*FlagParseResult, args []string) ([]*Flag
 		true,
 	)
 	if !ok {
-		return nil, ue.NewErrPossibleError(fmt.Errorf("no valid arguments"), solutions[0].GetData().Second)
+		return nil, uc.NewErrPossibleError(fmt.Errorf("no valid arguments"), solutions[0].GetData().Second)
 	}
 
 	actualSolutions := us.ExtractResults(solutions)

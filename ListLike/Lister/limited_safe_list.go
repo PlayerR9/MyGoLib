@@ -5,7 +5,6 @@ import (
 	"strings"
 	"sync"
 
-	itf "github.com/PlayerR9/MyGoLib/Units/Iterators"
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
@@ -182,15 +181,15 @@ func (list *LimitedSafeList[T]) Capacity() int {
 //
 // Returns:
 //
-//   - itf.Iterater[T]: An iterator for the list.
-func (list *LimitedSafeList[T]) Iterator() itf.Iterater[T] {
+//   - uc.Iterater[T]: An iterator for the list.
+func (list *LimitedSafeList[T]) Iterator() uc.Iterater[T] {
 	list.frontMutex.RLock()
 	defer list.frontMutex.RUnlock()
 
 	list.backMutex.RLock()
 	defer list.backMutex.RUnlock()
 
-	var builder itf.Builder[T]
+	var builder uc.Builder[T]
 
 	for node := list.front; node != nil; node = node.Next() {
 		builder.Add(node.Value)

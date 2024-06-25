@@ -1,12 +1,10 @@
 // Package errors provides a custom error type for out-of-bound errors.
-package errors
+package common
 
 import (
 	"reflect"
 	"strconv"
 	"strings"
-
-	uc "github.com/PlayerR9/MyGoLib/Units/common"
 )
 
 // ErrWhile represents an error that occurs while performing an operation.
@@ -96,7 +94,7 @@ func (e *ErrWhileAt) Error() string {
 	builder.WriteString("while ")
 	builder.WriteString(e.Operation)
 	builder.WriteRune(' ')
-	builder.WriteString(uc.GetOrdinalSuffix(e.Index))
+	builder.WriteString(GetOrdinalSuffix(e.Index))
 	builder.WriteRune(' ')
 	builder.WriteString(e.Element)
 
@@ -438,7 +436,7 @@ func (e *ErrAt) Error() string {
 		name = "index"
 	}
 
-	builder.WriteString(uc.GetOrdinalSuffix(e.Index))
+	builder.WriteString(GetOrdinalSuffix(e.Index))
 	builder.WriteRune(' ')
 	builder.WriteString(name)
 

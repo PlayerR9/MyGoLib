@@ -5,8 +5,7 @@ import (
 	"os"
 	"path"
 
-	ui "github.com/PlayerR9/MyGoLib/Units/Iterators"
-	ue "github.com/PlayerR9/MyGoLib/Units/errors"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
 )
 
 // Item is a struct that represents a directory entry with its location.
@@ -66,7 +65,7 @@ type DEWalkerIter struct {
 	toSee []Item
 
 	// el is the error list.
-	el *ue.ErrOrSol[error]
+	el *uc.ErrOrSol[error]
 }
 
 // Size implements the Iterators.Iterater interface.
@@ -80,7 +79,7 @@ func (iter *DEWalkerIter) Size() int {
 // However, if all entries are invalid, only the furthest error is returned.
 func (iter *DEWalkerIter) Consume() (*ItemList, error) {
 	if len(iter.toSee) == 0 {
-		return nil, ui.NewErrExhaustedIter()
+		return nil, uc.NewErrExhaustedIter()
 	}
 
 	for len(iter.toSee) > 0 {
@@ -152,7 +151,7 @@ func (iter *DEWalkerIter) Restart() {
 
 	iter.toSee = toSee
 
-	var el ue.ErrOrSol[error]
+	var el uc.ErrOrSol[error]
 
 	iter.el = &el
 }
@@ -164,8 +163,8 @@ type ItemList struct {
 }
 
 // Iterator implements the Iterators.Iterable interface.
-func (il *ItemList) Iterator() ui.Iterater[Item] {
-	return ui.NewSimpleIterator(il.items)
+func (il *ItemList) Iterator() uc.Iterater[Item] {
+	return uc.NewSimpleIterator(il.items)
 }
 
 // NewDirEntryIterator creates a new directory entry iterator.
@@ -179,7 +178,7 @@ func (il *ItemList) Iterator() ui.Iterater[Item] {
 // Returns:
 //   - *Iter1: The new directory entry iterator.
 //   - error: An error if it fails to read the directory.
-func NewDEWalkerIter(loc string) (ui.Iterater[Item], error) {
+func NewDEWalkerIter(loc string) (uc.Iterater[Item], error) {
 	entries, err := os.ReadDir(loc)
 	if err != nil {
 		return nil, err
@@ -199,7 +198,7 @@ func NewDEWalkerIter(loc string) (ui.Iterater[Item], error) {
 		toSee:  toSee,
 	}
 
-	iter := ui.NewProceduralIterator(w)
+	iter := uc.NewProceduralIterator(w)
 
 	return iter, nil
 }

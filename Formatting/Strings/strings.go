@@ -8,7 +8,6 @@ import (
 	"unicode/utf8"
 
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
-	ue "github.com/PlayerR9/MyGoLib/Units/errors"
 )
 
 // AndString concatenates a list of strings using commas and the word "and" before the last string.
@@ -284,9 +283,9 @@ func padRight(s string, length int) string {
 //   - If the column is not found in the table, the table is returned as is.
 func TabAlign(table [][]string, column int, tabSize int) ([][]string, error) {
 	if tabSize < 1 {
-		return nil, ue.NewErrInvalidParameter("tabSize", ue.NewErrGT(0))
+		return nil, uc.NewErrInvalidParameter("tabSize", uc.NewErrGT(0))
 	} else if column < 0 {
-		return nil, ue.NewErrInvalidParameter("column", ue.NewErrGTE(0))
+		return nil, uc.NewErrInvalidParameter("column", uc.NewErrGTE(0))
 	}
 
 	seen := make(map[int]bool)
@@ -339,7 +338,7 @@ func TabAlign(table [][]string, column int, tabSize int) ([][]string, error) {
 //   - *errors.ErrInvalidParameter: If the tabSize is less than 1.
 func TableEntriesAlign(table [][]string, tabSize int) ([][]string, error) {
 	if tabSize < 1 {
-		return nil, ue.NewErrInvalidParameter("tabSize", ue.NewErrGT(0))
+		return nil, uc.NewErrInvalidParameter("tabSize", uc.NewErrGT(0))
 	}
 
 	width := LongestLine(table)
@@ -352,7 +351,7 @@ func TableEntriesAlign(table [][]string, tabSize int) ([][]string, error) {
 	for i := 0; i < width; i++ {
 		table, err = TabAlign(table, i, tabSize)
 		if err != nil {
-			return nil, ue.NewErrAt(i+1, "column", err)
+			return nil, uc.NewErrAt(i+1, "column", err)
 		}
 	}
 

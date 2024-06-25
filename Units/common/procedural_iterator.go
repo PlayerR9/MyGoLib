@@ -1,6 +1,4 @@
-package Iterators
-
-import ue "github.com/PlayerR9/MyGoLib/Units/errors"
+package common
 
 // ProceduralIterator is a struct that allows iterating over a collection of
 // iterators of type Iterater[T].
@@ -47,7 +45,7 @@ func (pi *ProceduralIterator[E, T]) Consume() (T, error) {
 			break
 		}
 
-		ok := ue.Is[*ErrExhaustedIter](err)
+		ok := Is[*ErrExhaustedIter](err)
 		if !ok {
 			return *new(T), err
 		}

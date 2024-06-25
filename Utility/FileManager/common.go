@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
-	ue "github.com/PlayerR9/MyGoLib/Units/errors"
 )
 
 // FileExists checks if a file exists at the specified location.
@@ -240,7 +239,7 @@ func PerLine[T any](loc string, create bool, f uc.EvalOneFunc[string, T]) ([]T, 
 //     while checking the path.
 func CheckPath(loc string, isDir bool) (bool, error) {
 	if loc == "" {
-		return false, ue.NewErrEmpty(loc)
+		return false, uc.NewErrEmpty(loc)
 	}
 
 	stat, err := os.Stat(loc)

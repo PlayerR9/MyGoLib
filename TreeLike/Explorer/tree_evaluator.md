@@ -1,7 +1,7 @@
 package TreeExplorer
 
 import (
-	tr "github.com/PlayerR9/MyGoLib/TreeLike/StatusTree"
+	tr "github.com/PlayerR9/MyGoLib/TreeLike/Tree"
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
 	ers "github.com/PlayerR9/MyGoLib/Units/errors"
 	us "github.com/PlayerR9/MyGoLib/Units/slice"
@@ -10,7 +10,7 @@ import (
 // TreeEvaluator is a tree evaluator that uses a grammar to tokenize a string.
 type TreeEvaluator[R MatchResulter[O], M Matcher[R, O], O any] struct {
 	// root is the root node of the tree evaluator.
-	root *tr.Tree[EvalStatus, O]
+	root *tr.Tree[tr.StatusInfo[EvalStatus, O]]
 
 	// matcher is the matcher used by the tree evaluator.
 	matcher M

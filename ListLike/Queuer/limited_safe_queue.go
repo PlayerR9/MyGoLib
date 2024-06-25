@@ -5,7 +5,6 @@ import (
 	"strings"
 	"sync"
 
-	itf "github.com/PlayerR9/MyGoLib/Units/Iterators"
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
@@ -174,16 +173,16 @@ func (queue *LimitedSafeQueue[T]) Capacity() int {
 //
 // Returns:
 //
-//   - itf.Iterater[T]: An iterator that can be used to iterate over the elements
+//   - uc.Iterater[T]: An iterator that can be used to iterate over the elements
 //     in the queue.
-func (queue *LimitedSafeQueue[T]) Iterator() itf.Iterater[T] {
+func (queue *LimitedSafeQueue[T]) Iterator() uc.Iterater[T] {
 	queue.frontMutex.RLock()
 	defer queue.frontMutex.RUnlock()
 
 	queue.backMutex.RLock()
 	defer queue.backMutex.RUnlock()
 
-	var builder itf.Builder[T]
+	var builder uc.Builder[T]
 
 	for node := queue.front; node != nil; node = node.Next() {
 		builder.Add(node.Value)
@@ -353,7 +352,7 @@ func (queue *LimitedSafeQueue[T]) Slice() []T {
 //
 // Returns:
 //
-//   - itf.Copier: A copy of the queue.
+//   - uc.Copier: A copy of the queue.
 func (queue *LimitedSafeQueue[T]) Copy() uc.Copier {
 	queue.frontMutex.RLock()
 	defer queue.frontMutex.RUnlock()

@@ -46,6 +46,10 @@ func (t *TreeNode[T]) FString(trav *ffs.Traversor, opts ...ffs.Option) error {
 func (n *TreeNode[T]) Copy() uc.Copier {
 	childCopy := uc.SliceCopy(n.children)
 
+	for _, child := range childCopy {
+		child.setParent(n)
+	}
+
 	nCopy := &TreeNode[T]{
 		Data:     n.Data,
 		parent:   nil,
@@ -189,19 +193,26 @@ func (n *TreeNode[T]) GetChildren() []*TreeNode[T] {
 // Behaviors:
 //   - If there is no branching point, it returns the root of the tree.
 func (tn *TreeNode[T]) FindBranchingPoint() (*TreeNode[T], *TreeNode[T], bool) {
-	node := tn
-	var prev *TreeNode[T] = nil
-
-	for node.parent != nil {
-		if len(node.parent.children) > 1 {
-			return prev, node.parent, true
-		}
-
-		prev = node
-		node = node.parent
+	if tn.parent == nil {
+		return nil, tn, false
 	}
 
-	return prev, node, false
+	node := tn
+	parent := tn.parent
+
+	var hasBranchingPoint bool
+
+	for parent.parent != nil {
+		if len(parent.children) > 1 {
+			hasBranchingPoint = true
+			break
+		}
+
+		node = parent
+		parent = parent.parent
+	}
+
+	return node, parent, hasBranchingPoint
 }
 
 // HasChild returns true if the node has the given child.
@@ -388,14 +399,22 @@ func (n *TreeNode[T]) GetData() T {
 //
 // Returns:
 //   - []*TreeNode[T]: A slice of pointers to the nodes in the branch.
-func (n *TreeNode[T]) GetBranch() []*TreeNode[T] {
-	branch := []*TreeNode[T]{n}
+func (n *TreeNode[T]) GetBranch() *Branch[T] {
+	size := 1
 
-	for node := n; node.parent != nil; node = node.parent {
-		branch = append(branch, node.parent)
+	branch := &Branch[T]{
+		toNode: n,
 	}
 
-	slices.Reverse(branch)
+	node := n
+
+	for node.parent != nil {
+		size++
+		node = node.parent
+	}
+
+	branch.fromNode = node
+	branch.size = size
 
 	return branch
 }

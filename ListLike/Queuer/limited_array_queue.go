@@ -4,7 +4,6 @@ import (
 	"strconv"
 	"strings"
 
-	itf "github.com/PlayerR9/MyGoLib/Units/Iterators"
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
 	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
@@ -106,10 +105,10 @@ func (queue *LimitedArrayQueue[T]) Capacity() int {
 //
 // Returns:
 //
-//   - itf.Iterater[T]: An iterator that can be used to iterate over the elements
+//   - uc.Iterater[T]: An iterator that can be used to iterate over the elements
 //     in the queue.
-func (queue *LimitedArrayQueue[T]) Iterator() itf.Iterater[T] {
-	return itf.NewSimpleIterator[T](queue.values)
+func (queue *LimitedArrayQueue[T]) Iterator() uc.Iterater[T] {
+	return uc.NewSimpleIterator[T](queue.values)
 }
 
 // Clear is a method of the LimitedArrayQueue type. It is used to remove all the elements
@@ -178,7 +177,7 @@ func (queue *LimitedArrayQueue[T]) Slice() []T {
 //
 // Returns:
 //
-//   - itf.Copier: A copy of the queue.
+//   - uc.Copier: A copy of the queue.
 func (queue *LimitedArrayQueue[T]) Copy() uc.Copier {
 	queueCopy := &LimitedArrayQueue[T]{
 		values:   make([]T, len(queue.values)),

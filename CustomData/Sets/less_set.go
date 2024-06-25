@@ -3,7 +3,6 @@ package Sets
 import (
 	"strings"
 
-	ui "github.com/PlayerR9/MyGoLib/Units/Iterators"
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
 	uts "github.com/PlayerR9/MyGoLib/Utility/Sorting"
 	"golang.org/x/exp/slices"
@@ -325,9 +324,9 @@ func (s *LessSet[T]) Slice() []T {
 // Iterator returns an iterator for the set.
 //
 // Returns:
-//   - ui.Iterater[T]: An iterator for the set.
-func (s *LessSet[T]) Iterator() ui.Iterater[T] {
-	return ui.NewSimpleIterator(s.elems)
+//   - uc.Iterater[T]: An iterator for the set.
+func (s *LessSet[T]) Iterator() uc.Iterater[T] {
+	return uc.NewSimpleIterator(s.elems)
 }
 
 // NewLessSet creates a new LessSet.

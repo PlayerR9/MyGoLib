@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"testing"
 
-	ue "github.com/PlayerR9/MyGoLib/Units/errors"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
 )
 
 func TestParseCommandInfo(t *testing.T) {
@@ -47,7 +47,7 @@ func TestParseCommandInfo(t *testing.T) {
 
 	parsed, err := cmdline.Parse(TestArg)
 	if err != nil {
-		ok := ue.Is[*ue.ErrIgnorable](err)
+		ok := uc.Is[*uc.ErrIgnorable](err)
 
 		if ok {
 			t.Fatalf("As expected, got ignorable error: %s", err.Error())
@@ -109,7 +109,7 @@ func TestVariadicArgument(t *testing.T) {
 
 	parsed, err := cmdline.Parse(TestArg)
 	if err != nil {
-		ok := ue.Is[*ue.ErrIgnorable](err)
+		ok := uc.Is[*uc.ErrIgnorable](err)
 
 		if ok {
 			t.Fatalf("As expected, got ignorable error: %s", err.Error())

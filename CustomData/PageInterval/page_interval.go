@@ -8,9 +8,7 @@ import (
 	"strings"
 
 	ffs "github.com/PlayerR9/MyGoLib/Formatting/FString"
-	itf "github.com/PlayerR9/MyGoLib/Units/Iterators"
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
-	ue "github.com/PlayerR9/MyGoLib/Units/errors"
 )
 
 // PageInterval represents a collection of page intervals, where each
@@ -76,7 +74,7 @@ func (pi *PageInterval) FString(trav *ffs.Traversor, opts ...ffs.Option) error {
 
 		err = trav.AppendString(str)
 		if err != nil {
-			return ue.NewErrAt(i+1, "interval", err)
+			return uc.NewErrAt(i+1, "interval", err)
 		}
 
 		trav.AcceptWord()
@@ -107,10 +105,10 @@ func (pi *PageInterval) String() string {
 // Panics if an error occurs while creating the iterator.
 //
 // Returns:
-//   - itf.Iterater[int]: An iterator for iterating over the pages in the PageInterval.
-func (pi *PageInterval) Iterator() itf.Iterater[int] {
-	return itf.NewProceduralIterator(
-		itf.NewSimpleIterator(pi.intervals),
+//   - uc.Iterater[int]: An iterator for iterating over the pages in the PageInterval.
+func (pi *PageInterval) Iterator() uc.Iterater[int] {
+	return uc.NewProceduralIterator(
+		uc.NewSimpleIterator(pi.intervals),
 	)
 }
 
@@ -175,7 +173,7 @@ func (pi *PageInterval) HasPages() bool {
 //
 // Returns:
 //   - int: The first page number in the PageInterval.
-//   - error: An error of type *ue.ErrNoPagesInInterval if no pages have been set.
+//   - error: An error of type *uc.ErrNoPagesInInterval if no pages have been set.
 func (pi *PageInterval) GetFirstPage() (int, error) {
 	if pi.pageCount <= 0 {
 		return 0, NewErrNoPagesInInterval()
@@ -189,7 +187,7 @@ func (pi *PageInterval) GetFirstPage() (int, error) {
 //
 // Returns:
 //   - int: The last page number in the PageInterval.
-//   - error: An error of type *ue.ErrNoPagesInInterval if no pages have been set.
+//   - error: An error of type *uc.ErrNoPagesInInterval if no pages have been set.
 func (pi *PageInterval) GetLastPage() (int, error) {
 	if pi.pageCount <= 0 {
 		return 0, NewErrNoPagesInInterval()
@@ -205,7 +203,7 @@ func (pi *PageInterval) GetLastPage() (int, error) {
 //   - page: The page number to add to the PageInterval.
 //
 // Returns:
-//   - error: An error of type *ue.ErrInvalidParameter if the page number is less than 1.
+//   - error: An error of type *uc.ErrInvalidParameter if the page number is less than 1.
 //
 // Example:
 //
@@ -219,9 +217,9 @@ func (pi *PageInterval) GetLastPage() (int, error) {
 //	fmt.Println(pi.pageCount) // Output: 12
 func (pi *PageInterval) AddPage(page int) error {
 	if page < 1 {
-		return ue.NewErrInvalidParameter(
+		return uc.NewErrInvalidParameter(
 			"page",
-			ue.NewErrGT(0),
+			uc.NewErrGT(0),
 		)
 	}
 
@@ -424,18 +422,18 @@ func (pi *PageInterval) RemovePagesBetween(first, last int) {
 // Panics if an error occurs while creating the iterator.
 //
 // Returns:
-//   - itf.Iterater[int]: An iterator for iterating over the intervals in the
+//   - uc.Iterater[int]: An iterator for iterating over the intervals in the
 //     PageInterval in reverse order.
-func (pi *PageInterval) ReverseIterator() itf.Iterater[int] {
+func (pi *PageInterval) ReverseIterator() uc.Iterater[int] {
 	reversed := make([]*PageRange, len(pi.intervals))
 	copy(reversed, pi.intervals)
 
 	slices.Reverse(reversed)
 
-	iter := itf.NewDynamicIterator(
-		itf.NewSimpleIterator(reversed),
-		func(pr *PageRange) itf.Iterater[int] {
-			var builder itf.Builder[int]
+	iter := uc.NewDynamicIterator(
+		uc.NewSimpleIterator(reversed),
+		func(pr *PageRange) uc.Iterater[int] {
+			var builder uc.Builder[int]
 
 			for page := pr.Second; page >= pr.First; page-- {
 				builder.Add(page)

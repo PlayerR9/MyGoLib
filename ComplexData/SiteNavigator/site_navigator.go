@@ -6,7 +6,6 @@ import (
 	tlt "github.com/PlayerR9/MyGoLib/TreeLike/Traversor"
 	tr "github.com/PlayerR9/MyGoLib/TreeLike/Tree"
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
-	ers "github.com/PlayerR9/MyGoLib/Units/errors"
 	slext "github.com/PlayerR9/MyGoLib/Units/slice"
 )
 
@@ -36,7 +35,7 @@ var (
 	// GetChildrenFunc is a function that returns the children of an HTML node.
 	GetChildrenFunc tlt.NextsFunc[*html.Node] = func(elem *html.Node, info uc.Copier) ([]*html.Node, error) {
 		if elem == nil {
-			return nil, ers.NewErrNilValue()
+			return nil, uc.NewErrNilValue()
 		}
 
 		children := make([]*html.Node, 0)
@@ -65,7 +64,7 @@ type HtmlTree struct {
 //   - error: An error if the tree construction fails.
 //
 // Errors:
-//   - *ers.ErrNilValue: If any html.Node is nil.
+//   - *uc.ErrNilValue: If any html.Node is nil.
 func NewHtmlTree(root *html.Node) (*HtmlTree, error) {
 	var builder tlt.Builder[*html.Node]
 

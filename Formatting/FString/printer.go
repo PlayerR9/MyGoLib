@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
-	ue "github.com/PlayerR9/MyGoLib/Units/errors"
 )
 
 // ApplyMany applies a format to a stringer.
@@ -36,7 +35,7 @@ func ApplyMany[T FStringer](trav *Traversor, elems []T) error {
 	for i, elem := range elems {
 		err := elem.FString(trav)
 		if err != nil {
-			return ue.NewErrAt(i+1, "FStringer element", err)
+			return uc.NewErrAt(i+1, "FStringer element", err)
 		}
 	}
 
@@ -65,7 +64,7 @@ func ApplyFuncMany[T any](trav *Traversor, f FStringFunc[T], elems []T) error {
 	for i, elem := range elems {
 		err := f(trav, elem)
 		if err != nil {
-			return ue.NewErrAt(i+1, "element", err)
+			return uc.NewErrAt(i+1, "element", err)
 		}
 	}
 
@@ -191,7 +190,7 @@ func Sprint(form FormatConfig, strs ...string) ([][][][]string, error) {
 	for i, str := range strs {
 		err := trav.writeString(str)
 		if err != nil {
-			return nil, ue.NewErrAt(i, "string", err)
+			return nil, uc.NewErrAt(i, "string", err)
 		}
 	}
 
@@ -313,7 +312,7 @@ func Sprintln(form FormatConfig, lines ...string) ([][][][]string, error) {
 	for i, line := range lines {
 		err := trav.writeLine(line)
 		if err != nil {
-			return nil, ue.NewErrAt(i, "line", err)
+			return nil, uc.NewErrAt(i, "line", err)
 		}
 	}
 
@@ -530,7 +529,7 @@ func Fprint(out io.Writer, form FormatConfig, strs ...string) error {
 	for i, str := range strs {
 		err := trav.writeString(str)
 		if err != nil {
-			return ue.NewErrAt(i, "string", err)
+			return uc.NewErrAt(i, "string", err)
 		}
 	}
 
@@ -688,7 +687,7 @@ func Fprintln(out io.Writer, form FormatConfig, lines ...string) error {
 	for i, line := range lines {
 		err := trav.writeLine(line)
 		if err != nil {
-			return ue.NewErrAt(i, "line", err)
+			return uc.NewErrAt(i, "line", err)
 		}
 	}
 

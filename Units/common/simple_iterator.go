@@ -1,6 +1,6 @@
 // Package Iterators provides a set of types that allow iterating over
 // collections of elements in a generic and procedural manner.
-package Iterators
+package common
 
 // SimpleIterator is a struct that allows iterating over a slice of
 // elements of any type.

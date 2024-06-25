@@ -4,7 +4,6 @@ import (
 	"slices"
 
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
-	ue "github.com/PlayerR9/MyGoLib/Units/errors"
 )
 
 // FsmBuilder is a struct that represents a builder for a finite state machine.
@@ -55,19 +54,19 @@ func (b *FsmBuilder[I, S, R, E]) AddDetFn(elem E, fn DetFunc[I, S, E]) {
 //   - error: An error if the function fails.
 func (b *FsmBuilder[I, S, R, E]) Build() (*FSM[I, S, R, E], error) {
 	if b.InitFn == nil {
-		return nil, ue.NewErrNilParameter("InitFn")
+		return nil, uc.NewErrNilParameter("InitFn")
 	}
 
 	if b.ShouldEndFn == nil {
-		return nil, ue.NewErrNilParameter("ShouldEndFn")
+		return nil, uc.NewErrNilParameter("ShouldEndFn")
 	}
 
 	if b.GetResFn == nil {
-		return nil, ue.NewErrNilParameter("GetResFn")
+		return nil, uc.NewErrNilParameter("GetResFn")
 	}
 
 	if b.NextFn == nil {
-		return nil, ue.NewErrNilParameter("NextFn")
+		return nil, uc.NewErrNilParameter("NextFn")
 	}
 
 	alias := &FSM[I, S, R, E]{

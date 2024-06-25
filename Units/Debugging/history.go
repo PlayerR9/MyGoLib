@@ -100,6 +100,7 @@ type History[T any] struct {
 	commands []Commander[T]
 }
 
+// Copy implements the uc.Copier interface.
 func (h *History[T]) Copy() uc.Copier {
 	hCopy := &History[T]{
 		data:     uc.CopyOf(h.data).(T),
@@ -170,6 +171,7 @@ func (h *History[T]) UndoLastCommand() error {
 	lc := h.commands[len(h.commands)-1]
 	err := lc.Undo(h.data)
 	h.commands = h.commands[:len(h.commands)-1]
+
 	if err != nil {
 		return err
 	}

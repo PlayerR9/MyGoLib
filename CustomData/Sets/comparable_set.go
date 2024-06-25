@@ -3,7 +3,6 @@ package Sets
 import (
 	"strings"
 
-	ui "github.com/PlayerR9/MyGoLib/Units/Iterators"
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
 )
 
@@ -318,9 +317,9 @@ func (s *ComparableSet[T]) Slice() []T {
 // Iterator returns an iterator for the set.
 //
 // Returns:
-//   - ui.Iterater[T]: An iterator for the set.
-func (s *ComparableSet[T]) Iterator() ui.Iterater[T] {
-	var builder ui.Builder[T]
+//   - uc.Iterater[T]: An iterator for the set.
+func (s *ComparableSet[T]) Iterator() uc.Iterater[T] {
+	var builder uc.Builder[T]
 
 	for k, ok := range s.elems {
 		if ok {

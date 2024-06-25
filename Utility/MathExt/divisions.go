@@ -3,7 +3,7 @@ package MathExt
 import (
 	"math/big"
 
-	ers "github.com/PlayerR9/MyGoLib/Units/errors"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
 )
 
 // PrimeFactorization is a function that performs prime factorization on an
@@ -117,16 +117,16 @@ func GreatestCommonDivisor(a, b int) int {
 //   - error: An error of type *ErrInvalidParameter if the numerator is negative or
 func BigFloatDivision(numerator, denominator int) (*big.Float, error) {
 	if numerator < 0 {
-		return new(big.Float), ers.NewErrInvalidParameter(
+		return new(big.Float), uc.NewErrInvalidParameter(
 			"numerator",
-			ers.NewErrGTE(0),
+			uc.NewErrGTE(0),
 		)
 	}
 
 	if denominator <= 0 {
-		return new(big.Float), ers.NewErrInvalidParameter(
+		return new(big.Float), uc.NewErrInvalidParameter(
 			"denominator",
-			ers.NewErrGT(0),
+			uc.NewErrGT(0),
 		)
 	}
 

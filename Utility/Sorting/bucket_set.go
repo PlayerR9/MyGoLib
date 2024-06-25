@@ -3,7 +3,6 @@ package Sorting
 import (
 	"slices"
 
-	ui "github.com/PlayerR9/MyGoLib/Units/Iterators"
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
 	us "github.com/PlayerR9/MyGoLib/Units/slice"
 )
@@ -33,17 +32,17 @@ func (bs *BucketSet[K, E]) Copy() uc.Copier {
 }
 
 // Iterator implements the Iterators.Iterable interface.
-func (bs *BucketSet[K, E]) Iterator() ui.Iterater[E] {
-	var builder ui.Builder[K]
+func (bs *BucketSet[K, E]) Iterator() uc.Iterater[E] {
+	var builder uc.Builder[K]
 
 	for size := range bs.buckets {
 		builder.Add(size)
 	}
 
-	di := ui.NewDynamicIterator(
+	di := uc.NewDynamicIterator(
 		builder.Build(),
-		func(size K) ui.Iterater[E] {
-			iter := ui.NewSimpleIterator(bs.buckets[size])
+		func(size K) uc.Iterater[E] {
+			iter := uc.NewSimpleIterator(bs.buckets[size])
 			return iter
 		},
 	)

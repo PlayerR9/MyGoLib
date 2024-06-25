@@ -4,9 +4,7 @@ import (
 	"slices"
 	"strings"
 
-	ll "github.com/PlayerR9/MyGoLib/Units/Iterators"
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
-	ue "github.com/PlayerR9/MyGoLib/Units/errors"
 )
 
 // OrderedMap is a generic data structure that represents a sorted map.
@@ -268,12 +266,12 @@ func (s *OrderedMap[K, V]) SortKeys(less func(K, K) int) {
 // Iterator returns an iterator for the sorted map.
 //
 // Returns:
-//   - ll.Iterater[*uc.Pair[K, V]]: An iterator for the sorted map.
+//   - uc.Iterater[*uc.Pair[K, V]]: An iterator for the sorted map.
 //
 // Behaviors:
 //   - The iterator returns the entries in the order of the keys as pairs.
-func (s *OrderedMap[K, V]) Iterator() ll.Iterater[uc.Pair[K, V]] {
-	var builder ll.Builder[uc.Pair[K, V]]
+func (s *OrderedMap[K, V]) Iterator() uc.Iterater[uc.Pair[K, V]] {
+	var builder uc.Builder[uc.Pair[K, V]]
 
 	for _, key := range s.keys {
 		builder.Add(uc.NewPair(key, s.mapping[key]))
@@ -312,12 +310,12 @@ func (s *OrderedMap[K, V]) DoFunc(f func(K, V) error) error {
 //   - V: The value at the provided index.
 //
 // Errors:
-//   - *ue.ErrInvalidParameter: The index is out of bounds.
+//   - *uc.ErrInvalidParameter: The index is out of bounds.
 func (s *OrderedMap[K, V]) GetAt(index int) (V, error) {
 	if index < 0 || index >= len(s.keys) {
-		return *new(V), ue.NewErrInvalidParameter(
+		return *new(V), uc.NewErrInvalidParameter(
 			"index",
-			ue.NewErrOutOfBounds(index, 0, len(s.keys)),
+			uc.NewErrOutOfBounds(index, 0, len(s.keys)),
 		)
 	}
 

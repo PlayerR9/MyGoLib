@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
-	ue "github.com/PlayerR9/MyGoLib/Units/errors"
 )
 
 /////////////////////////////////////////////////
@@ -150,7 +149,7 @@ func ApplyFormMany[T FStringer](form FormatConfig, trav *Traversor, elems []T) e
 	for i, elem := range elems {
 		err := elem.FString(newTraversor(form, trav.source))
 		if err != nil {
-			return ue.NewErrAt(i+1, "FStringer element", err)
+			return uc.NewErrAt(i+1, "FStringer element", err)
 		}
 	}
 
@@ -205,7 +204,7 @@ func ApplyFormManyFunc[T any](form FormatConfig, trav *Traversor, elems []T, f F
 	for i, elem := range elems {
 		err := f(newTraversor(form, trav.source), elem)
 		if err != nil {
-			return ue.NewErrAt(i+1, "FStringer element", err)
+			return uc.NewErrAt(i+1, "FStringer element", err)
 		}
 	}
 

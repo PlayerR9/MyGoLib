@@ -8,7 +8,6 @@ import (
 	evalSlc "github.com/PlayerR9/MyGoLib/Evaluations/Slices"
 	ffs "github.com/PlayerR9/MyGoLib/Formatting/FString"
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
-	ue "github.com/PlayerR9/MyGoLib/Units/errors"
 	us "github.com/PlayerR9/MyGoLib/Units/slice"
 	uts "github.com/PlayerR9/MyGoLib/Utility/Sorting"
 )
@@ -171,7 +170,7 @@ func (cci *CommandInfo) FString(trav *ffs.Traversor, opts ...ffs.Option) error {
 				flag,
 			)
 			if err != nil {
-				return ue.NewErrAt(at+1, "flag", err)
+				return uc.NewErrAt(at+1, "flag", err)
 			}
 		}
 	}
@@ -194,9 +193,9 @@ func (cci *CommandInfo) FString(trav *ffs.Traversor, opts ...ffs.Option) error {
 //   - If callback is nil, NoCommandCallback is used.
 func NewCommandInfo(name string, description []string, fn CommandCallbackFunc, flagInfos []*FlagInfo) (*CommandInfo, error) {
 	if name == "" {
-		return nil, ue.NewErrInvalidParameter(
+		return nil, uc.NewErrInvalidParameter(
 			"name",
-			ue.NewErrEmpty(name),
+			uc.NewErrEmpty(name),
 		)
 	}
 
@@ -273,7 +272,7 @@ func (inf *CommandInfo) GetFlag(name string) *FlagInfo {
 // and returns a ParsedCommand ready to be executed.
 //
 // Errors:
-//   - *ue.ErrInvalidParameter: No arguments provided.
+//   - *uc.ErrInvalidParameter: No arguments provided.
 //   - *ErrCommandNotFound: Command not found.
 //   - *ErrParsingFlags: Error parsing flags.
 //
@@ -302,7 +301,7 @@ func (inf *CommandInfo) Parse(branches []*resultBranch, args []string) ([]uc.Pai
 		command := newParsedCommand(inf.name, nil, inf.callback)
 
 		return []uc.Pair[*ParsedCommand, error]{
-			uc.NewPair(command, error(ue.NewErrIgnorable(
+			uc.NewPair(command, error(uc.NewErrIgnorable(
 				errors.New("no valid arguments were found"),
 			))),
 		}, nil
@@ -316,7 +315,7 @@ func (inf *CommandInfo) Parse(branches []*resultBranch, args []string) ([]uc.Pai
 		command := newParsedCommand(inf.name, nil, inf.callback)
 
 		return []uc.Pair[*ParsedCommand, error]{
-			uc.NewPair(command, error(ue.NewErrIgnorable(
+			uc.NewPair(command, error(uc.NewErrIgnorable(
 				errors.New("no valid arguments were found"),
 			))),
 		}, solution[0].GetData().Second
@@ -327,7 +326,7 @@ func (inf *CommandInfo) Parse(branches []*resultBranch, args []string) ([]uc.Pai
 		command := newParsedCommand(inf.name, nil, inf.callback)
 
 		return []uc.Pair[*ParsedCommand, error]{
-			uc.NewPair(command, error(ue.NewErrIgnorable(
+			uc.NewPair(command, error(uc.NewErrIgnorable(
 				errors.New("no valid arguments were found"),
 			))),
 		}, nil
@@ -342,7 +341,7 @@ func (inf *CommandInfo) Parse(branches []*resultBranch, args []string) ([]uc.Pai
 		if err != nil {
 			reason = err
 		} else if len(branch.argsDone) < len(args) {
-			reason = ue.NewErrIgnorable(
+			reason = uc.NewErrIgnorable(
 				errors.New("extra arguments provided"),
 			)
 		} else {

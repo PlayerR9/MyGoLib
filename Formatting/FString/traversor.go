@@ -6,7 +6,7 @@ import (
 	"sync"
 	"unicode/utf8"
 
-	ue "github.com/PlayerR9/MyGoLib/Units/errors"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
 )
 
 /////////////////////////////////////////////////
@@ -62,7 +62,7 @@ func ApplyTravFuncMany[T any](trav *Traversor, f FStringFunc[T], elems []T) erro
 	for i, elem := range elems {
 		err := f(trav, elem)
 		if err != nil {
-			return ue.NewErrAt(i+1, "element", err)
+			return uc.NewErrAt(i+1, "element", err)
 		}
 	}
 
@@ -167,7 +167,7 @@ func (trav *Traversor) writeRune(r rune) error {
 
 	switch r {
 	case utf8.RuneError:
-		return ue.NewErrInvalidRune(nil)
+		return uc.NewErrInvalidRune(nil)
 	case NBSP:
 		trav.source.writeRune(r)
 	default:
@@ -292,7 +292,7 @@ func (trav *Traversor) AppendStrings(strs []string) error {
 	for i, str := range strs {
 		err := trav.writeString(str)
 		if err != nil {
-			return ue.NewErrAt(i, "string", err)
+			return uc.NewErrAt(i, "string", err)
 		}
 	}
 
@@ -387,7 +387,7 @@ func (trav *Traversor) AddLines(lines []string) error {
 	for i, line := range lines {
 		err := trav.writeLine(line)
 		if err != nil {
-			return ue.NewErrAt(i, "line", err)
+			return uc.NewErrAt(i, "line", err)
 		}
 	}
 

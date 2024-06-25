@@ -4,9 +4,7 @@ import (
 	"fmt"
 
 	evalSlc "github.com/PlayerR9/MyGoLib/Evaluations/Slices"
-	ui "github.com/PlayerR9/MyGoLib/Units/Iterators"
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
-	ue "github.com/PlayerR9/MyGoLib/Units/errors"
 	us "github.com/PlayerR9/MyGoLib/Units/slice"
 )
 
@@ -155,8 +153,8 @@ type ciEvaluator struct {
 	startingIndices []int
 }
 
-func (inf *ciEvaluator) Iterator() ui.Iterater[int] {
-	return ui.NewSimpleIterator(inf.startingIndices)
+func (inf *ciEvaluator) Iterator() uc.Iterater[int] {
+	return uc.NewSimpleIterator(inf.startingIndices)
 }
 
 func (inf *ciEvaluator) Init(args []string) (*resultBranch, error) {
@@ -208,9 +206,9 @@ func (inf *ciEvaluator) Core(index int, lp int) (*uc.Pair[[]*FlagParseResult, er
 		inf.pos = lp
 	}
 
-	ok := ue.Is[*ue.ErrIgnorable](err)
+	ok := uc.Is[*uc.ErrIgnorable](err)
 	if ok {
-		err = err.(*ue.ErrIgnorable).Err
+		err = err.(*uc.ErrIgnorable).Err
 	}
 
 	p := uc.NewPair(result, err)
@@ -377,8 +375,8 @@ type flgEvaluator struct {
 	currentArgName string
 }
 
-func (inf *flgEvaluator) Iterator() ui.Iterater[*ArgInfo] {
-	return ui.NewSimpleIterator(inf.argList)
+func (inf *flgEvaluator) Iterator() uc.Iterater[*ArgInfo] {
+	return uc.NewSimpleIterator(inf.argList)
 }
 
 func (inf *flgEvaluator) Init(args []string) (*FlagParseResult, error) {
