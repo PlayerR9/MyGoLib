@@ -322,9 +322,12 @@ func (cns *CmdLineParser) Parse(args []string) (*pkg.ParsedCommand, error) {
 	}
 
 	// Split betweem ignorable and non-ignorable errors
-	solutions, ok := us.SFSeparateEarly(pcs, func(pc uc.Pair[*pkg.ParsedCommand, error]) bool {
-		return !ue.As[*ue.ErrIgnorable](pc.Second)
-	})
+	f := func(pc uc.Pair[*pkg.ParsedCommand, error]) bool {
+		ok := ue.Is[*ue.ErrIgnorable](pc.Second)
+		return !ok
+	}
+
+	solutions, ok := us.SFSeparateEarly(pcs, f)
 	if !ok {
 		return solutions[0].First, solutions[0].Second
 	} else if len(solutions) > 1 {

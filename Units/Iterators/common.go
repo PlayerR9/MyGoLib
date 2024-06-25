@@ -103,7 +103,7 @@ type Iterater[T any] interface {
 	//  - count: The number of elements in the collection.
 	Size() (count int)
 
-	// The Consume method advances the iterator to the next element in the
+	// Consume advances the iterator to the next element in the
 	// collection and returns the current element.
 	//
 	// Returns:
@@ -112,7 +112,7 @@ type Iterater[T any] interface {
 	//    while consuming the element.
 	Consume() (T, error)
 
-	// The Restart method resets the iterator to the beginning of the
+	// Restart resets the iterator to the beginning of the
 	// collection.
 	Restart()
 }

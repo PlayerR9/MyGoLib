@@ -21,14 +21,14 @@ type Unwrapper interface {
 	error
 }
 
-// As is function that checks if an error is of type T.
+// Is is function that checks if an error is of type T.
 //
 // Parameters:
 //   - err: The error to check.
 //
 // Returns:
 //   - bool: true if the error is of type T, false otherwise (including if the error is nil).
-func As[T any](err error) bool {
+func Is[T error](err error) bool {
 	if err == nil {
 		return false
 	}

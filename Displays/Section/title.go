@@ -188,8 +188,11 @@ func generateLines(fullTitle string, width int) ([]string, error) {
 	contents := strings.Fields(fullTitle) // FIXME: Use a better method to split the text
 
 	numberOfLines, err := sext.CalculateNumberOfLines(contents, width-TitleMinWidth)
-	if err != nil && !ers.As[*sext.ErrLinesGreaterThanWords](err) {
-		return nil, fmt.Errorf("could not calculate number of lines: %s", err.Error())
+	if err != nil {
+		ok := ers.Is[*sext.ErrLinesGreaterThanWords](err)
+		if !ok {
+			return nil, fmt.Errorf("could not calculate number of lines: %s", err.Error())
+		}
 	}
 
 	ts, err := sext.SplitInEqualSizedLines(contents, width-TitleMinWidth, numberOfLines)

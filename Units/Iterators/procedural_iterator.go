@@ -2,6 +2,8 @@
 // collections of elements in a generic and procedural manner.
 package Iterators
 
+import ue "github.com/PlayerR9/MyGoLib/Units/errors"
+
 // ProceduralIterator is a struct that allows iterating over a collection of iterators
 // of type Iterater[T].
 // The major difference between this and the GenericIterator is that this iterator is
@@ -11,8 +13,8 @@ type ProceduralIterator[E Iterable[T], T any] struct {
 	// source is the iterator over the collection of iterators.
 	source Iterater[E]
 
-	// current is the current iterator in the collection.
-	current *SimpleIterator[T]
+	// iter is the iterator in the collection.
+	iter *SimpleIterator[T]
 }
 
 // Size implements the Iterater interface.
@@ -20,54 +22,58 @@ type ProceduralIterator[E Iterable[T], T any] struct {
 // Size is evaluated by summing the sizes of the current iterator and the source
 // iterator. Of course, this is just an estimate of the total number of elements
 // in the collection.
-func (iter *ProceduralIterator[E, T]) Size() (count int) {
-	if iter.current != nil {
-		count += iter.current.Size()
+func (pi *ProceduralIterator[E, T]) Size() (count int) {
+	if pi.iter != nil {
+		count += pi.iter.Size()
 	}
 
-	if iter.source != nil {
-		count += iter.source.Size()
+	if pi.source != nil {
+		count += pi.source.Size()
 	}
 
 	return
 }
 
 // Consume implements the Iterater interface.
-//
-// Panics if E is not convertible to *SimpleIterator[T].
-func (iter *ProceduralIterator[E, T]) Consume() (T, error) {
-	if iter.source == nil {
-		return *new(T), NewErrNotInitialized()
-	}
-
-	if iter.current != nil {
-		next2, err := iter.current.Consume()
-		if err == nil {
-			return next2, nil
+func (pi *ProceduralIterator[E, T]) Consume() (T, error) {
+	if pi.iter == nil {
+		iter, err := pi.source.Consume()
+		if err != nil {
+			return *new(T), err
 		}
+
+		pi.iter = iter.Iterator().(*SimpleIterator[T])
 	}
 
-	next1, err := iter.source.Consume()
-	if err != nil {
-		return *new(T), NewErrExhaustedIter()
+	var val T
+	var err error
+
+	for {
+		val, err = pi.iter.Consume()
+		if err == nil {
+			break
+		}
+
+		ok := ue.Is[*ErrExhaustedIter](err)
+		if !ok {
+			return *new(T), err
+		}
+
+		iter, err := pi.source.Consume()
+		if err != nil {
+			return *new(T), err
+		}
+
+		pi.iter = iter.Iterator().(*SimpleIterator[T])
 	}
 
-	newIter := next1.Iterator()
-
-	var ok bool
-
-	iter.current, ok = newIter.(*SimpleIterator[T])
-	if !ok {
-		panic("could not convert iterator to *SimpleIterator")
-	}
-
-	return iter.current.Consume()
+	return val, nil
 }
 
 // Restart implements the Iterater interface.
-func (iter *ProceduralIterator[E, T]) Restart() {
-	iter.current = nil
-	iter.source.Restart()
+func (pi *ProceduralIterator[E, T]) Restart() {
+	pi.iter = nil
+	pi.source.Restart()
 }
 
 // IteratorFromIterator creates a new iterator over a collection of iterators
@@ -81,9 +87,13 @@ func (iter *ProceduralIterator[E, T]) Restart() {
 // Return:
 //   - *ProceduralIterator[E, T]: The new iterator over the collection of elements.
 func NewProceduralIterator[E Iterable[T], T any](source Iterater[E]) *ProceduralIterator[E, T] {
+	if source == nil {
+		return nil
+	}
+
 	pi := &ProceduralIterator[E, T]{
-		source:  source,
-		current: nil,
+		source: source,
+		iter:   nil,
 	}
 
 	return pi

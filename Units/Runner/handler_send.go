@@ -95,7 +95,7 @@ func (h *HandlerSend[T]) run() {
 			continue
 		}
 
-		ok := ers.As[*ers.ErrNoError](err)
+		ok := ers.Is[*ers.ErrNoError](err)
 		if ok {
 			return
 		}

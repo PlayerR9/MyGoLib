@@ -206,7 +206,10 @@ func (inf *ciEvaluator) Core(index int, lp int) (*uc.Pair[[]*FlagParseResult, er
 	result, err := inf.flag.Parse(branches, newArgs)
 	if err == nil {
 		inf.pos = lp
-	} else if ue.As[*ue.ErrIgnorable](err) {
+	}
+
+	ok := ue.Is[*ue.ErrIgnorable](err)
+	if ok {
 		err = err.(*ue.ErrIgnorable).Err
 	}
 

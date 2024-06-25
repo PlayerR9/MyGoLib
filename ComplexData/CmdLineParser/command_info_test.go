@@ -47,7 +47,9 @@ func TestParseCommandInfo(t *testing.T) {
 
 	parsed, err := cmdline.Parse(TestArg)
 	if err != nil {
-		if ue.As[*ue.ErrIgnorable](err) {
+		ok := ue.Is[*ue.ErrIgnorable](err)
+
+		if ok {
 			t.Fatalf("As expected, got ignorable error: %s", err.Error())
 		} else {
 			t.Fatalf("Expected no error, got %s", err.Error())
@@ -107,7 +109,9 @@ func TestVariadicArgument(t *testing.T) {
 
 	parsed, err := cmdline.Parse(TestArg)
 	if err != nil {
-		if ue.As[*ue.ErrIgnorable](err) {
+		ok := ue.Is[*ue.ErrIgnorable](err)
+
+		if ok {
 			t.Fatalf("As expected, got ignorable error: %s", err.Error())
 		} else {
 			t.Fatalf("Expected no error, got %s", err.Error())
