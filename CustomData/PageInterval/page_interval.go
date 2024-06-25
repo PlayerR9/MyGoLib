@@ -434,7 +434,7 @@ func (pi *PageInterval) ReverseIterator() itf.Iterater[int] {
 
 	iter := itf.NewDynamicIterator(
 		itf.NewSimpleIterator(reversed),
-		func(pr *PageRange) *itf.SimpleIterator[int] {
+		func(pr *PageRange) itf.Iterater[int] {
 			var builder itf.Builder[int]
 
 			for page := pr.Second; page >= pr.First; page-- {

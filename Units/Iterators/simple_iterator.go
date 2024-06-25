@@ -24,9 +24,7 @@ func (iter *SimpleIterator[T]) Size() int {
 
 // Consume implements the Iterater interface.
 func (iter *SimpleIterator[T]) Consume() (T, error) {
-	if iter.values == nil {
-		return *new(T), NewErrNotInitialized()
-	} else if iter.index >= len(*iter.values) {
+	if iter.index >= len(*iter.values) {
 		return *new(T), NewErrExhaustedIter()
 	}
 

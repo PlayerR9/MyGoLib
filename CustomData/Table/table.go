@@ -30,7 +30,7 @@ type Table[T any] struct {
 func (t *Table[T]) Iterator() ll.Iterater[T] {
 	iter := ll.NewDynamicIterator(
 		ll.NewSimpleIterator(t.table),
-		func(row []T) *ll.SimpleIterator[T] {
+		func(row []T) ll.Iterater[T] {
 			return ll.NewSimpleIterator(row)
 		},
 	)

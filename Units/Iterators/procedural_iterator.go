@@ -1,20 +1,15 @@
-// Package Iterators provides a set of types that allow iterating over
-// collections of elements in a generic and procedural manner.
 package Iterators
 
 import ue "github.com/PlayerR9/MyGoLib/Units/errors"
 
-// ProceduralIterator is a struct that allows iterating over a collection of iterators
-// of type Iterater[T].
-// The major difference between this and the GenericIterator is that this iterator is
-// designed to iterate over a collection of elements in a progressive manner; reducing
-// the need to store the entire collection in memory.
+// ProceduralIterator is a struct that allows iterating over a collection of
+// iterators of type Iterater[T].
 type ProceduralIterator[E Iterable[T], T any] struct {
 	// source is the iterator over the collection of iterators.
 	source Iterater[E]
 
 	// iter is the iterator in the collection.
-	iter *SimpleIterator[T]
+	iter Iterater[T]
 }
 
 // Size implements the Iterater interface.
@@ -86,6 +81,7 @@ func (pi *ProceduralIterator[E, T]) Restart() {
 //
 // Return:
 //   - *ProceduralIterator[E, T]: The new iterator over the collection of elements.
+//     Nil if source is nil.
 func NewProceduralIterator[E Iterable[T], T any](source Iterater[E]) *ProceduralIterator[E, T] {
 	if source == nil {
 		return nil

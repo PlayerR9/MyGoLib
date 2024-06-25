@@ -15,7 +15,8 @@ func (b *Builder[T]) Add(element T) {
 	b.buffer = append(b.buffer, element)
 }
 
-// AddMany is a method of the Builder type that appends multiple elements to the buffer.
+// AddMany is a method of the Builder type that appends multiple elements to
+// the buffer.
 //
 // Parameters:
 //   - elements: The elements to append to the buffer.

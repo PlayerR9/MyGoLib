@@ -42,7 +42,7 @@ func (bs *BucketSet[K, E]) Iterator() ui.Iterater[E] {
 
 	di := ui.NewDynamicIterator(
 		builder.Build(),
-		func(size K) *ui.SimpleIterator[E] {
+		func(size K) ui.Iterater[E] {
 			iter := ui.NewSimpleIterator(bs.buckets[size])
 			return iter
 		},
