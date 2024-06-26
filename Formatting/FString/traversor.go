@@ -72,7 +72,7 @@ func ApplyTravFuncMany[T any](trav *Traversor, f FStringFunc[T], elems []T) erro
 // Traversor is a type that represents a traversor for a formatted string.
 type Traversor struct {
 	// config is the configuration of the traversor.
-	config FormatConfig
+	config *FormatConfig
 
 	// indentation is the string that is used for indentation
 	// on the left side of the traversor.
@@ -89,9 +89,6 @@ type Traversor struct {
 
 	// source is the buffer of the traversor.
 	source *buffer
-
-	// form is the formatter of the traversor.
-	form FormatConfig
 
 	// mu is the mutex of the traversor.
 	mu *sync.Mutex
@@ -110,30 +107,29 @@ func (trav *Traversor) Clean() {
 //
 // Returns:
 //   - *Traversor: The new traversor.
-func newTraversor(config FormatConfig, source *buffer) *Traversor {
+func newTraversor(config *FormatConfig, source *buffer) *Traversor {
 	trav := &Traversor{
 		config:      config,
 		source:      source, // shared source
-		form:        config,
 		hasIndent:   false,
 		indentation: "",
 		leftConfig:  nil,
 		rightDelim:  "",
 	}
 
-	indentConfig, ok := config[ConfInd_Idx].(*IndentConfig)
-	if ok && indentConfig != nil {
+	indentConfig := config.indentation
+	if indentConfig != nil {
 		trav.indentation = indentConfig.GetIndentation()
 		trav.hasIndent = true
 	}
 
-	leftConfig, ok := config[ConfDelL_Idx].(*DelimiterConfig)
-	if ok && leftConfig != nil && leftConfig.left {
+	leftConfig := config.delimiterLeft
+	if leftConfig != nil {
 		trav.leftConfig = leftConfig
 	}
 
-	rightConfig, ok := config[ConfDelR_Idx].(*DelimiterConfig)
-	if ok && rightConfig != nil && !rightConfig.left {
+	rightConfig := config.delimiterRight
+	if rightConfig != nil {
 		trav.rightDelim = rightConfig.str
 	}
 
@@ -252,7 +248,12 @@ func (trav *Traversor) AppendRune(r rune) error {
 		return nil
 	}
 
-	return trav.writeRune(r)
+	err := trav.writeRune(r)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // AppendString appends a string to the half-line of the traversor.
@@ -271,7 +272,12 @@ func (trav *Traversor) AppendString(str string) error {
 		return nil
 	}
 
-	return trav.writeString(str)
+	err := trav.writeString(str)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // AppendStrings appends multiple strings to the half-line of the traversor.
@@ -365,7 +371,12 @@ func (trav *Traversor) AddLine(line string) error {
 		return nil
 	}
 
-	return trav.writeLine(line)
+	err := trav.writeLine(line)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // AddLines adds multiple lines to the traversor in a more efficient way than
@@ -492,7 +503,7 @@ func (trav *Traversor) Println(a ...interface{}) error {
 }
 
 // ConfigOption is a type that represents a configuration option for a formatter.
-type ConfigOption func(FormatConfig)
+type ConfigOption func(*FormatConfig)
 
 // WithModifiedIndent is a function that modifies the indentation level of the formatter
 // by a specified amount relative to the current indentation level.
@@ -509,14 +520,10 @@ type ConfigOption func(FormatConfig)
 //     is 0, it is not decreased.
 func WithModifiedIndent(by int) ConfigOption {
 	if by == 0 {
-		return func(f FormatConfig) {}
+		return func(f *FormatConfig) {}
 	} else {
-		return func(f FormatConfig) {
-			config, ok := f[ConfInd_Idx].(*IndentConfig)
-			if !ok {
-				panic(fmt.Errorf("invalid configuration type for indentation: %T", f[ConfInd_Idx]))
-			}
-
+		return func(f *FormatConfig) {
+			config := f.indentation
 			if config == nil {
 				return
 			}
@@ -541,8 +548,8 @@ func WithModifiedIndent(by int) ConfigOption {
 //   - If str is empty, then the left delimiter is removed.
 func WithLeftDelimiter(str string) ConfigOption {
 	if str == "" {
-		return func(f FormatConfig) {
-			f[ConfDelL_Idx] = nil
+		return func(f *FormatConfig) {
+			f.delimiterLeft = nil
 		}
 	} else {
 		newConfig := &DelimiterConfig{
@@ -550,8 +557,8 @@ func WithLeftDelimiter(str string) ConfigOption {
 			left: true,
 		}
 
-		return func(f FormatConfig) {
-			f[ConfDelL_Idx] = newConfig
+		return func(f *FormatConfig) {
+			f.delimiterLeft = newConfig
 		}
 	}
 }
@@ -568,8 +575,8 @@ func WithLeftDelimiter(str string) ConfigOption {
 //   - If str is empty, then the right delimiter is removed.
 func WithRightDelimiter(str string) ConfigOption {
 	if str == "" {
-		return func(f FormatConfig) {
-			f[ConfDelR_Idx] = nil
+		return func(f *FormatConfig) {
+			f.delimiterRight = nil
 		}
 	} else {
 		newConfig := &DelimiterConfig{
@@ -577,8 +584,8 @@ func WithRightDelimiter(str string) ConfigOption {
 			left: false,
 		}
 
-		return func(f FormatConfig) {
-			f[ConfDelR_Idx] = newConfig
+		return func(f *FormatConfig) {
+			f.delimiterRight = newConfig
 		}
 	}
 }
@@ -590,18 +597,8 @@ func WithRightDelimiter(str string) ConfigOption {
 //
 // Returns:
 //   - FormatConfig: A copy of the configuration of the traversor.
-func (trav *Traversor) GetConfig(options ...ConfigOption) FormatConfig {
-	var configCopy FormatConfig
-
-	for i := 0; i < 4; i++ {
-		conf := trav.config[i]
-
-		if conf == nil {
-			configCopy[i] = nil
-		} else {
-			configCopy[i] = conf.Copy()
-		}
-	}
+func (trav *Traversor) GetConfig(options ...ConfigOption) *FormatConfig {
+	configCopy := trav.config.Copy().(*FormatConfig)
 
 	for _, option := range options {
 		option(configCopy)

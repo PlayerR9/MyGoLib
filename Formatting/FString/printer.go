@@ -2,8 +2,6 @@ package FString
 
 import (
 	"fmt"
-	"io"
-	"os"
 	"strings"
 
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
@@ -77,7 +75,7 @@ type StdPrinter struct {
 	buff *buffer
 
 	// formatter is the formatter of the document.
-	formatter FormatConfig
+	formatter *FormatConfig
 }
 
 // Cleanup implements the Cleaner interface.
@@ -95,7 +93,14 @@ func (p *StdPrinter) Clean() {
 // Returns:
 //   - *StdPrinter: The new StdPrinter.
 //   - *Traversor: The traversor of the StdPrinter.
-func NewStdPrinter(form FormatConfig) (*StdPrinter, *Traversor) {
+//
+// Behaviors:
+//   - If the formatter is nil, the function uses the default formatter.
+func NewStdPrinter(form *FormatConfig) (*StdPrinter, *Traversor) {
+	if form == nil {
+		form = DefaultFormatter.Copy().(*FormatConfig)
+	}
+
 	p := &StdPrinter{
 		buff:      newBuffer(),
 		formatter: form,
@@ -153,7 +158,15 @@ func (p *StdPrinter) GetPages() [][][][]string {
 //
 // Returns:
 //   - [][][][]string: The pages of the formatted string.
-func SprintFString[T FStringer](form FormatConfig, elem T) ([][][][]string, error) {
+//   - error: An error if the printing fails.
+//
+// Behaviors:
+//   - If the formatter is nil, the function uses the default formatter.
+func SprintFString[T FStringer](form *FormatConfig, elem T) ([][][][]string, error) {
+	if form == nil {
+		form = DefaultFormatter.Copy().(*FormatConfig)
+	}
+
 	buff := newBuffer()
 
 	trav := newTraversor(form, buff)
@@ -179,9 +192,16 @@ func SprintFString[T FStringer](form FormatConfig, elem T) ([][][][]string, erro
 // Returns:
 //   - [][][][]string: The pages of the formatted strings.
 //   - error: An error if the printing fails.
-func Sprint(form FormatConfig, strs ...string) ([][][][]string, error) {
+//
+// Behaviors:
+//   - If the formatter is nil, the function uses the default formatter.
+func Sprint(form *FormatConfig, strs ...string) ([][][][]string, error) {
 	if len(strs) == 0 {
 		return nil, nil
+	}
+
+	if form == nil {
+		form = DefaultFormatter.Copy().(*FormatConfig)
 	}
 
 	buff := newBuffer()
@@ -211,9 +231,16 @@ func Sprint(form FormatConfig, strs ...string) ([][][][]string, error) {
 // Returns:
 //   - [][][][]string: The pages of the formatted strings.
 //   - error: An error if the printing fails.
-func Sprintj(form FormatConfig, sep string, strs ...string) ([][][][]string, error) {
+//
+// Behaviors:
+//   - If the formatter is nil, the function uses the default formatter.
+func Sprintj(form *FormatConfig, sep string, strs ...string) ([][][][]string, error) {
 	if len(strs) == 0 {
 		return nil, nil
+	}
+
+	if form == nil {
+		form = DefaultFormatter.Copy().(*FormatConfig)
 	}
 
 	buff := newBuffer()
@@ -242,9 +269,16 @@ func Sprintj(form FormatConfig, sep string, strs ...string) ([][][][]string, err
 // Returns:
 //   - [][][][]string: The pages of the formatted strings.
 //   - error: An error if the printing fails.
-func Sfprint(form FormatConfig, a ...interface{}) ([][][][]string, error) {
+//
+// Behaviors:
+//   - If the formatter is nil, the function uses the default formatter.
+func Sfprint(form *FormatConfig, a ...interface{}) ([][][][]string, error) {
 	if len(a) == 0 {
 		return nil, nil
+	}
+
+	if form == nil {
+		form = DefaultFormatter.Copy().(*FormatConfig)
 	}
 
 	buff := newBuffer()
@@ -272,9 +306,16 @@ func Sfprint(form FormatConfig, a ...interface{}) ([][][][]string, error) {
 // Returns:
 //   - [][][][]string: The pages of the formatted strings.
 //   - error: An error if the printing fails.
-func Sfprintf(form FormatConfig, format string, a ...interface{}) ([][][][]string, error) {
+//
+// Behaviors:
+//   - If the formatter is nil, the function uses the default formatter.
+func Sfprintf(form *FormatConfig, format string, a ...interface{}) ([][][][]string, error) {
 	if len(a) == 0 {
 		return nil, nil
+	}
+
+	if form == nil {
+		form = DefaultFormatter.Copy().(*FormatConfig)
 	}
 
 	buff := newBuffer()
@@ -301,9 +342,16 @@ func Sfprintf(form FormatConfig, format string, a ...interface{}) ([][][][]strin
 // Returns:
 //   - [][][][]string: The pages of the formatted strings.
 //   - error: An error if the printing fails.
-func Sprintln(form FormatConfig, lines ...string) ([][][][]string, error) {
+//
+// Behaviors:
+//   - If the formatter is nil, the function uses the default formatter.
+func Sprintln(form *FormatConfig, lines ...string) ([][][][]string, error) {
 	if len(lines) == 0 {
 		return nil, nil
+	}
+
+	if form == nil {
+		form = DefaultFormatter.Copy().(*FormatConfig)
 	}
 
 	buff := newBuffer()
@@ -333,9 +381,16 @@ func Sprintln(form FormatConfig, lines ...string) ([][][][]string, error) {
 // Returns:
 //   - [][][][]string: The pages of the formatted strings.
 //   - error: An error if the printing fails.
-func Sprintjln(form FormatConfig, sep string, lines ...string) ([][][][]string, error) {
+//
+// Behaviors:
+//   - If the formatter is nil, the function uses the default formatter.
+func Sprintjln(form *FormatConfig, sep string, lines ...string) ([][][][]string, error) {
 	if len(lines) == 0 {
 		return nil, nil
+	}
+
+	if form == nil {
+		form = DefaultFormatter.Copy().(*FormatConfig)
 	}
 
 	buff := newBuffer()
@@ -364,9 +419,16 @@ func Sprintjln(form FormatConfig, sep string, lines ...string) ([][][][]string, 
 // Returns:
 //   - [][][][]string: The pages of the formatted strings.
 //   - error: An error if the printing fails.
-func Sfprintln(form FormatConfig, a ...interface{}) ([][][][]string, error) {
+//
+// Behaviors:
+//   - If the formatter is nil, the function uses the default formatter.
+func Sfprintln(form *FormatConfig, a ...interface{}) ([][][][]string, error) {
 	if len(a) == 0 {
 		return nil, nil
+	}
+
+	if form == nil {
+		form = DefaultFormatter.Copy().(*FormatConfig)
 	}
 
 	buff := newBuffer()
@@ -384,6 +446,7 @@ func Sfprintln(form FormatConfig, a ...interface{}) ([][][][]string, error) {
 	return pages, nil
 }
 
+/*
 // FilePrinter is a type that represents a formatted string.
 type FilePrinter struct {
 	// buffer is the buffer of the document.
@@ -782,6 +845,7 @@ func Ffprintln(out io.Writer, form FormatConfig, a ...interface{}) error {
 
 	return nil
 }
+*/
 
 /////////////////////////////////////////////////
 

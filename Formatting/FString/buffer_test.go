@@ -39,7 +39,7 @@ func TestBufferIndent(t *testing.T) {
 		t.Fatalf("Expected no error, but got %s", err.Error())
 	}
 
-	pages := Stringfy(p.GetPages())
+	pages := Stringfy(p.GetPages(), 1)
 
 	fmt.Println(strings.Join(pages, "\n"))
 

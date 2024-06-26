@@ -10,26 +10,57 @@ import (
 //
 // Parameters:
 //   - doc: The formatted string.
+//   - spacing: The spacing to use for the string.
 //
 // Returns:
 //   - [][]string: The stringified formatted string.
-func Stringfy(doc [][][][]string) []string {
-	var pages []string
+//
+// Behaviors:
+//   - If the spacing is less than or equal to 0, the spacing is set to 1.
+func Stringfy(doc [][][][]string, spacing int) []string {
+	if spacing <= 0 {
+		spacing = 1
+	}
+
+	space := strings.Repeat(" ", spacing)
+
+	var pages1 [][][]string
 
 	for _, page := range doc {
-		var sections []string
+		var sections [][]string
 
 		for _, section := range page {
 			var lines []string
 
 			for _, line := range section {
-				lines = append(lines, strings.Join(line, " "))
+				joinedStr := strings.Join(line, space)
+				lines = append(lines, joinedStr)
 			}
 
-			sections = append(sections, strings.Join(lines, "\n"))
+			sections = append(sections, lines)
 		}
 
-		pages = append(pages, strings.Join(sections, "\n"))
+		pages1 = append(pages1, sections)
+	}
+
+	var pages2 [][]string
+
+	for _, page := range pages1 {
+		var sections []string
+
+		for _, section := range page {
+			joinedStr := strings.Join(section, "\n")
+			sections = append(sections, joinedStr)
+		}
+
+		pages2 = append(pages2, sections)
+	}
+
+	var pages []string
+
+	for _, page := range pages2 {
+		joinedStr := strings.Join(page, "\n\n")
+		pages = append(pages, joinedStr)
 	}
 
 	return pages
@@ -64,12 +95,16 @@ type FStringFunc[T any] func(trav *Traversor, elem T) error
 var (
 	// ArrayLikeFormat is the default options for an array-like object.
 	// [1, 2, 3]
-	ArrayLikeFormat FormatConfig = NewFormatter(
+	ArrayLikeFormat *FormatConfig
+)
+
+func init() {
+	ArrayLikeFormat = NewFormatter(
 		NewDelimiterConfig("[", false, true),
 		NewDelimiterConfig("]", false, false),
 		NewSeparator(DefaultSeparator, false),
 	)
-)
+}
 
 // FStringArray generates a formatted string representation of an array-like object.
 //
@@ -80,13 +115,23 @@ var (
 // Returns:
 //   - string: The formatted string.
 //   - error: An error if the printing fails.
-func FStringArray(format FormatConfig, values []string) (string, error) {
+//
+// Behaviors:
+//   - If the format is nil, the function uses ArrayLikeFormat.
+func FStringArray(format *FormatConfig, values []string) (string, error) {
+	if format == nil {
+		format = ArrayLikeFormat.Copy().(*FormatConfig)
+	}
+
 	doc, err := Sprint(format, values...)
 	if err != nil {
 		return "", err
 	}
 
-	return strings.Join(Stringfy(doc), "\f"), nil
+	pages := Stringfy(doc, 1)
+	joinedStr := strings.Join(pages, "\f")
+
+	return joinedStr, nil
 }
 
 //////////////////////////////////////////////////////////////
