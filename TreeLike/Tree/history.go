@@ -665,6 +665,17 @@ func NewExtractBranchCmd[T any](leaf *TreeNode[T]) *ExtractBranchCmd[T] {
 	return cmd
 }
 
+// GetBranch returns the value of the branch field.
+//
+// Call this function after executing the command.
+//
+// Returns:
+//   - *Branch[T]: A pointer to the branch extracted.
+func (c *ExtractBranchCmd[T]) GetBranch() *Branch[T] {
+	branch := c.branch
+	return branch
+}
+
 // InsertBranchCmd is a command that inserts a branch into the tree.
 type InsertBranchCmd[T any] struct {
 	// branch is a pointer to the branch to insert.
