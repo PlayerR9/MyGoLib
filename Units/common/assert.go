@@ -1,5 +1,7 @@
 package common
 
+import "reflect"
+
 // Assert panics if the condition is false.
 //
 // Parameters:
@@ -24,4 +26,17 @@ func AssertParam(param string, cond bool, reason error) {
 
 	err := NewErrInvalidParameter(param, reason)
 	panic(err)
+}
+
+// AssertIfZero panics if the element is zero.
+//
+// Parameters:
+//   - elem: The element to check.
+//   - msg: The message to show if the element is zero.
+func AssertIfZero(elem any, msg string) {
+	value := reflect.ValueOf(elem)
+	ok := value.IsZero()
+	if ok {
+		panic(msg)
+	}
 }
