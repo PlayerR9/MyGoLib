@@ -59,9 +59,11 @@ func (sl *lineOfSplitter) GetRunes() [][]rune {
 // Returns:
 //   - *lineOfSplitter: A pointer to the newly created line of splitter.
 func newLineOfSplitter(word string) *lineOfSplitter {
+	len := utf8.RuneCountInString(word)
+
 	splt := &lineOfSplitter{
 		line: []string{word},
-		len:  utf8.RuneCountInString(word),
+		len:  len,
 	}
 
 	return splt
@@ -75,22 +77,25 @@ func (sl *lineOfSplitter) shiftLeft() string {
 	firstWord := sl.line[0]
 
 	sl.line = sl.line[1:]
-	sl.len -= utf8.RuneCountInString(firstWord) + 1
+	sl.len -= utf8.RuneCountInString(firstWord)
+	sl.len-- // Remove the extra space
 
 	return firstWord
 }
 
 // InsertWord is a method of SpltLine that adds a given word to the end of the line.
 //
-// If the word is an empty string, it is ignored.
-//
 // Parameters:
 //   - word: The word to add to the line.
+//
+// Behaviors:
+//   - If the word is an empty string, it is ignored.
 func (sl *lineOfSplitter) insertWord(word string) {
 	if word == "" {
 		return
 	}
 
 	sl.line = append(sl.line, word)
-	sl.len += utf8.RuneCountInString(word) + 1
+	sl.len += utf8.RuneCountInString(word)
+	sl.len++ // Add the extra space
 }

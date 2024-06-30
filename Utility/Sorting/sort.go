@@ -73,11 +73,13 @@ func Sort[T any](S []T, sf SortFunc[T], isAsc bool) {
 //   - r: The right index of the slice.
 //   - sf: A function that compares two elements.
 func sortQuick[T any](S []T, l, r int, sf SortFunc[T]) {
-	if l < r {
-		p := partition(S, l, r, sf)
-		sortQuick(S, l, p-1, sf)
-		sortQuick(S, p+1, r, sf)
+	if l >= r {
+		return
 	}
+
+	p := partition(S, l, r, sf)
+	sortQuick(S, l, p-1, sf)
+	sortQuick(S, p+1, r, sf)
 }
 
 // partition is a helper function that partitions a slice of elements for the Quick Sort algorithm.

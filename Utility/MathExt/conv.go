@@ -93,7 +93,7 @@ func Add(n1, n2 []int, base int) []int {
 
 	// Add the two binary numbers.
 	result := make([]int, maxLen)
-	carry := 0
+	var carry int
 
 	// Add the digits for the common length of n1 and n2
 	for i := 0; i < len(n1) && i < len(n2); i++ {
@@ -148,7 +148,7 @@ func Subtract(n1, n2 []int, base int) ([]int, error) {
 
 	// Subtract the two binary numbers.
 	result := make([]int, len(n1))
-	borrow := 0
+	var borrow int
 
 	// Subtract the digits for the common length of n1 and n2
 	for i := 0; i < len(n1) && i < len(n2); i++ {
@@ -214,7 +214,7 @@ func BaseToDec(n []int, base int) (int, error) {
 		return len(n), nil
 	}
 
-	result := 0
+	var result int
 
 	for i, digit := range n {
 		if digit < 0 || digit >= base {
@@ -235,5 +235,9 @@ func BaseToDec(n []int, base int) (int, error) {
 // Returns:
 //   - *big.Int: The big.Int representation of the integer.
 func IntToBigInt(n int) *big.Int {
-	return new(big.Int).SetInt64(int64(n))
+	bi := new(big.Int)
+
+	res := bi.SetInt64(int64(n))
+
+	return res
 }

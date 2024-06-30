@@ -154,10 +154,7 @@ func (t *Title) tryToFitLines(fullTitle string, width int) ([]string, error) {
 		return lines, nil
 	}
 
-	fullTitle, err = sext.FitString(fullTitle, width-TitleMinWidth)
-	if err != nil {
-		return nil, fmt.Errorf("could not fit full title: %s", err.Error())
-	}
+	fullTitle = sext.FitString(fullTitle, width-TitleMinWidth)
 
 	fullTitle, ok := sext.ReplaceSuffix(fullTitle, Hellip)
 	if !ok {

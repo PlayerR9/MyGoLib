@@ -115,6 +115,7 @@ func GreatestCommonDivisor(a, b int) int {
 // Returns:
 //   - *big.Float: The result of the division as a big.Float.
 //   - error: An error of type *ErrInvalidParameter if the numerator is negative or
+//     the denominator is less than or equal to 0.
 func BigFloatDivision(numerator, denominator int) (*big.Float, error) {
 	if numerator < 0 {
 		return new(big.Float), uc.NewErrInvalidParameter(

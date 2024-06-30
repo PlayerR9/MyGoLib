@@ -18,5 +18,6 @@ func (e *ErrSubtractionUnderflow) Error() string {
 // Returns:
 //   - *ErrSubtractionUnderflow: The new ErrSubtractionUnderflow error.
 func NewErrSubtractionUnderflow() *ErrSubtractionUnderflow {
-	return &ErrSubtractionUnderflow{}
+	e := &ErrSubtractionUnderflow{}
+	return e
 }

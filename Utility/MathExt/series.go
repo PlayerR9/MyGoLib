@@ -101,14 +101,16 @@ type LinearRegression struct {
 //
 // Format: y = a * x^b
 func (lr *LinearRegression) String() string {
-	var builder strings.Builder
+	values := []string{
+		"y =",
+		lr.A.String(),
+		"* x ^",
+		lr.B.String(),
+	}
 
-	builder.WriteString("y = ")
-	builder.WriteString(lr.A.String())
-	builder.WriteString(" * x ^ ")
-	builder.WriteString(lr.B.String())
+	str := strings.Join(values, " ")
 
-	return builder.String()
+	return str
 }
 
 // NewLinearRegression creates a new LinearRegression.
@@ -116,10 +118,12 @@ func (lr *LinearRegression) String() string {
 // Returns:
 //   - LinearRegression: The new LinearRegression.
 func NewLinearRegression() *LinearRegression {
-	return &LinearRegression{
+	lr := &LinearRegression{
 		A: new(big.Float).SetPrec(1000),
 		B: new(big.Float).SetPrec(1000),
 	}
+
+	return lr
 }
 
 // FindEquation is a method of ConvergenceResult that finds the equation of the series

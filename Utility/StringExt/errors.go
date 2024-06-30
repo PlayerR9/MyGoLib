@@ -3,6 +3,8 @@ package StringExt
 import (
 	"strconv"
 	"strings"
+
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
 )
 
 // ErrInvalidUTF8Encoding is an error type for invalid UTF-8 encoding.
@@ -20,7 +22,8 @@ func (e *ErrInvalidUTF8Encoding) Error() string {
 // Returns:
 //   - *ErrInvalidUTF8Encoding: A pointer to the newly created error.
 func NewErrInvalidUTF8Encoding() *ErrInvalidUTF8Encoding {
-	return &ErrInvalidUTF8Encoding{}
+	e := &ErrInvalidUTF8Encoding{}
+	return e
 }
 
 // ErrLongerSuffix is a struct that represents an error when the suffix is
@@ -35,17 +38,18 @@ type ErrLongerSuffix struct {
 
 // Error implements the error interface.
 //
-// Message: "suffix ({Suffix}) is longer than the string ({Str})"
+// Message: "suffix {Suffix} is longer than the string {Str}"
 func (e *ErrLongerSuffix) Error() string {
-	var builder strings.Builder
+	values := []string{
+		"suffix",
+		strconv.Quote(e.Suffix),
+		"is longer than the string",
+		strconv.Quote(e.Str),
+	}
 
-	builder.WriteString("suffix (")
-	builder.WriteString(strconv.Quote(e.Suffix))
-	builder.WriteString(") is longer than the string (")
-	builder.WriteString(strconv.Quote(e.Str))
-	builder.WriteRune(')')
+	msg := strings.Join(values, " ")
 
-	return builder.String()
+	return msg
 }
 
 // NewErrLongerSuffix is a constructor of ErrLongerSuffix.
@@ -57,7 +61,11 @@ func (e *ErrLongerSuffix) Error() string {
 // Returns:
 //   - *ErrLongerSuffix: A pointer to the newly created error.
 func NewErrLongerSuffix(str, suffix string) *ErrLongerSuffix {
-	return &ErrLongerSuffix{Str: str, Suffix: suffix}
+	e := &ErrLongerSuffix{
+		Str:    str,
+		Suffix: suffix,
+	}
+	return e
 }
 
 // ErrTokenNotFound is a struct that represents an error when a token is not
@@ -72,16 +80,18 @@ type ErrTokenNotFound struct {
 
 // Error implements the error interface.
 //
-// Message: "{Type} token ({Token}) is not in the content"
+// Message: "{Type} token {Token} is not in the content"
 func (e *ErrTokenNotFound) Error() string {
-	var builder strings.Builder
+	values := []string{
+		e.Type.String(),
+		"token",
+		strconv.Quote(e.Token),
+		"is not in the content",
+	}
 
-	builder.WriteString(e.Type.String())
-	builder.WriteString(" token (")
-	builder.WriteString(strconv.Quote(e.Token))
-	builder.WriteString(") is not in the content")
+	msg := strings.Join(values, " ")
 
-	return builder.String()
+	return msg
 }
 
 // NewErrTokenNotFound is a constructor of ErrTokenNotFound.
@@ -93,10 +103,11 @@ func (e *ErrTokenNotFound) Error() string {
 // Returns:
 //   - *ErrTokenNotFound: A pointer to the newly created error.
 func NewErrTokenNotFound(token string, tokenType TokenType) *ErrTokenNotFound {
-	return &ErrTokenNotFound{
+	e := &ErrTokenNotFound{
 		Token: token,
 		Type:  tokenType,
 	}
+	return e
 }
 
 // ErrNeverOpened is a struct that represents an error when a closing
@@ -113,17 +124,18 @@ type ErrNeverOpened struct {
 // Error implements the error interface.
 //
 // Message:
-// "closing token ({ClosingToken}) found without a corresponding opening token ({OpeningToken})"
+//   - "closing token {ClosingToken} found without a corresponding opening token {OpeningToken}".
 func (e *ErrNeverOpened) Error() string {
-	var builder strings.Builder
+	values := []string{
+		"closing token",
+		strconv.Quote(e.ClosingToken),
+		"found without a corresponding opening token",
+		strconv.Quote(e.OpeningToken),
+	}
 
-	builder.WriteString("closing token (")
-	builder.WriteString(strconv.Quote(e.ClosingToken))
-	builder.WriteString(") found without a corresponding opening token (")
-	builder.WriteString(strconv.Quote(e.OpeningToken))
-	builder.WriteRune(')')
+	msg := strings.Join(values, " ")
 
-	return builder.String()
+	return msg
 }
 
 // NewErrNeverOpened is a constructor of ErrNeverOpened.
@@ -135,10 +147,11 @@ func (e *ErrNeverOpened) Error() string {
 // Returns:
 //   - *ErrNeverOpened: A pointer to the newly created error.
 func NewErrNeverOpened(openingToken, closingToken string) *ErrNeverOpened {
-	return &ErrNeverOpened{
+	e := &ErrNeverOpened{
 		OpeningToken: openingToken,
 		ClosingToken: closingToken,
 	}
+	return e
 }
 
 // ErrLinesGreaterThanWords is an error type that is returned when the
@@ -155,14 +168,16 @@ type ErrLinesGreaterThanWords struct {
 //
 // Message: "number of lines ({NumberOfLines}) is greater than the number of words ({NumberOfWords})"
 func (e *ErrLinesGreaterThanWords) Error() string {
-	var builder strings.Builder
+	values := []string{
+		"number of lines",
+		uc.QuoteInt(e.NumberOfLines),
+		"is greater than the number of words",
+		uc.QuoteInt(e.NumberOfWords),
+	}
 
-	builder.WriteString("number of lines (")
-	builder.WriteString(strconv.Itoa(e.NumberOfLines))
-	builder.WriteString(") is greater than the number of words (")
-	builder.WriteString(strconv.Itoa(e.NumberOfWords))
+	msg := strings.Join(values, " ")
 
-	return builder.String()
+	return msg
 }
 
 // NewErrLinesGreaterThanWords is a constructor of ErrLinesGreaterThanWords.
@@ -174,10 +189,11 @@ func (e *ErrLinesGreaterThanWords) Error() string {
 // Returns:
 //   - *ErrLinesGreaterThanWords: A pointer to the newly created error.
 func NewErrLinesGreaterThanWords(numberOfLines, numberOfWords int) *ErrLinesGreaterThanWords {
-	return &ErrLinesGreaterThanWords{
+	e := &ErrLinesGreaterThanWords{
 		NumberOfLines: numberOfLines,
 		NumberOfWords: numberOfWords,
 	}
+	return e
 }
 
 // ErrNoCandidateFound is an error type that is returned when no candidate is found.
@@ -195,5 +211,6 @@ func (e *ErrNoCandidateFound) Error() string {
 // Returns:
 //   - *ErrNoCandidateFound: A pointer to the newly created error.
 func NewErrNoCandidateFound() *ErrNoCandidateFound {
-	return &ErrNoCandidateFound{}
+	e := &ErrNoCandidateFound{}
+	return e
 }

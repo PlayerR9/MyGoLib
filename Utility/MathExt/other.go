@@ -57,5 +57,7 @@ func SQM(elems []float64) (float64, bool) {
 		sqm += math.Pow(elem-average, 2)
 	}
 
-	return math.Sqrt(sqm / L), true
+	res := math.Sqrt(sqm / L)
+
+	return res, true
 }

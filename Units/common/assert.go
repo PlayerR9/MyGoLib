@@ -1,6 +1,9 @@
 package common
 
-import "reflect"
+import (
+	"fmt"
+	"reflect"
+)
 
 // Assert panics if the condition is false.
 //
@@ -39,4 +42,19 @@ func AssertIfZero(elem any, msg string) {
 	if ok {
 		panic(msg)
 	}
+}
+
+// AssertF panics if the condition is false.
+//
+// Parameters:
+//   - cond: The condition to check.
+//   - format: The format of the message to show if the condition is false.
+//   - args: The arguments to format the message.
+func AssertF(cond bool, format string, args ...any) {
+	if cond {
+		return
+	}
+
+	msg := fmt.Sprintf(format, args...)
+	panic(msg)
 }

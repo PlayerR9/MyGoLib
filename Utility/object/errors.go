@@ -3,6 +3,8 @@ package object
 import (
 	"strconv"
 	"strings"
+
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
 )
 
 // ErrValueMustExists is an error indicating that a value must exist.
@@ -20,7 +22,8 @@ func (e *ErrValueMustExists) Error() string {
 // Returns:
 //   - *ErrValueMustExists: The new error.
 func NewErrValueMustExists() *ErrValueMustExists {
-	return &ErrValueMustExists{}
+	e := &ErrValueMustExists{}
+	return e
 }
 
 // ErrFix is an error indicating that a field could not be fixed.
@@ -38,19 +41,25 @@ type ErrFix struct {
 //   - "failed to fix field <field>" if the reason is nil.
 //   - "field <field> failed to fix: <reason>" if the reason is not nil.
 func (e *ErrFix) Error() string {
-	var builder strings.Builder
+	var values []string
 
 	if e.Reason == nil {
-		builder.WriteString("failed to fix field ")
-		builder.WriteString(strconv.Quote(e.Field))
+		values = []string{
+			"failed to fix field",
+			strconv.Quote(e.Field),
+		}
 	} else {
-		builder.WriteString("field ")
-		builder.WriteString(strconv.Quote(e.Field))
-		builder.WriteString(" failed to fix: ")
-		builder.WriteString(e.Reason.Error())
+		values = []string{
+			"field",
+			strconv.Quote(e.Field),
+			"failed to fix:",
+			e.Reason.Error(),
+		}
 	}
 
-	return builder.String()
+	msg := strings.Join(values, " ")
+
+	return msg
 }
 
 // Unwrap implements the errors.Unwrapper interface.
@@ -72,10 +81,11 @@ func (e *ErrFix) ChangeReason(reason error) {
 // Returns:
 //   - *ErrFix: The new error.
 func NewErrFix(field string, reason error) *ErrFix {
-	return &ErrFix{
+	e := &ErrFix{
 		Field:  field,
 		Reason: reason,
 	}
+	return e
 }
 
 // ErrFixAt is an error indicating that a field at an index could not be fixed.
@@ -96,23 +106,29 @@ type ErrFixAt struct {
 //   - "failed to fix field <field> at index <idx>" if the reason is nil.
 //   - "field <field> at index <idx> failed to fix: <reason>" if the reason is not nil.
 func (e *ErrFixAt) Error() string {
-	var builder strings.Builder
+	var values []string
 
 	if e.Reason == nil {
-		builder.WriteString("failed to fix field ")
-		builder.WriteString(strconv.Quote(e.Field))
-		builder.WriteString(" at index ")
-		builder.WriteString(strconv.Itoa(e.Idx))
+		values = []string{
+			"failed to fix field",
+			strconv.Quote(e.Field),
+			"at index",
+			uc.QuoteInt(e.Idx),
+		}
 	} else {
-		builder.WriteString("field ")
-		builder.WriteString(strconv.Quote(e.Field))
-		builder.WriteString(" at index ")
-		builder.WriteString(strconv.Itoa(e.Idx))
-		builder.WriteString(" failed to fix: ")
-		builder.WriteString(e.Reason.Error())
+		values = []string{
+			"field",
+			strconv.Quote(e.Field),
+			"at index",
+			uc.QuoteInt(e.Idx),
+			"failed to fix:",
+			e.Reason.Error(),
+		}
 	}
 
-	return builder.String()
+	msg := strings.Join(values, " ")
+
+	return msg
 }
 
 // Unwrap implements the errors.Unwrapper interface.

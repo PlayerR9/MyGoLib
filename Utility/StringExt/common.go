@@ -16,11 +16,15 @@ import (
 var (
 	// calculateSplitRatio is a function that calculates the split ratio of a
 	// TextSplit instance.
+	//
+	// Never false.
 	calculateSplitRatio us.WeightFunc[*TextSplit]
 )
 
 func init() {
 	calculateSplitRatio = func(candidate *TextSplit) (float64, bool) {
+		uc.Assert(candidate != nil, "in calculateSplitRatio: candidate is nil")
+
 		values := make([]float64, 0, candidate.GetHeight())
 
 		for _, line := range candidate.lines {
@@ -28,8 +32,9 @@ func init() {
 		}
 
 		sqm, ok := mext.SQM(values)
+		uc.Assert(ok, "in calculateSplitRatio: failed to calculate SQM as slice is empty")
 
-		return sqm, ok
+		return sqm, true
 	}
 }
 
@@ -40,8 +45,7 @@ func init() {
 //
 // Returns:
 //   - runes: The slice of runes.
-//   - error: An error of type *ErrInvalidUTF8Encoding if the string contains
-//     invalid UTF-8 encoding.
+//   - error: An error of type *common.ErrAt if an invalid UTF-8 encoding is found.
 //
 // Behaviors:
 //   - An empty string returns a nil slice with no errors.
@@ -52,11 +56,11 @@ func ToUTF8Runes(s string) (runes []rune, err error) {
 		return
 	}
 
-	for len(s) > 0 {
+	for i := 0; len(s) > 0; i++ {
 		r, size := utf8.DecodeRuneInString(s)
 
 		if r == utf8.RuneError {
-			err = NewErrInvalidUTF8Encoding()
+			err = uc.NewErrAt(i, "character", NewErrInvalidUTF8Encoding())
 			return
 		}
 
@@ -109,9 +113,16 @@ func ReplaceSuffix(str, suffix string) (string, bool) {
 
 	if countStr == countSuffix {
 		return suffix, true
-	} else {
-		return str[:countStr-countSuffix] + suffix, true
 	}
+
+	var builder strings.Builder
+
+	builder.WriteString(str[:countStr-countSuffix])
+	builder.WriteString(suffix)
+
+	s := builder.String()
+
+	return s, true
 }
 
 // FindContentIndexes searches for the positions of opening and closing
@@ -236,54 +247,48 @@ func GenerateID(size int) (string, error) {
 //
 // Returns:
 //   - string: The string with spaces added to the end to fit the width.
-//   - error: An error if the width is less than 0.
 //
 // Behaviors:
+//   - If the width is less than 0, it is set to 0.
 //   - If the width is less than the length of the string, the string is
 //     truncated to fit the width.
 //   - If the width is greater than the length of the string, spaces are added
 //     to the end of the string until the width is reached.
-func FitString(s string, width int) (string, error) {
+func FitString(s string, width int) string {
 	if width < 0 {
-		return "", uc.NewErrInvalidParameter("width", uc.NewErrGTE(0))
+		width = 0
 	}
 
-	len := len([]rune(s))
+	len := utf8.RuneCountInString(s)
 
 	if width == 0 {
-		return "", nil
+		return ""
 	}
 
-	if len == 0 {
-		spacing := strings.Repeat(" ", width)
+	switch len {
+	case width:
+		// Do nothing
+	case 0:
+		s = strings.Repeat(" ", width)
+	default:
+		if len < width {
+			var builder strings.Builder
+			spacing := strings.Repeat(" ", width-len)
 
-		return spacing, nil
+			builder.WriteString(s)
+			builder.WriteString(spacing)
+
+			s = builder.String()
+		} else {
+			s = s[:width]
+		}
 	}
 
-	if len == width {
-		return s, nil
-	}
-
-	if len > width {
-		return s[:width], nil
-	}
-
-	var builder strings.Builder
-	spacing := strings.Repeat(" ", width-len)
-
-	builder.WriteString(s)
-	builder.WriteString(spacing)
-
-	return builder.String(), nil
+	return s
 }
 
 // CalculateNumberOfLines is a function that calculates the minimum number
 // of lines needed to fit a given text within a specified width.
-//
-// Errors:
-//   - *uc.ErrInvalidParameter: If the width is less than or equal to 0.
-//   - *ErrLinesGreaterThanWords: If the calculated number of lines is greater
-//     than the number of words in the text.
 //
 // Parameters:
 //   - text: The slice of strings representing the text to calculate the number of
@@ -291,9 +296,13 @@ func FitString(s string, width int) (string, error) {
 //   - width: The width to fit the text within.
 //
 // Returns:
-//
 //   - int: The calculated number of lines needed to fit the text within the width.
 //   - error: An error if it occurs during the calculation.
+//
+// Errors:
+//   - *uc.ErrInvalidParameter: If the width is less than or equal to 0.
+//   - *ErrLinesGreaterThanWords: If the calculated number of lines is greater
+//     than the number of words in the text.
 //
 // The function calculates the total length of the text (Tl) and uses a mathematical
 // formula to estimate the minimum number of lines needed to fit the text within the
@@ -381,11 +390,13 @@ func CalculateNumberOfLines(text []string, width int) (int, error) {
 
 	numberOfLines := int(math.Ceil((Tl-w)/(w+1))) + 1
 
+	var err error
+
 	if numberOfLines > len(text) {
-		return numberOfLines, NewErrLinesGreaterThanWords(numberOfLines, len(text))
-	} else {
-		return numberOfLines, nil
+		err = NewErrLinesGreaterThanWords(numberOfLines, len(text))
 	}
+
+	return numberOfLines, err
 }
 
 // SplitInEqualSizedLines is a function that splits a given text into lines of
@@ -415,7 +426,8 @@ func CalculateNumberOfLines(text []string, width int) (int, error) {
 // the text within the width using the CalculateNumberOfLines function.
 func SplitInEqualSizedLines(text []string, width, height int) (*TextSplit, error) {
 	if len(text) == 0 {
-		return nil, uc.NewErrInvalidParameter("text", uc.NewErrEmpty(text))
+		err := uc.NewErrInvalidParameter("text", uc.NewErrEmpty(text))
+		return nil, err
 	}
 
 	if height == -1 {
@@ -453,15 +465,14 @@ func SplitInEqualSizedLines(text []string, width, height int) (*TextSplit, error
 	//		 *** is a test ***
 
 	group, err := NewTextSplit(width, height)
-	if err != nil {
-		panic(err)
-	}
+	uc.AssertF(err == nil, "Error creating TextSplit instance: %s", err.Error())
 
 	for _, word := range text {
 		ok := group.InsertWord(word)
 
 		if !ok {
-			return nil, NewErrLinesGreaterThanWords(width, utf8.RuneCountInString(word))
+			err := NewErrLinesGreaterThanWords(width, utf8.RuneCountInString(word))
+			return nil, err
 		}
 	}
 
@@ -521,7 +532,8 @@ func SplitInEqualSizedLines(text []string, width, height int) (*TextSplit, error
 
 	weights := us.ApplyWeightFunc(candidates, calculateSplitRatio)
 	if len(weights) == 0 {
-		return nil, NewErrNoCandidateFound()
+		err := NewErrNoCandidateFound()
+		return nil, err
 	}
 
 	// 4.3. Return the candidates with the lowest SQM.
