@@ -17,7 +17,8 @@ func (e *ErrFileNotOpen) Error() string {
 // Returns:
 //   - *ErrFileNotOpen: A pointer to the newly created error.
 func NewErrFileNotOpen() *ErrFileNotOpen {
-	return &ErrFileNotOpen{}
+	e := &ErrFileNotOpen{}
+	return e
 }
 
 // ErrPathNot is an error type for when a path is not as expected.
@@ -33,14 +34,16 @@ type ErrPathNot struct {
 //
 // Message: "path {Path} is not {Expected}"
 func (e *ErrPathNot) Error() string {
-	var builder strings.Builder
+	values := []string{
+		"path",
+		e.Path,
+		"is not",
+		e.Expected,
+	}
 
-	builder.WriteString("path ")
-	builder.WriteString(e.Path)
-	builder.WriteString(" is not ")
-	builder.WriteString(e.Expected)
+	msg := strings.Join(values, " ")
 
-	return builder.String()
+	return msg
 }
 
 // NewErrPathNot creates a new ErrPathNot error.
@@ -52,8 +55,10 @@ func (e *ErrPathNot) Error() string {
 // Returns:
 //   - *ErrPathNot: A pointer to the newly created error.
 func NewErrPathNot(path, expected string) *ErrPathNot {
-	return &ErrPathNot{
+	e := &ErrPathNot{
 		Path:     path,
 		Expected: expected,
 	}
+
+	return e
 }

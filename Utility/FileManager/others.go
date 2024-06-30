@@ -100,8 +100,11 @@ func GetAllFileNamesInDirectory(directoryPath string) (map[string]string, error)
 		if err != nil {
 			return err
 		}
-		if !info.IsDir() {
-			fileExtensionMap[currentPath] = filepath.Ext(info.Name())
+
+		ok := info.IsDir()
+		if !ok {
+			name := info.Name()
+			fileExtensionMap[currentPath] = filepath.Ext(name)
 		}
 		return nil
 	}
@@ -141,8 +144,9 @@ func GetFilesEndingIn(directoryPath string, extensions ...string) (matchingFiles
 		}
 
 		entryName := entry.Name()
+		ext := filepath.Ext(entryName)
 
-		ok := slices.Contains(extensions, filepath.Ext(entryName))
+		ok := slices.Contains(extensions, ext)
 		if ok {
 			joinedPath := filepath.Join(directoryPath, entryName)
 			matchingFiles = append(matchingFiles, joinedPath)
@@ -175,6 +179,7 @@ func SplitPath(filePath string) (parts []string) {
 	return
 }
 
+/*
 // GroupFilesByExtension is a function that groups files in a directory by their
 // extension and moves them to a folder with the same name as the extension.
 //
@@ -205,6 +210,7 @@ func GroupFilesByExtension(dir string) error {
 
 		for _, file := range files {
 			oldPath := filepath.Join(dir, file)
+
 			newPath := filepath.Join(folder, filepath.Base(file))
 			err := os.Rename(oldPath, newPath)
 			if err != nil {
@@ -215,6 +221,7 @@ func GroupFilesByExtension(dir string) error {
 
 	return nil
 }
+*/
 
 // CountDepth counts the depth of a file path.
 //

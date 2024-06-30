@@ -55,12 +55,14 @@ func (fw *FileWriter) Write(p []byte) (int, error) {
 //   - The directory permissions are set to DP_OwnerRestrictOthers.
 //   - The file permissions are set to FP_OwnerRestrictOthers.
 func NewFileWriter(loc string) *FileWriter {
-	return &FileWriter{
+	fw := &FileWriter{
 		loc:      loc,
 		dirPerm:  DP_OwnerRestrictOthers,
 		filePerm: FP_OwnerRestrictOthers,
 		flag:     os.O_APPEND | os.O_WRONLY,
 	}
+
+	return fw
 }
 
 // SetDirPermissions sets the permissions of the directory.
@@ -159,7 +161,7 @@ func (fw *FileWriter) Exists() (bool, error) {
 		return true, nil
 	}
 
-	ok := errors.Is(err, os.ErrExist)
+	ok := errors.Is(err, os.ErrNotExist)
 	if ok {
 		return false, nil
 	}

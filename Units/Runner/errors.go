@@ -16,5 +16,6 @@ func (e *ErrAlreadyRunning) Error() string {
 // Returns:
 //   - *ErrAlreadyRunning: The new error.
 func NewErrAlreadyRunning() *ErrAlreadyRunning {
-	return &ErrAlreadyRunning{}
+	e := &ErrAlreadyRunning{}
+	return e
 }

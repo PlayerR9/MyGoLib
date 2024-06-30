@@ -57,10 +57,12 @@ func (e *ErrWhile) ChangeReason(reason error) {
 // Returns:
 //   - *ErrWhile: A pointer to the newly created ErrWhile.
 func NewErrWhile(operation string, reason error) *ErrWhile {
-	return &ErrWhile{
+	e := &ErrWhile{
 		Operation: operation,
 		Reason:    reason,
 	}
+
+	return e
 }
 
 // ErrWhileAt represents an error that occurs while performing an operation at a specific index.
@@ -127,12 +129,13 @@ func (e *ErrWhileAt) ChangeReason(reason error) {
 // Returns:
 //   - *ErrWhileAt: A pointer to the newly created ErrWhileAt.
 func NewErrWhileAt(operation string, index int, elem string, reason error) *ErrWhileAt {
-	return &ErrWhileAt{
+	e := &ErrWhileAt{
 		Index:     index,
 		Operation: operation,
 		Element:   elem,
 		Reason:    reason,
 	}
+	return e
 }
 
 // ErrNoError represents an error when no error occurs.

@@ -30,6 +30,8 @@ func (t *SimpleTray[T]) GetRightDistance() int {
 
 // moveRightBy is a helper function that moves the arrow to the right by n positions.
 //
+// Doesn't modify the arrow.
+//
 // Parameters:
 //   - arrow: The current position of the arrow.
 //   - n: The number of positions to move the arrow.
@@ -55,6 +57,8 @@ func (st *SimpleTray[T]) moveRightBy(arrow, n int) (int, int) {
 }
 
 // moveLeftBy is a helper function that moves the arrow to the left by n positions.
+//
+// Doesn't modify the arrow.
 //
 // Parameters:
 //   - n: The number of positions to move the arrow.
@@ -266,31 +270,16 @@ func (t *GeneralTray[T]) ShiftRightOfArrow(n int) {
 
 // Copy implements the Trayer interface.
 func (t *SimpleTray[T]) Copy() uc.Copier {
-	return NewSimpleTray[T](t.tape)
-}
-
-// Backup implements the Trayer interface.
-func (t *SimpleTray[T]) Backup() *TrayBackup[T] {
 	tapeCopy := make([]T, len(t.tape))
 	copy(tapeCopy, t.tape)
 
-	return &TrayBackup[T]{
+	stCopy := &SimpleTray[T]{
 		tape:  tapeCopy,
 		arrow: t.arrow,
-	}
-}
-
-// Restore implements the Trayer interface.
-func (t *SimpleTray[T]) Restore(backup *TrayBackup[T]) error {
-	if backup == nil {
-		return uc.NewErrNilParameter("backup")
+		size:  len(tapeCopy),
 	}
 
-	t.tape = backup.tape
-	t.arrow = backup.arrow
-	t.size = len(backup.tape)
-
-	return nil
+	return stCopy
 }
 
 // NewSimpleTray creates a new GeneralTray with the given tape.
@@ -301,9 +290,11 @@ func (t *SimpleTray[T]) Restore(backup *TrayBackup[T]) error {
 // Returns:
 //   - *GeneralTray: A pointer to the new GeneralTray.
 func NewSimpleTray[T any](tape []T) *SimpleTray[T] {
-	return &SimpleTray[T]{
+	st := &SimpleTray[T]{
 		tape:  tape,
 		arrow: 0,
 		size:  len(tape),
 	}
+
+	return st
 }

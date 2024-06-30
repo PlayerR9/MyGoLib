@@ -1,7 +1,6 @@
 package Tray
 
 import (
-	ub "github.com/PlayerR9/MyGoLib/Units/Debugging"
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
 )
 
@@ -104,6 +103,4 @@ type Trayer[T any] interface {
 	*/
 
 	uc.Copier
-
-	ub.Backuper[*TrayBackup[T]]
 }

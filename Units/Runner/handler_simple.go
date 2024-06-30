@@ -28,18 +28,14 @@ type HandlerSimple struct {
 
 // Start implements the Runner interface.
 func (h *HandlerSimple) Start() {
-	select {
-	case <-h.ctx.Done():
-		h.errChan = make(chan error)
+	h.errChan = make(chan error)
 
-		h.ctx, h.cancel = context.WithCancel(context.Background())
+	h.ctx, h.cancel = context.WithCancel(context.Background())
 
-		h.wg.Add(1)
+	h.wg.Add(1)
 
-		go h.run()
-	default:
-		// Do nothing as the context is already running.
-	}
+	go h.run()
+
 }
 
 // Close implements the Runner interface.

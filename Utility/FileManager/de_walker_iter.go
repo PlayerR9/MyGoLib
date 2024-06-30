@@ -26,10 +26,12 @@ type Item struct {
 // Returns:
 //   - Item: The new item.
 func NewItem(loc string, de fs.DirEntry) Item {
-	return Item{
+	item := Item{
 		loc:      loc,
 		DirEntry: de,
 	}
+
+	return item
 }
 
 // Path returns the path to the directory. This
@@ -47,7 +49,8 @@ func (item *Item) Path() string {
 // Returns:
 //   - string: The full path to the directory entry.
 func (item *Item) FullPath() string {
-	joined := path.Join(item.loc, item.Name())
+	name := item.Name()
+	joined := path.Join(item.loc, name)
 
 	return joined
 }
@@ -164,7 +167,9 @@ type ItemList struct {
 
 // Iterator implements the Iterators.Iterable interface.
 func (il *ItemList) Iterator() uc.Iterater[Item] {
-	return uc.NewSimpleIterator(il.items)
+	iter := uc.NewSimpleIterator(il.items)
+
+	return iter
 }
 
 // NewDirEntryIterator creates a new directory entry iterator.

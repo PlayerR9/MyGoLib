@@ -168,11 +168,19 @@ func Lines(loc string, create bool) ([]string, error) {
 	var lines []string
 	scanner := bufio.NewScanner(file)
 
-	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
+	for {
+		ok := scanner.Scan()
+		if !ok {
+			break
+		}
+
+		line := scanner.Text()
+		lines = append(lines, line)
 	}
 
-	return lines, scanner.Err()
+	err = scanner.Err()
+
+	return lines, err
 }
 
 // PerLine reads the file line by line and applies a function to each line.
@@ -213,7 +221,12 @@ func PerLine[T any](loc string, create bool, f uc.EvalOneFunc[string, T]) ([]T, 
 	var lines []T
 	scanner := bufio.NewScanner(file)
 
-	for scanner.Scan() {
+	for {
+		ok := scanner.Scan()
+		if !ok {
+			break
+		}
+
 		text := scanner.Text()
 
 		res, err := f(text)
@@ -224,7 +237,9 @@ func PerLine[T any](loc string, create bool, f uc.EvalOneFunc[string, T]) ([]T, 
 		lines = append(lines, res)
 	}
 
-	return lines, scanner.Err()
+	err = scanner.Err()
+
+	return lines, err
 }
 
 // CheckPath checks if the path is a directory or file as expected.
