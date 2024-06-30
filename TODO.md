@@ -1,4 +1,3 @@
 # TO DO
 
-- [ ] Fix the strings.Builder in the listlike package.
-- [ ] Fix the Copy() function in the Stack and Queue classes.
+- [ ] Fix the traversor. Somehow trav.EmptyLine() does not add a newline.
