@@ -390,6 +390,8 @@ type ErrInvalidValues[T comparable] struct {
 func (e *ErrInvalidValues[T]) Error() string {
 	if len(e.Values) == 0 {
 		return "value is invalid"
+	} else if len(e.Values) == 1 {
+		return "value must not be " + StringOf(e.Values[0])
 	}
 
 	values := make([]string, 0, len(e.Values))
