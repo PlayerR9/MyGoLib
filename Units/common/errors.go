@@ -167,8 +167,11 @@ func (e *ErrUnexpected) Error() string {
 		builder.WriteRune(',')
 	}
 
-	builder.WriteString(" or ")
-	builder.WriteString(strconv.Quote(e.Expected[len(e.Expected)-1]))
+	if len(e.Expected) > 1 {
+		builder.WriteString(" or ")
+		builder.WriteString(strconv.Quote(e.Expected[len(e.Expected)-1]))
+	}
+
 	builder.WriteString(", got ")
 
 	if e.Actual == "" {
