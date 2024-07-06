@@ -1,6 +1,6 @@
 module github.com/PlayerR9/MyGoLib
 
-go 1.22.4
+go 1.22.5
 
 require github.com/chromedp/chromedp v0.9.5
 
@@ -23,6 +23,6 @@ require (
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	golang.org/x/exp v0.0.0-20240613232115-7f521ea00fb8
-	golang.org/x/net v0.26.0
-	golang.org/x/sys v0.21.0 // indirect
+	golang.org/x/net v0.27.0
+	golang.org/x/sys v0.22.0 // indirect
 )
