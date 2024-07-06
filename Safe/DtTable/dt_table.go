@@ -12,7 +12,7 @@ import (
 // It is safe for concurrent use.
 type DtTable struct {
 	// height and width represent the height and width of the table, respectively.
-	height, width *rws.Subject[int]
+	height, width *rws.Safe[int]
 
 	// rows is a slice of rows in the table.
 	rows []*DtRow
@@ -121,8 +121,8 @@ func NewDtTable(height, width int) (*DtTable, error) {
 	}
 
 	return &DtTable{
-		height: rws.NewSubject(height),
-		width:  rws.NewSubject(width),
+		height: rws.NewSafe(height),
+		width:  rws.NewSafe(width),
 		rows:   rows,
 	}, nil
 }
@@ -141,8 +141,8 @@ func TransformIntoTable(highlights []DtCell) (*DtTable, error) {
 	}
 
 	if len(highlights) == 0 {
-		table.height = rws.NewSubject(0)
-		table.width = rws.NewSubject(0)
+		table.height = rws.NewSafe(0)
+		table.width = rws.NewSafe(0)
 
 		return table, nil
 	}
@@ -174,7 +174,7 @@ func TransformIntoTable(highlights []DtCell) (*DtTable, error) {
 		table.rows = append(table.rows, row)
 	}
 
-	table.height = rws.NewSubject(len(table.rows))
+	table.height = rws.NewSafe(len(table.rows))
 
 	// Fix the sizes of the table.
 	width := 0
@@ -187,7 +187,7 @@ func TransformIntoTable(highlights []DtCell) (*DtTable, error) {
 		}
 	}
 
-	table.width = rws.NewSubject(width)
+	table.width = rws.NewSafe(width)
 
 	for i, row := range table.rows {
 		if row.GetWidth() == width {

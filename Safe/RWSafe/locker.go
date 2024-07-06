@@ -6,7 +6,7 @@ import (
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
 )
 
-// Locker is a thread-safe locker that allows multiple goroutines to wait for a condition.
+// Locker is a thread-Subject locker that allows multiple goroutines to wait for a condition.
 type Locker[T uc.Enumer] struct {
 	// cond is the condition variable.
 	cond *sync.Cond

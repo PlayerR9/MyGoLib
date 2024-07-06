@@ -37,7 +37,7 @@ type Redirect[T any] struct {
 	senders []ur.SenderRunner[T]
 
 	// isClosed is a flag that indicates if the handler is closed.
-	isClosed *rws.Subject[bool]
+	isClosed *rws.Safe[bool]
 }
 
 // NewRedirect creates a new redirect handler.
@@ -102,7 +102,7 @@ func (r *Redirect[T]) Run() {
 		return
 	}
 
-	r.isClosed = rws.NewSubject(false)
+	r.isClosed = rws.NewSafe(false)
 
 	if len(r.senders) == 0 {
 		go func() {
@@ -150,7 +150,7 @@ type ChannelThrough[T any] struct {
 	buffer *Buffer[T]
 
 	// isClosed is a flag that indicates if the handler is closed.
-	isClosed *rws.Subject[bool]
+	isClosed *rws.Safe[bool]
 }
 
 // NewChannelThrough creates a new channel through buffer.

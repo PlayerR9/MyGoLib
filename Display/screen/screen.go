@@ -34,7 +34,7 @@ type Display struct {
 	table *ddt.DrawTable
 
 	// element is the element to draw.
-	element *rws.Subject[ddt.Displayer]
+	element *rws.Safe[ddt.Displayer]
 
 	// errChan is the channel of errors.
 	errChan chan error
@@ -43,7 +43,7 @@ type Display struct {
 	keyChan chan tcell.EventKey
 
 	// shouldClose is the subject of whether the display should close.
-	shouldClose *rws.Subject[bool]
+	shouldClose *rws.Safe[bool]
 
 	// bgStyle is the background style of the display.
 	bgStyle tcell.Style
@@ -90,8 +90,8 @@ func (d *Display) Start() {
 	d.errChan = make(chan error, 1)
 	d.keyChan = make(chan tcell.EventKey)
 
-	d.shouldClose = rws.NewSubject[bool](false)
-	d.element = rws.NewSubject[ddt.Displayer](nil)
+	d.shouldClose = rws.NewSafe[bool](false)
+	d.element = rws.NewSafe[ddt.Displayer](nil)
 
 	d.screen.EnableMouse()
 

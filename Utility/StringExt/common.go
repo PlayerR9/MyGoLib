@@ -548,3 +548,143 @@ func SplitInEqualSizedLines(text []string, width, height int) (*TextSplit, error
 
 	return candidates[0], nil
 }
+
+// LevenshteinTable is a table of words for the Levenshtein distance.
+type LavenshteinTable struct {
+	// words is the list of words.
+	word_list [][]rune
+
+	// word_length_list is the list of word lengths.
+	word_length_list []int
+}
+
+// NewLevenshteinTable creates a new Levenshtein table
+// with the given words.
+//
+// Parameters:
+//   - words: The words to add to the table.
+//
+// Returns:
+//   - *LevenshteinTable: The new Levenshtein table.
+func NewLevenshteinTable(words ...string) (*LavenshteinTable, error) {
+	lt := &LavenshteinTable{}
+
+	for i, word := range words {
+		ok := lt.AddWord(word)
+		if !ok {
+			return nil, uc.NewErrWhileAt("adding words", i+1, "word", NewErrInvalidUTF8Encoding())
+		}
+	}
+
+	return lt, nil
+}
+
+// AddWord adds a word to the table.
+//
+// Parameters:
+//   - word: The word to add.
+//
+// Returns:
+//   - bool: Whether the word was added successfully.
+//
+// If this fails, it means that the word could not be converted to UTF-8 runes.
+func (lt *LavenshteinTable) AddWord(word string) bool {
+	chars, err := ToUTF8Runes(word)
+	if err != nil {
+		return false
+	}
+
+	lt.word_list = append(lt.word_list, chars)
+	lt.word_length_list = append(lt.word_length_list, len(chars))
+
+	return true
+}
+
+// GetClosest gets the closest word to a target.
+//
+// Parameters:
+//   - target: The target.
+//
+// Returns:
+//   - string: The closest word.
+//   - error: The error if any occurs.
+//
+// Errors:
+//   - *common.ErrInvalidParameter: If the target is empty.
+//   - *ErrNoClosestWordFound: If no closest word is found.
+func (lt *LavenshteinTable) GetClosest(target []rune) (string, error) {
+	if len(target) == 0 {
+		return "", uc.NewErrInvalidParameter("target", uc.NewErrEmpty(target))
+	}
+
+	target_len := len(target)
+
+	closest_idx := -1
+	var min int
+
+	for i, word := range lt.word_list {
+		d := levenshtein_distance(target, target_len, word, lt.word_length_list[i])
+
+		if closest_idx == -1 || d < min {
+			min = d
+			closest_idx = i
+		}
+	}
+
+	if closest_idx == -1 {
+		return "", NewErrNoClosestWordFound()
+	}
+
+	word := lt.word_list[closest_idx]
+
+	return string(word), nil
+}
+
+// levenshteinDistance calculates the Levenshtein distance between two strings.
+//
+// Parameters:
+//   - target: The target.
+//   - target_len: The target length.
+//   - other: The other.
+//   - other_len: The other length.
+//
+// Returns:
+//   - int: The Levenshtein distance.
+func levenshtein_distance(target []rune, target_len int, other []rune, other_len int) int {
+	matrix := make([][]int, 0, target_len+1)
+
+	for i := 0; i <= target_len; i++ {
+		row := make([]int, other_len+1)
+
+		matrix = append(matrix, row)
+	}
+
+	// Initialize the matrix
+	for i := 0; i <= target_len; i++ {
+		matrix[i][0] = i
+	}
+	for j := 0; j <= other_len; j++ {
+		matrix[0][j] = j
+	}
+
+	// Compute the distances
+	for i := 1; i <= target_len; i++ {
+		for j := 1; j <= other_len; j++ {
+			if target[i-1] == other[j-1] {
+				matrix[i][j] = matrix[i-1][j-1] // No operation needed
+			} else {
+				deletion := matrix[i-1][j] + 1
+				insertion := matrix[i][j-1] + 1
+				substitution := matrix[i-1][j-1] + 1
+
+				minFirst := uc.Min(deletion, insertion)
+				minSecond := uc.Min(minFirst, substitution)
+				matrix[i][j] = minSecond
+			}
+		}
+	}
+
+	d := matrix[target_len][other_len]
+
+	return d
+}
