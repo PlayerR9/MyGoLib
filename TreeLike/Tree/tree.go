@@ -116,11 +116,13 @@ func (t *Tree[T]) SetChildren(children []*Tree[T]) error {
 		t.size += child.Size()
 
 		croot := child.root
-		croot.setParent(root)
+		croot.Parent = root
+
 		subchildren = append(subchildren, croot)
 	}
 
-	root.children = subchildren
+	LinkWithParent(root, subchildren)
+
 	t.leaves = leaves
 
 	return nil
@@ -150,6 +152,8 @@ func (t *Tree[T]) Root() *TreeNode[T] {
 	return t.root
 }
 
+/*
+
 // GetChildren returns all the children of the tree in a DFS order.
 //
 // Returns:
@@ -174,25 +178,16 @@ func (t *Tree[T]) GetChildren() (children []T) {
 
 		children = append(children, node.Data)
 
-		for _, child := range node.children {
-			S.Push(child)
+		for i := 0; i < len(node.children); i++ {
+			current := node.children[i]
+
+			S.Push(current)
 		}
 	}
 
 	return children
 }
-
-// Cleanup removes every node in the tree.
-//
-// Behaviors:
-//   - This function is recursive and so, it is expensive.
-func (t *Tree[T]) Cleanup() {
-	root := t.root
-
-	recCleanup(root)
-
-	t.root = nil
-}
+*/
 
 // GetLeaves returns all the leaves of the tree.
 //
@@ -241,11 +236,11 @@ func (t *Tree[T]) RegenerateLeaves() []*TreeNode[T] {
 
 		t.size++
 
-		if len(top.children) == 0 {
+		if top.FirstChild == nil {
 			leaves = append(leaves, top)
 		} else {
-			for _, child := range top.children {
-				S.Push(child)
+			for c := top.FirstChild; c != nil; c = c.FirstChild {
+				S.Push(c)
 			}
 		}
 	}
@@ -286,11 +281,11 @@ func (t *Tree[T]) UpdateLeaves() []*TreeNode[T] {
 
 		t.size++
 
-		if len(top.children) == 0 {
+		if top.FirstChild == nil {
 			leaves = append(leaves, top)
 		} else {
-			for _, child := range top.children {
-				S.Push(child)
+			for c := top.FirstChild; c != nil; c = c.FirstChild {
+				S.Push(c)
 			}
 		}
 	}
@@ -298,24 +293,6 @@ func (t *Tree[T]) UpdateLeaves() []*TreeNode[T] {
 	t.leaves = leaves
 
 	return leaves
-}
-
-// SnakeTraversal returns all the paths from the root to the leaves of the tree.
-//
-// Returns:
-//   - [][]T: A slice of slices of the values of the nodes in the paths.
-//
-// Behaviors:
-//   - The paths are returned in the order of a DFS traversal.
-//   - If the tree is empty, it returns an empty slice.
-func (t *Tree[T]) SnakeTraversal() [][]T {
-	root := t.root
-	if root == nil {
-		return nil
-	}
-
-	trav := recSnakeTraversal(root)
-	return trav
 }
 
 // HasChild returns true if the tree has the given child in any of its nodes
@@ -349,8 +326,8 @@ func (t *Tree[T]) HasChild(filter us.PredicateFilter[T]) bool {
 			return true
 		}
 
-		for _, child := range node.children {
-			Q.Enqueue(child)
+		for c := node.FirstChild; c != nil; c = c.FirstChild {
+			Q.Enqueue(c)
 		}
 	}
 
@@ -388,8 +365,8 @@ func (t *Tree[T]) FilterChildren(filter us.PredicateFilter[T]) (sols []*TreeNode
 			sols = append(sols, node)
 		}
 
-		for _, child := range node.children {
-			Q.Enqueue(child)
+		for c := node.FirstChild; c != nil; c = c.FirstChild {
+			Q.Enqueue(c)
 		}
 	}
 
@@ -453,8 +430,8 @@ func (t *Tree[T]) SearchNodes(f us.PredicateFilter[T]) *TreeNode[T] {
 			return first
 		}
 
-		for _, child := range first.children {
-			Q.Enqueue(child)
+		for c := first.FirstChild; c != nil; c = c.FirstChild {
+			Q.Enqueue(c)
 		}
 	}
 
@@ -482,8 +459,10 @@ func (t *Tree[T]) DeleteBranchContaining(tn *TreeNode[T]) error {
 
 	children := parent.DeleteChild(child)
 
-	for _, child := range children {
-		recCleanup(child)
+	for i := 0; i < len(children); i++ {
+		current := children[i]
+
+		recCleanup(current)
 	}
 
 	t.leaves = t.RegenerateLeaves()
@@ -545,16 +524,16 @@ func (t *Tree[T]) SkipFilter(filter us.PredicateFilter[T]) (forest []*Tree[T]) {
 		ok := filter(leaf.Data)
 
 		if !ok {
-			if leaf.parent == nil {
+			if leaf.Parent == nil {
 				// We reached the root
 				frontier = frontier[1:]
 			} else {
-				if len(leaf.children) == 0 {
+				if leaf.FirstChild == nil {
 					leaves = append(leaves, leaf)
 				}
 
-				if !seen[leaf.parent] {
-					frontier[0] = leaf.parent
+				if !seen[leaf.Parent] {
+					frontier[0] = leaf.Parent
 				} else {
 					frontier = frontier[1:]
 				}
@@ -565,7 +544,9 @@ func (t *Tree[T]) SkipFilter(filter us.PredicateFilter[T]) (forest []*Tree[T]) {
 			if len(children) != 0 {
 				// We obtained a forest as we reached the root
 
-				for _, child := range children {
+				for i := 0; i < len(children); i++ {
+					child := children[i]
+
 					tree := child.ToTree()
 
 					forest = append(forest, tree)
@@ -574,8 +555,8 @@ func (t *Tree[T]) SkipFilter(filter us.PredicateFilter[T]) (forest []*Tree[T]) {
 				// We reached the root
 				frontier = frontier[1:]
 			} else {
-				if !seen[leaf.parent] {
-					frontier[0] = leaf.parent
+				if !seen[leaf.Parent] {
+					frontier[0] = leaf.Parent
 				} else {
 					frontier = frontier[1:]
 				}
@@ -603,28 +584,31 @@ func (t *Tree[T]) SkipFilter(filter us.PredicateFilter[T]) (forest []*Tree[T]) {
 // Behaviors:
 //   - The leaf is replaced with the children.
 //   - The size of the tree is updated.
-func (t *Tree[T]) replaceLeafWithTree(at int, children []T) {
+func (t *Tree[T]) replaceLeafWithTree(at int, values []T) {
 	leaf := t.leaves[at]
 
 	// Make the subtree
-	leaf.children = make([]*TreeNode[T], 0, len(children))
-	for _, child := range children {
-		node := NewTreeNode(child)
-		node.parent = leaf
+	children := make([]*TreeNode[T], 0, len(values))
 
-		leaf.children = append(leaf.children, node)
+	for _, value := range values {
+		node := NewTreeNode(value)
+		children = append(children, node)
 	}
 
+	LinkWithParent(leaf.Parent, children)
+
 	// Update the size of the tree
-	t.size += len(leaf.children)
+	t.size += len(children) - 1
 
 	// Replace the current leaf with the leaf's children
+	sub_leaves := leaf.Leaves()
+
 	if at == len(t.leaves)-1 {
-		t.leaves = append(t.leaves[:at], leaf.children...)
+		t.leaves = append(t.leaves[:at], sub_leaves...)
 	} else if at == 0 {
-		t.leaves = append(leaf.children, t.leaves[at+1:]...)
+		t.leaves = append(sub_leaves, t.leaves[at+1:]...)
 	} else {
-		t.leaves = append(t.leaves[:at], append(leaf.children, t.leaves[at+1:]...)...)
+		t.leaves = append(t.leaves[:at], append(sub_leaves, t.leaves[at+1:]...)...)
 	}
 }
 
@@ -660,14 +644,18 @@ func (t *Tree[T]) ProcessLeaves(f uc.EvalManyFunc[T, T]) error {
 // GetDirectChildren returns the direct children of the root of the tree.
 //
 // Returns:
-//   - []*Node[T]: A slice of pointers to the direct children of the root.
-func (t *Tree[T]) GetDirectChildren() []*TreeNode[T] {
+//   - children: A slice of pointers to the direct children of the root.
+func (t *Tree[T]) GetDirectChildren() (children []*TreeNode[T]) {
 	root := t.root
 	if root == nil {
-		return nil
+		return
 	}
 
-	return root.children
+	for c := root.FirstChild; c != nil; c = c.FirstChild {
+		children = append(children, c)
+	}
+
+	return
 }
 
 // ExtractBranch extracts the branch of the tree that contains the given leaf.
@@ -716,7 +704,7 @@ func (t *Tree[T]) InsertBranch(branch *Branch[T]) bool {
 	ref := t.root
 
 	if ref == nil {
-		otherTree := branch.fromNode.ToTree()
+		otherTree := branch.from_node.ToTree()
 
 		t.root = otherTree.root
 		t.leaves = otherTree.leaves
@@ -725,24 +713,30 @@ func (t *Tree[T]) InsertBranch(branch *Branch[T]) bool {
 		return true
 	}
 
-	from := branch.fromNode
+	from := branch.from_node
 	if ref != from {
 		return false
 	}
 
 	size := branch.size - 1
 
-	for from != branch.toNode {
-		from = from.children[0]
+	for from != branch.to_node {
+		from = from.FirstChild
 
-		index := slices.Index(ref.children, from)
+		var next *TreeNode[T]
 
-		if index == -1 {
+		for c := ref.FirstChild; c != nil && next == nil; c = c.FirstChild {
+			if c == from {
+				next = c
+			}
+		}
+
+		if next == nil {
 			break
 		}
 
 		// from is a child of the root. Keep going
-		ref = ref.children[index]
+		ref = next
 
 		size--
 	}

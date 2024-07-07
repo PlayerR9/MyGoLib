@@ -6,6 +6,7 @@ import (
 	"math"
 	"slices"
 	"strings"
+	"unicode"
 	"unicode/utf8"
 
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
@@ -14,15 +15,15 @@ import (
 )
 
 var (
-	// calculateSplitRatio is a function that calculates the split ratio of a
+	// calculate_split_ratio is a function that calculates the split ratio of a
 	// TextSplit instance.
 	//
 	// Never false.
-	calculateSplitRatio us.WeightFunc[*TextSplit]
+	calculate_split_ratio us.WeightFunc[*TextSplit]
 )
 
 func init() {
-	calculateSplitRatio = func(candidate *TextSplit) (float64, bool) {
+	calculate_split_ratio = func(candidate *TextSplit) (float64, bool) {
 		uc.Assert(candidate != nil, "in calculateSplitRatio: candidate is nil")
 
 		values := make([]float64, 0, candidate.GetHeight())
@@ -104,20 +105,20 @@ func ReplaceSuffix(str, suffix string) (string, bool) {
 		return str, true
 	}
 
-	countStr := utf8.RuneCountInString(str)
-	countSuffix := utf8.RuneCountInString(suffix)
+	count_str := utf8.RuneCountInString(str)
+	count_suffix := utf8.RuneCountInString(suffix)
 
-	if countStr < countSuffix {
+	if count_str < count_suffix {
 		return "", false
 	}
 
-	if countStr == countSuffix {
+	if count_str == count_suffix {
 		return suffix, true
 	}
 
 	var builder strings.Builder
 
-	builder.WriteString(str[:countStr-countSuffix])
+	builder.WriteString(str[:count_str-count_suffix])
 	builder.WriteString(suffix)
 
 	s := builder.String()
@@ -129,9 +130,9 @@ func ReplaceSuffix(str, suffix string) (string, bool) {
 // tokens in a slice of strings.
 //
 // Parameters:
-//   - openingToken: The string that marks the beginning of the content.
-//   - closingToken: The string that marks the end of the content.
-//   - contentTokens: The slice of strings in which to search for the tokens.
+//   - op_token: The string that marks the beginning of the content.
+//   - cl_token: The string that marks the end of the content.
+//   - tokens: The slice of strings in which to search for the tokens.
 //
 // Returns:
 //   - result: An array of two integers representing the start and end indexes
@@ -152,56 +153,57 @@ func ReplaceSuffix(str, suffix string) (string, bool) {
 //   - This function returns a partial result when errors occur. ([-1, -1] if
 //     errors occur before finding the opening token, [index, 0] if the opening
 //     token is found but the closing token is not found.
-func FindContentIndexes(openingToken, closingToken string, contentTokens []string) (result [2]int, err error) {
+func FindContentIndexes(op_token, cl_token string, tokens []string) (result [2]int, err error) {
 	result[0] = -1
 	result[1] = -1
 
-	if openingToken == "" {
-		err = uc.NewErrInvalidParameter("openingToken", uc.NewErrEmpty(openingToken))
+	if op_token == "" {
+		err = uc.NewErrInvalidParameter("openingToken", uc.NewErrEmpty(op_token))
 		return
-	} else if closingToken == "" {
-		err = uc.NewErrInvalidParameter("closingToken", uc.NewErrEmpty(closingToken))
+	} else if cl_token == "" {
+		err = uc.NewErrInvalidParameter("closingToken", uc.NewErrEmpty(cl_token))
 		return
 	}
 
-	openingTokenIndex := slices.Index(contentTokens, openingToken)
-	if openingTokenIndex < 0 {
-		err = NewErrTokenNotFound(openingToken, OpToken)
+	op_tok_idx := slices.Index(tokens, op_token)
+	if op_tok_idx < 0 {
+		err = NewErrTokenNotFound(op_token, OpToken)
 		return
 	} else {
-		result[0] = openingTokenIndex + 1
+		result[0] = op_tok_idx + 1
 	}
 
-	tokenBalance := 1
-	closingTokenIndex := -1
+	balance := 1
+	cl_tok_idx := -1
 
-	for i := result[0]; i < len(contentTokens); i++ {
-		if contentTokens[i] == closingToken {
-			tokenBalance--
+	for i := result[0]; i < len(tokens) && cl_tok_idx == -1; i++ {
+		curr_tok := tokens[i]
 
-			if tokenBalance == 0 {
-				closingTokenIndex = i
-				break
+		if curr_tok == cl_token {
+			balance--
+
+			if balance == 0 {
+				cl_tok_idx = i
 			}
-		} else if contentTokens[i] == openingToken {
-			tokenBalance++
+		} else if curr_tok == op_token {
+			balance++
 		}
 	}
 
-	if closingTokenIndex != -1 {
-		result[1] = closingTokenIndex + 1
+	if cl_tok_idx != -1 {
+		result[1] = cl_tok_idx + 1
 		return
 	}
 
-	if tokenBalance < 0 {
-		err = NewErrNeverOpened(openingToken, closingToken)
+	if balance < 0 {
+		err = NewErrNeverOpened(op_token, cl_token)
 		return
-	} else if tokenBalance != 1 || closingToken != "\n" {
-		err = NewErrTokenNotFound(closingToken, ClToken)
+	} else if balance != 1 || cl_token != "\n" {
+		err = NewErrTokenNotFound(cl_token, ClToken)
 		return
 	}
 
-	result[1] = len(contentTokens)
+	result[1] = len(tokens)
 	return
 }
 
@@ -388,15 +390,14 @@ func CalculateNumberOfLines(text []string, width int) (int, error) {
 
 	w := float64(width)
 
-	numberOfLines := int(math.Ceil((Tl-w)/(w+1))) + 1
+	line_count := int(math.Ceil((Tl-w)/(w+1))) + 1
 
-	var err error
-
-	if numberOfLines > len(text) {
-		err = NewErrLinesGreaterThanWords(numberOfLines, len(text))
+	if line_count > len(text) {
+		err := NewErrLinesGreaterThanWords(line_count, len(text))
+		return line_count, err
 	}
 
-	return numberOfLines, err
+	return line_count, nil
 }
 
 // SplitInEqualSizedLines is a function that splits a given text into lines of
@@ -512,17 +513,17 @@ func SplitInEqualSizedLines(text []string, width, height int) (*TextSplit, error
 
 	candidates := []*TextSplit{group}
 
-	for i := 0; i < len(candidates); i++ {
+	for _, candidate := range candidates {
 		for j := 1; j < height; j++ {
 			// Check if the first word of the line can be moved to the above line.
 			// If yes, then it is a candidate for the optimal solution.
-			ok := candidates[i].canShiftUp(j)
+			ok := candidate.canShiftUp(j)
 			if !ok {
 				continue
 			}
 
 			// Copy the candidate as we don't want to modify the original one.
-			candidateCopy := candidates[i].Copy().(*TextSplit)
+			candidateCopy := candidate.Copy().(*TextSplit)
 			candidateCopy.shiftUp(j)
 			candidates = append(candidates, candidateCopy)
 		}
@@ -530,7 +531,7 @@ func SplitInEqualSizedLines(text []string, width, height int) (*TextSplit, error
 
 	// 4.2. Calculate the SQM of each candidate and returns the ones with the lowest SQM.
 
-	weights := us.ApplyWeightFunc(candidates, calculateSplitRatio)
+	weights := us.ApplyWeightFunc(candidates, calculate_split_ratio)
 	if len(weights) == 0 {
 		err := NewErrNoCandidateFound()
 		return nil, err
@@ -677,9 +678,9 @@ func levenshtein_distance(target []rune, target_len int, other []rune, other_len
 				insertion := matrix[i][j-1] + 1
 				substitution := matrix[i-1][j-1] + 1
 
-				minFirst := uc.Min(deletion, insertion)
-				minSecond := uc.Min(minFirst, substitution)
-				matrix[i][j] = minSecond
+				min_first := uc.Min(deletion, insertion)
+				min_second := uc.Min(min_first, substitution)
+				matrix[i][j] = min_second
 			}
 		}
 	}
@@ -687,4 +688,88 @@ func levenshtein_distance(target []rune, target_len int, other []rune, other_len
 	d := matrix[target_len][other_len]
 
 	return d
+}
+
+// LastInstanceOfWS finds the last instance of whitespace in the characters.
+//
+// Parameters:
+//   - chars: The characters.
+//   - from_idx: The starting index. (inclusive)
+//   - to_idx: The ending index. (exclusive)
+//
+// Returns:
+//   - int: The index of the last whitespace character. -1 if not found.
+//
+// Behaviors:
+//   - If from_idx < 0, from_idx is set to 0.
+//   - If to_idx >= len(chars), to_idx is set to len(chars) - 1.
+//   - If from_idx > to_idx, from_idx and to_idx are swapped.
+func LastInstanceOfWS(chars []rune, from_idx, to_idx int) int {
+	if len(chars) == 0 {
+		return -1
+	}
+
+	if from_idx < 0 {
+		from_idx = 0
+	}
+
+	if to_idx >= len(chars) {
+		to_idx = len(chars)
+	}
+
+	if from_idx > to_idx {
+		from_idx, to_idx = to_idx, from_idx
+	}
+
+	for i := to_idx - 1; i >= from_idx; i-- {
+		ok := unicode.IsSpace(chars[i])
+		if ok {
+			return i
+		}
+	}
+
+	return -1
+}
+
+// FirstInstanceOfWS finds the first instance of whitespace in the characters.
+//
+// Parameters:
+//   - chars: The characters.
+//   - from_idx: The starting index. (inclusive)
+//   - to_idx: The ending index. (exclusive)
+//
+// Returns:
+//   - int: The index of the first whitespace character. -1 if not found.
+//
+// Behaviors:
+//   - If from_idx < 0, from_idx is set to 0.
+//   - If to_idx >= len(chars), to_idx is set to len(chars) - 1.
+//   - If from_idx > to_idx, from_idx and to_idx are swapped.
+//
+// FIXME: Remove this function once MyGoLib is updated.
+func FirstInstanceOfWS(chars []rune, from_idx, to_idx int) int {
+	if len(chars) == 0 {
+		return -1
+	}
+
+	if from_idx < 0 {
+		from_idx = 0
+	}
+
+	if to_idx >= len(chars) {
+		to_idx = len(chars)
+	}
+
+	if from_idx > to_idx {
+		from_idx, to_idx = to_idx, from_idx
+	}
+
+	for i := from_idx; i < to_idx; i++ {
+		ok := unicode.IsSpace(chars[i])
+		if ok {
+			return i
+		}
+	}
+
+	return -1
 }

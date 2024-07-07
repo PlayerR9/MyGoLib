@@ -47,7 +47,7 @@ type SetChildrenCmd[T any] struct {
 // Execute implements the Debugging.Commander interface.
 func (c *SetChildrenCmd[T]) Execute(data *Tree[T]) error {
 	c.size = data.size
-	c.prevChildren = data.root.children
+	c.prevChildren = data.root.GetChildren()
 	c.prevLeaves = data.leaves
 
 	err := data.SetChildren(c.children)
@@ -65,7 +65,7 @@ func (c *SetChildrenCmd[T]) Undo(data *Tree[T]) error {
 		return NewErrMissingRoot()
 	}
 
-	root.children = c.prevChildren
+	LinkWithParent(root, c.prevChildren)
 	data.leaves = c.prevLeaves
 	data.size = c.size
 
@@ -89,14 +89,14 @@ func (c *SetChildrenCmd[T]) Copy() uc.Copier {
 
 	for i, child := range c.prevChildren {
 		childCopy := child.Copy().(*TreeNode[T])
-		childCopy.setParent(child.parent)
+		childCopy.Parent = child.Parent
 
 		cCopy.prevChildren[i] = childCopy
 	}
 
 	for i, leaf := range c.prevLeaves {
 		leafCopy := leaf.Copy().(*TreeNode[T])
-		leafCopy.setParent(leaf.parent)
+		leafCopy.Parent = leaf.Parent
 
 		cCopy.prevLeaves[i] = leafCopy
 	}
@@ -697,7 +697,7 @@ func (c *InsertBranchCmd[T]) Execute(data *Tree[T]) error {
 
 // Undo implements the Debugging.Commander interface.
 func (c *InsertBranchCmd[T]) Undo(data *Tree[T]) error {
-	err := data.DeleteBranchContaining(c.branch.fromNode)
+	err := data.DeleteBranchContaining(c.branch.from_node)
 	if err != nil {
 		if c.hasError {
 			return nil

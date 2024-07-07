@@ -7,11 +7,11 @@ import (
 // BranchIterator is a generic data structure that represents an iterator
 // for a branch in a tree.
 type BranchIterator[T any] struct {
-	// fromNode is the node from which the branch starts.
-	fromNode *TreeNode[T]
+	// from_node is the node from which the branch starts.
+	from_node *TreeNode[T]
 
-	// toNode is the node to which the branch ends.
-	toNode *TreeNode[T]
+	// to_node is the node to which the branch ends.
+	to_node *TreeNode[T]
 
 	// current is the current node of the iterator.
 	current *TreeNode[T]
@@ -35,10 +35,10 @@ func (bi *BranchIterator[T]) Consume() (T, error) {
 
 	value := bi.current.Data
 
-	if bi.current == bi.toNode {
+	if bi.current == bi.to_node {
 		bi.current = nil
 	} else {
-		bi.current = bi.current.children[0]
+		bi.current = bi.current.FirstChild
 	}
 
 	return value, nil
@@ -46,16 +46,16 @@ func (bi *BranchIterator[T]) Consume() (T, error) {
 
 // Restart implements the uc.Iterater interface.
 func (bi *BranchIterator[T]) Restart() {
-	bi.current = bi.fromNode
+	bi.current = bi.from_node
 }
 
 // Branch is a generic data structure that represents a branch in a tree.
 type Branch[T any] struct {
-	// fromNode is the node from which the branch starts.
-	fromNode *TreeNode[T]
+	// from_node is the node from which the branch starts.
+	from_node *TreeNode[T]
 
-	// toNode is the node to which the branch ends.
-	toNode *TreeNode[T]
+	// to_node is the node to which the branch ends.
+	to_node *TreeNode[T]
 
 	// size is the number of nodes in the branch.
 	size int
@@ -63,24 +63,24 @@ type Branch[T any] struct {
 
 // Copy implements the uc.Copier interface.
 func (b *Branch[T]) Copy() uc.Copier {
-	fromCopy := b.fromNode.Copy().(*TreeNode[T])
-	toCopy := b.toNode.Copy().(*TreeNode[T])
+	from_copy := b.from_node.Copy().(*TreeNode[T])
+	to_copy := b.to_node.Copy().(*TreeNode[T])
 
-	branchCopy := &Branch[T]{
-		fromNode: fromCopy,
-		toNode:   toCopy,
-		size:     b.size,
+	b_copy := &Branch[T]{
+		from_node: from_copy,
+		to_node:   to_copy,
+		size:      b.size,
 	}
 
-	return branchCopy
+	return b_copy
 }
 
 // Iterator implements the uc.Iterable interface.
 func (b *Branch[T]) Iterator() uc.Iterater[T] {
 	iter := &BranchIterator[T]{
-		fromNode: b.fromNode,
-		current:  b.fromNode,
-		size:     b.size,
+		from_node: b.from_node,
+		current:   b.from_node,
+		size:      b.size,
 	}
 
 	return iter
@@ -90,11 +90,11 @@ func (b *Branch[T]) Iterator() uc.Iterater[T] {
 func (b *Branch[T]) Slice() []T {
 	slice := make([]T, 0, b.size)
 
-	for n := b.fromNode; n != b.toNode; n = n.children[0] {
+	for n := b.from_node; n != b.to_node; n = n.FirstChild {
 		slice = append(slice, n.Data)
 	}
 
-	slice = append(slice, b.toNode.Data)
+	slice = append(slice, b.to_node.Data)
 
 	return slice
 }
