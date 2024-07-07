@@ -462,7 +462,9 @@ func (t *Tree[T]) DeleteBranchContaining(tn *TreeNode[T]) error {
 	for i := 0; i < len(children); i++ {
 		current := children[i]
 
-		recCleanup(current)
+		current.Cleanup()
+
+		children[i] = nil
 	}
 
 	t.leaves = t.RegenerateLeaves()

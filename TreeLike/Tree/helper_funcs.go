@@ -7,48 +7,14 @@ import (
 	us "github.com/PlayerR9/MyGoLib/Units/slice"
 )
 
-// recCleanup is a helper function that removes every node in the tree rooted at n.
-//
-// Behaviors:
-//   - This function is recursive.
-func recCleanup[T any](n *TreeNode[T]) {
-	uc.AssertParam("n", n != nil, errors.New("recCleanup: n is nil"))
-
-	n.Parent = nil
-
-	var prev *TreeNode[T]
-
-	for c := n.FirstChild; c != nil; c = c.NextSibling {
-		recCleanup(c)
-
-		if prev != nil {
-			prev.NextSibling = nil
-			prev.PrevSibling = nil
-		}
-
-		prev = c
-	}
-
-	if prev != nil {
-		prev.NextSibling = nil
-		prev.PrevSibling = nil
-	}
-
-	n.FirstChild = nil
-	n.LastChild = nil
-}
-
-// Cleanup removes every node in the tree.
+// Cleanup removes every node in the tree in a DFS traversal and sets the root to nil.
 func (t *Tree[T]) Cleanup() {
 	root := t.root
 	if root == nil {
 		return
 	}
 
-	recCleanup(root)
-
-	root.NextSibling = nil
-	root.PrevSibling = nil
+	root.Cleanup()
 
 	t.root = nil
 }
@@ -118,7 +84,7 @@ func recPruneFunc[T any](filter us.PredicateFilter[T], highest *TreeNode[T], n *
 
 	if ok {
 		// Delete all children
-		recCleanup(n)
+		n.Cleanup()
 
 		ancestors := FindCommonAncestor(highest, n)
 

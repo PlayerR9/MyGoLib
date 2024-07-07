@@ -5,6 +5,7 @@ import (
 
 	ffs "github.com/PlayerR9/MyGoLib/Formatting/FString"
 	"github.com/PlayerR9/MyGoLib/ListLike/Stacker"
+	lls "github.com/PlayerR9/MyGoLib/ListLike/Stacker"
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
 	us "github.com/PlayerR9/MyGoLib/Units/slice"
 )
@@ -648,4 +649,51 @@ func DelinkWithParent[T any](parent *TreeNode[T], children []*TreeNode[T]) {
 		parent.FirstChild = nil
 		parent.LastChild = nil
 	}
+}
+
+// Cleanup removes every child of the node in a DFS traversal.
+//
+// Behaviors:
+//   - The node itself is not removed.
+//   - It does not use recursion.
+func (tn *TreeNode[T]) Cleanup() {
+	type Helper struct {
+		Prev *TreeNode[T]
+		Curr *TreeNode[T]
+	}
+
+	h := &Helper{
+		Prev: nil,
+		Curr: tn,
+	}
+
+	S := lls.NewLinkedStack(h)
+
+	for {
+		h, ok := S.Pop()
+		if !ok {
+			break
+		}
+
+		for c := h.Curr.FirstChild; c != nil; c = c.NextSibling {
+			h := &Helper{
+				Prev: c.PrevSibling,
+				Curr: c,
+			}
+
+			S.Push(h)
+		}
+
+		if h.Prev != nil {
+			h.Prev.NextSibling = nil
+			h.Prev.PrevSibling = nil
+		}
+
+		h.Curr.FirstChild = nil
+		h.Curr.LastChild = nil
+		h.Curr.Parent = nil
+	}
+
+	tn.NextSibling = nil
+	tn.PrevSibling = nil
 }
