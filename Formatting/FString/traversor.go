@@ -6,68 +6,21 @@ import (
 	"sync"
 	"unicode/utf8"
 
+	pkg "github.com/PlayerR9/MyGoLib/Formatting/FString/pkg"
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
+	utse "github.com/PlayerR9/MyGoLib/Utility/StringExt"
 )
+
+var (
+	// NBSP is the non-breaking space rune.
+	NBSP rune
+)
+
+func init() {
+	NBSP = pkg.NBSP
+}
 
 /////////////////////////////////////////////////
-
-const (
-	// NBSP is the non-breaking space rune.
-	NBSP rune = '\u00A0'
-)
-
-// ApplyTravFunc applies a function to the printer. Useful for when you want to apply a function
-// that does not implement the FStringer interface.
-//
-// Parameters:
-//   - trav: The traversor to use.
-//   - elem: The element to apply the function to.
-//   - f: The function to apply.
-//
-// Returns:
-//   - error: An error if the function fails.
-//
-// Errors:
-//   - *ErrFinalization: If the finalization of the page fails.
-//   - any error returned by the function.
-func ApplyTravFunc[T any](trav *Traversor, elem T, f FStringFunc[T]) error {
-	err := f(trav, elem)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// ApplyTravFuncMany applies a function to the printer. Useful for when you want to apply a function
-// that does not implement the FStringer interface.
-//
-// Parameters:
-//   - trav: The traversor to use.
-//   - f: The function to apply.
-//   - elems: The elements to apply the function to.
-//
-// Returns:
-//   - error: An error if the function fails.
-//
-// Errors:
-//   - *ErrFinalization: If the finalization of the page fails.
-//   - *Errors.ErrAt: If an error occurs on a specific element.
-//   - any error returned by the function.
-func ApplyTravFuncMany[T any](trav *Traversor, f FStringFunc[T], elems []T) error {
-	if len(elems) == 0 {
-		return nil
-	}
-
-	for i, elem := range elems {
-		err := f(trav, elem)
-		if err != nil {
-			return uc.NewErrAt(i+1, "element", err)
-		}
-	}
-
-	return nil
-}
 
 // Traversor is a type that represents a traversor for a formatted string.
 type Traversor struct {
@@ -88,7 +41,7 @@ type Traversor struct {
 	rightDelim string
 
 	// source is the buffer of the traversor.
-	source *buffer
+	source *pkg.Buffer
 
 	// mu is the mutex of the traversor.
 	mu *sync.Mutex
@@ -107,7 +60,7 @@ func (trav *Traversor) Clean() {
 //
 // Returns:
 //   - *Traversor: The new traversor.
-func newTraversor(config *FormatConfig, source *buffer) *Traversor {
+func newTraversor(config *FormatConfig, source *pkg.Buffer) *Traversor {
 	trav := &Traversor{
 		config:      config,
 		source:      source, // shared source
@@ -140,14 +93,17 @@ func newTraversor(config *FormatConfig, source *buffer) *Traversor {
 // the traversor has indentation and the traversor is at the first
 // of the line.
 func (trav *Traversor) writeIndent() {
-	if trav.source.isFirstOfLine() {
-		if trav.hasIndent {
-			trav.source.forceWriteString(trav.indentation)
-		}
+	ok := trav.source.IsFirstOfLine()
+	if !ok {
+		return
+	}
 
-		if trav.leftConfig != nil {
-			trav.source.forceWriteString(trav.leftConfig.str)
-		}
+	if trav.hasIndent {
+		trav.source.ForceWriteString(trav.indentation)
+	}
+
+	if trav.leftConfig != nil {
+		trav.source.ForceWriteString(trav.leftConfig.str)
 	}
 }
 
@@ -165,9 +121,9 @@ func (trav *Traversor) writeRune(r rune) error {
 	case utf8.RuneError:
 		return uc.NewErrInvalidRune(nil)
 	case NBSP:
-		trav.source.writeRune(r)
+		trav.source.WriteRune(r)
 	default:
-		trav.source.write(r)
+		trav.source.Write(r)
 	}
 
 	return nil
@@ -187,12 +143,14 @@ func (trav *Traversor) writeString(str string) error {
 		return nil
 	}
 
-	runes, err := checkString(str)
+	chars, err := utse.ToUTF8Runes(str)
 	if err != nil {
 		return err
 	}
 
-	trav.source.writeRunes(runes)
+	for _, r := range chars {
+		trav.source.Write(r)
+	}
 
 	return nil
 }
@@ -210,22 +168,24 @@ func (trav *Traversor) writeString(str string) error {
 // Behaviors:
 //   - If line is empty, then an empty line is added to the source.
 func (trav *Traversor) writeLine(line string) error {
-	trav.source.acceptLine(trav.rightDelim) // Accept the current line if any.
+	trav.source.AcceptLine(trav.rightDelim) // Accept the current line if any.
 
 	trav.writeIndent()
 
 	if line == "" {
-		trav.source.writeEmptyLine(trav.rightDelim)
+		trav.source.WriteEmptyLine(trav.rightDelim)
 	} else {
-		runes, err := checkString(line)
+		chars, err := utse.ToUTF8Runes(line)
 		if err != nil {
 			return err
 		}
 
-		trav.source.writeRunes(runes)
+		for _, r := range chars {
+			trav.source.Write(r)
+		}
 	}
 
-	trav.source.acceptLine(trav.rightDelim) // Accept the line.
+	trav.source.AcceptLine(trav.rightDelim) // Accept the line.
 
 	return nil
 }
@@ -339,7 +299,7 @@ func (trav *Traversor) AcceptWord() {
 		return
 	}
 
-	trav.source.acceptWord()
+	trav.source.AcceptWord()
 }
 
 // AcceptLine is a function that accepts the current line of the traversor.
@@ -351,7 +311,7 @@ func (trav *Traversor) AcceptLine() {
 		return
 	}
 
-	trav.source.acceptLine(trav.rightDelim)
+	trav.source.AcceptLine(trav.rightDelim)
 }
 
 // AddLine adds a line to the traversor. If there is any in-progress line, then the line is
@@ -444,11 +404,11 @@ func (trav *Traversor) EmptyLine() {
 		return
 	}
 
-	trav.source.acceptLine(trav.rightDelim) // Accept the current line if any.
+	trav.source.AcceptLine(trav.rightDelim) // Accept the current line if any.
 
 	trav.writeIndent()
 
-	trav.source.acceptLine(trav.rightDelim) // Accept the line.
+	trav.source.AcceptLine(trav.rightDelim) // Accept the line.
 }
 
 // Write implements the io.Writer interface for the traversor.
@@ -457,9 +417,12 @@ func (trav *Traversor) Write(p []byte) (int, error) {
 		return 0, nil
 	}
 
-	n := trav.source.writeBytes(p)
+	n, err := trav.source.WriteBytes(p)
+	if err != nil {
+		return n, err
+	}
 
-	return n, nil
+	return len(p), nil
 }
 
 // Print is a function that writes to the traversor using the fmt.Fprint function.
@@ -500,94 +463,6 @@ func (trav *Traversor) Println(a ...interface{}) error {
 
 	_, err := fmt.Fprintln(trav, a...)
 	return err
-}
-
-// ConfigOption is a type that represents a configuration option for a formatter.
-type ConfigOption func(*FormatConfig)
-
-// WithModifiedIndent is a function that modifies the indentation level of the formatter
-// by a specified amount relative to the current indentation level.
-//
-// Parameters:
-//   - by: The amount by which to modify the indentation level.
-//
-// Returns:
-//   - ConfigOption: The configuration option.
-//
-// Behaviors:
-//   - Negative values will decrease the indentation level while positive values will
-//     increase it. If the value is 0, then nothing is done and when the indentation level
-//     is 0, it is not decreased.
-func WithModifiedIndent(by int) ConfigOption {
-	if by == 0 {
-		return func(f *FormatConfig) {}
-	} else {
-		return func(f *FormatConfig) {
-			config := f.indentation
-			if config == nil {
-				return
-			}
-
-			config.level += by
-			if config.level < 0 {
-				config.level = 0
-			}
-		}
-	}
-}
-
-// WithLeftDelimiter is a function that modifies the left delimiter of the formatter.
-//
-// Parameters:
-//   - str: The string to use as the left delimiter.
-//
-// Returns:
-//   - ConfigOption: The configuration option.
-//
-// Behaviors:
-//   - If str is empty, then the left delimiter is removed.
-func WithLeftDelimiter(str string) ConfigOption {
-	if str == "" {
-		return func(f *FormatConfig) {
-			f.delimiterLeft = nil
-		}
-	} else {
-		newConfig := &DelimiterConfig{
-			str:  str,
-			left: true,
-		}
-
-		return func(f *FormatConfig) {
-			f.delimiterLeft = newConfig
-		}
-	}
-}
-
-// WithRightDelimiter is a function that modifies the right delimiter of the formatter.
-//
-// Parameters:
-//   - str: The string to use as the right delimiter.
-//
-// Returns:
-//   - ConfigOption: The configuration option.
-//
-// Behaviors:
-//   - If str is empty, then the right delimiter is removed.
-func WithRightDelimiter(str string) ConfigOption {
-	if str == "" {
-		return func(f *FormatConfig) {
-			f.delimiterRight = nil
-		}
-	} else {
-		newConfig := &DelimiterConfig{
-			str:  str,
-			left: false,
-		}
-
-		return func(f *FormatConfig) {
-			f.delimiterRight = newConfig
-		}
-	}
 }
 
 // GetConfig is a method that returns a copy of the configuration of the traversor.

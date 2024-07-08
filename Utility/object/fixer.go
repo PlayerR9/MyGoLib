@@ -40,72 +40,120 @@ type Cleaner interface {
 	Cleanup()
 }
 
-/*
-func Cleanup(elem any) any {
-	if elem == nil {
+// CleanSlice cleans a slice of elements.
+//
+// Parameters:
+//   - elems: The slice of elements to clean.
+//
+// Returns:
+//   - []T: The cleaned slice of elements.
+func CleanSlice[T Cleaner](elems []T) []T {
+	if elems == nil {
 		return nil
 	}
 
-	switch v := elem.(type) {
-	case Cleaner:
-		v.Cleanup()
-	case []any:
-		for i := 0; i < len(v); i++ {
-			Cleanup(v[i])
+	for i := 0; i < len(elems); i++ {
+		current_elem := elems[i]
 
-			v[i] = nil
-		}
+		current_elem.Cleanup()
 
-		return v[:0]
-	case map[any]any:
-		for k := range v {
-			Cleanup(v[k])
-
-			delete(v, k)
-		}
-
-		return nil
-	default:
-		zero_val := reflect.Zero(reflect.TypeOf(elem))
-
-		return zero_val.Interface()
-	}
-	/*
-	case *int:
-		*v = 0
-	case *int8:
-		*v = 0
-	case *int16:
-		*v = 0
-	case *int32:
-		*v = 0
-	case *int64:
-		*v = 0
-	case *uint:
-		*v = 0
-	case *uint8:
-		*v = 0
-	case *uint16:
-		*v = 0
-	case *uint32:
-		*v = 0
-	case *uint64:
-		*v = 0
-	case *float32:
-		*v = 0
-	case *float64:
-		*v = 0
-	case *bool:
-		*v = false
-	case *string:
-		*v = ""
-	case *[]any:
-		*v = nil
-	case *map[any]any:
-		*v = nil
-	case *struct{}:
-		*v = struct{}{}
+		elems[i] = *new(T)
 	}
 
+	elems = elems[:0]
+
+	return elems
 }
-*/
+
+// CleanSliceOf cleans a slice of elements.
+//
+// Parameters:
+//   - elems: The slice of elements to clean.
+//
+// Returns:
+//   - []T: The cleaned slice of elements.
+func CleanSliceOf[T any](elems []T) []T {
+	if elems == nil {
+		return nil
+	}
+
+	for i := 0; i < len(elems); i++ {
+		elems[i] = *new(T)
+	}
+
+	elems = elems[:0]
+
+	return elems
+}
+
+// CleanMap cleans a map of elements.
+//
+// Parameters:
+//   - elems: The map of elements to clean.
+//
+// Returns:
+//   - map[K]V: The cleaned map of elements.
+func CleanMap[K comparable, V Cleaner](elems map[K]V) map[K]V {
+	if elems == nil {
+		return nil
+	}
+
+	for k, elem := range elems {
+		elem.Cleanup()
+
+		elems[k] = elem
+
+		delete(elems, k)
+	}
+
+	return nil
+}
+
+// CleanMapOf cleans a map of elements.
+//
+// Parameters:
+//   - elems: The map of elements to clean.
+//
+// Returns:
+//   - map[K]V: The cleaned map of elements.
+func CleanMapOf[K comparable, V any](elems map[K]V) map[K]V {
+	if elems == nil {
+		return nil
+	}
+
+	for k := range elems {
+		elems[k] = *new(V)
+
+		delete(elems, k)
+	}
+
+	return nil
+}
+
+// CleanChannel cleans a channel.
+//
+// Parameters:
+//   - ch: The channel to clean.
+//
+// Returns:
+//   - chan T: The cleaned channel.
+func CleanChannel[T any](ch chan T) chan T {
+	if ch == nil {
+		return nil
+	}
+
+	close(ch)
+
+	return nil
+}
+
+// CleanSimple cleans a simple element.
+//
+// Parameters:
+//   - elem: The element to clean.
+//
+// Returns:
+//   - T: The cleaned element.
+func CleanSimple[T comparable](elem T) T {
+	return *new(T)
+}

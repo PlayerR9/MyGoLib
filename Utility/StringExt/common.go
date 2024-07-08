@@ -52,6 +52,7 @@ func init() {
 //   - An empty string returns a nil slice with no errors.
 //   - The function stops at the first invalid UTF-8 encoding; returning an
 //     error and the runes found up to that point.
+//   - The function converts '\r\n' to '\n'.
 func ToUTF8Runes(s string) (runes []rune, err error) {
 	if s == "" {
 		return
@@ -59,13 +60,30 @@ func ToUTF8Runes(s string) (runes []rune, err error) {
 
 	for i := 0; len(s) > 0; i++ {
 		r, size := utf8.DecodeRuneInString(s)
-
 		if r == utf8.RuneError {
-			err = uc.NewErrAt(i, "character", NewErrInvalidUTF8Encoding())
+			err = uc.NewErrAt(i+1, "character", NewErrInvalidUTF8Encoding())
 			return
 		}
 
-		runes = append(runes, r)
+		s = s[size:]
+
+		if r != '\r' || len(s) == 0 {
+			runes = append(runes, r)
+			continue
+		}
+
+		other_r, size := utf8.DecodeRuneInString(s)
+		if other_r == utf8.RuneError {
+			err = uc.NewErrAt(i+2, "character", NewErrInvalidUTF8Encoding())
+			return
+		}
+
+		if other_r == '\n' {
+			runes = append(runes, '\n')
+		} else {
+			runes = append(runes, r, other_r)
+		}
+
 		s = s[size:]
 	}
 

@@ -198,3 +198,56 @@ func NewSimplePrinter[T comparable](name string, value T, fn func(T) (string, er
 		fn:    fn,
 	}
 }
+
+// ApplyTravFunc applies a function to the printer. Useful for when you want to apply a function
+// that does not implement the FStringer interface.
+//
+// Parameters:
+//   - trav: The traversor to use.
+//   - elem: The element to apply the function to.
+//   - f: The function to apply.
+//
+// Returns:
+//   - error: An error if the function fails.
+//
+// Errors:
+//   - *ErrFinalization: If the finalization of the page fails.
+//   - any error returned by the function.
+func ApplyTravFunc[T any](trav *Traversor, elem T, f FStringFunc[T]) error {
+	err := f(trav, elem)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// ApplyTravFuncMany applies a function to the printer. Useful for when you want to apply a function
+// that does not implement the FStringer interface.
+//
+// Parameters:
+//   - trav: The traversor to use.
+//   - f: The function to apply.
+//   - elems: The elements to apply the function to.
+//
+// Returns:
+//   - error: An error if the function fails.
+//
+// Errors:
+//   - *ErrFinalization: If the finalization of the page fails.
+//   - *Errors.ErrAt: If an error occurs on a specific element.
+//   - any error returned by the function.
+func ApplyTravFuncMany[T any](trav *Traversor, f FStringFunc[T], elems []T) error {
+	if len(elems) == 0 {
+		return nil
+	}
+
+	for i, elem := range elems {
+		err := f(trav, elem)
+		if err != nil {
+			return uc.NewErrAt(i+1, "element", err)
+		}
+	}
+
+	return nil
+}

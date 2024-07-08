@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	pkg "github.com/PlayerR9/MyGoLib/Formatting/FString/pkg"
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
 )
 
@@ -72,7 +73,7 @@ func ApplyFuncMany[T any](trav *Traversor, f FStringFunc[T], elems []T) error {
 // StdPrinter is a type that represents a formatted string.
 type StdPrinter struct {
 	// buffer is the buffer of the document.
-	buff *buffer
+	buff *pkg.Buffer
 
 	// formatter is the formatter of the document.
 	formatter *FormatConfig
@@ -102,7 +103,7 @@ func NewStdPrinter(form *FormatConfig) (*StdPrinter, *Traversor) {
 	}
 
 	p := &StdPrinter{
-		buff:      newBuffer(),
+		buff:      pkg.NewBuffer(),
 		formatter: form,
 	}
 
@@ -126,7 +127,7 @@ func NewStdPrinter(form *FormatConfig) (*StdPrinter, *Traversor) {
 //     or SeparatorConfig).
 func NewStdPrinterFromConfig(opts ...uc.Copier) (*StdPrinter, *Traversor) {
 	p := &StdPrinter{
-		buff:      newBuffer(),
+		buff:      pkg.NewBuffer(),
 		formatter: NewFormatter(opts...),
 	}
 
@@ -142,10 +143,10 @@ func NewStdPrinterFromConfig(opts ...uc.Copier) (*StdPrinter, *Traversor) {
 func (p *StdPrinter) GetPages() [][][][]string {
 	tabSize, fieldSpacing := p.formatter.GetTabSize(), p.formatter.GetSpacingSize()
 
-	pages := p.buff.getPages(tabSize, fieldSpacing)
+	pages := p.buff.GetPages(tabSize, fieldSpacing)
 
 	// Reset the buffer
-	p.buff = newBuffer()
+	p.buff = pkg.NewBuffer()
 
 	return pages
 }
@@ -167,7 +168,7 @@ func SprintFString[T FStringer](form *FormatConfig, elem T) ([][][][]string, err
 		form = DefaultFormatter.Copy().(*FormatConfig)
 	}
 
-	buff := newBuffer()
+	buff := pkg.NewBuffer()
 
 	trav := newTraversor(form, buff)
 
@@ -178,7 +179,7 @@ func SprintFString[T FStringer](form *FormatConfig, elem T) ([][][][]string, err
 
 	tabSize, fieldSpacing := form.GetTabSize(), form.GetSpacingSize()
 
-	pages := buff.getPages(tabSize, fieldSpacing)
+	pages := buff.GetPages(tabSize, fieldSpacing)
 
 	return pages, nil
 }
@@ -204,7 +205,7 @@ func Sprint(form *FormatConfig, strs ...string) ([][][][]string, error) {
 		form = DefaultFormatter.Copy().(*FormatConfig)
 	}
 
-	buff := newBuffer()
+	buff := pkg.NewBuffer()
 	trav := newTraversor(form, buff)
 
 	for i, str := range strs {
@@ -216,7 +217,7 @@ func Sprint(form *FormatConfig, strs ...string) ([][][][]string, error) {
 
 	tabSize, fieldSpacing := form.GetTabSize(), form.GetSpacingSize()
 
-	pages := buff.getPages(tabSize, fieldSpacing)
+	pages := buff.GetPages(tabSize, fieldSpacing)
 
 	return pages, nil
 }
@@ -243,7 +244,7 @@ func Sprintj(form *FormatConfig, sep string, strs ...string) ([][][][]string, er
 		form = DefaultFormatter.Copy().(*FormatConfig)
 	}
 
-	buff := newBuffer()
+	buff := pkg.NewBuffer()
 	trav := newTraversor(form, buff)
 
 	str := strings.Join(strs, sep)
@@ -255,7 +256,7 @@ func Sprintj(form *FormatConfig, sep string, strs ...string) ([][][][]string, er
 
 	tabSize, fieldSpacing := form.GetTabSize(), form.GetSpacingSize()
 
-	pages := buff.getPages(tabSize, fieldSpacing)
+	pages := buff.GetPages(tabSize, fieldSpacing)
 
 	return pages, nil
 }
@@ -281,7 +282,7 @@ func Sfprint(form *FormatConfig, a ...interface{}) ([][][][]string, error) {
 		form = DefaultFormatter.Copy().(*FormatConfig)
 	}
 
-	buff := newBuffer()
+	buff := pkg.NewBuffer()
 	trav := newTraversor(form, buff)
 
 	_, err := fmt.Fprint(trav, a...)
@@ -291,7 +292,7 @@ func Sfprint(form *FormatConfig, a ...interface{}) ([][][][]string, error) {
 
 	tabSize, fieldSpacing := form.GetTabSize(), form.GetSpacingSize()
 
-	pages := buff.getPages(tabSize, fieldSpacing)
+	pages := buff.GetPages(tabSize, fieldSpacing)
 
 	return pages, nil
 }
@@ -318,7 +319,7 @@ func Sfprintf(form *FormatConfig, format string, a ...interface{}) ([][][][]stri
 		form = DefaultFormatter.Copy().(*FormatConfig)
 	}
 
-	buff := newBuffer()
+	buff := pkg.NewBuffer()
 	trav := newTraversor(form, buff)
 
 	_, err := fmt.Fprintf(trav, format, a...)
@@ -328,7 +329,7 @@ func Sfprintf(form *FormatConfig, format string, a ...interface{}) ([][][][]stri
 
 	tabSize, fieldSpacing := form.GetTabSize(), form.GetSpacingSize()
 
-	pages := buff.getPages(tabSize, fieldSpacing)
+	pages := buff.GetPages(tabSize, fieldSpacing)
 
 	return pages, nil
 }
@@ -354,7 +355,7 @@ func Sprintln(form *FormatConfig, lines ...string) ([][][][]string, error) {
 		form = DefaultFormatter.Copy().(*FormatConfig)
 	}
 
-	buff := newBuffer()
+	buff := pkg.NewBuffer()
 	trav := newTraversor(form, buff)
 
 	for i, line := range lines {
@@ -366,7 +367,7 @@ func Sprintln(form *FormatConfig, lines ...string) ([][][][]string, error) {
 
 	tabSize, fieldSpacing := form.GetTabSize(), form.GetSpacingSize()
 
-	pages := buff.getPages(tabSize, fieldSpacing)
+	pages := buff.GetPages(tabSize, fieldSpacing)
 
 	return pages, nil
 }
@@ -393,7 +394,7 @@ func Sprintjln(form *FormatConfig, sep string, lines ...string) ([][][][]string,
 		form = DefaultFormatter.Copy().(*FormatConfig)
 	}
 
-	buff := newBuffer()
+	buff := pkg.NewBuffer()
 	trav := newTraversor(form, buff)
 
 	str := strings.Join(lines, sep)
@@ -405,7 +406,7 @@ func Sprintjln(form *FormatConfig, sep string, lines ...string) ([][][][]string,
 
 	tabSize, fieldSpacing := form.GetTabSize(), form.GetSpacingSize()
 
-	pages := buff.getPages(tabSize, fieldSpacing)
+	pages := buff.GetPages(tabSize, fieldSpacing)
 
 	return pages, nil
 }
@@ -431,7 +432,7 @@ func Sfprintln(form *FormatConfig, a ...interface{}) ([][][][]string, error) {
 		form = DefaultFormatter.Copy().(*FormatConfig)
 	}
 
-	buff := newBuffer()
+	buff := pkg.NewBuffer()
 	trav := newTraversor(form, buff)
 
 	_, err := fmt.Fprintln(trav, a...)
@@ -441,7 +442,7 @@ func Sfprintln(form *FormatConfig, a ...interface{}) ([][][][]string, error) {
 
 	tabSize, fieldSpacing := form.GetTabSize(), form.GetSpacingSize()
 
-	pages := buff.getPages(tabSize, fieldSpacing)
+	pages := buff.GetPages(tabSize, fieldSpacing)
 
 	return pages, nil
 }
@@ -479,7 +480,7 @@ func (p *FilePrinter) Clean() {
 //   - If the writer is nil, the function uses os.Stdout.
 func NewFilePrinter(out io.Writer, form FormatConfig) (*FilePrinter, *Traversor) {
 	fp := &FilePrinter{
-		buff:      newBuffer(),
+		buff:      pkg.NewBuffer(),
 		formatter: form,
 	}
 
@@ -508,7 +509,7 @@ func NewFilePrinter(out io.Writer, form FormatConfig) (*FilePrinter, *Traversor)
 //   - If the writer is nil, the function uses os.Stdout.
 func NewFilePrinterFromConfig(out io.Writer, opts ...uc.Copier) (*FilePrinter, *Traversor) {
 	fp := &FilePrinter{
-		buff:      newBuffer(),
+		buff:      pkg.NewBuffer(),
 		formatter: NewFormatter(opts...),
 	}
 
@@ -530,7 +531,7 @@ func (p *FilePrinter) Update() {
 	pages := p.buff.getPages(tabSize, fieldSpacing)
 
 	// Reset the buffer
-	p.buff = newBuffer()
+	p.buff = pkg.NewBuffer()
 
 	p.out.Write([]byte(strings.Join(Stringfy(pages), "\f")))
 }
@@ -548,7 +549,7 @@ func (p *FilePrinter) Update() {
 // Behaviors:
 //   - If the writer is nil, the function uses os.Stdout.
 func FprintFString[T FStringer](out io.Writer, form FormatConfig, elem T) error {
-	buff := newBuffer()
+	buff := pkg.NewBuffer()
 	trav := newTraversor(form, buff)
 
 	err := elem.FString(trav)
@@ -586,7 +587,7 @@ func Fprint(out io.Writer, form FormatConfig, strs ...string) error {
 		return nil
 	}
 
-	buff := newBuffer()
+	buff := pkg.NewBuffer()
 	trav := newTraversor(form, buff)
 
 	for i, str := range strs {
@@ -627,7 +628,7 @@ func Fprintj(out io.Writer, form FormatConfig, sep string, strs ...string) error
 		return nil
 	}
 
-	buff := newBuffer()
+	buff := pkg.NewBuffer()
 	trav := newTraversor(form, buff)
 
 	str := strings.Join(strs, sep)
@@ -667,7 +668,7 @@ func Ffprint(out io.Writer, form FormatConfig, a ...interface{}) error {
 		return nil
 	}
 
-	buff := newBuffer()
+	buff := pkg.NewBuffer()
 	trav := newTraversor(form, buff)
 
 	_, err := fmt.Fprint(trav, a...)
@@ -706,7 +707,7 @@ func Ffprintf(out io.Writer, form FormatConfig, format string, a ...interface{})
 		return nil
 	}
 
-	buff := newBuffer()
+	buff := pkg.NewBuffer()
 	trav := newTraversor(form, buff)
 
 	_, err := fmt.Fprintf(trav, format, a...)
@@ -744,7 +745,7 @@ func Fprintln(out io.Writer, form FormatConfig, lines ...string) error {
 		return nil
 	}
 
-	buff := newBuffer()
+	buff := pkg.NewBuffer()
 	trav := newTraversor(form, buff)
 
 	for i, line := range lines {
@@ -785,7 +786,7 @@ func Fprintjln(out io.Writer, form FormatConfig, sep string, lines ...string) er
 		return nil
 	}
 
-	buff := newBuffer()
+	buff := pkg.NewBuffer()
 	trav := newTraversor(form, buff)
 
 	str := strings.Join(lines, sep)
@@ -825,7 +826,7 @@ func Ffprintln(out io.Writer, form FormatConfig, a ...interface{}) error {
 		return nil
 	}
 
-	buff := newBuffer()
+	buff := pkg.NewBuffer()
 	trav := newTraversor(form, buff)
 
 	_, err := fmt.Fprintln(trav, a...)

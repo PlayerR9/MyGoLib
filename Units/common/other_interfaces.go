@@ -42,22 +42,3 @@ func SliceCopy[T Copier](s []T) []T {
 
 	return sCopy
 }
-
-// Cleaner is an interface that provides a method to remove all the elements
-// from a data structure.
-type Cleaner interface {
-	// Clean removes all the elements from the data structure.
-	Clean()
-}
-
-// Clean removes all the elements from the data structure by calling the Clean method if the
-// element implements the Cleaner interface.
-//
-// Parameters:
-//   - cleaner: The data structure to clean.
-func Clean(elem any) {
-	target, ok := elem.(Cleaner)
-	if ok {
-		target.Clean()
-	}
-}
