@@ -7,7 +7,7 @@ import (
 	us "github.com/PlayerR9/MyGoLib/Units/slice"
 )
 
-// recSnakeTraversal is an helper function that returns all the paths
+// rec_snake_traversal is an helper function that returns all the paths
 // from n to the leaves of the tree rooted at n.
 //
 // Returns:
@@ -17,7 +17,7 @@ import (
 // Behaviors:
 //   - The paths are returned in the order of a BFS traversal.
 //   - It is a recursive function.
-func recSnakeTraversal(n Noder) ([][]Noder, error) {
+func rec_snake_traversal(n Noder) ([][]Noder, error) {
 	uc.AssertParam("n", n != nil, errors.New("recSnakeTraversal: n is nil"))
 
 	ok := n.IsLeaf()
@@ -43,7 +43,7 @@ func recSnakeTraversal(n Noder) ([][]Noder, error) {
 			return nil, err
 		}
 
-		subResults, err := recSnakeTraversal(value)
+		subResults, err := rec_snake_traversal(value)
 		if err != nil {
 			return nil, err
 		}
@@ -71,11 +71,11 @@ func (t *Tree) SnakeTraversal() ([][]Noder, error) {
 		return nil, nil
 	}
 
-	sol, err := recSnakeTraversal(root)
+	sol, err := rec_snake_traversal(root)
 	return sol, err
 }
 
-// recPruneFunc is an helper function that removes all the children of the
+// rec_prune_func is an helper function that removes all the children of the
 // node that satisfy the given filter including all of their children.
 //
 // Parameters:
@@ -88,7 +88,7 @@ func (t *Tree) SnakeTraversal() ([][]Noder, error) {
 //
 // Behaviors:
 //   - This function is recursive.
-func recPruneFunc(filter us.PredicateFilter[Noder], highest Noder, n Noder) (Noder, bool) {
+func rec_prune_func(filter us.PredicateFilter[Noder], highest Noder, n Noder) (Noder, bool) {
 	ok := filter(n)
 
 	if ok {
@@ -99,8 +99,6 @@ func recPruneFunc(filter us.PredicateFilter[Noder], highest Noder, n Noder) (Nod
 
 		return ancestors, true
 	}
-
-	var prev Noder
 
 	iter := n.Iterator()
 	if iter == nil {
@@ -116,31 +114,14 @@ func recPruneFunc(filter us.PredicateFilter[Noder], highest Noder, n Noder) (Nod
 			return highest, false
 		}
 
-		high, ok := recPruneFunc(filter, highest, c)
+		high, ok := rec_prune_func(filter, highest, value)
 		if !ok {
 			continue
 		}
 
-		prev_sibling := value.PrevSibling
-		next_sibling := value.NextSibling
-
-		if prev_sibling != nil {
-			prev_sibling.NextSibling = next_sibling
-		}
-
-		if next_sibling != nil {
-			next_sibling.PrevSibling = prev_sibling
-		}
-
-		value.PrevSibling = nil
-
-		if prev != nil {
-			prev.NextSibling = nil
-		}
+		n.DeleteChild(value)
 
 		highest = FindCommonAncestor(highest, high)
-
-		prev = value
 	}
 
 	return highest, false
@@ -167,12 +148,12 @@ func (t *Tree) PruneFunc(filter us.PredicateFilter[Noder]) bool {
 		return false
 	}
 
-	highest, ok := recPruneFunc(filter, nil, root)
+	highest, ok := rec_prune_func(filter, nil, root)
 	if ok {
 		return true
 	}
 
-	t.leaves = highest.Leaves()
+	t.leaves = highest.GetLeaves()
 	t.size = highest.Size()
 
 	return false

@@ -13,35 +13,7 @@ type Treeer interface {
 	TreeOf() *Tree
 }
 
-// TreeOf converts the element to a tree.
-//
-// Parameters:
-//   - elem: The element to convert.
-//
-// Returns:
-//   - *Tree: A pointer to the tree. Nil if the element is nil.
-//
-// Behaviors:
-//   - If the element implements the Treeer interface, the function calls the TreeOf method.
-//   - Otherwise, the function creates a new tree with the element as the root.
-func TreeOf(elem Noder) *Tree {
-	if elem == nil {
-		return nil
-	}
-
-	var tree *Tree
-
-	switch elem := elem.(type) {
-	case Treeer:
-		tree = elem.TreeOf()
-	default:
-		tree = NewTree(elem)
-	}
-
-	return tree
-}
-
-// CommonAncestor returns the first common ancestor of the two nodes.
+// FindCommonAncestor returns the first common ancestor of the two nodes.
 //
 // Parameters:
 //   - n1: The first node.
@@ -75,18 +47,98 @@ func FindCommonAncestor(n1, n2 Noder) Noder {
 	return nil
 }
 
-// ExtractData returns the values of the nodes in the slice.
+// FindBranchingPoint returns the first node in the path from n to the root
+// such that has more than one sibling.
+//
+// Returns:
+//   - Noder: The branching point.
+//   - Noder: The parent of the branching point.
+//   - bool: True if the node has a branching point, false otherwise.
+//
+// Behaviors:
+//   - If there is no branching point, it returns the root of the tree. However,
+//     if n is nil, it returns nil, nil, false and if the node has no parent, it
+//     returns nil, n, false.
+func FindBranchingPoint(n Noder) (Noder, Noder, bool) {
+	if n == nil {
+		return nil, nil, false
+	}
+
+	parent := n.GetParent()
+	if parent == nil {
+		return nil, n, false
+	}
+
+	var has_branching_point bool
+
+	for !has_branching_point {
+		grand_parent := parent.GetParent()
+		if grand_parent == nil {
+			break
+		}
+
+		ok := parent.IsSingleton()
+		if !ok {
+			has_branching_point = true
+		} else {
+			n = parent
+			parent = grand_parent
+		}
+	}
+
+	return n, parent, has_branching_point
+}
+
+// GetBranch works like GetAncestors but includes the node itself.
+//
+// The nodes are returned as a slice where [0] is the root node
+// and [len(branch)-1] is the leaf node.
+//
+// Returns:
+//   - Branch: The branch from the node to the root.
+func GetBranch(n Noder) *Branch {
+	branch := &Branch{
+		to_node: n,
+	}
+
+	node := n
+
+	for {
+		parent := node.GetParent()
+		if parent == nil {
+			break
+		}
+
+		node = parent
+	}
+
+	branch.from_node = node
+
+	return branch
+}
+
+// ExtractData returns the values of the nodes in the slice. This only works if the
+// nodes are of type *TreeNode[T].
 //
 // Parameters:
 //   - nodes: The nodes to extract the values from.
 //
 // Returns:
 //   - []T: A slice of the values of the nodes.
-func ExtractData[T Noder](nodes []*TreeNode[T]) []T {
-	data := make([]T, 0, len(nodes))
+func ExtractData[T any](nodes []Noder) []T {
+	if len(nodes) == 0 {
+		return nil
+	}
+
+	var data []T
 
 	for _, node := range nodes {
-		data = append(data, node.Data)
+		val, ok := node.(*TreeNode[T])
+		if !ok {
+			continue
+		}
+
+		data = append(data, val.Data)
 	}
 
 	return data

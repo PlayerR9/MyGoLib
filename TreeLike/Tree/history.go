@@ -529,7 +529,12 @@ type PruneTreeCmd struct {
 func (cmd *PruneTreeCmd) Execute(data *Tree) error {
 	cmd.tree = data.Copy().(*Tree)
 
-	cmd.ok = data.Prune(cmd.filter)
+	ok, err := data.Prune(cmd.filter)
+	if err != nil {
+		return err
+	}
+
+	cmd.ok = ok
 
 	return nil
 }
@@ -597,7 +602,12 @@ type ExtractBranchCmd struct {
 
 // Execute implements the Debugging.Commander interface.
 func (cmd *ExtractBranchCmd) Execute(data *Tree) error {
-	cmd.branch = data.ExtractBranch(cmd.leaf, true)
+	branch, err := data.ExtractBranch(cmd.leaf, true)
+	if err != nil {
+		return err
+	}
+
+	cmd.branch = branch
 
 	return nil
 }
@@ -656,7 +666,11 @@ type InsertBranchCmd struct {
 
 // Execute implements the Debugging.Commander interface.
 func (cmd *InsertBranchCmd) Execute(data *Tree) error {
-	ok := data.InsertBranch(cmd.branch)
+	ok, err := data.InsertBranch(cmd.branch)
+	if err != nil {
+		return err
+	}
+
 	if !ok {
 		cmd.hasError = true
 	}

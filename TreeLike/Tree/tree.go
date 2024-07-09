@@ -496,7 +496,7 @@ func (t *Tree) PruneBranches(filter us.PredicateFilter[Noder]) bool {
 		return true
 	}
 
-	highest, ok := recPruneFunc(filter, nil, root)
+	highest, ok := rec_prune_func(filter, nil, root)
 	if ok {
 		return true
 	}
@@ -564,14 +564,21 @@ func (t *Tree) SearchNodes(f us.PredicateFilter[Noder]) (Noder, error) {
 // DeleteBranchContaining deletes the branch containing the given node.
 //
 // Parameters:
-//   - tn: The node to delete.
+//   - n: The node to delete.
 //
 // Returns:
 //   - error: An error if the node is not a part of the tree.
-func (t *Tree) DeleteBranchContaining(tn Noder) error {
-	root := t.root
+func (t *Tree) DeleteBranchContaining(n Noder) error {
+	if n == nil {
+		return nil
+	}
 
-	child, parent, hasBranching := tn.FindBranchingPoint()
+	root := t.root
+	if root == nil {
+		return NewErrNodeNotPartOfTree()
+	}
+
+	child, parent, hasBranching := FindBranchingPoint(n)
 	if !hasBranching {
 		if parent != root {
 			return NewErrNodeNotPartOfTree()
@@ -590,7 +597,12 @@ func (t *Tree) DeleteBranchContaining(tn Noder) error {
 		children[i] = nil
 	}
 
-	t.leaves = t.RegenerateLeaves()
+	leaves, err := t.RegenerateLeaves()
+	if err != nil {
+		return err
+	}
+
+	t.leaves = leaves
 
 	return nil
 }
@@ -602,17 +614,22 @@ func (t *Tree) DeleteBranchContaining(tn Noder) error {
 //
 // Returns:
 //   - bool: True if no nodes were pruned, false otherwise.
-func (t *Tree) Prune(filter us.PredicateFilter[Noder]) bool {
+//   - error: An error if the iteration fails.
+func (t *Tree) Prune(filter us.PredicateFilter[Noder]) (bool, error) {
 	for t.Size() != 0 {
-		target := t.SearchNodes(filter)
+		target, err := t.SearchNodes(filter)
+		if err != nil {
+			return false, err
+		}
+
 		if target == nil {
-			return true
+			return true, nil
 		}
 
 		t.DeleteBranchContaining(target)
 	}
 
-	return false
+	return false, nil
 }
 
 // SkipFunc removes all the children of the tree that satisfy the given filter
@@ -667,7 +684,7 @@ func (t *Tree) SkipFilter(filter us.PredicateFilter[Noder]) (forest []*Tree) {
 				}
 			}
 		} else {
-			children := leaf.removeNode()
+			children := leaf.RemoveNode()
 
 			if len(children) != 0 {
 				// We obtained a forest as we reached the root
@@ -675,7 +692,7 @@ func (t *Tree) SkipFilter(filter us.PredicateFilter[Noder]) (forest []*Tree) {
 				for i := 0; i < len(children); i++ {
 					child := children[i]
 
-					tree := child.ToTree()
+					tree := child.TreeOf()
 
 					forest = append(forest, tree)
 				}
@@ -716,16 +733,10 @@ func (t *Tree) replaceLeafWithTree(at int, values []Noder) {
 	leaf := t.leaves[at]
 
 	// Make the subtree
-	children := make([]Noder, 0, len(values))
-
-	for _, value := range values {
-		children = append(children, value)
-	}
-
-	leaf.LinkChildren(children)
+	leaf.LinkChildren(values)
 
 	// Update the size of the tree
-	t.size += len(children) - 1
+	t.size += len(values) - 1
 
 	// Replace the current leaf with the leaf's children
 	sub_leaves := leaf.GetLeaves()
@@ -814,26 +825,31 @@ func (t *Tree) GetDirectChildren() ([]Noder, error) {
 // Returns:
 //   - *Branch[Noder]: A pointer to the branch extracted. Nil if the leaf is not a part
 //     of the tree.
-func (t *Tree) ExtractBranch(leaf Noder, delete bool) *Branch[Noder] {
+func (t *Tree) ExtractBranch(leaf Noder, delete bool) (*Branch, error) {
 	found := slices.Contains(t.leaves, leaf)
 	if !found {
-		return nil
+		return nil, nil
 	}
 
-	branch := leaf.GetBranch()
+	branch := GetBranch(leaf)
 
 	if !delete {
-		return branch
+		return branch, nil
 	}
 
-	child, parent, ok := leaf.FindBranchingPoint()
+	child, parent, ok := FindBranchingPoint(leaf)
 	if !ok {
 		parent.DeleteChild(child)
 	}
 
-	t.leaves = t.RegenerateLeaves()
+	leaves, err := t.RegenerateLeaves()
+	if err != nil {
+		return nil, err
+	}
 
-	return branch
+	t.leaves = leaves
+
+	return branch, nil
 }
 
 // InsertBranch inserts the given branch into the tree.
@@ -843,39 +859,42 @@ func (t *Tree) ExtractBranch(leaf Noder, delete bool) *Branch[Noder] {
 //
 // Returns:
 //   - bool: True if the branch was inserted, false otherwise.
-func (t *Tree) InsertBranch(branch *Branch[Noder]) bool {
+//   - error: An error if the insertion fails.
+func (t *Tree) InsertBranch(branch *Branch) (bool, error) {
 	if branch == nil {
-		return true
+		return true, nil
 	}
 
 	ref := t.root
 
 	if ref == nil {
-		otherTree := branch.from_node.ToTree()
+		otherTree := branch.from_node.TreeOf()
 
 		t.root = otherTree.root
 		t.leaves = otherTree.leaves
 		t.size = otherTree.size
 
-		return true
+		return true, nil
 	}
 
 	from := branch.from_node
 	if ref != from {
-		return false
+		return false, nil
 	}
 
-	size := branch.size - 1
-
 	for from != branch.to_node {
-		from = from.FirstChild
+		from = from.GetFirstChild()
 
 		var next Noder
 
-		for c := ref.FirstChild; c != nil && next == nil; c = c.FirstChild {
+		c := ref.GetFirstChild()
+
+		for c != nil && next == nil {
 			if c == from {
 				next = c
 			}
+
+			c = c.GetFirstChild()
 		}
 
 		if next == nil {
@@ -884,26 +903,19 @@ func (t *Tree) InsertBranch(branch *Branch[Noder]) bool {
 
 		// from is a child of the root. Keep going
 		ref = next
-
-		size--
-	}
-
-	if size == 0 {
-		return true
 	}
 
 	// From this point onward, anything from 'from' up to 'to' must be
 	// added in the tree as new children.
 	ref.AddChild(from)
-	leaves := from.GetLeaves()
 
-	if len(leaves) == 0 {
-		t.leaves = append(t.leaves, from)
-	} else {
-		t.leaves = append(t.leaves, leaves...)
+	prev_size := t.size
+
+	_, err := t.RegenerateLeaves()
+	if err != nil {
+		return false, err
 	}
 
-	t.size += size
-
-	return true
+	ok := t.size != prev_size
+	return ok, nil
 }

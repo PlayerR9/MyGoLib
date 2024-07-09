@@ -1,6 +1,8 @@
 package SiteNavigator
 
 import (
+	"fmt"
+
 	lls "github.com/PlayerR9/MyGoLib/ListLike/Stacker"
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
 	us "github.com/PlayerR9/MyGoLib/Units/slice"
@@ -225,7 +227,8 @@ const (
 //
 // Returns:
 //   - []*html.Node: The list of nodes extracted from the tree.
-type GTEFunc func(tree *HtmlTree) []*html.Node
+//   - error: An error if the extraction fails.
+type GTEFunc func(tree *HtmlTree) ([]*html.Node, error)
 
 // GenericTreeExtraction creates a GTEFunc from the given parameters.
 //
@@ -250,25 +253,34 @@ func GenericTreeExtraction(search *SearchCriteria, action ActionType) GTEFunc {
 
 	switch action {
 	case OnlyDirectChildren:
-		return func(tree *HtmlTree) []*html.Node {
-			return tree.ExtractSpecificNode(filter)
+		return func(tree *HtmlTree) ([]*html.Node, error) {
+			sol, err := tree.ExtractSpecificNode(filter)
+
+			return sol, err
 		}
 	case BFSMany:
-		return func(tree *HtmlTree) []*html.Node {
-			return tree.ExtractNodes(filter)
+		return func(tree *HtmlTree) ([]*html.Node, error) {
+			sol, err := tree.ExtractNodes(filter)
+			return sol, err
 		}
 	case DFSOne:
-		return func(tree *HtmlTree) []*html.Node {
-			node := tree.ExtractContentFromDocument(filter)
-			if node != nil {
-				return []*html.Node{node}
-			} else {
-				return nil
+		return func(tree *HtmlTree) ([]*html.Node, error) {
+			node, err := tree.ExtractContentFromDocument(filter)
+			if err != nil {
+				return nil, err
 			}
+
+			var sol []*html.Node
+
+			if node != nil {
+				sol = append(sol, node)
+			}
+
+			return sol, nil
 		}
 	default:
-		return func(tree *HtmlTree) []*html.Node {
-			return nil
+		return func(tree *HtmlTree) ([]*html.Node, error) {
+			return nil, fmt.Errorf("invalid action type: %v", action)
 		}
 	}
 }
@@ -321,7 +333,11 @@ func CEWithSearch[T any](search *SearchCriteria, action ActionType, parse NodeLi
 				continue
 			}
 
-			newList := searchFunc(tree)
+			newList, err := searchFunc(tree)
+			if err != nil {
+				el.AddErr(err, 1)
+				continue
+			}
 
 			if len(newList) != 0 {
 				newList, err = FilterValidNodes(newList, filters)

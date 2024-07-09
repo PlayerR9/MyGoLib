@@ -15,7 +15,8 @@ func (e *ErrMissingRoot) Error() string {
 // Returns:
 //   - *ErrMissingRoot: The newly created error.
 func NewErrMissingRoot() *ErrMissingRoot {
-	return &ErrMissingRoot{}
+	e := &ErrMissingRoot{}
+	return e
 }
 
 // ErrNodeNotPartOfTree is an error that is returned when a node is not part of a tree.
@@ -33,5 +34,6 @@ func (e *ErrNodeNotPartOfTree) Error() string {
 // Returns:
 //   - *ErrNodeNotPartOfTree: The newly created error.
 func NewErrNodeNotPartOfTree() *ErrNodeNotPartOfTree {
-	return &ErrNodeNotPartOfTree{}
+	e := &ErrNodeNotPartOfTree{}
+	return e
 }

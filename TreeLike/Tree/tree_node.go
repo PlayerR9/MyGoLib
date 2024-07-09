@@ -4,7 +4,7 @@ import (
 	"slices"
 
 	ffs "github.com/PlayerR9/MyGoLib/Formatting/FString"
-	"github.com/PlayerR9/MyGoLib/ListLike/Stacker"
+
 	lls "github.com/PlayerR9/MyGoLib/ListLike/Stacker"
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
 	us "github.com/PlayerR9/MyGoLib/Units/slice"
@@ -92,6 +92,12 @@ type Noder interface {
 	//   - bool: True if the node is a leaf, false otherwise.
 	IsLeaf() bool
 
+	// IsSingleton returns true if the node is a singleton (i.e., has only one child).
+	//
+	// Returns:
+	//   - bool: True if the node is a singleton, false otherwise.
+	IsSingleton() bool
+
 	// GetLeaves returns all the leaves of the tree rooted at the node.
 	//
 	// Should be a DFS traversal.
@@ -120,6 +126,38 @@ type Noder interface {
 	// Returns:
 	//   - Noder: The first child of the node. Nil if the node has no children.
 	GetFirstChild() Noder
+
+	// DeleteChild removes the given child from the children of the node.
+	//
+	// Parameters:
+	//   - target: The child to remove.
+	//
+	// Returns:
+	//   - []Noder: A slice of pointers to the children of the node. Nil if the node has no children.
+	DeleteChild(target Noder) []Noder
+
+	// Size returns the number of nodes in the tree rooted at n.
+	//
+	// Returns:
+	//   - size: The number of nodes in the tree.
+	Size() int
+
+	// AddChild adds a new child to the node with the given data.
+	//
+	// Parameters:
+	//   - child: The child to add.
+	//
+	// Behaviors:
+	//   - If the child is not valid, it is ignored.
+	AddChild(child Noder)
+
+	// removeNode removes the node from the tree and shifts the children up
+	// in the space occupied by the node.
+	//
+	// Returns:
+	//   - []Noder: A slice of pointers to the children of the node if
+	//     the node is the root. Nil otherwise.
+	RemoveNode() []Noder
 
 	Treeer
 	uc.Iterable[Noder]
@@ -228,7 +266,7 @@ func (tn *TreeNode[T]) LinkChildren(children []Noder) {
 		return
 	}
 
-	valid_children = LinkSiblings(valid_children)
+	valid_children = link_siblings(valid_children)
 
 	for _, child := range valid_children {
 		child.Parent = tn
@@ -240,7 +278,7 @@ func (tn *TreeNode[T]) LinkChildren(children []Noder) {
 
 // GetLeaves implements the Noder interface.
 func (n *TreeNode[T]) GetLeaves() []Noder {
-	S := Stacker.NewLinkedStack(n)
+	S := lls.NewLinkedStack[Noder](n)
 
 	var leaves []Noder
 
@@ -250,13 +288,16 @@ func (n *TreeNode[T]) GetLeaves() []Noder {
 			break
 		}
 
-		ok = top.IsLeaf()
-		if ok {
+		val, ok := top.(*TreeNode[T])
+		uc.Assert(ok, "GetLeaves: Invalid node type")
+
+		if val.FirstChild == nil {
 			leaves = append(leaves, top)
 
 			continue
 		}
-		children := top.GetChildren()
+
+		children := val.GetChildren()
 
 		for _, child := range children {
 			S.Push(child)
@@ -341,6 +382,144 @@ func (n *TreeNode[T]) GetAncestors() []Noder {
 	return ancestors
 }
 
+// IsLeaf implements the Noder interface.
+func (n *TreeNode[T]) IsLeaf() bool {
+	return n.FirstChild == nil
+}
+
+// IsSingleton implements the Noder interface.
+func (n *TreeNode[T]) IsSingleton() bool {
+	if n.FirstChild == nil {
+		return false
+	}
+
+	return n.FirstChild == n.LastChild
+}
+
+// GetFirstChild implements the Noder interface.
+func (n *TreeNode[T]) GetFirstChild() Noder {
+	return n.FirstChild
+}
+
+// DeleteChild implements the Noder interface.
+func (n *TreeNode[T]) DeleteChild(target Noder) []Noder {
+	if target == nil {
+		return nil
+	}
+
+	tn, ok := target.(*TreeNode[T])
+	if !ok {
+		return nil
+	}
+
+	children := n.delete_child(tn)
+
+	delink_with_parent(n, children)
+
+	return children
+}
+
+// Size implements the Noder interface.
+//
+// This function is expensive since size is not stored.
+func (n *TreeNode[T]) Size() int {
+	S := lls.NewLinkedStack(n)
+
+	var size int
+
+	for {
+		top, ok := S.Pop()
+		if !ok {
+			break
+		}
+
+		size++
+
+		for c := top.FirstChild; c != nil; c = c.NextSibling {
+			S.Push(c)
+		}
+	}
+
+	return size
+}
+
+// AddChild adds a new child to the node with the given data.
+//
+// Parameters:
+//   - child: The child to add.
+//
+// Behaviors:
+//   - If the child is nil, it does nothing.
+func (n *TreeNode[T]) AddChild(child Noder) {
+	if child == nil {
+		return
+	}
+
+	c, ok := child.(*TreeNode[T])
+	if !ok {
+		return
+	}
+
+	// Make sure the child is not linked to any other node
+	c.NextSibling = nil
+	c.PrevSibling = nil
+
+	last_child := n.LastChild
+
+	if last_child == nil {
+		n.FirstChild = c
+	} else {
+		last_child.NextSibling = c
+		c.PrevSibling = last_child
+	}
+
+	c.Parent = n
+	n.LastChild = c
+}
+
+// RemoveNode removes the node from the tree and shifts the children up
+// in the space occupied by the node.
+//
+// Returns:
+//   - []Noder: A slice of pointers to the children of the node if
+//     the node is the root. Nil otherwise.
+func (n *TreeNode[T]) RemoveNode() []Noder {
+	prev_sibling := n.PrevSibling
+	next_sibling := n.NextSibling
+
+	var sub_roots []Noder
+
+	if n.Parent == nil {
+		sub_roots = n.GetChildren()
+	} else {
+		children := n.Parent.delete_child(n)
+
+		for _, child := range children {
+			child.SetParent(n.Parent)
+		}
+	}
+
+	if prev_sibling != nil {
+		prev_sibling.NextSibling = next_sibling
+	} else {
+		n.Parent.FirstChild = next_sibling
+	}
+
+	if next_sibling != nil {
+		next_sibling.PrevSibling = prev_sibling
+	} else {
+		n.Parent.LastChild = prev_sibling
+	}
+
+	n.Parent = nil
+	n.PrevSibling = nil
+	n.NextSibling = nil
+
+	delink_with_parent(n, sub_roots)
+
+	return sub_roots
+}
+
 // NewTreeNode creates a new node with the given data.
 //
 // Parameters:
@@ -400,49 +579,12 @@ func (n *TreeNode[T]) GetFirstSibling() *TreeNode[T] {
 	return first_sibling
 }
 
-// IsLeaf returns true if the node is a leaf.
-//
-// Returns:
-//   - bool: True if the node is a leaf, false otherwise.
-func (n *TreeNode[T]) IsLeaf() bool {
-	return n.FirstChild == nil
-}
-
 // IsRoot returns true if the node does not have a parent.
 //
 // Returns:
 //   - bool: True if the node is the root, false otherwise.
 func (n *TreeNode[T]) IsRoot() bool {
 	return n.Parent == nil
-}
-
-// AddChild adds a new child to the node with the given data.
-//
-// Parameters:
-//   - child: The child to add.
-//
-// Behaviors:
-//   - If the child is nil, it does nothing.
-func (n *TreeNode[T]) AddChild(child *TreeNode[T]) {
-	if child == nil {
-		return
-	}
-
-	// Make sure the child is not linked to any other node
-	child.NextSibling = nil
-	child.PrevSibling = nil
-
-	last_child := n.LastChild
-
-	if last_child == nil {
-		n.FirstChild = child
-	} else {
-		last_child.NextSibling = child
-		child.PrevSibling = last_child
-	}
-
-	child.Parent = n
-	n.LastChild = child
 }
 
 // AddChildren adds zero or more children to the node.
@@ -496,47 +638,15 @@ func (n *TreeNode[T]) AddChildren(children ...*TreeNode[T]) {
 // If the node has no children, it returns nil.
 //
 // Returns:
-//   - []*TreeNode[T]: A slice of pointers to the children of the node.
-func (n *TreeNode[T]) GetChildren() []*TreeNode[T] {
-	var children []*TreeNode[T]
+//   - []Noder: A slice of pointers to the children of the node.
+func (n *TreeNode[T]) GetChildren() []Noder {
+	var children []Noder
 
 	for c := n.FirstChild; c != nil; c = c.NextSibling {
 		children = append(children, c)
 	}
 
 	return children
-}
-
-// FindBranchingPoint returns the first node in the path from n to the root
-// such that has more than one sibling.
-//
-// Returns:
-//   - *treeNode[T]: A pointer to the one node before the branching point.
-//   - *treeNode[T]: A pointer to the branching point.
-//   - bool: True if the node has a branching point, false otherwise.
-//
-// Behaviors:
-//   - If there is no branching point, it returns the root of the tree.
-func (tn *TreeNode[T]) FindBranchingPoint() (*TreeNode[T], *TreeNode[T], bool) {
-	if tn.Parent == nil {
-		return nil, tn, false
-	}
-
-	node := tn
-	parent := tn.Parent
-
-	var hasBranchingPoint bool
-
-	for parent.Parent != nil && !hasBranchingPoint {
-		if parent.FirstChild != parent.LastChild {
-			hasBranchingPoint = true
-		} else {
-			node = parent
-			parent = parent.Parent
-		}
-	}
-
-	return node, parent, hasBranchingPoint
 }
 
 // HasChild returns true if the node has the given child.
@@ -566,28 +676,11 @@ func (n *TreeNode[T]) HasChild(target *TreeNode[T]) bool {
 //   - target: The child to remove.
 //
 // Returns:
-//   - []*treeNode[T]: A slice of pointers to the children of the node.
+//   - []Noder: A slice of pointers to the children of the node.
 //
 // Behaviors:
 //   - If the node has no children, it returns nil.
-func (n *TreeNode[T]) DeleteChild(target *TreeNode[T]) []*TreeNode[T] {
-	children := n.delete_child(target)
-	DelinkWithParent(n, children)
-
-	return children
-}
-
-// DeleteChild removes the given child from the children of the node.
-//
-// Parameters:
-//   - target: The child to remove.
-//
-// Returns:
-//   - []*treeNode[T]: A slice of pointers to the children of the node.
-//
-// Behaviors:
-//   - If the node has no children, it returns nil.
-func (n *TreeNode[T]) delete_child(target *TreeNode[T]) []*TreeNode[T] {
+func (n *TreeNode[T]) delete_child(target *TreeNode[T]) []Noder {
 	ok := n.HasChild(target)
 	if !ok {
 		// Nothing to delete
@@ -621,33 +714,8 @@ func (n *TreeNode[T]) delete_child(target *TreeNode[T]) []*TreeNode[T] {
 	target.NextSibling = nil
 
 	children := target.GetChildren()
+
 	return children
-}
-
-// Size returns the number of nodes in the tree rooted at n.
-//
-// Returns:
-//   - size: The number of nodes in the tree.
-//
-// Behaviors:
-//   - This function is expensive since size is not stored.
-func (n *TreeNode[T]) Size() (size int) {
-	S := Stacker.NewLinkedStack(n)
-
-	for {
-		top, ok := S.Pop()
-		if !ok {
-			break
-		}
-
-		size++
-
-		for c := top.FirstChild; c != nil; c = c.NextSibling {
-			S.Push(c)
-		}
-	}
-
-	return
 }
 
 // IsChildOf returns true if the node is a child of the parent.
@@ -676,49 +744,6 @@ func (n *TreeNode[T]) IsChildOf(target *TreeNode[T]) bool {
 	return false
 }
 
-// removeNode removes the node from the tree and shifts the children up
-// in the space occupied by the node.
-//
-// Returns:
-//   - []*treeNode[T]: A slice of pointers to the children of the node if
-//     the node is the root. Nil otherwise.
-func (n *TreeNode[T]) removeNode() []*TreeNode[T] {
-	prev_sibling := n.PrevSibling
-	next_sibling := n.NextSibling
-
-	var sub_roots []*TreeNode[T]
-
-	if n.Parent == nil {
-		sub_roots = n.GetChildren()
-	} else {
-		children := n.Parent.delete_child(n)
-
-		for _, child := range children {
-			child.Parent = n.Parent
-		}
-	}
-
-	if prev_sibling != nil {
-		prev_sibling.NextSibling = next_sibling
-	} else {
-		n.Parent.FirstChild = next_sibling
-	}
-
-	if next_sibling != nil {
-		next_sibling.PrevSibling = prev_sibling
-	} else {
-		n.Parent.LastChild = prev_sibling
-	}
-
-	n.Parent = nil
-	n.PrevSibling = nil
-	n.NextSibling = nil
-
-	DelinkWithParent(n, sub_roots)
-
-	return sub_roots
-}
-
 // GetData is a getter for the data of the node.
 //
 // Returns:
@@ -727,34 +752,7 @@ func (n *TreeNode[T]) GetData() T {
 	return n.Data
 }
 
-// GetBranch works like GetAncestors but includes the node itself.
-//
-// The nodes are returned as a slice where [0] is the root node
-// and [len(branch)-1] is the leaf node.
-//
-// Returns:
-//   - []*TreeNode[T]: A slice of pointers to the nodes in the branch.
-func (n *TreeNode[T]) GetBranch() *Branch {
-	size := 1
-
-	branch := &Branch{
-		to_node: n,
-	}
-
-	node := n
-
-	for node.Parent != nil {
-		size++
-		node = node.Parent
-	}
-
-	branch.from_node = node
-	branch.size = size
-
-	return branch
-}
-
-// LinkSiblings links the siblings with each other. It also sets the prev and
+// link_siblings links the siblings with each other. It also sets the prev and
 // next siblings of the first and last nodes to nil.
 //
 // Parameters:
@@ -765,7 +763,7 @@ func (n *TreeNode[T]) GetBranch() *Branch {
 //
 // Behaviors:
 //   - If the nodes slice is empty, it does nothing. Nil values are filtered out.
-func LinkSiblings[T any](nodes []*TreeNode[T]) []*TreeNode[T] {
+func link_siblings[T any](nodes []*TreeNode[T]) []*TreeNode[T] {
 	nodes = us.FilterNilValues(nodes)
 	if len(nodes) == 0 {
 		// Do nothing.
@@ -795,7 +793,7 @@ func LinkSiblings[T any](nodes []*TreeNode[T]) []*TreeNode[T] {
 	return nodes
 }
 
-// DelinkWithParent delinks the parent with the children. It also delinks the children
+// delink_with_parent delinks the parent with the children. It also delinks the children
 // with each other.
 //
 // Parameters:
@@ -804,7 +802,7 @@ func LinkSiblings[T any](nodes []*TreeNode[T]) []*TreeNode[T] {
 //
 // Behaviors:
 //   - If the parent has no children, it does nothing.
-func DelinkWithParent[T any](parent *TreeNode[T], children []*TreeNode[T]) {
+func delink_with_parent[T any](parent *TreeNode[T], children []Noder) {
 	if len(children) == 0 {
 		return
 	}
@@ -816,9 +814,12 @@ func DelinkWithParent[T any](parent *TreeNode[T], children []*TreeNode[T]) {
 			continue
 		}
 
-		child.PrevSibling = nil
-		child.NextSibling = nil
-		child.Parent = nil
+		c, ok := child.(*TreeNode[T])
+		uc.Assert(ok, "delink_with_parent: Invalid child type")
+
+		c.PrevSibling = nil
+		c.NextSibling = nil
+		c.Parent = nil
 	}
 
 	if parent != nil {

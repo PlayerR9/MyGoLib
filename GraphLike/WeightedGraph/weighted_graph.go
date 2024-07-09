@@ -1,7 +1,6 @@
 package WeightedGraph
 
 import (
-	tlt "github.com/PlayerR9/MyGoLib/TreeLike/Traversor"
 	tr "github.com/PlayerR9/MyGoLib/TreeLike/Tree"
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
 )
@@ -114,8 +113,8 @@ func (g *Graph[T]) AdjacentOf(from T) []T {
 // Returns:
 //   - *WeightedGraphTree: the tree of the graph.
 //   - error: an error if the tree creation fails.
-func (g *Graph[T]) MakeTree(root T, info uc.Objecter, f tlt.NextsFunc[T]) (*tr.Tree[T], error) {
-	var builder tlt.Builder[T]
+func (g *Graph[T]) MakeTree(root tr.Noder, info uc.Objecter, f tr.NextsFunc) (*tr.Tree, error) {
+	var builder tr.Builder
 
 	builder.SetInfo(info)
 	builder.SetNextFunc(f)
