@@ -5,12 +5,12 @@ import (
 )
 
 // Treeer is an interface for types that can be converted to a tree.
-type Treeer[T any] interface {
+type Treeer interface {
 	// TreeOf converts the type to a tree.
 	//
 	// Returns:
-	//   - *Tree[T]: A pointer to the tree.
-	TreeOf() *Tree[T]
+	//   - *Tree: A pointer to the tree.
+	TreeOf() *Tree
 }
 
 // TreeOf converts the element to a tree.
@@ -19,21 +19,20 @@ type Treeer[T any] interface {
 //   - elem: The element to convert.
 //
 // Returns:
-//   - *Tree[T]: A pointer to the tree.
+//   - *Tree: A pointer to the tree. Nil if the element is nil.
 //
 // Behaviors:
-//   - If the element is nil, the function returns nil.
 //   - If the element implements the Treeer interface, the function calls the TreeOf method.
 //   - Otherwise, the function creates a new tree with the element as the root.
-func TreeOf(elem any) *Tree[any] {
+func TreeOf(elem Noder) *Tree {
 	if elem == nil {
 		return nil
 	}
 
-	var tree *Tree[any]
+	var tree *Tree
 
 	switch elem := elem.(type) {
-	case Treeer[any]:
+	case Treeer:
 		tree = elem.TreeOf()
 	default:
 		tree = NewTree(elem)
@@ -50,7 +49,7 @@ func TreeOf(elem any) *Tree[any] {
 //
 // Returns:
 //   - *Node[T]: A pointer to the common ancestor. Nil if no such node is found.
-func FindCommonAncestor[T any](n1, n2 *TreeNode[T]) *TreeNode[T] {
+func FindCommonAncestor(n1, n2 Noder) Noder {
 	if n1 == nil {
 		return n2
 	} else if n2 == nil {
@@ -83,7 +82,7 @@ func FindCommonAncestor[T any](n1, n2 *TreeNode[T]) *TreeNode[T] {
 //
 // Returns:
 //   - []T: A slice of the values of the nodes.
-func ExtractData[T any](nodes []*TreeNode[T]) []T {
+func ExtractData[T Noder](nodes []*TreeNode[T]) []T {
 	data := make([]T, 0, len(nodes))
 
 	for _, node := range nodes {

@@ -7,63 +7,72 @@ import (
 	us "github.com/PlayerR9/MyGoLib/Units/slice"
 )
 
-// Cleanup removes every node in the tree in a DFS traversal and sets the root to nil.
-func (t *Tree[T]) Cleanup() {
-	root := t.root
-	if root == nil {
-		return
-	}
-
-	root.Cleanup()
-
-	t.root = nil
-}
-
 // recSnakeTraversal is an helper function that returns all the paths
 // from n to the leaves of the tree rooted at n.
 //
 // Returns:
-//   - result: A slice of slices of elements.
+//   - [][]Noder: A slice of slices of elements.
+//   - error: An error if the iterator fails.
 //
 // Behaviors:
 //   - The paths are returned in the order of a BFS traversal.
 //   - It is a recursive function.
-func recSnakeTraversal[T any](n *TreeNode[T]) (result [][]T) {
+func recSnakeTraversal(n Noder) ([][]Noder, error) {
 	uc.AssertParam("n", n != nil, errors.New("recSnakeTraversal: n is nil"))
 
-	if n.FirstChild == nil {
-		return [][]T{
-			{n.Data},
-		}
+	ok := n.IsLeaf()
+	if ok {
+		return [][]Noder{
+			{n},
+		}, nil
 	}
 
-	for c := n.FirstChild; c != nil; c = c.NextSibling {
-		subResults := recSnakeTraversal(c)
+	iter := n.Iterator()
+	if iter == nil {
+		return nil, nil
+	}
+
+	var result [][]Noder
+
+	for {
+		value, err := iter.Consume()
+		ok := uc.IsDone(err)
+		if ok {
+			break
+		} else if err != nil {
+			return nil, err
+		}
+
+		subResults, err := recSnakeTraversal(value)
+		if err != nil {
+			return nil, err
+		}
 
 		for _, tmp := range subResults {
-			result = append(result, append([]T{n.Data}, tmp...))
+			tmp = append([]Noder{n}, tmp...)
+			result = append(result, tmp)
 		}
 	}
 
-	return
+	return result, nil
 }
 
 // SnakeTraversal returns all the paths from the root to the leaves of the tree.
 //
 // Returns:
-//   - result: A slice of slices of elements.
+//   - [][]Noder: A slice of slices of elements.
+//   - error: An error if the iterator fails.
 //
 // Behaviors:
 //   - The paths are returned in the order of a BFS traversal.
-func (t *Tree[T]) SnakeTraversal() (result [][]T) {
+func (t *Tree) SnakeTraversal() ([][]Noder, error) {
 	root := t.root
 	if root == nil {
-		return
+		return nil, nil
 	}
 
-	sol := recSnakeTraversal(root)
-
-	return sol
+	sol, err := recSnakeTraversal(root)
+	return sol, err
 }
 
 // recPruneFunc is an helper function that removes all the children of the
@@ -79,8 +88,8 @@ func (t *Tree[T]) SnakeTraversal() (result [][]T) {
 //
 // Behaviors:
 //   - This function is recursive.
-func recPruneFunc[T any](filter us.PredicateFilter[T], highest *TreeNode[T], n *TreeNode[T]) (*TreeNode[T], bool) {
-	ok := filter(n.Data)
+func recPruneFunc(filter us.PredicateFilter[Noder], highest Noder, n Noder) (Noder, bool) {
+	ok := filter(n)
 
 	if ok {
 		// Delete all children
@@ -91,16 +100,29 @@ func recPruneFunc[T any](filter us.PredicateFilter[T], highest *TreeNode[T], n *
 		return ancestors, true
 	}
 
-	var prev *TreeNode[T]
+	var prev Noder
 
-	for c := n.FirstChild; c != nil; c = c.NextSibling {
+	iter := n.Iterator()
+	if iter == nil {
+		return highest, false
+	}
+
+	for {
+		value, err := iter.Consume()
+		ok := uc.IsDone(err)
+		if ok {
+			break
+		} else if err != nil {
+			return highest, false
+		}
+
 		high, ok := recPruneFunc(filter, highest, c)
 		if !ok {
 			continue
 		}
 
-		prev_sibling := c.PrevSibling
-		next_sibling := c.NextSibling
+		prev_sibling := value.PrevSibling
+		next_sibling := value.NextSibling
 
 		if prev_sibling != nil {
 			prev_sibling.NextSibling = next_sibling
@@ -110,7 +132,7 @@ func recPruneFunc[T any](filter us.PredicateFilter[T], highest *TreeNode[T], n *
 			next_sibling.PrevSibling = prev_sibling
 		}
 
-		c.PrevSibling = nil
+		value.PrevSibling = nil
 
 		if prev != nil {
 			prev.NextSibling = nil
@@ -118,7 +140,7 @@ func recPruneFunc[T any](filter us.PredicateFilter[T], highest *TreeNode[T], n *
 
 		highest = FindCommonAncestor(highest, high)
 
-		prev = c
+		prev = value
 	}
 
 	return highest, false
@@ -135,7 +157,7 @@ func recPruneFunc[T any](filter us.PredicateFilter[T], highest *TreeNode[T], n *
 //
 // Behaviors:
 //   - The root node is not pruned.
-func (t *Tree[T]) PruneFunc(filter us.PredicateFilter[T]) bool {
+func (t *Tree) PruneFunc(filter us.PredicateFilter[Noder]) bool {
 	if filter == nil {
 		return false
 	}

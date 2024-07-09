@@ -1,5 +1,7 @@
 package common
 
+import "errors"
+
 // Slicer is an interface that provides a method to convert a data structure to a slice.
 type Slicer[T any] interface {
 	// Slice returns a slice containing all the elements in the data structure.
@@ -97,12 +99,6 @@ func IteratorOf[T any](elem any) Iterater[T] {
 // Iterater is an interface that defines methods for an iterator over a
 // collection of elements of type T.
 type Iterater[T any] interface {
-	// Size returns the number of elements in the collection.
-	//
-	// Returns:
-	//  - count: The number of elements in the collection.
-	Size() (count int)
-
 	// Consume advances the iterator to the next element in the
 	// collection and returns the current element.
 	//
@@ -125,21 +121,6 @@ type ProceduralIterator[E Iterable[T], T any] struct {
 
 	// iter is the iterator in the collection.
 	iter Iterater[T]
-}
-
-// Size implements the Iterater interface.
-//
-// Size is evaluated by summing the sizes of the current iterator and the source
-// iterator. Of course, this is just an estimate of the total number of elements
-// in the collection.
-func (pi *ProceduralIterator[E, T]) Size() (count int) {
-	if pi.iter != nil {
-		count = pi.iter.Size()
-	}
-
-	count += pi.source.Size()
-
-	return
 }
 
 // Consume implements the Iterater interface.
@@ -216,21 +197,6 @@ type SliceIterator[T any] struct {
 
 	// iter is the iterator in the collection.
 	iter *SimpleIterator[T]
-}
-
-// Size implements the Iterater interface.
-//
-// Size is evaluated by summing the sizes of the current iterator and the source
-// iterator. Of course, this is just an estimate of the total number of elements
-// in the collection.
-func (pi *SliceIterator[T]) Size() (count int) {
-	if pi.iter != nil {
-		count = pi.iter.Size()
-	}
-
-	count += pi.source.Size()
-
-	return
 }
 
 // Consume implements the Iterater interface.
@@ -313,21 +279,6 @@ type DynamicIterator[E, T any] struct {
 	transition func(E) Iterater[T]
 }
 
-// Size implements the Iterater interface for the DynamicIterator type.
-//
-// Size is evaluated by summing the sizes of the current iterator and the source
-// iterator. Of course, this is just an estimate of the total number of elements
-// in the collection.
-func (di *DynamicIterator[E, T]) Size() (count int) {
-	if di.iter != nil {
-		count = di.iter.Size()
-	}
-
-	count += di.source.Size()
-
-	return
-}
-
 // Consume implements the Iterater interface.
 func (di *DynamicIterator[E, T]) Consume() (T, error) {
 	if di.iter == nil {
@@ -408,15 +359,6 @@ type SimpleIterator[T any] struct {
 	index int
 }
 
-// Size implements the Iterater interface.
-func (iter *SimpleIterator[T]) Size() int {
-	if iter.values == nil {
-		return 0
-	}
-
-	return len(*iter.values)
-}
-
 // Consume implements the Iterater interface.
 func (iter *SimpleIterator[T]) Consume() (T, error) {
 	if iter.index >= len(*iter.values) {
@@ -457,4 +399,22 @@ func NewSimpleIterator[T any](values []T) *SimpleIterator[T] {
 		index:  0,
 	}
 	return si
+}
+
+// IsDone checks if the iterator is exhausted.
+//
+// Parameters:
+//   - err: The error to check.
+//
+// Returns:
+//   - bool: True if the iterator is exhausted, false otherwise.
+func IsDone(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	var exhausted *ErrExhaustedIter
+
+	ok := errors.As(err, &exhausted)
+	return ok
 }

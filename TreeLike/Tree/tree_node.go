@@ -8,7 +8,125 @@ import (
 	lls "github.com/PlayerR9/MyGoLib/ListLike/Stacker"
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
 	us "github.com/PlayerR9/MyGoLib/Units/slice"
+	uto "github.com/PlayerR9/MyGoLib/Utility/object"
 )
+
+// TreeNodeIterator is a iterator that iterates over the children of a tree node.
+type TreeNodeIterator[T any] struct {
+	// node is the node whose children are being iterated over.
+	node *TreeNode[T]
+
+	// current_node is the current node being iterated over.
+	current_node *TreeNode[T]
+}
+
+// Size implements the common.Iterater interface.
+func (t *TreeNodeIterator[T]) Consume() (Noder, error) {
+	if t.current_node == nil {
+		return nil, uc.NewErrExhaustedIter()
+	}
+
+	n := t.current_node
+
+	t.current_node = t.current_node.NextSibling
+
+	return n, nil
+}
+
+// Restart implements the common.Iterater interface.
+func (t *TreeNodeIterator[T]) Restart() {
+	t.current_node = t.node.FirstChild
+}
+
+// NewTreeNodeIterator creates a new iterator for the given node.
+//
+// Parameters:
+//   - node: The node whose children are being iterated over.
+//
+// Returns:
+//   - *TreeNodeIterator[T]: A pointer to the iterator. Nil if the node is nil.
+func NewTreeNodeIterator[T any](node *TreeNode[T]) *TreeNodeIterator[T] {
+	if node == nil {
+		return nil
+	}
+
+	ti := &TreeNodeIterator[T]{
+		node:         node,
+		current_node: node.FirstChild,
+	}
+
+	return ti
+}
+
+// Noder is an interface that represents a node in a tree.
+type Noder interface {
+	// SetParent sets the parent of the node.
+	//
+	// Parameters:
+	//   - parent: The parent node.
+	//
+	// Returns:
+	//   - bool: True if the parent is set, false otherwise.
+	SetParent(parent Noder) bool
+
+	// GetParent returns the parent of the node.
+	//
+	// Returns:
+	//   - Noder: The parent node.
+	GetParent() Noder
+
+	// LinkWithParent links the parent with the children. It also links the children
+	// with each other.
+	//
+	// Parameters:
+	//   - parent: The parent node.
+	//   - children: The children nodes.
+	//
+	// Behaviors:
+	//   - Only valid children are linked while the rest are ignored.
+	LinkChildren(children []Noder)
+
+	// IsLeaf returns true if the node is a leaf.
+	//
+	// Returns:
+	//   - bool: True if the node is a leaf, false otherwise.
+	IsLeaf() bool
+
+	// GetLeaves returns all the leaves of the tree rooted at the node.
+	//
+	// Should be a DFS traversal.
+	//
+	// Returns:
+	//   - []Noder: A slice of pointers to the leaves of the tree.
+	//
+	// Behaviors:
+	//   - The leaves are returned in the order of a DFS traversal.
+	GetLeaves() []Noder
+
+	// GetAncestors returns all the ancestors of the node.
+	//
+	// This excludes the node itself.
+	//
+	// Returns:
+	//   - []Noder: A slice of pointers to the ancestors of the node.
+	//
+	// Behaviors:
+	//   - The ancestors are returned in the opposite order of a DFS traversal.
+	//     Therefore, the first element is the parent of the node.
+	GetAncestors() []Noder
+
+	// GetFirstChild returns the first child of the node.
+	//
+	// Returns:
+	//   - Noder: The first child of the node. Nil if the node has no children.
+	GetFirstChild() Noder
+
+	Treeer
+	uc.Iterable[Noder]
+	uc.Copier
+	ffs.FStringer
+	uto.Cleaner
+}
 
 // TreeNode is a generic data structure that represents a node in a tree.
 type TreeNode[T any] struct {
@@ -21,7 +139,14 @@ type TreeNode[T any] struct {
 	Data T
 }
 
-// FString implements the ffs.FStringer interface.
+// Iterator implements Noder.
+func (t *TreeNode[T]) Iterator() uc.Iterater[Noder] {
+	iter := NewTreeNodeIterator(t)
+
+	return iter
+}
+
+// FString implements the Noder interface.
 func (t *TreeNode[T]) FString(trav *ffs.Traversor, opts ...ffs.Option) error {
 	err := trav.AddLine(uc.StringOf(t.Data))
 	if err != nil {
@@ -44,22 +169,176 @@ func (t *TreeNode[T]) FString(trav *ffs.Traversor, opts ...ffs.Option) error {
 	return nil
 }
 
-// Copy implements the uc.Copier interface.
+// Copy implements the Noder interface.
 func (n *TreeNode[T]) Copy() uc.Copier {
-	var childCopy []*TreeNode[T]
+	var child_copy []Noder
 
 	for c := n.FirstChild; c != nil; c = c.NextSibling {
-		c_copy := c.Copy().(*TreeNode[T])
-		childCopy = append(childCopy, c_copy)
+		c_copy := c.Copy().(Noder)
+		child_copy = append(child_copy, c_copy)
 	}
 
 	d_copy := uc.CopyOf(n.Data).(T)
 
 	nCopy := &TreeNode[T]{Data: d_copy}
 
-	LinkWithParent(nCopy, childCopy)
+	nCopy.LinkChildren(child_copy)
 
 	return nCopy
+}
+
+// SetParent implements the Noder interface.
+func (n *TreeNode[T]) SetParent(parent Noder) bool {
+	if parent == nil {
+		n.Parent = nil
+		return true
+	}
+
+	p, ok := parent.(*TreeNode[T])
+	if !ok {
+		return false
+	}
+
+	n.Parent = p
+
+	return true
+}
+
+// GetParent implements the Noder interface.
+func (n *TreeNode[T]) GetParent() Noder {
+	return n.Parent
+}
+
+// LinkWithParent implements the Noder interface.
+//
+// Children that are not *TreeNode[T] are ignored.
+func (tn *TreeNode[T]) LinkChildren(children []Noder) {
+	var valid_children []*TreeNode[T]
+
+	for _, child := range children {
+		c, ok := child.(*TreeNode[T])
+		if !ok {
+			continue
+		}
+
+		valid_children = append(valid_children, c)
+	}
+	if len(valid_children) == 0 {
+		// Do nothing.
+		return
+	}
+
+	valid_children = LinkSiblings(valid_children)
+
+	for _, child := range valid_children {
+		child.Parent = tn
+	}
+
+	tn.FirstChild = valid_children[0]
+	tn.LastChild = valid_children[len(valid_children)-1]
+}
+
+// GetLeaves implements the Noder interface.
+func (n *TreeNode[T]) GetLeaves() []Noder {
+	S := Stacker.NewLinkedStack(n)
+
+	var leaves []Noder
+
+	for {
+		top, ok := S.Pop()
+		if !ok {
+			break
+		}
+
+		ok = top.IsLeaf()
+		if ok {
+			leaves = append(leaves, top)
+
+			continue
+		}
+		children := top.GetChildren()
+
+		for _, child := range children {
+			S.Push(child)
+		}
+	}
+
+	return leaves
+}
+
+// ToTree implements the Noder interface.
+func (n *TreeNode[T]) TreeOf() *Tree {
+	if n.FirstChild == nil {
+		return &Tree{
+			root:   n,
+			leaves: []Noder{n},
+			size:   1,
+		}
+	} else {
+		return &Tree{
+			root:   n,
+			leaves: n.GetLeaves(),
+			size:   n.Size(),
+		}
+	}
+}
+
+// Cleanup implements the Noder interface.
+//
+// Uses DFS traversal, does not use recursion, and does not remove the node itself.
+func (tn *TreeNode[T]) Cleanup() {
+	type Helper struct {
+		Prev *TreeNode[T]
+		Curr *TreeNode[T]
+	}
+
+	h := &Helper{
+		Prev: nil,
+		Curr: tn,
+	}
+
+	S := lls.NewLinkedStack(h)
+
+	for {
+		h, ok := S.Pop()
+		if !ok {
+			break
+		}
+
+		for c := h.Curr.FirstChild; c != nil; c = c.NextSibling {
+			h := &Helper{
+				Prev: c.PrevSibling,
+				Curr: c,
+			}
+
+			S.Push(h)
+		}
+
+		if h.Prev != nil {
+			h.Prev.NextSibling = nil
+			h.Prev.PrevSibling = nil
+		}
+
+		h.Curr.FirstChild = nil
+		h.Curr.LastChild = nil
+		h.Curr.Parent = nil
+	}
+
+	tn.NextSibling = nil
+	tn.PrevSibling = nil
+}
+
+// GetAncestors implements the Noder interface.
+func (n *TreeNode[T]) GetAncestors() []Noder {
+	var ancestors []Noder
+
+	for node := n; node.Parent != nil; node = node.Parent {
+		ancestors = append(ancestors, node.Parent)
+	}
+
+	slices.Reverse(ancestors)
+
+	return ancestors
 }
 
 // NewTreeNode creates a new node with the given data.
@@ -135,57 +414,6 @@ func (n *TreeNode[T]) IsLeaf() bool {
 //   - bool: True if the node is the root, false otherwise.
 func (n *TreeNode[T]) IsRoot() bool {
 	return n.Parent == nil
-}
-
-// Leaves returns all the leaves of the tree rooted at n.
-//
-// Returns:
-//   - leaves: A slice of pointers to the leaves of the tree.
-//
-// Behaviors:
-//   - The leaves are returned in the order of a DFS traversal.
-func (n *TreeNode[T]) Leaves() (leaves []*TreeNode[T]) {
-	S := Stacker.NewLinkedStack(n)
-
-	for {
-		top, ok := S.Pop()
-		if !ok {
-			break
-		}
-
-		ok = top.IsLeaf()
-		if ok {
-			leaves = append(leaves, top)
-		} else {
-			children := top.GetChildren()
-
-			for _, child := range children {
-				S.Push(child)
-			}
-		}
-	}
-
-	return
-}
-
-// ToTree converts the node to a tree.
-//
-// Returns:
-//   - *Tree[T]: A pointer to the tree.
-func (n *TreeNode[T]) ToTree() *Tree[T] {
-	if n.FirstChild == nil {
-		return &Tree[T]{
-			root:   n,
-			leaves: []*TreeNode[T]{n},
-			size:   1,
-		}
-	} else {
-		return &Tree[T]{
-			root:   n,
-			leaves: n.Leaves(),
-			size:   n.Size(),
-		}
-	}
 }
 
 // AddChild adds a new child to the node with the given data.
@@ -422,26 +650,6 @@ func (n *TreeNode[T]) Size() (size int) {
 	return
 }
 
-// GetAncestors returns all the ancestors of the node.
-//
-// This excludes the node itself.
-//
-// Returns:
-//   - ancestors: A slice of pointers to the ancestors of the node.
-//
-// Behaviors:
-//   - The ancestors are returned in the opposite order of a DFS traversal.
-//     Therefore, the first element is the parent of the node.
-func (n *TreeNode[T]) GetAncestors() (ancestors []*TreeNode[T]) {
-	for node := n; node.Parent != nil; node = node.Parent {
-		ancestors = append(ancestors, node.Parent)
-	}
-
-	slices.Reverse(ancestors)
-
-	return
-}
-
 // IsChildOf returns true if the node is a child of the parent.
 //
 // Parameters:
@@ -457,7 +665,9 @@ func (n *TreeNode[T]) IsChildOf(target *TreeNode[T]) bool {
 	parents := target.GetAncestors()
 
 	for node := n; node.Parent != nil; node = node.Parent {
-		ok := slices.Contains(parents, node.Parent)
+		parent := Noder(node.Parent)
+
+		ok := slices.Contains(parents, parent)
 		if ok {
 			return true
 		}
@@ -524,10 +734,10 @@ func (n *TreeNode[T]) GetData() T {
 //
 // Returns:
 //   - []*TreeNode[T]: A slice of pointers to the nodes in the branch.
-func (n *TreeNode[T]) GetBranch() *Branch[T] {
+func (n *TreeNode[T]) GetBranch() *Branch {
 	size := 1
 
-	branch := &Branch[T]{
+	branch := &Branch{
 		to_node: n,
 	}
 
@@ -542,40 +752,6 @@ func (n *TreeNode[T]) GetBranch() *Branch[T] {
 	branch.size = size
 
 	return branch
-}
-
-// LinkWithParent links the parent with the children. It also links the children
-// with each other.
-//
-// Parameters:
-//   - parent: The parent node.
-//   - children: The children nodes.
-//
-// Returns:
-//   - []*TreeNode[T]: The linked children. (Without the nil values)
-//
-// Behaviors:
-//   - If the parent has no children, it does nothing. Nil values are filtered out.
-func LinkWithParent[T any](parent *TreeNode[T], children []*TreeNode[T]) []*TreeNode[T] {
-	children = LinkSiblings(children)
-	if len(children) == 0 {
-		// Do nothing.
-		return nil
-	}
-
-	for _, child := range children {
-		child.Parent = parent
-	}
-
-	if parent == nil {
-		// Do nothing.
-		return children
-	}
-
-	parent.FirstChild = children[0]
-	parent.LastChild = children[len(children)-1]
-
-	return children
 }
 
 // LinkSiblings links the siblings with each other. It also sets the prev and
@@ -649,51 +825,4 @@ func DelinkWithParent[T any](parent *TreeNode[T], children []*TreeNode[T]) {
 		parent.FirstChild = nil
 		parent.LastChild = nil
 	}
-}
-
-// Cleanup removes every child of the node in a DFS traversal.
-//
-// Behaviors:
-//   - The node itself is not removed.
-//   - It does not use recursion.
-func (tn *TreeNode[T]) Cleanup() {
-	type Helper struct {
-		Prev *TreeNode[T]
-		Curr *TreeNode[T]
-	}
-
-	h := &Helper{
-		Prev: nil,
-		Curr: tn,
-	}
-
-	S := lls.NewLinkedStack(h)
-
-	for {
-		h, ok := S.Pop()
-		if !ok {
-			break
-		}
-
-		for c := h.Curr.FirstChild; c != nil; c = c.NextSibling {
-			h := &Helper{
-				Prev: c.PrevSibling,
-				Curr: c,
-			}
-
-			S.Push(h)
-		}
-
-		if h.Prev != nil {
-			h.Prev.NextSibling = nil
-			h.Prev.PrevSibling = nil
-		}
-
-		h.Curr.FirstChild = nil
-		h.Curr.LastChild = nil
-		h.Curr.Parent = nil
-	}
-
-	tn.NextSibling = nil
-	tn.PrevSibling = nil
 }

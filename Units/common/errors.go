@@ -2,6 +2,7 @@
 package common
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -22,7 +23,9 @@ func (e *ErrPanic) Error() string {
 	builder.WriteString("panic: ")
 	fmt.Fprintf(&builder, "%v", e.Value)
 
-	return builder.String()
+	str := builder.String()
+
+	return str
 }
 
 // NewErrPanic creates a new ErrPanic error.
@@ -33,9 +36,11 @@ func (e *ErrPanic) Error() string {
 // Returns:
 //   - *ErrPanic: A pointer to the newly created ErrPanic.
 func NewErrPanic(value any) *ErrPanic {
-	return &ErrPanic{
+	e := &ErrPanic{
 		Value: value,
 	}
+
+	return e
 }
 
 // ErrOutOfBounds represents an error when a value is out of a specified range.
@@ -60,29 +65,38 @@ type ErrOutOfBounds struct {
 // upper bound is inclusive, the message uses square brackets. Otherwise, the
 // message uses parentheses.
 func (e *ErrOutOfBounds) Error() string {
-	var builder strings.Builder
+	qi := QuoteInt(e.Value)
+	left_bound := strconv.Itoa(e.LowerBound)
+	right_bound := strconv.Itoa(e.UpperBound)
 
-	builder.WriteString("value (")
-	builder.WriteString(strconv.Itoa(e.Value))
-	builder.WriteString(") not in range ")
+	var open, close string
 
 	if e.LowerInclusive {
-		builder.WriteRune('[')
+		open = "["
 	} else {
-		builder.WriteRune('(')
+		open = "("
 	}
-
-	builder.WriteString(strconv.Itoa(e.LowerBound))
-	builder.WriteString(", ")
-	builder.WriteString(strconv.Itoa(e.UpperBound))
 
 	if e.UpperInclusive {
-		builder.WriteRune(']')
+		close = "]"
 	} else {
-		builder.WriteRune(')')
+		close = ")"
 	}
 
-	return builder.String()
+	values := []string{
+		"value",
+		qi,
+		"not in range",
+		open,
+		left_bound,
+		",",
+		right_bound,
+		close,
+	}
+
+	str := strings.Join(values, " ")
+
+	return str
 }
 
 // WithLowerBound sets the inclusivity of the lower bound.
@@ -122,13 +136,14 @@ func (e *ErrOutOfBounds) WithUpperBound(isInclusive bool) *ErrOutOfBounds {
 // Returns:
 //   - *ErrOutOfBounds: A pointer to the newly created ErrOutOfBound.
 func NewErrOutOfBounds(value int, lowerBound, upperBound int) *ErrOutOfBounds {
-	return &ErrOutOfBounds{
+	e := &ErrOutOfBounds{
 		LowerBound:     lowerBound,
 		UpperBound:     upperBound,
 		LowerInclusive: true,
 		UpperInclusive: false,
 		Value:          value,
 	}
+	return e
 }
 
 // ErrUnexpected represents an error that occurs when an unexpected value is
@@ -146,43 +161,33 @@ type ErrUnexpected struct {
 // Message: "expected <value 0>, <value 1>, <value 2>, ..., or <value n>,
 // got <actual> instead"
 func (e *ErrUnexpected) Error() string {
-	var builder strings.Builder
-
-	builder.WriteString("expected ")
+	var expected string
 
 	if len(e.Expected) == 0 {
-		builder.WriteString("nothing")
+		expected = "nothing"
 	} else {
-		builder.WriteString(strconv.Quote(e.Expected[0]))
+		expected = OrQuoteString(e.Expected, false)
 	}
 
-	if len(e.Expected) > 2 {
-		var values []string
-
-		for i := 1; i < len(e.Expected)-1; i++ {
-			values = append(values, strconv.Quote(e.Expected[i]))
-		}
-
-		builder.WriteString(strings.Join(values, ", "))
-		builder.WriteRune(',')
-	}
-
-	if len(e.Expected) > 1 {
-		builder.WriteString(" or ")
-		builder.WriteString(strconv.Quote(e.Expected[len(e.Expected)-1]))
-	}
-
-	builder.WriteString(", got ")
+	var actual string
 
 	if e.Actual == "" {
-		builder.WriteString("nothing")
+		actual = "nothing"
 	} else {
-		builder.WriteString(strconv.Quote(e.Actual))
+		actual = strconv.Quote(e.Actual)
 	}
 
-	builder.WriteString(" instead")
+	values := []string{
+		"expected",
+		expected,
+		", got",
+		actual,
+		"instead",
+	}
 
-	return builder.String()
+	str := strings.Join(values, " ")
+
+	return str
 }
 
 // NewErrUnexpected creates a new ErrUnexpected error.
@@ -194,10 +199,12 @@ func (e *ErrUnexpected) Error() string {
 // Returns:
 //   - *ErrUnexpected: A pointer to the newly created ErrUnexpected.
 func NewErrUnexpected(got string, expected ...string) *ErrUnexpected {
-	return &ErrUnexpected{
+	e := &ErrUnexpected{
 		Expected: expected,
 		Actual:   got,
 	}
+
+	return e
 }
 
 // ErrEmpty represents an error when a value is empty.
@@ -210,9 +217,11 @@ type ErrEmpty[T any] struct {
 //
 // Message: "<type> must not be empty"
 func (e *ErrEmpty[T]) Error() string {
+	type_str := TypeOf(e.Value)
+
 	var builder strings.Builder
 
-	builder.WriteString(TypeOf(e.Value))
+	builder.WriteString(type_str)
 	builder.WriteString(" must not be empty")
 
 	return builder.String()
@@ -226,9 +235,10 @@ func (e *ErrEmpty[T]) Error() string {
 // Returns:
 //   - *ErrEmpty: A pointer to the newly created ErrEmpty.
 func NewErrEmpty[T any](value T) *ErrEmpty[T] {
-	return &ErrEmpty[T]{
+	e := &ErrEmpty[T]{
 		Value: value,
 	}
+	return e
 }
 
 // ErrGT represents an error when a value is less than or equal to a specified value.
@@ -247,12 +257,16 @@ func (e *ErrGT) Error() string {
 		return "value must be positive"
 	}
 
+	value := strconv.Itoa(e.Value)
+
 	var builder strings.Builder
 
 	builder.WriteString("value must be greater than ")
-	builder.WriteString(strconv.Itoa(e.Value))
+	builder.WriteString(value)
 
-	return builder.String()
+	str := builder.String()
+
+	return str
 }
 
 // NewErrGT creates a new ErrGT error with the specified value.
@@ -263,9 +277,10 @@ func (e *ErrGT) Error() string {
 // Returns:
 //   - *ErrGT: A pointer to the newly created ErrGT.
 func NewErrGT(value int) *ErrGT {
-	return &ErrGT{
+	e := &ErrGT{
 		Value: value,
 	}
+	return e
 }
 
 // ErrLT represents an error when a value is greater than or equal to a specified value.
@@ -284,12 +299,15 @@ func (e *ErrLT) Error() string {
 		return "value must be negative"
 	}
 
+	value := strconv.Itoa(e.Value)
+
 	var builder strings.Builder
 
 	builder.WriteString("value must be less than ")
-	builder.WriteString(strconv.Itoa(e.Value))
+	builder.WriteString(value)
 
-	return builder.String()
+	str := builder.String()
+	return str
 }
 
 // NewErrLT creates a new ErrLT error with the specified value.
@@ -300,9 +318,10 @@ func (e *ErrLT) Error() string {
 // Returns:
 //   - *ErrLT: A pointer to the newly created ErrLT.
 func NewErrLT(value int) *ErrLT {
-	return &ErrLT{
+	e := &ErrLT{
 		Value: value,
 	}
+	return e
 }
 
 // ErrGTE represents an error when a value is less than a specified value.
@@ -321,12 +340,15 @@ func (e *ErrGTE) Error() string {
 		return "value must be non-negative"
 	}
 
+	value := strconv.Itoa(e.Value)
+
 	var builder strings.Builder
 
 	builder.WriteString("value must be greater than or equal to ")
-	builder.WriteString(strconv.Itoa(e.Value))
+	builder.WriteString(value)
 
-	return builder.String()
+	str := builder.String()
+	return str
 }
 
 // NewErrGTE creates a new ErrGTE error with the specified value.
@@ -337,9 +359,10 @@ func (e *ErrGTE) Error() string {
 // Returns:
 //   - *ErrGTE: A pointer to the newly created ErrGTE.
 func NewErrGTE(value int) *ErrGTE {
-	return &ErrGTE{
+	e := &ErrGTE{
 		Value: value,
 	}
+	return e
 }
 
 // ErrLTE represents an error when a value is greater than a specified value.
@@ -358,12 +381,15 @@ func (e *ErrLTE) Error() string {
 		return "value must be non-positive"
 	}
 
+	value := strconv.Itoa(e.Value)
+
 	var builder strings.Builder
 
 	builder.WriteString("value must be less than or equal to ")
-	builder.WriteString(strconv.Itoa(e.Value))
+	builder.WriteString(value)
 
-	return builder.String()
+	str := builder.String()
+	return str
 }
 
 // NewErrLTE creates a new ErrLTE error with the specified value.
@@ -374,9 +400,10 @@ func (e *ErrLTE) Error() string {
 // Returns:
 //   - *ErrLTE: A pointer to the newly created ErrLTE.
 func NewErrLTE(value int) *ErrLTE {
-	return &ErrLTE{
+	e := &ErrLTE{
 		Value: value,
 	}
+	return e
 }
 
 // ErrInvalidValues represents an error when a value is in a list of invalid values.
@@ -393,31 +420,22 @@ type ErrInvalidValues[T comparable] struct {
 func (e *ErrInvalidValues[T]) Error() string {
 	if len(e.Values) == 0 {
 		return "value is invalid"
-	} else if len(e.Values) == 1 {
-		return "value must not be " + StringOf(e.Values[0])
 	}
 
 	values := make([]string, 0, len(e.Values))
 	for _, v := range e.Values {
-		values = append(values, StringOf(v))
+		values = append(values, fmt.Sprintf("%v", v))
 	}
+
+	value := OrString(values, true)
 
 	var builder strings.Builder
 
 	builder.WriteString("value must not be ")
+	builder.WriteString(value)
 
-	if len(e.Values) == 2 {
-		builder.WriteString("either ")
-		builder.WriteString(values[0])
-	} else if len(e.Values) > 2 {
-		builder.WriteString(strings.Join(values[:len(values)-1], ", "))
-		builder.WriteRune(',')
-	}
-
-	builder.WriteString(" or ")
-	builder.WriteString(values[len(values)-1])
-
-	return builder.String()
+	str := builder.String()
+	return str
 }
 
 // NewErrInvalidValues creates a new ErrInvalidValues error.
@@ -428,9 +446,10 @@ func (e *ErrInvalidValues[T]) Error() string {
 // Returns:
 //   - *ErrInvalidValues: A pointer to the newly created ErrInvalidValues.
 func NewErrInvalidValues[T comparable](values []T) *ErrInvalidValues[T] {
-	return &ErrInvalidValues[T]{
+	e := &ErrInvalidValues[T]{
 		Values: values,
 	}
+	return e
 }
 
 // NewErrUnexpectedValue is a function that creates a new ErrInvalidValues error.
@@ -441,9 +460,10 @@ func NewErrInvalidValues[T comparable](values []T) *ErrInvalidValues[T] {
 // Returns:
 //   - *ErrInvalidValues: A pointer to the newly created ErrInvalidValues.
 func NewErrUnexpectedValue[T comparable](value T) *ErrInvalidValues[T] {
-	return &ErrInvalidValues[T]{
+	e := &ErrInvalidValues[T]{
 		Values: []T{value},
 	}
+	return e
 }
 
 // ErrUnexpectedType represents an error when a value has an invalid type.
@@ -459,15 +479,17 @@ type ErrUnexpectedType[T any] struct {
 //
 // Message: "type <type> is not a valid <kind> type"
 func (e *ErrUnexpectedType[T]) Error() string {
-	var builder strings.Builder
+	values := []string{
+		"type",
+		fmt.Sprintf("%T", e.Elem),
+		"is not a valid",
+		e.Kind,
+		"type",
+	}
 
-	builder.WriteString("type ")
-	fmt.Fprintf(&builder, "%T", e.Elem)
-	builder.WriteString(" is not a valid ")
-	builder.WriteString(e.Kind)
-	builder.WriteString(" type")
+	str := strings.Join(values, " ")
 
-	return builder.String()
+	return str
 }
 
 // NewErrUnexpectedType creates a new ErrUnexpectedType error.
@@ -479,10 +501,11 @@ func (e *ErrUnexpectedType[T]) Error() string {
 // Returns:
 //   - *ErrUnexpectedType: A pointer to the newly created ErrUnexpectedType.
 func NewErrUnexpectedType[T any](kind string, elem T) *ErrUnexpectedType[T] {
-	return &ErrUnexpectedType[T]{
+	e := &ErrUnexpectedType[T]{
 		Elem: elem,
 		Kind: kind,
 	}
+	return e
 }
 
 // ErrNilValue represents an error when a value is nil.
@@ -500,7 +523,8 @@ func (e *ErrNilValue) Error() string {
 // Returns:
 //   - *ErrNilValue: The new ErrNilValue error.
 func NewErrNilValue() *ErrNilValue {
-	return &ErrNilValue{}
+	e := &ErrNilValue{}
+	return e
 }
 
 // ErrExhaustedIter is an error type that is returned when an iterator
@@ -519,5 +543,43 @@ func (e *ErrExhaustedIter) Error() string {
 // Returns:
 //   - *ErrExhaustedIter: A pointer to the new error.
 func NewErrExhaustedIter() *ErrExhaustedIter {
-	return &ErrExhaustedIter{}
+	e := &ErrExhaustedIter{}
+	return e
+}
+
+// ErrNotFound is an error type that is returned when a value is not found.
+type ErrNotFound struct{}
+
+// Error implements the error interface.
+//
+// Message: "not found"
+func (e *ErrNotFound) Error() string {
+	return "not found"
+}
+
+// NewErrNotFound creates a new ErrNotFound error.
+//
+// Returns:
+//   - *ErrNotFound: A pointer to the new error.
+func NewErrNotFound() *ErrNotFound {
+	e := &ErrNotFound{}
+	return e
+}
+
+// IsNotFound checks if the error is an ErrNotFound.
+//
+// Parameters:
+//   - err: The error to check.
+//
+// Returns:
+//   - bool: True if the error is an ErrNotFound, false otherwise.
+func IsNotFound(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	var notFound *ErrNotFound
+
+	ok := errors.As(err, &notFound)
+	return ok
 }

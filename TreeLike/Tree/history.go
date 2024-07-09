@@ -11,18 +11,12 @@ import (
 // NewTree creates a new tree with the given root.
 //
 // Parameters:
-//   - data: The value of the root.
+//   - root: The root of the tree.
 //
 // Returns:
-//   - *Tree[T]: A pointer to the newly created tree.
-func NewTreeWithHistory[T any](data T) *ud.History[*Tree[T]] {
-	root := NewTreeNode(data)
-
-	tree := &Tree[T]{
-		root:   root,
-		leaves: []*TreeNode[T]{root},
-		size:   1,
-	}
+//   - *Debugging.History[*Tree]: A pointer to the history of the tree.
+func NewTreeWithHistory(root Noder) *ud.History[*Tree] {
+	tree := NewTree(root)
 
 	h := ud.NewHistory(tree)
 
@@ -30,27 +24,19 @@ func NewTreeWithHistory[T any](data T) *ud.History[*Tree[T]] {
 }
 
 // SetChildrenCmd is a command that sets the children of a node.
-type SetChildrenCmd[T any] struct {
+type SetChildrenCmd struct {
+	// prev_tree is a copy of the tree before setting the children.
+	prev_tree *Tree
+
 	// children is a slice of pointers to the children to set.
-	children []*Tree[T]
-
-	// size is the size of the tree before setting the children.
-	size int
-
-	// prevChildren is a slice of pointers to the previous children of the node.
-	prevChildren []*TreeNode[T]
-
-	// prevLeaves is a slice of pointers to the previous leaves of the tree.
-	prevLeaves []*TreeNode[T]
+	children []*Tree
 }
 
 // Execute implements the Debugging.Commander interface.
-func (c *SetChildrenCmd[T]) Execute(data *Tree[T]) error {
-	c.size = data.size
-	c.prevChildren = data.root.GetChildren()
-	c.prevLeaves = data.leaves
+func (cmd *SetChildrenCmd) Execute(data *Tree) error {
+	cmd.prev_tree = data.Copy().(*Tree)
 
-	err := data.SetChildren(c.children)
+	err := data.SetChildren(cmd.children)
 	if err != nil {
 		return err
 	}
@@ -59,49 +45,28 @@ func (c *SetChildrenCmd[T]) Execute(data *Tree[T]) error {
 }
 
 // Undo implements the Debugging.Commander interface.
-func (c *SetChildrenCmd[T]) Undo(data *Tree[T]) error {
-	root := data.root
-	if root == nil {
-		return NewErrMissingRoot()
-	}
-
-	LinkWithParent(root, c.prevChildren)
-	data.leaves = c.prevLeaves
-	data.size = c.size
+//
+// Never errors.
+func (cmd *SetChildrenCmd) Undo(data *Tree) error {
+	data.root = cmd.prev_tree.root
+	data.leaves = cmd.prev_tree.leaves
+	data.size = cmd.prev_tree.size
 
 	return nil
 }
 
 // Copy implements the Debugging.Commander interface.
-func (c *SetChildrenCmd[T]) Copy() uc.Copier {
-	cCopy := &SetChildrenCmd[T]{
-		children:     make([]*Tree[T], len(c.children)),
-		size:         c.size,
-		prevChildren: make([]*TreeNode[T], len(c.prevChildren)),
-		prevLeaves:   make([]*TreeNode[T], len(c.prevLeaves)),
+func (cmd *SetChildrenCmd) Copy() uc.Copier {
+	tree_copy := cmd.prev_tree.Copy().(*Tree)
+
+	children_copy := uc.SliceCopy(cmd.children)
+
+	c_copy := &SetChildrenCmd{
+		children:  children_copy,
+		prev_tree: tree_copy,
 	}
 
-	for i, child := range c.children {
-		childCopy := child.Copy().(*Tree[T])
-
-		cCopy.children[i] = childCopy
-	}
-
-	for i, child := range c.prevChildren {
-		childCopy := child.Copy().(*TreeNode[T])
-		childCopy.Parent = child.Parent
-
-		cCopy.prevChildren[i] = childCopy
-	}
-
-	for i, leaf := range c.prevLeaves {
-		leafCopy := leaf.Copy().(*TreeNode[T])
-		leafCopy.Parent = leaf.Parent
-
-		cCopy.prevLeaves[i] = leafCopy
-	}
-
-	return cCopy
+	return c_copy
 }
 
 // NewSetChildrenCmd creates a new SetChildrenCmd.
@@ -111,28 +76,30 @@ func (c *SetChildrenCmd[T]) Copy() uc.Copier {
 //
 // Returns:
 //   - *SetChildrenCmd: A pointer to the new SetChildrenCmd.
-func NewSetChildrenCmd[T any](children []*Tree[T]) *SetChildrenCmd[T] {
-	children = us.SliceFilter(children, FilterNilTree)
+func NewSetChildrenCmd(children []*Tree) *SetChildrenCmd {
+	children = us.SliceFilter(children, FilterNonNilTree)
 	if len(children) == 0 {
 		return nil
 	}
 
-	return &SetChildrenCmd[T]{
+	cmd := &SetChildrenCmd{
 		children: children,
 	}
+
+	return cmd
 }
 
 // CleanupCmd is a command that cleans up the tree.
-type CleanupCmd[T any] struct {
+type CleanupCmd struct {
 	// root is a pointer to the root of the tree.
-	root *TreeNode[T]
+	root Noder
 }
 
 // Execute implements the Debugging.Commander interface.
 //
 // Never errors.
-func (c *CleanupCmd[T]) Execute(data *Tree[T]) error {
-	c.root = data.root.Copy().(*TreeNode[T])
+func (cmd *CleanupCmd) Execute(data *Tree) error {
+	cmd.root = data.root.Copy().(Noder)
 
 	data.Cleanup()
 
@@ -142,40 +109,45 @@ func (c *CleanupCmd[T]) Execute(data *Tree[T]) error {
 // Undo implements the Debugging.Commander interface.
 //
 // Never errors.
-func (c *CleanupCmd[T]) Undo(data *Tree[T]) error {
-	data.root = c.root
+func (cmd *CleanupCmd) Undo(data *Tree) error {
+	data.root = cmd.root
 
 	return nil
 }
 
 // Copy implements the Debugging.Commander interface.
-func (c *CleanupCmd[T]) Copy() uc.Copier {
-	return &CleanupCmd[T]{
-		root: c.root.Copy().(*TreeNode[T]),
+func (cmd *CleanupCmd) Copy() uc.Copier {
+	root_copy := cmd.root.Copy().(Noder)
+
+	cmd_copy := &CleanupCmd{
+		root: root_copy,
 	}
+
+	return cmd_copy
 }
 
 // NewCleanupCmd creates a new CleanupCmd.
 //
 // Returns:
 //   - *CleanupCmd: A pointer to the new CleanupCmd.
-func NewCleanupCmd[T any]() *CleanupCmd[T] {
-	return &CleanupCmd[T]{}
+func NewCleanupCmd() *CleanupCmd {
+	cmd := &CleanupCmd{}
+	return cmd
 }
 
 // RegenerateLeavesCmd is a command that regenerates the leaves of the tree.
-type RegenerateLeavesCmd[T any] struct {
+type RegenerateLeavesCmd struct {
 	// leaves is a slice of pointers to the leaves of the tree.
-	leaves []*TreeNode[T]
+	leaves []Noder
 
 	// size is the size of the tree before regenerating the leaves.
 	size int
 }
 
 // Execute implements the Debugging.Commander interface.
-func (c *RegenerateLeavesCmd[T]) Execute(data *Tree[T]) error {
-	c.leaves = data.leaves
-	c.size = data.size
+func (cmd *RegenerateLeavesCmd) Execute(data *Tree) error {
+	cmd.leaves = data.leaves
+	cmd.size = data.size
 
 	data.RegenerateLeaves()
 
@@ -183,47 +155,48 @@ func (c *RegenerateLeavesCmd[T]) Execute(data *Tree[T]) error {
 }
 
 // Undo implements the Debugging.Commander interface.
-func (c *RegenerateLeavesCmd[T]) Undo(data *Tree[T]) error {
-	data.leaves = c.leaves
-	data.size = c.size
+func (cmd *RegenerateLeavesCmd) Undo(data *Tree) error {
+	data.leaves = cmd.leaves
+	data.size = cmd.size
 
 	return nil
 }
 
 // Copy implements the Debugging.Commander interface.
-func (c *RegenerateLeavesCmd[T]) Copy() uc.Copier {
-	leaves := make([]*TreeNode[T], len(c.leaves))
-	copy(leaves, c.leaves)
+func (cmd *RegenerateLeavesCmd) Copy() uc.Copier {
+	leaves := make([]Noder, len(cmd.leaves))
+	copy(leaves, cmd.leaves)
 
-	cCopy := &RegenerateLeavesCmd[T]{
+	cmd_copy := &RegenerateLeavesCmd{
 		leaves: leaves,
-		size:   c.size,
+		size:   cmd.size,
 	}
 
-	return cCopy
+	return cmd_copy
 }
 
 // NewRegenerateLeavesCmd creates a new RegenerateLeavesCmd.
 //
 // Returns:
 //   - *RegenerateLeavesCmd: A pointer to the new RegenerateLeavesCmd.
-func NewRegenerateLeavesCmd[T any]() *RegenerateLeavesCmd[T] {
-	return &RegenerateLeavesCmd[T]{}
+func NewRegenerateLeavesCmd() *RegenerateLeavesCmd {
+	cmd := &RegenerateLeavesCmd{}
+	return cmd
 }
 
 // UpdateLeavesCmd is a command that updates the leaves of the tree.
-type UpdateLeavesCmd[T any] struct {
+type UpdateLeavesCmd struct {
 	// leaves is a slice of pointers to the leaves of the tree.
-	leaves []*TreeNode[T]
+	leaves []Noder
 
 	// size is the size of the tree before updating the leaves.
 	size int
 }
 
 // Execute implements the Debugging.Commander interface.
-func (c *UpdateLeavesCmd[T]) Execute(data *Tree[T]) error {
-	c.leaves = data.leaves
-	c.size = data.size
+func (cmd *UpdateLeavesCmd) Execute(data *Tree) error {
+	cmd.leaves = data.leaves
+	cmd.size = data.size
 
 	data.UpdateLeaves()
 
@@ -231,41 +204,42 @@ func (c *UpdateLeavesCmd[T]) Execute(data *Tree[T]) error {
 }
 
 // Undo implements the Debugging.Commander interface.
-func (c *UpdateLeavesCmd[T]) Undo(data *Tree[T]) error {
-	data.leaves = c.leaves
-	data.size = c.size
+func (cmd *UpdateLeavesCmd) Undo(data *Tree) error {
+	data.leaves = cmd.leaves
+	data.size = cmd.size
 
 	return nil
 }
 
 // Copy implements the Debugging.Commander interface.
-func (c *UpdateLeavesCmd[T]) Copy() uc.Copier {
-	leaves := make([]*TreeNode[T], len(c.leaves))
-	copy(leaves, c.leaves)
+func (cmd *UpdateLeavesCmd) Copy() uc.Copier {
+	leaves := make([]Noder, len(cmd.leaves))
+	copy(leaves, cmd.leaves)
 
-	cCopy := &UpdateLeavesCmd[T]{
+	cmd_copy := &UpdateLeavesCmd{
 		leaves: leaves,
-		size:   c.size,
+		size:   cmd.size,
 	}
 
-	return cCopy
+	return cmd_copy
 }
 
 // NewUpdateLeavesCmd creates a new UpdateLeavesCmd.
 //
 // Returns:
 //   - *UpdateLeavesCmd: A pointer to the new UpdateLeavesCmd.
-func NewUpdateLeavesCmd[T any]() *UpdateLeavesCmd[T] {
-	return &UpdateLeavesCmd[T]{}
+func NewUpdateLeavesCmd() *UpdateLeavesCmd {
+	cmd := &UpdateLeavesCmd{}
+	return cmd
 }
 
 // PruneBranchesCmd is a command that prunes the branches of the tree.
-type PruneBranchesCmd[T any] struct {
+type PruneBranchesCmd struct {
 	// tree is a pointer to the tree before pruning the branches.
-	tree *Tree[T]
+	tree *Tree
 
 	// filter is the filter to apply to prune the branches.
-	filter us.PredicateFilter[T]
+	filter us.PredicateFilter[Noder]
 
 	// ok is true if the whole tree can be deleted, false otherwise.
 	ok bool
@@ -274,10 +248,10 @@ type PruneBranchesCmd[T any] struct {
 // Execute implements the Debugging.Commander interface.
 //
 // Never errors.
-func (c *PruneBranchesCmd[T]) Execute(data *Tree[T]) error {
-	c.tree = data.Copy().(*Tree[T])
+func (cmd *PruneBranchesCmd) Execute(data *Tree) error {
+	cmd.tree = data.Copy().(*Tree)
 
-	c.ok = data.PruneBranches(c.filter)
+	cmd.ok = data.PruneBranches(cmd.filter)
 
 	return nil
 }
@@ -285,25 +259,25 @@ func (c *PruneBranchesCmd[T]) Execute(data *Tree[T]) error {
 // Undo implements the Debugging.Commander interface.
 //
 // Never errors.
-func (c *PruneBranchesCmd[T]) Undo(data *Tree[T]) error {
-	data.root = c.tree.root
-	data.leaves = c.tree.leaves
-	data.size = c.tree.size
+func (cmd *PruneBranchesCmd) Undo(data *Tree) error {
+	data.root = cmd.tree.root
+	data.leaves = cmd.tree.leaves
+	data.size = cmd.tree.size
 
 	return nil
 }
 
 // Copy implements the Debugging.Commander interface.
-func (c *PruneBranchesCmd[T]) Copy() uc.Copier {
-	tree := c.tree.Copy().(*Tree[T])
+func (cmd *PruneBranchesCmd) Copy() uc.Copier {
+	tree := cmd.tree.Copy().(*Tree)
 
-	cmdCopy := &PruneBranchesCmd[T]{
+	cmd_copy := &PruneBranchesCmd{
 		tree:   tree,
-		filter: c.filter,
-		ok:     c.ok,
+		filter: cmd.filter,
+		ok:     cmd.ok,
 	}
 
-	return cmdCopy
+	return cmd_copy
 }
 
 // NewPruneBranchesCmd creates a new PruneBranchesCmd.
@@ -313,12 +287,12 @@ func (c *PruneBranchesCmd[T]) Copy() uc.Copier {
 //
 // Returns:
 //   - *PruneBranchesCmd: A pointer to the new PruneBranchesCmd.
-func NewPruneBranchesCmd[T any](filter us.PredicateFilter[T]) *PruneBranchesCmd[T] {
+func NewPruneBranchesCmd(filter us.PredicateFilter[Noder]) *PruneBranchesCmd {
 	if filter == nil {
 		return nil
 	}
 
-	cmd := &PruneBranchesCmd[T]{
+	cmd := &PruneBranchesCmd{
 		filter: filter,
 	}
 
@@ -331,31 +305,31 @@ func NewPruneBranchesCmd[T any](filter us.PredicateFilter[T]) *PruneBranchesCmd[
 //
 // Returns:
 //   - bool: The value of the ok field.
-func (c *PruneBranchesCmd[T]) GetOk() bool {
-	return c.ok
+func (cmd *PruneBranchesCmd) GetOk() bool {
+	return cmd.ok
 }
 
 // SkipFuncCmd is a command that skips the nodes of the tree that
 // satisfy the given filter.
-type SkipFuncCmd[T any] struct {
+type SkipFuncCmd struct {
 	// tree is a pointer to the tree before skipping the nodes.
-	tree *Tree[T]
+	tree *Tree
 
 	// filter is the filter to apply to skip the nodes.
-	filter us.PredicateFilter[T]
+	filter us.PredicateFilter[Noder]
 
 	// trees is a slice of pointers to the trees obtained after
 	// skipping the nodes.
-	trees []*Tree[T]
+	trees []*Tree
 }
 
 // Execute implements the Debugging.Commander interface.
 //
 // Never errors.
-func (c *SkipFuncCmd[T]) Execute(data *Tree[T]) error {
-	c.tree = data.Copy().(*Tree[T])
+func (cmd *SkipFuncCmd) Execute(data *Tree) error {
+	cmd.tree = data.Copy().(*Tree)
 
-	c.trees = data.SkipFilter(c.filter)
+	cmd.trees = data.SkipFilter(cmd.filter)
 
 	return nil
 }
@@ -363,32 +337,27 @@ func (c *SkipFuncCmd[T]) Execute(data *Tree[T]) error {
 // Undo implements the Debugging.Commander interface.
 //
 // Never errors.
-func (c *SkipFuncCmd[T]) Undo(data *Tree[T]) error {
-	data.root = c.tree.root
-	data.leaves = c.tree.leaves
-	data.size = c.tree.size
+func (cmd *SkipFuncCmd) Undo(data *Tree) error {
+	data.root = cmd.tree.root
+	data.leaves = cmd.tree.leaves
+	data.size = cmd.tree.size
 
 	return nil
 }
 
 // Copy implements the Debugging.Commander interface.
-func (c *SkipFuncCmd[T]) Copy() uc.Copier {
-	tree := c.tree.Copy().(*Tree[T])
+func (cmd *SkipFuncCmd) Copy() uc.Copier {
+	tree := cmd.tree.Copy().(*Tree)
 
-	trees := make([]*Tree[T], len(c.trees))
-	for i, t := range c.trees {
-		tCopy := t.Copy().(*Tree[T])
+	trees := uc.SliceCopy(cmd.trees)
 
-		trees[i] = tCopy
-	}
-
-	cmdCopy := &SkipFuncCmd[T]{
+	cmd_copy := &SkipFuncCmd{
 		tree:   tree,
-		filter: c.filter,
+		filter: cmd.filter,
 		trees:  trees,
 	}
 
-	return cmdCopy
+	return cmd_copy
 }
 
 // NewSkipFuncCmd creates a new SkipFuncCmd.
@@ -398,12 +367,12 @@ func (c *SkipFuncCmd[T]) Copy() uc.Copier {
 //
 // Returns:
 //   - *SkipFuncCmd: A pointer to the new SkipFuncCmd.
-func NewSkipFuncCmd[T any](filter us.PredicateFilter[T]) *SkipFuncCmd[T] {
+func NewSkipFuncCmd(filter us.PredicateFilter[Noder]) *SkipFuncCmd {
 	if filter == nil {
 		return nil
 	}
 
-	cmd := &SkipFuncCmd[T]{
+	cmd := &SkipFuncCmd{
 		filter: filter,
 	}
 
@@ -415,26 +384,26 @@ func NewSkipFuncCmd[T any](filter us.PredicateFilter[T]) *SkipFuncCmd[T] {
 // Call this function after executing the command.
 //
 // Returns:
-//   - []*Tree[T]: A slice of pointers to the trees obtained after
+//   - []*Tree: A slice of pointers to the trees obtained after
 //     skipping the nodes.
-func (c *SkipFuncCmd[T]) GetTrees() []*Tree[T] {
-	return c.trees
+func (cmd *SkipFuncCmd) GetTrees() []*Tree {
+	return cmd.trees
 }
 
 // ProcessLeavesCmd is a command that processes the leaves of the tree.
-type ProcessLeavesCmd[T any] struct {
+type ProcessLeavesCmd struct {
 	// leaves is a slice of pointers to the leaves of the tree.
-	leaves []*TreeNode[T]
+	leaves []Noder
 
 	// f is the function to apply to the leaves.
-	f uc.EvalManyFunc[T, T]
+	f uc.EvalManyFunc[Noder, Noder]
 }
 
 // Execute implements the Debugging.Commander interface.
-func (c *ProcessLeavesCmd[T]) Execute(data *Tree[T]) error {
-	c.leaves = data.leaves
+func (cmd *ProcessLeavesCmd) Execute(data *Tree) error {
+	cmd.leaves = data.leaves
 
-	err := data.ProcessLeaves(c.f)
+	err := data.ProcessLeaves(cmd.f)
 	if err != nil {
 		return err
 	}
@@ -443,23 +412,23 @@ func (c *ProcessLeavesCmd[T]) Execute(data *Tree[T]) error {
 }
 
 // Undo implements the Debugging.Commander interface.
-func (c *ProcessLeavesCmd[T]) Undo(data *Tree[T]) error {
-	data.leaves = c.leaves
+func (cmd *ProcessLeavesCmd) Undo(data *Tree) error {
+	data.leaves = cmd.leaves
 
 	return nil
 }
 
 // Copy implements the Debugging.Commander interface.
-func (c *ProcessLeavesCmd[T]) Copy() uc.Copier {
-	leaves := make([]*TreeNode[T], len(c.leaves))
-	copy(leaves, c.leaves)
+func (cmd *ProcessLeavesCmd) Copy() uc.Copier {
+	leaves := make([]Noder, len(cmd.leaves))
+	copy(leaves, cmd.leaves)
 
-	cCopy := &ProcessLeavesCmd[T]{
+	cmd_copy := &ProcessLeavesCmd{
 		leaves: leaves,
-		f:      c.f,
+		f:      cmd.f,
 	}
 
-	return cCopy
+	return cmd_copy
 }
 
 // NewProcessLeavesCmd creates a new ProcessLeavesCmd.
@@ -469,12 +438,12 @@ func (c *ProcessLeavesCmd[T]) Copy() uc.Copier {
 //
 // Returns:
 //   - *ProcessLeavesCmd: A pointer to the new ProcessLeavesCmd.
-func NewProcessLeavesCmd[T any](f uc.EvalManyFunc[T, T]) *ProcessLeavesCmd[T] {
+func NewProcessLeavesCmd(f uc.EvalManyFunc[Noder, Noder]) *ProcessLeavesCmd {
 	if f == nil {
 		return nil
 	}
 
-	cmd := &ProcessLeavesCmd[T]{
+	cmd := &ProcessLeavesCmd{
 		f: f,
 	}
 
@@ -483,19 +452,19 @@ func NewProcessLeavesCmd[T any](f uc.EvalManyFunc[T, T]) *ProcessLeavesCmd[T] {
 
 // DeleteBranchContainingCmd is a command that deletes the branch containing
 // the given node.
-type DeleteBranchContainingCmd[T any] struct {
+type DeleteBranchContainingCmd struct {
 	// tree is a pointer to the tree before deleting the branch.
-	tree *Tree[T]
+	tree *Tree
 
 	// tn is a pointer to the node to delete.
-	tn *TreeNode[T]
+	tn Noder
 }
 
 // Execute implements the Debugging.Commander interface.
-func (c *DeleteBranchContainingCmd[T]) Execute(data *Tree[T]) error {
-	c.tree = data.Copy().(*Tree[T])
+func (cmd *DeleteBranchContainingCmd) Execute(data *Tree) error {
+	cmd.tree = data.Copy().(*Tree)
 
-	err := data.DeleteBranchContaining(c.tn)
+	err := data.DeleteBranchContaining(cmd.tn)
 	if err != nil {
 		return err
 	}
@@ -504,25 +473,25 @@ func (c *DeleteBranchContainingCmd[T]) Execute(data *Tree[T]) error {
 }
 
 // Undo implements the Debugging.Commander interface.
-func (c *DeleteBranchContainingCmd[T]) Undo(data *Tree[T]) error {
-	data.root = c.tree.root
-	data.leaves = c.tree.leaves
-	data.size = c.tree.size
+func (cmd *DeleteBranchContainingCmd) Undo(data *Tree) error {
+	data.root = cmd.tree.root
+	data.leaves = cmd.tree.leaves
+	data.size = cmd.tree.size
 
 	return nil
 }
 
 // Copy implements the Debugging.Commander interface.
-func (c *DeleteBranchContainingCmd[T]) Copy() uc.Copier {
-	tree := c.tree.Copy().(*Tree[T])
-	tn := c.tn.Copy().(*TreeNode[T])
+func (cmd *DeleteBranchContainingCmd) Copy() uc.Copier {
+	tree := cmd.tree.Copy().(*Tree)
+	tn := cmd.tn.Copy().(Noder)
 
-	cmdCopy := &DeleteBranchContainingCmd[T]{
+	cmd_copy := &DeleteBranchContainingCmd{
 		tree: tree,
 		tn:   tn,
 	}
 
-	return cmdCopy
+	return cmd_copy
 }
 
 // NewDeleteBranchContainingCmd creates a new DeleteBranchContainingCmd.
@@ -532,12 +501,12 @@ func (c *DeleteBranchContainingCmd[T]) Copy() uc.Copier {
 //
 // Returns:
 //   - *DeleteBranchContainingCmd: A pointer to the new DeleteBranchContainingCmd.
-func NewDeleteBranchContainingCmd[T any](tn *TreeNode[T]) *DeleteBranchContainingCmd[T] {
+func NewDeleteBranchContainingCmd(tn Noder) *DeleteBranchContainingCmd {
 	if tn == nil {
 		return nil
 	}
 
-	cmd := &DeleteBranchContainingCmd[T]{
+	cmd := &DeleteBranchContainingCmd{
 		tn: tn,
 	}
 
@@ -545,46 +514,46 @@ func NewDeleteBranchContainingCmd[T any](tn *TreeNode[T]) *DeleteBranchContainin
 }
 
 // PruneTreeCmd is a command that prunes the tree using the given filter.
-type PruneTreeCmd[T any] struct {
+type PruneTreeCmd struct {
 	// tree is a pointer to the tree before pruning.
-	tree *Tree[T]
+	tree *Tree
 
 	// filter is the filter to use to prune the tree.
-	filter us.PredicateFilter[T]
+	filter us.PredicateFilter[Noder]
 
 	// ok is true if no nodes were pruned, false otherwise.
 	ok bool
 }
 
 // Execute implements the Debugging.Commander interface.
-func (c *PruneTreeCmd[T]) Execute(data *Tree[T]) error {
-	c.tree = data.Copy().(*Tree[T])
+func (cmd *PruneTreeCmd) Execute(data *Tree) error {
+	cmd.tree = data.Copy().(*Tree)
 
-	c.ok = data.Prune(c.filter)
+	cmd.ok = data.Prune(cmd.filter)
 
 	return nil
 }
 
 // Undo implements the Debugging.Commander interface.
-func (c *PruneTreeCmd[T]) Undo(data *Tree[T]) error {
-	data.root = c.tree.root
-	data.leaves = c.tree.leaves
-	data.size = c.tree.size
+func (cmd *PruneTreeCmd) Undo(data *Tree) error {
+	data.root = cmd.tree.root
+	data.leaves = cmd.tree.leaves
+	data.size = cmd.tree.size
 
 	return nil
 }
 
 // Copy implements the Debugging.Commander interface.
-func (c *PruneTreeCmd[T]) Copy() uc.Copier {
-	tree := c.tree.Copy().(*Tree[T])
+func (cmd *PruneTreeCmd) Copy() uc.Copier {
+	tree := cmd.tree.Copy().(*Tree)
 
-	cmdCopy := &PruneTreeCmd[T]{
+	cmd_copy := &PruneTreeCmd{
 		tree:   tree,
-		filter: c.filter,
-		ok:     c.ok,
+		filter: cmd.filter,
+		ok:     cmd.ok,
 	}
 
-	return cmdCopy
+	return cmd_copy
 }
 
 // NewPruneTreeCmd creates a new PruneTreeCmd.
@@ -594,12 +563,12 @@ func (c *PruneTreeCmd[T]) Copy() uc.Copier {
 //
 // Returns:
 //   - *PruneTreeCmd: A pointer to the new PruneTreeCmd.
-func NewPruneTreeCmd[T any](filter us.PredicateFilter[T]) *PruneTreeCmd[T] {
+func NewPruneTreeCmd(filter us.PredicateFilter[Noder]) *PruneTreeCmd {
 	if filter == nil {
 		return nil
 	}
 
-	cmd := &PruneTreeCmd[T]{
+	cmd := &PruneTreeCmd{
 		filter: filter,
 	}
 
@@ -612,43 +581,43 @@ func NewPruneTreeCmd[T any](filter us.PredicateFilter[T]) *PruneTreeCmd[T] {
 //
 // Returns:
 //   - bool: The value of the ok field.
-func (c *PruneTreeCmd[T]) GetOk() bool {
-	return c.ok
+func (cmd *PruneTreeCmd) GetOk() bool {
+	return cmd.ok
 }
 
 // ExtractBranchCmd is a command that extracts the branch containing the
 // given node.
-type ExtractBranchCmd[T any] struct {
+type ExtractBranchCmd struct {
 	// leaf is a pointer to the leaf to extract the branch from.
-	leaf *TreeNode[T]
+	leaf Noder
 
 	// branch is a pointer to the branch extracted.
-	branch *Branch[T]
+	branch *Branch
 }
 
 // Execute implements the Debugging.Commander interface.
-func (c *ExtractBranchCmd[T]) Execute(data *Tree[T]) error {
-	c.branch = data.ExtractBranch(c.leaf, true)
+func (cmd *ExtractBranchCmd) Execute(data *Tree) error {
+	cmd.branch = data.ExtractBranch(cmd.leaf, true)
 
 	return nil
 }
 
 // Undo implements the Debugging.Commander interface.
-func (c *ExtractBranchCmd[T]) Undo(data *Tree[T]) error {
+func (cmd *ExtractBranchCmd) Undo(data *Tree) error {
 	return nil
 }
 
 // Copy implements the Debugging.Commander interface.
-func (c *ExtractBranchCmd[T]) Copy() uc.Copier {
-	leafCopy := c.leaf.Copy().(*TreeNode[T])
-	branchCopy := c.branch.Copy().(*Branch[T])
+func (cmd *ExtractBranchCmd) Copy() uc.Copier {
+	leaf_copy := cmd.leaf.Copy().(Noder)
+	branch_copy := cmd.branch.Copy().(*Branch)
 
-	cmdCopy := &ExtractBranchCmd[T]{
-		leaf:   leafCopy,
-		branch: branchCopy,
+	cmd_copy := &ExtractBranchCmd{
+		leaf:   leaf_copy,
+		branch: branch_copy,
 	}
 
-	return cmdCopy
+	return cmd_copy
 }
 
 // NewExtractBranchCmd creates a new ExtractBranchCmd.
@@ -658,8 +627,8 @@ func (c *ExtractBranchCmd[T]) Copy() uc.Copier {
 //
 // Returns:
 //   - *ExtractBranchCmd: A pointer to the new ExtractBranchCmd.
-func NewExtractBranchCmd[T any](leaf *TreeNode[T]) *ExtractBranchCmd[T] {
-	cmd := &ExtractBranchCmd[T]{
+func NewExtractBranchCmd(leaf Noder) *ExtractBranchCmd {
+	cmd := &ExtractBranchCmd{
 		leaf: leaf,
 	}
 	return cmd
@@ -671,40 +640,40 @@ func NewExtractBranchCmd[T any](leaf *TreeNode[T]) *ExtractBranchCmd[T] {
 //
 // Returns:
 //   - *Branch[T]: A pointer to the branch extracted.
-func (c *ExtractBranchCmd[T]) GetBranch() *Branch[T] {
-	branch := c.branch
+func (cmd *ExtractBranchCmd) GetBranch() *Branch {
+	branch := cmd.branch
 	return branch
 }
 
 // InsertBranchCmd is a command that inserts a branch into the tree.
-type InsertBranchCmd[T any] struct {
+type InsertBranchCmd struct {
 	// branch is a pointer to the branch to insert.
-	branch *Branch[T]
+	branch *Branch
 
 	// hasError is true if an error occurred during execution, false otherwise.
 	hasError bool
 }
 
 // Execute implements the Debugging.Commander interface.
-func (c *InsertBranchCmd[T]) Execute(data *Tree[T]) error {
-	ok := data.InsertBranch(c.branch)
+func (cmd *InsertBranchCmd) Execute(data *Tree) error {
+	ok := data.InsertBranch(cmd.branch)
 	if !ok {
-		c.hasError = true
+		cmd.hasError = true
 	}
 
 	return nil
 }
 
 // Undo implements the Debugging.Commander interface.
-func (c *InsertBranchCmd[T]) Undo(data *Tree[T]) error {
-	err := data.DeleteBranchContaining(c.branch.from_node)
+func (cmd *InsertBranchCmd) Undo(data *Tree) error {
+	err := data.DeleteBranchContaining(cmd.branch.from_node)
 	if err != nil {
-		if c.hasError {
+		if cmd.hasError {
 			return nil
 		}
 
 		return err
-	} else if c.hasError {
+	} else if cmd.hasError {
 		return errors.New("error occurred during execution")
 	}
 
@@ -712,15 +681,15 @@ func (c *InsertBranchCmd[T]) Undo(data *Tree[T]) error {
 }
 
 // Copy implements the Debugging.Commander interface.
-func (c *InsertBranchCmd[T]) Copy() uc.Copier {
-	branchCopy := c.branch.Copy().(*Branch[T])
+func (cmd *InsertBranchCmd) Copy() uc.Copier {
+	branch_copy := cmd.branch.Copy().(*Branch)
 
-	cmdCopy := &InsertBranchCmd[T]{
-		branch:   branchCopy,
-		hasError: c.hasError,
+	cmd_copy := &InsertBranchCmd{
+		branch:   branch_copy,
+		hasError: cmd.hasError,
 	}
 
-	return cmdCopy
+	return cmd_copy
 }
 
 // NewInsertBranchCmd creates a new InsertBranchCmd.
@@ -730,12 +699,12 @@ func (c *InsertBranchCmd[T]) Copy() uc.Copier {
 //
 // Returns:
 //   - *InsertBranchCmd: A pointer to the new InsertBranchCmd.
-func NewInsertBranchCmd[T any](branch *Branch[T]) *InsertBranchCmd[T] {
+func NewInsertBranchCmd(branch *Branch) *InsertBranchCmd {
 	if branch == nil {
 		return nil
 	}
 
-	cmd := &InsertBranchCmd[T]{
+	cmd := &InsertBranchCmd{
 		branch: branch,
 	}
 
