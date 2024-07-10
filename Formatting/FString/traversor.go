@@ -408,7 +408,7 @@ func (trav *Traversor) EmptyLine() {
 
 	trav.writeIndent()
 
-	trav.source.AcceptLine(trav.rightDelim) // Accept the line.
+	trav.source.ForceAcceptLine(trav.rightDelim) // Accept the line.
 }
 
 // Write implements the io.Writer interface for the traversor.

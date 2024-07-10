@@ -192,6 +192,19 @@ func (b *Buffer) AcceptLine(right_delim string) {
 	}
 }
 
+// AcceptLine is a function that accepts the current line of the formatted string.
+// However, it does not accept the line if the line is empty.
+//
+// Parameters:
+//   - right_delim: The right delimiter to use for the line.
+func (b *Buffer) ForceAcceptLine(right_delim string) {
+	if b.buff == nil {
+		b.buff = new_section_builder()
+	}
+
+	b.buff.accept(right_delim)
+}
+
 // WriteEmptyLine is a function that accepts the current line
 // regardless of the whether the line is empty or not.
 //
