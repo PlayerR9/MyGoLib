@@ -13,7 +13,7 @@ require (
 )
 
 require (
-	github.com/chromedp/cdproto v0.0.0-20240626232640-f933b107c653
+	github.com/chromedp/cdproto v0.0.0-20240709201219-e202069cc16b
 	github.com/chromedp/sysutil v1.0.0 // indirect
 	github.com/eiannone/keyboard v0.0.0-20220611211555-0d226195f203
 	github.com/gdamore/tcell v1.4.0
@@ -22,7 +22,7 @@ require (
 	github.com/gobwas/ws v1.4.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
-	golang.org/x/exp v0.0.0-20240613232115-7f521ea00fb8
+	golang.org/x/exp v0.0.0-20240707233637-46b078467d37
 	golang.org/x/net v0.27.0
 	golang.org/x/sys v0.22.0 // indirect
 )
