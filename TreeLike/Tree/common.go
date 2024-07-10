@@ -4,15 +4,6 @@ import (
 	"slices"
 )
 
-// Treeer is an interface for types that can be converted to a tree.
-type Treeer interface {
-	// TreeOf converts the type to a tree.
-	//
-	// Returns:
-	//   - *Tree: A pointer to the tree.
-	TreeOf() *Tree
-}
-
 // FindCommonAncestor returns the first common ancestor of the two nodes.
 //
 // Parameters:

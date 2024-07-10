@@ -38,26 +38,6 @@ func (t *TreeNodeIterator[T]) Restart() {
 	t.current_node = t.node.FirstChild
 }
 
-// NewTreeNodeIterator creates a new iterator for the given node.
-//
-// Parameters:
-//   - node: The node whose children are being iterated over.
-//
-// Returns:
-//   - *TreeNodeIterator[T]: A pointer to the iterator. Nil if the node is nil.
-func NewTreeNodeIterator[T any](node *TreeNode[T]) *TreeNodeIterator[T] {
-	if node == nil {
-		return nil
-	}
-
-	ti := &TreeNodeIterator[T]{
-		node:         node,
-		current_node: node.FirstChild,
-	}
-
-	return ti
-}
-
 // Noder is an interface that represents a node in a tree.
 type Noder interface {
 	// SetParent sets the parent of the node.
@@ -159,7 +139,6 @@ type Noder interface {
 	//     the node is the root. Nil otherwise.
 	RemoveNode() []Noder
 
-	Treeer
 	uc.Iterable[Noder]
 	uc.Copier
 	ffs.FStringer
@@ -179,7 +158,10 @@ type TreeNode[T any] struct {
 
 // Iterator implements Noder.
 func (t *TreeNode[T]) Iterator() uc.Iterater[Noder] {
-	iter := NewTreeNodeIterator(t)
+	iter := &TreeNodeIterator[T]{
+		node:         t,
+		current_node: t.FirstChild,
+	}
 
 	return iter
 }
@@ -251,15 +233,23 @@ func (n *TreeNode[T]) GetParent() Noder {
 //
 // Children that are not *TreeNode[T] are ignored.
 func (tn *TreeNode[T]) LinkChildren(children []Noder) {
+	if len(children) == 0 {
+		// Do nothing.
+		return
+	}
+
 	var valid_children []*TreeNode[T]
 
 	for _, child := range children {
-		c, ok := child.(*TreeNode[T])
-		if !ok {
+		if child == nil {
 			continue
 		}
 
-		valid_children = append(valid_children, c)
+		c, ok := child.(*TreeNode[T])
+		if ok {
+			c.Parent = tn
+			valid_children = append(valid_children, c)
+		}
 	}
 	if len(valid_children) == 0 {
 		// Do nothing.
@@ -268,22 +258,18 @@ func (tn *TreeNode[T]) LinkChildren(children []Noder) {
 
 	valid_children = link_siblings(valid_children)
 
-	for _, child := range valid_children {
-		child.Parent = tn
-	}
-
 	tn.FirstChild = valid_children[0]
 	tn.LastChild = valid_children[len(valid_children)-1]
 }
 
 // GetLeaves implements the Noder interface.
 func (n *TreeNode[T]) GetLeaves() []Noder {
-	S := lls.NewLinkedStack[Noder](n)
+	stack := lls.NewLinkedStack[Noder](n)
 
 	var leaves []Noder
 
 	for {
-		top, ok := S.Pop()
+		top, ok := stack.Pop()
 		if !ok {
 			break
 		}
@@ -297,31 +283,12 @@ func (n *TreeNode[T]) GetLeaves() []Noder {
 			continue
 		}
 
-		children := val.GetChildren()
-
-		for _, child := range children {
-			S.Push(child)
+		for c := val.FirstChild; c != nil; c = c.NextSibling {
+			stack.Push(c)
 		}
 	}
 
 	return leaves
-}
-
-// ToTree implements the Noder interface.
-func (n *TreeNode[T]) TreeOf() *Tree {
-	if n.FirstChild == nil {
-		return &Tree{
-			root:   n,
-			leaves: []Noder{n},
-			size:   1,
-		}
-	} else {
-		return &Tree{
-			root:   n,
-			leaves: n.GetLeaves(),
-			size:   n.Size(),
-		}
-	}
 }
 
 // Cleanup implements the Noder interface.
@@ -333,15 +300,26 @@ func (tn *TreeNode[T]) Cleanup() {
 		Curr *TreeNode[T]
 	}
 
-	h := &Helper{
-		Prev: nil,
-		Curr: tn,
+	stack := lls.NewLinkedStack[*Helper]()
+
+	// Clean the first child
+	for c := tn.FirstChild; c != nil; c = c.NextSibling {
+		h := &Helper{
+			Prev: c.PrevSibling,
+			Curr: c,
+		}
+
+		stack.Push(h)
 	}
 
-	S := lls.NewLinkedStack(h)
+	tn.FirstChild = nil
+	tn.LastChild = nil
+	tn.Parent = nil
+
+	// Clean the rest of the children
 
 	for {
-		h, ok := S.Pop()
+		h, ok := stack.Pop()
 		if !ok {
 			break
 		}
@@ -352,21 +330,30 @@ func (tn *TreeNode[T]) Cleanup() {
 				Curr: c,
 			}
 
-			S.Push(h)
+			stack.Push(h)
 		}
 
-		if h.Prev != nil {
-			h.Prev.NextSibling = nil
-			h.Prev.PrevSibling = nil
-		}
+		h.Prev.NextSibling = nil
+		h.Prev.PrevSibling = nil
 
 		h.Curr.FirstChild = nil
 		h.Curr.LastChild = nil
 		h.Curr.Parent = nil
 	}
 
-	tn.NextSibling = nil
+	prev := tn.PrevSibling
+	next := tn.NextSibling
+
+	if prev != nil {
+		prev.NextSibling = next
+	}
+
+	if next != nil {
+		next.PrevSibling = prev
+	}
+
 	tn.PrevSibling = nil
+	tn.NextSibling = nil
 }
 
 // GetAncestors implements the Noder interface.
@@ -423,12 +410,12 @@ func (n *TreeNode[T]) DeleteChild(target Noder) []Noder {
 //
 // This function is expensive since size is not stored.
 func (n *TreeNode[T]) Size() int {
-	S := lls.NewLinkedStack(n)
+	stack := lls.NewLinkedStack(n)
 
 	var size int
 
 	for {
-		top, ok := S.Pop()
+		top, ok := stack.Pop()
 		if !ok {
 			break
 		}
@@ -436,7 +423,7 @@ func (n *TreeNode[T]) Size() int {
 		size++
 
 		for c := top.FirstChild; c != nil; c = c.NextSibling {
-			S.Push(c)
+			stack.Push(c)
 		}
 	}
 
@@ -477,12 +464,33 @@ func (n *TreeNode[T]) AddChild(child Noder) {
 	n.LastChild = c
 }
 
-// RemoveNode removes the node from the tree and shifts the children up
-// in the space occupied by the node.
+// RemoveNode removes the node from the tree while shifting the children up one level to
+// maintain the tree structure.
+//
+// Also, the returned children can be used to create a forest of trees if the root node
+// is removed.
 //
 // Returns:
-//   - []Noder: A slice of pointers to the children of the node if
-//     the node is the root. Nil otherwise.
+//   - []Noder: A slice of pointers to the children of the node iff the node is the root.
+//     Nil otherwise.
+//
+// Example:
+//
+//	// Given the tree:
+//	1
+//	├── 2
+//	└── 3
+//		├── 4
+//		└── 5
+//	└── 6
+//
+//	// The tree after removing node 3:
+//
+//	1
+//	├── 2
+//	└── 4
+//	└── 5
+//	└── 6
 func (n *TreeNode[T]) RemoveNode() []Noder {
 	prev_sibling := n.PrevSibling
 	next_sibling := n.NextSibling
@@ -594,7 +602,7 @@ func (n *TreeNode[T]) IsRoot() bool {
 //
 // Behaviors:
 //   - This is just a more efficient way to add multiple children.
-func (n *TreeNode[T]) AddChildren(children ...*TreeNode[T]) {
+func (n *TreeNode[T]) AddChildren(children []*TreeNode[T]) {
 	children = us.FilterNilValues(children)
 	if len(children) == 0 {
 		return
@@ -809,10 +817,6 @@ func delink_with_parent[T any](parent *TreeNode[T], children []Noder) {
 
 	for i := 0; i < len(children); i++ {
 		child := children[i]
-
-		if child == nil {
-			continue
-		}
 
 		c, ok := child.(*TreeNode[T])
 		uc.Assert(ok, "delink_with_parent: Invalid child type")

@@ -1,6 +1,7 @@
 package Tree
 
 import (
+	"fmt"
 	"slices"
 
 	ffs "github.com/PlayerR9/MyGoLib/Formatting/FString"
@@ -102,10 +103,23 @@ func NewTree(root Noder) *Tree {
 		return tree
 	}
 
+	var leaves []Noder
+	var size int
+
+	ok := root.IsLeaf()
+	if ok {
+		leaves = []Noder{root}
+		size = 1
+	} else {
+		leaves = root.GetLeaves()
+		size = root.Size()
+
+	}
+
 	tree := &Tree{
 		root:   root,
-		leaves: []Noder{root},
-		size:   1,
+		leaves: leaves,
+		size:   size,
 	}
 
 	return tree
@@ -138,7 +152,10 @@ func (t *Tree) SetChildren(children []*Tree) error {
 		t.size += child.Size()
 
 		croot := child.root
-		croot.SetParent(root)
+		ok := croot.SetParent(root)
+		if !ok {
+			return fmt.Errorf("could not set parent for child %+v", croot)
+		}
 
 		sub_children = append(sub_children, croot)
 	}
@@ -692,7 +709,7 @@ func (t *Tree) SkipFilter(filter us.PredicateFilter[Noder]) (forest []*Tree) {
 				for i := 0; i < len(children); i++ {
 					child := children[i]
 
-					tree := child.TreeOf()
+					tree := NewTree(child)
 
 					forest = append(forest, tree)
 				}
@@ -868,7 +885,7 @@ func (t *Tree) InsertBranch(branch *Branch) (bool, error) {
 	ref := t.root
 
 	if ref == nil {
-		otherTree := branch.from_node.TreeOf()
+		otherTree := NewTree(branch.from_node)
 
 		t.root = otherTree.root
 		t.leaves = otherTree.leaves
