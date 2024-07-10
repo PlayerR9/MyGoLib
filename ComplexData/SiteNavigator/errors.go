@@ -17,7 +17,8 @@ func (e *ErrNoNodesFound) Error() string {
 // Returns:
 //   - *ErrNoNodesFound: The new error.
 func NewErrNoNodesFound() *ErrNoNodesFound {
-	return &ErrNoNodesFound{}
+	e := &ErrNoNodesFound{}
+	return e
 }
 
 // ErrNoDataNodeFound is an error that is returned when no data nodes are found.
@@ -36,7 +37,8 @@ func (e *ErrNoDataNodeFound) Error() string {
 	builder.WriteString(e.Data)
 	builder.WriteString("> tags found")
 
-	return builder.String()
+	str := builder.String()
+	return str
 }
 
 // NewErrNoDataNodeFound creates a new ErrNoDataNodeFound error.
@@ -47,11 +49,15 @@ func (e *ErrNoDataNodeFound) Error() string {
 // Returns:
 //   - *ErrNoDataNodeFound: The new error.
 func NewErrNoDataNodeFound(data string) *ErrNoDataNodeFound {
-	return &ErrNoDataNodeFound{Data: data}
+	e := &ErrNoDataNodeFound{
+		Data: data,
+	}
+	return e
 }
 
 // ErrNoTextNodeFound is an error that is returned when no text nodes are found.
 type ErrNoTextNodeFound struct {
+	// IsFirstChild is whether the first child is not a text node.
 	IsFirstChild bool
 }
 
@@ -75,5 +81,8 @@ func (e *ErrNoTextNodeFound) Error() string {
 // Returns:
 //   - *ErrNoTextNodeFound: The new error.
 func NewErrNoTextNodeFound(isFirstChild bool) *ErrNoTextNodeFound {
-	return &ErrNoTextNodeFound{IsFirstChild: isFirstChild}
+	e := &ErrNoTextNodeFound{
+		IsFirstChild: isFirstChild,
+	}
+	return e
 }

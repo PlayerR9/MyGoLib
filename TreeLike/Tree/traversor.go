@@ -15,7 +15,7 @@ import (
 // Returns:
 //   - bool: True if the traversal should continue, otherwise false.
 //   - error: An error if the observation fails.
-type ObserverFunc func(data Noder, info uc.Copier) (bool, error)
+type ObserverFunc func(data Noder, info Infoer) (bool, error)
 
 // traversor is a struct that traverses a tree.
 type traversor struct {
@@ -23,7 +23,7 @@ type traversor struct {
 	elem Noder
 
 	// info is the info of the current node.
-	info uc.Copier
+	info Infoer
 }
 
 // new_traversor creates a new traversor for the tree.
@@ -34,7 +34,7 @@ type traversor struct {
 //
 // Returns:
 //   - Traversor[T, I]: The traversor.
-func new_traversor(node Noder, init uc.Copier) *traversor {
+func new_traversor(node Noder, init Infoer) *traversor {
 	t := &traversor{
 		elem: node,
 	}
@@ -65,7 +65,7 @@ func (t *traversor) get_data() (Noder, bool) {
 //
 // Returns:
 //   - uc.Objecter: The info of the traversor.
-func (t *traversor) get_info() uc.Copier {
+func (t *traversor) get_info() Infoer {
 	return t.info
 }
 
@@ -78,7 +78,7 @@ func (t *traversor) get_info() uc.Copier {
 //
 // Returns:
 //   - error: An error if the traversal fails.
-func DFS(tree *Tree, init uc.Copier, f ObserverFunc) error {
+func DFS(tree *Tree, init Infoer, f ObserverFunc) error {
 	if f == nil || tree == nil {
 		return nil
 	}
@@ -138,7 +138,7 @@ func DFS(tree *Tree, init uc.Copier, f ObserverFunc) error {
 //
 // Returns:
 //   - error: An error if the traversal fails.
-func BFS(tree *Tree, init uc.Copier, f ObserverFunc) error {
+func BFS(tree *Tree, init Infoer, f ObserverFunc) error {
 	if f == nil || tree == nil {
 		return nil
 	}

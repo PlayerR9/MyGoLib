@@ -55,14 +55,18 @@ func InitializeContext() *Context {
 		chromedp.Flag("headless", false), // run in headful mode
 	)
 
-	allocCtx, allocCancel := chromedp.NewExecAllocator(context.Background(), opts...)
-	ctx, ctxCancel := chromedp.NewContext(allocCtx, chromedp.WithLogf(log.Printf))
+	bg := context.Background()
+	lf := chromedp.WithLogf(log.Printf)
 
-	return &Context{
+	allocCtx, allocCancel := chromedp.NewExecAllocator(bg, opts...)
+	ctx, ctxCancel := chromedp.NewContext(allocCtx, lf)
+
+	c := &Context{
 		ctx:         ctx,
 		ctxCancel:   ctxCancel,
 		allocCancel: allocCancel,
 	}
+	return c
 }
 
 // NewSubContext creates a new sub context.
@@ -70,12 +74,15 @@ func InitializeContext() *Context {
 // Returns:
 //   - *Context: The new sub context.
 func (c *Context) NewSubContext() *Context {
-	var newContext Context
+	ctx, cancel := context.WithCancel(c.ctx)
 
-	newContext.ctx, newContext.ctxCancel = chromedp.NewContext(c.ctx)
-	newContext.allocCancel = nil
+	new_c := &Context{
+		ctx:         ctx,
+		ctxCancel:   cancel,
+		allocCancel: nil,
+	}
 
-	return &newContext
+	return new_c
 }
 
 // ParseHTML parses the HTML of the URL.
@@ -90,17 +97,26 @@ func (c *Context) NewSubContext() *Context {
 func (c *Context) ParseHTML(url string, loadedSignal ...chromedp.Action) (*html.Node, error) {
 	var document string
 
-	tasks := slices.Insert(chromedp.Tasks{
+	task := chromedp.Tasks{
 		chromedp.Navigate(url),
 		chromedp.OuterHTML("html", &document),
-	}, 1, loadedSignal...)
+	}
+
+	tasks := slices.Insert(task, 1, loadedSignal...)
 
 	err := chromedp.Run(c.ctx, tasks)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open the URL %s: %w", url, err)
 	}
 
-	return html.Parse(strings.NewReader(document))
+	r := strings.NewReader(document)
+
+	p, err := html.Parse(r)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse the HTML: %w", err)
+	}
+
+	return p, nil
 }
 
 // GetLastPage gets the last page of the URL.
@@ -114,19 +130,25 @@ func (c *Context) ParseHTML(url string, loadedSignal ...chromedp.Action) (*html.
 //   - int: The last page of the URL.
 //   - error: The error that occurred while getting the last page.
 func (c *Context) GetLastPage(url string, wait WaitFunc, f ExtractFunc[int]) (int, error) {
-	err := chromedp.Run(c.ctx, wait(url))
+	w := wait(url)
+
+	err := chromedp.Run(c.ctx, w)
 	if err != nil {
 		return 0, fmt.Errorf("failed to open the URL %s: %w", url, err)
 	}
 
 	var document string
 
-	err = chromedp.Run(c.ctx, chromedp.OuterHTML("html", &document))
+	act := chromedp.OuterHTML("html", &document)
+
+	err = chromedp.Run(c.ctx, act)
 	if err != nil {
 		return 0, fmt.Errorf("failed to get the outer HTML: %w", err)
 	}
 
-	doc, err := html.Parse(strings.NewReader(document))
+	reader := strings.NewReader(document)
+
+	doc, err := html.Parse(reader)
 	if err != nil {
 		return 0, fmt.Errorf("failed to parse html: %w", err)
 	}
@@ -157,7 +179,9 @@ func (c *Context) GetLastPage(url string, wait WaitFunc, f ExtractFunc[int]) (in
 func (c *Context) GetNodes(sel any, opt func(*chromedp.Selector)) ([]*cdp.Node, error) {
 	var nodes []*cdp.Node
 
-	err := chromedp.Run(c.ctx, chromedp.Nodes(sel, &nodes, opt))
+	act := chromedp.Nodes(sel, &nodes, opt)
+
+	err := chromedp.Run(c.ctx, act)
 	if err != nil {
 		return nil, err
 	}
@@ -173,5 +197,10 @@ func (c *Context) GetNodes(sel any, opt func(*chromedp.Selector)) ([]*cdp.Node, 
 // Returns:
 //   - error: The error that occurred while running the tasks.
 func (c *Context) RunTasks(tasks chromedp.Tasks) error {
-	return chromedp.Run(c.ctx, tasks)
+	err := chromedp.Run(c.ctx, tasks)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

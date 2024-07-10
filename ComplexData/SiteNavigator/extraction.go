@@ -26,16 +26,19 @@ type FilterErrFunc func(node *html.Node) error
 // Returns:
 //   - FilterErrFunc: The FilterErrFunc that checks if the node has the specified data.
 func FilterDataNode(data string) FilterErrFunc {
-	return func(node *html.Node) error {
+	f := func(node *html.Node) error {
 		fn := NewSearchCriteria(html.ElementNode).SetData(data).Build()
 
 		ok := fn(node)
 		if !ok {
-			return NewErrNoDataNodeFound(data)
-		} else {
-			return nil
+			err := NewErrNoDataNodeFound(data)
+			return err
 		}
+
+		return nil
 	}
+
+	return f
 }
 
 // FilterTextNode returns an FilterErrFunc that checks if the node is a text node.
@@ -47,25 +50,31 @@ func FilterDataNode(data string) FilterErrFunc {
 // Returns:
 //   - FilterErrFunc: The FilterErrFunc that checks if the node is a text node.
 func FilterTextNode(checkFirstChild bool) FilterErrFunc {
+	var f FilterErrFunc
+
 	if checkFirstChild {
-		return func(node *html.Node) error {
+		f = func(node *html.Node) error {
 			ok := IsTextNodeSearch(node.FirstChild)
 			if !ok {
-				return NewErrNoTextNodeFound(true)
-			} else {
-				return nil
+				err := NewErrNoTextNodeFound(true)
+				return err
 			}
+
+			return nil
 		}
 	} else {
-		return func(node *html.Node) error {
+		f = func(node *html.Node) error {
 			ok := IsTextNodeSearch(node)
 			if !ok {
-				return NewErrNoTextNodeFound(false)
-			} else {
-				return nil
+				err := NewErrNoTextNodeFound(false)
+				return err
 			}
+
+			return nil
 		}
 	}
+
+	return f
 }
 
 // filterValidNodes is a helper function that filters the valid nodes from a list.
@@ -97,11 +106,19 @@ func filterValidNodes(list []*html.Node, filter FilterErrFunc) ([]*html.Node, er
 		}
 	}
 
-	if el.HasError() {
-		return nil, el.GetErrors()[0]
+	ok := el.HasError()
+
+	var sol []*html.Node
+	var err error
+
+	if ok {
+		errs := el.GetErrors()
+		err = errs[0]
 	} else {
-		return el.GetSolutions(), nil
+		sol = el.GetSolutions()
 	}
+
+	return sol, err
 }
 
 // FilterValidNodes filters the valid nodes from a list.
@@ -138,8 +155,13 @@ func FilterValidNodes(list []*html.Node, filters []FilterErrFunc) ([]*html.Node,
 			}
 		}
 
-		if el.HasError() {
-			return nil, el.GetErrors()[0]
+		ok := el.HasError()
+
+		if ok {
+			errs := el.GetErrors()
+			err := errs[0]
+
+			return nil, err
 		}
 
 		list = el.GetSolutions()
@@ -173,9 +195,12 @@ type NodeListParser[T any] func(list []*html.Node) (T, error)
 //   - Nil functions in filters are ignored.
 func CreateExtractor[T any](parse NodeListParser[T], filters ...FilterErrFunc) NodeListParser[T] {
 	if parse == nil {
-		return func(list []*html.Node) (T, error) {
-			return *new(T), uc.NewErrNilParameter("parse")
+		f := func(list []*html.Node) (T, error) {
+			err := uc.NewErrNilParameter("parse")
+			return *new(T), err
 		}
+
+		return f
 	}
 
 	filters = us.SliceFilter(filters, FilterNilFEFuncs)
@@ -183,7 +208,7 @@ func CreateExtractor[T any](parse NodeListParser[T], filters ...FilterErrFunc) N
 		return parse
 	}
 
-	return func(list []*html.Node) (T, error) {
+	f := func(list []*html.Node) (T, error) {
 		var err error
 
 		for _, extract := range filters {
@@ -204,6 +229,8 @@ func CreateExtractor[T any](parse NodeListParser[T], filters ...FilterErrFunc) N
 
 		return res, nil
 	}
+
+	return f
 }
 
 // ActionType is an enumeration of the different actions that can be performed on a node.
@@ -251,20 +278,22 @@ func GenericTreeExtraction(search *SearchCriteria, action ActionType) GTEFunc {
 		filter = nil
 	}
 
+	var f GTEFunc
+
 	switch action {
 	case OnlyDirectChildren:
-		return func(tree *HtmlTree) ([]*html.Node, error) {
+		f = func(tree *HtmlTree) ([]*html.Node, error) {
 			sol, err := tree.ExtractSpecificNode(filter)
 
 			return sol, err
 		}
 	case BFSMany:
-		return func(tree *HtmlTree) ([]*html.Node, error) {
+		f = func(tree *HtmlTree) ([]*html.Node, error) {
 			sol, err := tree.ExtractNodes(filter)
 			return sol, err
 		}
 	case DFSOne:
-		return func(tree *HtmlTree) ([]*html.Node, error) {
+		f = func(tree *HtmlTree) ([]*html.Node, error) {
 			node, err := tree.ExtractContentFromDocument(filter)
 			if err != nil {
 				return nil, err
@@ -279,10 +308,12 @@ func GenericTreeExtraction(search *SearchCriteria, action ActionType) GTEFunc {
 			return sol, nil
 		}
 	default:
-		return func(tree *HtmlTree) ([]*html.Node, error) {
+		f = func(tree *HtmlTree) ([]*html.Node, error) {
 			return nil, fmt.Errorf("invalid action type: %v", action)
 		}
 	}
+
+	return f
 }
 
 // CEWithSearch creates a NodeListParser from the given parameters.
@@ -304,17 +335,21 @@ func GenericTreeExtraction(search *SearchCriteria, action ActionType) GTEFunc {
 //   - It terminates as soon as a valid result is found.
 func CEWithSearch[T any](search *SearchCriteria, action ActionType, parse NodeListParser[T], filters ...FilterErrFunc) NodeListParser[T] {
 	if parse == nil {
-		return func(list []*html.Node) (T, error) {
-			return *new(T), uc.NewErrNilParameter("parse")
+		f := func(list []*html.Node) (T, error) {
+			err := uc.NewErrNilParameter("parse")
+			return *new(T), err
 		}
+
+		return f
 	}
 
 	filters = us.SliceFilter(filters, FilterNilFEFuncs)
 	searchFunc := GenericTreeExtraction(search, action)
 
-	return func(list []*html.Node) (T, error) {
+	f := func(list []*html.Node) (T, error) {
 		if len(list) == 0 {
-			return *new(T), NewErrNoNodesFound()
+			err := NewErrNoNodesFound()
+			return *new(T), err
 		}
 
 		S := lls.NewArrayStack(list...)
@@ -357,6 +392,11 @@ func CEWithSearch[T any](search *SearchCriteria, action ActionType, parse NodeLi
 
 		errList := el.GetErrors()
 
-		return *new(T), uc.NewErrPossibleError(NewErrNoNodesFound(), errList[0])
+		reason := NewErrNoNodesFound()
+		err := uc.NewErrPossibleError(reason, errList[0])
+
+		return *new(T), err
 	}
+
+	return f
 }

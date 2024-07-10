@@ -20,7 +20,7 @@ type Treeer interface {
 //   - n2: The second node.
 //
 // Returns:
-//   - *Node[T]: A pointer to the common ancestor. Nil if no such node is found.
+//   - Noder: A pointer to the common ancestor. Nil if no such node is found.
 func FindCommonAncestor(n1, n2 Noder) Noder {
 	if n1 == nil {
 		return n2
@@ -87,34 +87,6 @@ func FindBranchingPoint(n Noder) (Noder, Noder, bool) {
 	}
 
 	return n, parent, has_branching_point
-}
-
-// GetBranch works like GetAncestors but includes the node itself.
-//
-// The nodes are returned as a slice where [0] is the root node
-// and [len(branch)-1] is the leaf node.
-//
-// Returns:
-//   - Branch: The branch from the node to the root.
-func GetBranch(n Noder) *Branch {
-	branch := &Branch{
-		to_node: n,
-	}
-
-	node := n
-
-	for {
-		parent := node.GetParent()
-		if parent == nil {
-			break
-		}
-
-		node = parent
-	}
-
-	branch.from_node = node
-
-	return branch
 }
 
 // ExtractData returns the values of the nodes in the slice. This only works if the

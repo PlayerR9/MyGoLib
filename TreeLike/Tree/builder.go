@@ -5,6 +5,11 @@ import (
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
 )
 
+// Infoer is an interface that provides the info of the element.
+type Infoer interface {
+	uc.Copier
+}
+
 // NextsFunc is a function that returns the next elements.
 //
 // Parameters:
@@ -12,14 +17,14 @@ import (
 //   - info: The info of the element.
 //
 // Returns:
-//   - []Tree.Noder: The next elements.
+//   - []Noder: The next elements.
 //   - error: An error if the function fails.
-type NextsFunc func(elem Noder, info uc.Copier) ([]Noder, error)
+type NextsFunc func(elem Noder, info Infoer) ([]Noder, error)
 
 // Builder is a struct that builds a tree.
 type Builder struct {
 	// info is the info of the builder.
-	info uc.Copier
+	info Infoer
 
 	// f is the next function.
 	f NextsFunc
@@ -29,7 +34,7 @@ type Builder struct {
 //
 // Parameters:
 //   - info: The info to set.
-func (b *Builder) SetInfo(info uc.Copier) {
+func (b *Builder) SetInfo(info Infoer) {
 	b.info = info
 }
 
@@ -50,7 +55,7 @@ func (b *Builder) SetNextFunc(f NextsFunc) {
 //     (i.e., the children of the element).
 //
 // Returns:
-//   - *Tree[T]: The tree created from the element.
+//   - *Tree: The tree created from the element.
 //   - error: An error if the next function fails.
 //
 // Behaviors:

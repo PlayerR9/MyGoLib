@@ -83,7 +83,7 @@ func (t *Tree) SnakeTraversal() ([][]Noder, error) {
 //   - n: The node to prune.
 //
 // Returns:
-//   - *Node[T]: A pointer to the highest ancestor of the pruned node.
+//   - Noder: A pointer to the highest ancestor of the pruned node.
 //   - bool: True if the node satisfies the filter, false otherwise.
 //
 // Behaviors:

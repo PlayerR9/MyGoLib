@@ -9,6 +9,57 @@ import (
 	slext "github.com/PlayerR9/MyGoLib/Units/slice"
 )
 
+// AttrPair is a struct that encapsulates an attribute key-value pair and a filter function.
+type AttrPair struct {
+	// Attr is the attribute key to match.
+	Attr string
+
+	// FilterFunc is the filter function to apply to the attribute value.
+	FilterFunc slext.PredicateFilter[string]
+}
+
+// NewAttrPair constructs a new AttrPair instance using the provided parameters.
+//
+// Parameters:
+//   - attr: The attribute key to match.
+//   - filter_func: The filter function to apply to the attribute value.
+//
+// Returns:
+//   - *AttrPair: A new AttrPair instance. Nil if the filter function is nil.
+func NewAttrPair(attr string, filter_func slext.PredicateFilter[string]) *AttrPair {
+	if filter_func == nil {
+		return nil
+	}
+
+	ap := &AttrPair{
+		Attr:       attr,
+		FilterFunc: filter_func,
+	}
+	return ap
+}
+
+// Match is a method of the AttrPair type that checks if the attribute key-value pair
+// matches the provided attribute.
+//
+// Parameters:
+//   - attr: The attribute key-value pair to match against.
+//
+// Returns:
+//   - bool: True if the attribute key-value pair matches the provided attribute, false otherwise.
+func (ap *AttrPair) Match(attr []html.Attribute) bool {
+	f := func(a html.Attribute) bool {
+		if a.Key != ap.Attr {
+			return false
+		}
+
+		ok := ap.FilterFunc(a.Val)
+		return ok
+	}
+
+	ok := slices.ContainsFunc(attr, f)
+	return ok
+}
+
 // SearchCriteria is a struct that encapsulates the parameters for searching
 // within an HTML node.
 type SearchCriteria struct {
@@ -19,7 +70,7 @@ type SearchCriteria struct {
 	Data *string
 
 	// Attrs is a slice of attribute key-value pairs to match.
-	Attrs []uc.Pair[string, slext.PredicateFilter[string]]
+	Attrs []*AttrPair
 }
 
 // NewSearchCriteria constructs a new SearchCriteria instance using the provided
@@ -31,9 +82,10 @@ type SearchCriteria struct {
 // Returns:
 //   - *SearchCriteria: A new SearchCriteria instance.
 func NewSearchCriteria(node_type html.NodeType) *SearchCriteria {
-	return &SearchCriteria{
+	sc := &SearchCriteria{
 		NodeType: node_type,
 	}
+	return sc
 }
 
 // SetData sets the data field of the SearchCriteria instance.
@@ -59,7 +111,16 @@ func (sc *SearchCriteria) SetData(data string) *SearchCriteria {
 // Returns:
 //   - *SearchCriteria: The SearchCriteria instance with the attribute key-value pair appended.
 func (sc *SearchCriteria) AppendAttr(key string, val slext.PredicateFilter[string]) *SearchCriteria {
-	sc.Attrs = append(sc.Attrs, uc.NewPair(key, val))
+	if val == nil {
+		val = func(s string) bool {
+			return true
+		}
+	}
+
+	p := NewAttrPair(key, val)
+	uc.Assert(p != nil, "AppendAttr: NewAttrPair returned nil")
+
+	sc.Attrs = append(sc.Attrs, p)
 
 	return sc
 }
@@ -73,20 +134,23 @@ func (sc *SearchCriteria) Build() slext.PredicateFilter[*html.Node] {
 	attrsFunc := sc.Attrs
 	nt := sc.NodeType
 
+	var f slext.PredicateFilter[*html.Node]
+
 	if sc.Data != nil {
 		data := *sc.Data
 
-		return func(node *html.Node) bool {
-			if node == nil || node.Type != nt || node.Data != data {
+		f = func(node *html.Node) bool {
+			if node == nil {
+				return false
+			} else if node.Type != nt {
+				return false
+			} else if node.Data != data {
 				return false
 			}
 
 			// Check if it matches the attribute
 			for _, key := range attrsFunc {
-				ok := slices.ContainsFunc(node.Attr, func(a html.Attribute) bool {
-					return a.Key == key.First && key.Second(a.Val)
-				})
-
+				ok := key.Match(node.Attr)
 				if !ok {
 					return false
 				}
@@ -95,16 +159,15 @@ func (sc *SearchCriteria) Build() slext.PredicateFilter[*html.Node] {
 			return true
 		}
 	} else {
-		return func(node *html.Node) bool {
-			if node == nil || node.Type != nt {
+		f = func(node *html.Node) bool {
+			if node == nil {
+				return false
+			} else if node.Type != nt {
 				return false
 			}
 
 			for _, key := range attrsFunc {
-				ok := slices.ContainsFunc(node.Attr, func(a html.Attribute) bool {
-					return a.Key == key.First && key.Second(a.Val)
-				})
-
+				ok := key.Match(node.Attr)
 				if !ok {
 					return false
 				}
@@ -113,4 +176,6 @@ func (sc *SearchCriteria) Build() slext.PredicateFilter[*html.Node] {
 			return true
 		}
 	}
+
+	return f
 }

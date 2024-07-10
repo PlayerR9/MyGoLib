@@ -11,10 +11,38 @@ import (
 var (
 	// IsTextNodeSearch is a search criteria that matches text nodes.
 	IsTextNodeSearch slext.PredicateFilter[*html.Node]
+
+	// GetChildrenFunc is a function that returns the children of an HTML node.
+	GetChildrenFunc tr.NextsFunc
 )
 
 func init() {
 	IsTextNodeSearch = NewSearchCriteria(html.TextNode).Build()
+
+	GetChildrenFunc = func(n tr.Noder, info tr.Infoer) ([]tr.Noder, error) {
+		if n == nil {
+			err := uc.NewErrNilParameter("n")
+			return nil, err
+		}
+
+		elem, ok := n.(*tr.TreeNode[*html.Node])
+		uc.Assert(ok, "GetChildrenFunc: n is not a *tr.TreeNode[*html.Node]")
+
+		if elem.Data == nil {
+			err := uc.NewErrNilParameter("n.Data")
+			return nil, err
+		}
+
+		var children []tr.Noder
+
+		for c := elem.Data.FirstChild; c != nil; c = c.NextSibling {
+			new_n := tr.NewTreeNode(c)
+
+			children = append(children, new_n)
+		}
+
+		return children, nil
+	}
 }
 
 // GetDirectChildren returns a slice of the direct children of the provided node.
@@ -29,38 +57,12 @@ func GetDirectChildren(node *html.Node) []*html.Node {
 		return nil
 	}
 
-	children := make([]*html.Node, 0)
+	var children []*html.Node
 	for c := node.FirstChild; c != nil; c = c.NextSibling {
 		children = append(children, c)
 	}
 	return children
 }
-
-var (
-	// GetChildrenFunc is a function that returns the children of an HTML node.
-	GetChildrenFunc tr.NextsFunc = func(n tr.Noder, info uc.Copier) ([]tr.Noder, error) {
-		if n == nil {
-			return nil, uc.NewErrNilParameter("n")
-		}
-
-		elem, ok := n.(*tr.TreeNode[*html.Node])
-		uc.Assert(ok, "GetChildrenFunc: n is not a *tr.TreeNode[*html.Node]")
-
-		if elem.Data == nil {
-			return nil, uc.NewErrNilParameter("n.Data")
-		}
-
-		var children []tr.Noder
-
-		for c := elem.Data.FirstChild; c != nil; c = c.NextSibling {
-			new_n := tr.NewTreeNode(c)
-
-			children = append(children, new_n)
-		}
-
-		return children, nil
-	}
-)
 
 // HtmlTree is a struct that represents an HTML tree.
 type HtmlTree struct {
@@ -153,9 +155,10 @@ func (t *HtmlTree) MatchNodes(matchFun slext.PredicateFilter[*html.Node]) ([]*ht
 
 	var solution []*html.Node
 
-	err := tr.BFS(t.tree, nil, func(node tr.Noder, info uc.Copier) (bool, error) {
+	f := func(node tr.Noder, info tr.Infoer) (bool, error) {
 		if node == nil {
-			return false, uc.NewErrNilParameter("node")
+			err := uc.NewErrNilParameter("node")
+			return false, err
 		}
 
 		n, ok := node.(*tr.TreeNode[*html.Node])
@@ -168,7 +171,9 @@ func (t *HtmlTree) MatchNodes(matchFun slext.PredicateFilter[*html.Node]) ([]*ht
 
 		solution = append(solution, n.Data)
 		return false, nil
-	})
+	}
+
+	err := tr.BFS(t.tree, nil, f)
 	if err != nil {
 		return nil, err
 	}
@@ -192,9 +197,10 @@ func (t *HtmlTree) ExtractContentFromDocument(matchFun slext.PredicateFilter[*ht
 
 	var solution *html.Node
 
-	err := tr.DFS(t.tree, nil, func(node tr.Noder, info uc.Copier) (bool, error) {
+	f := func(node tr.Noder, info tr.Infoer) (bool, error) {
 		if node == nil {
-			return false, uc.NewErrNilParameter("node")
+			err := uc.NewErrNilParameter("node")
+			return false, err
 		}
 
 		n, ok := node.(*tr.TreeNode[*html.Node])
@@ -207,7 +213,9 @@ func (t *HtmlTree) ExtractContentFromDocument(matchFun slext.PredicateFilter[*ht
 
 		solution = n.Data
 		return false, nil
-	})
+	}
+
+	err := tr.DFS(t.tree, nil, f)
 	if err != nil {
 		return nil, err
 	}
@@ -240,7 +248,8 @@ func (t *HtmlTree) ExtractNodes(criterias ...slext.PredicateFilter[*html.Node]) 
 		for _, tree := range todo {
 			result, err := tree.MatchNodes(criteria)
 			if err != nil {
-				return nil, uc.NewErrWhileAt("applying", i+1, "criteria", err)
+				err := uc.NewErrWhileAt("applying", i+1, "criteria", err)
+				return nil, err
 			}
 
 			if len(result) != 0 {
@@ -255,7 +264,8 @@ func (t *HtmlTree) ExtractNodes(criterias ...slext.PredicateFilter[*html.Node]) 
 		for i, node := range new_todo {
 			new_tree, err := NewHtmlTree(node)
 			if err != nil {
-				return nil, uc.NewErrWhileAt("adding", i+1, "tree", err)
+				err := uc.NewErrWhileAt("adding", i+1, "tree", err)
+				return nil, err
 			}
 
 			todo = append(todo, new_tree)

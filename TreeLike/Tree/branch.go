@@ -19,7 +19,11 @@ type BranchIterator struct {
 // Consume implements the common.Iterater interface.
 //
 // This scans from the root node to the leaf node.
+//
+// Noder is never nil.
 func (bi *BranchIterator) Consume() (Noder, error) {
+	uc.Assert(bi.current != nil, "BranchIterator: current is nil")
+
 	value := bi.current
 
 	if bi.current == bi.to_node {
@@ -81,4 +85,32 @@ func (b *Branch) Slice() []Noder {
 	slice = append(slice, b.to_node)
 
 	return slice
+}
+
+// NewBranch works like GetAncestors but includes the node itself.
+//
+// The nodes are returned as a slice where [0] is the root node
+// and [len(branch)-1] is the leaf node.
+//
+// Returns:
+//   - *Branch: The branch from the node to the root.
+func NewBranch(n Noder) *Branch {
+	branch := &Branch{
+		to_node: n,
+	}
+
+	node := n
+
+	for {
+		parent := node.GetParent()
+		if parent == nil {
+			break
+		}
+
+		node = parent
+	}
+
+	branch.from_node = node
+
+	return branch
 }

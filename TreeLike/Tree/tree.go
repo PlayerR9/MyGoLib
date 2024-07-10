@@ -831,7 +831,7 @@ func (t *Tree) ExtractBranch(leaf Noder, delete bool) (*Branch, error) {
 		return nil, nil
 	}
 
-	branch := GetBranch(leaf)
+	branch := NewBranch(leaf)
 
 	if !delete {
 		return branch, nil

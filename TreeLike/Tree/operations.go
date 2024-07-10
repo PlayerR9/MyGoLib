@@ -54,7 +54,7 @@ func PrintTree(tree *Tree) ([]string, error) {
 	var lines []string
 	var builder strings.Builder
 
-	f := func(elem Noder, obj uc.Copier) (bool, error) {
+	f := func(elem Noder, obj Infoer) (bool, error) {
 		inf, ok := obj.(*InfPrinter)
 		if !ok {
 			return false, fmt.Errorf("invalid objecter type: %T", obj)
@@ -69,7 +69,9 @@ func PrintTree(tree *Tree) ([]string, error) {
 		return true, nil
 	}
 
-	err := DFS(tree, NewInfPrinter(), f)
+	ip := NewInfPrinter()
+
+	err := DFS(tree, ip, f)
 	if err != nil {
 		return nil, err
 	}
