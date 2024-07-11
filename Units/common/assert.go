@@ -3,6 +3,7 @@ package common
 import (
 	"fmt"
 	"reflect"
+	"strings"
 )
 
 // Assert panics if the condition is false.
@@ -56,5 +57,37 @@ func AssertF(cond bool, format string, args ...any) {
 	}
 
 	msg := fmt.Sprintf(format, args...)
+	panic(msg)
+}
+
+// AssertErr panics if the error is not nil.
+//
+// Parameters:
+//   - err: The error to check.
+//   - format: The format of the message to show if the error is not nil.
+//   - args: The arguments to format the message.
+//
+// The format should be the function name and the args should be the parameters.
+//
+// Example:
+//
+//	func MyFunc(param1 string, param2 int) {
+//	    res, err := SomeFunc(param1, param2)
+//	    AssertErr(err, "SomeFunc(%s, %d)", param1, param2)
+//	}
+func AssertErr(err error, format string, args ...any) {
+	if err == nil {
+		return
+	}
+
+	var builder strings.Builder
+
+	builder.WriteString("In ")
+	fmt.Fprintf(&builder, format, args...)
+	builder.WriteString(" = ")
+	builder.WriteString(err.Error())
+
+	msg := builder.String()
+
 	panic(msg)
 }

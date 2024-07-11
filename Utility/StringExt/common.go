@@ -484,7 +484,7 @@ func SplitInEqualSizedLines(text []string, width, height int) (*TextSplit, error
 	//		 *** is a test ***
 
 	group, err := NewTextSplit(width, height)
-	uc.AssertF(err == nil, "Error creating TextSplit instance: %s", err.Error())
+	uc.AssertErr(err, "NewTextSplit(%d, %d)", width, height)
 
 	for _, word := range text {
 		ok := group.InsertWord(word)

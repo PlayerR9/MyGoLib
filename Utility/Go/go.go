@@ -156,7 +156,7 @@ func fix_variable_name(var_name string, keywords []string, min int) (string, boo
 	}
 
 	chars, err := utse.ToUTF8Runes(var_name)
-	uc.AssertF(err == nil, "ToUTF8Runes failed: %s", err.Error())
+	uc.AssertErr(err, "ToUTF8Runes(%s)", var_name)
 
 	var builder strings.Builder
 

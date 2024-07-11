@@ -23,7 +23,7 @@ func TestIsValidName(t *testing.T) {
 }
 
 func TestFixVariableName(t *testing.T) {
-	res, ok := FixVariableName("tn", []string{"child"}, 1, "_")
+	res, ok := FixVariableName("tn", []string{"child"}, 2, "_")
 	if !ok {
 		t.Errorf("FixVariableName failed")
 	}
@@ -34,12 +34,12 @@ func TestFixVariableName(t *testing.T) {
 }
 
 func TestFixVarNameIncremental(t *testing.T) {
-	res, ok := FixVarNameIncremental("tn", []string{"child"}, 1, 1)
+	res, ok := FixVarNameIncremental("tn", []string{"child", "tn", "tn1"}, 2, 1)
 	if !ok {
 		t.Errorf("FixVarNameIncremental failed")
 	}
 
-	if res != "tn1" {
-		t.Errorf("FixVarNameIncremental failed: expected %s, got %s", "tn1", res)
+	if res != "tn2" {
+		t.Errorf("FixVarNameIncremental failed: expected %s, got %s", "tn2", res)
 	}
 }
