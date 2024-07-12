@@ -1,8 +1,34 @@
+// This generates a tree node that uses first child and next sibling pointers.
+//
+// To use it, run the following command:
+//
+//	//go:generate treenode -type=<type_name> -data=<data_file> [ -output=<output_file> ]
+//
+// More specifically, the <data> field must be set and it specifies the type(s) that you want to
+// create a tree node for. The syntax of this argument is:
+//
+//	Argument = "\"" Field { "," Field } "\"".
+//	Field = name { "," name } type .
+//
+// For instance, running the following command:
+//
+//	//go:generate treenode -type="TreeNode" -data="a, b int, name string"
+//
+// will generate a tree node with the following fields:
+//
+//		type TreeNode struct {
+//			// Node pointers.
+//
+//			a, b int
+//			name string
+//	}
 package main
 
 import (
 	"bytes"
+	"errors"
 	"flag"
+	"fmt"
 	"go/build"
 	"log"
 	"os"
@@ -60,6 +86,9 @@ var (
 
 	// OutputFileFlag is the flag for the output file.
 	OutputFileFlag *string
+
+	// DataFileFlag is the flag for the data file.
+	DataFileFlag *string
 )
 
 func init() {
@@ -71,6 +100,11 @@ func init() {
 	OutputFileFlag = flag.String("output", "",
 		"The output file to write the generated code to. If not set, the default file name is used."+
 			" That is \"<type_name>_treenode.go\".",
+	)
+
+	DataFileFlag = flag.String("data", "",
+		"The data file to read the type names from. It must be set."+
+			" The syntax of the data file is described in the documentation.",
 	)
 }
 
@@ -84,6 +118,9 @@ type generator struct {
 
 	// variable_name is the name of the variable.
 	variable_name string
+
+	// data is the data to generate the code for.
+	data map[string]string
 }
 
 // generate generates the code for the tree node.
@@ -92,6 +129,18 @@ type generator struct {
 //   - []byte: The generated code.
 //   - error: An error if the code could not be generated.
 func (g *generator) generate() ([]byte, error) {
+	if g.package_name == "" {
+		return nil, errors.New("package name must be set")
+	}
+
+	if g.type_name == "" {
+		return nil, errors.New("type name must be set")
+	}
+
+	if g.variable_name == "" {
+		return nil, errors.New("variable name must be set")
+	}
+
 	t := template.Must(
 		template.New("").Parse(templ),
 	)
@@ -101,6 +150,7 @@ func (g *generator) generate() ([]byte, error) {
 		TypeName     string
 		OutputType   string
 		VariableName string
+		Data         map[string]string
 	}
 
 	data := GenData{
@@ -108,6 +158,7 @@ func (g *generator) generate() ([]byte, error) {
 		TypeName:     g.type_name,
 		OutputType:   "*" + g.type_name,
 		VariableName: g.variable_name,
+		Data:         g.data,
 	}
 
 	var buf bytes.Buffer
@@ -122,12 +173,15 @@ func (g *generator) generate() ([]byte, error) {
 	return result, nil
 }
 
-func main() {
-	// Flag parsing.
+func parse_flags() (string, string, map[string]string, error) {
 	flag.Parse()
 
 	if *TypeNameFlag == "" {
-		Logger.Fatal("The type name must be set")
+		return "", "", nil, errors.New("the type name must be set")
+	}
+
+	if *DataFileFlag == "" {
+		return "", "", nil, errors.New("the data file must be set")
 	}
 
 	type_name := *TypeNameFlag
@@ -144,6 +198,25 @@ func main() {
 		filename = builder.String()
 	} else {
 		filename = *OutputFileFlag
+	}
+
+	dff := *DataFileFlag
+
+	dff = strings.TrimPrefix(dff, "\"")
+	dff = strings.TrimSuffix(dff, "\"")
+
+	parsed, err := utgo.ParseFields(dff)
+	if err != nil {
+		return "", "", nil, fmt.Errorf("could not parse data file: %s", err.Error())
+	}
+
+	return type_name, filename, parsed, nil
+}
+
+func main() {
+	type_name, filename, fields, err := parse_flags()
+	if err != nil {
+		Logger.Fatalf("Could not parse flags: %s", err.Error())
 	}
 
 	// Check if the type name is valid.
@@ -167,6 +240,7 @@ func main() {
 		package_name:  pkg.Name,
 		type_name:     type_name,
 		variable_name: var_name,
+		data:          fields,
 	}
 
 	generated_data, err := g.generate()
@@ -212,7 +286,9 @@ func (iter *{{ .TypeName }}Iterator) Consume() (tr.Noder, error) {
 		return nil, uc.NewErrExhaustedIter()
 	}
 
-	node, iter.current = iter.current, iter.current.NextSibling
+	node := iter.current
+	iter.current = iter.current.NextSibling
+
 	return node, nil
 }
 
@@ -224,6 +300,10 @@ func (iter *{{ .TypeName }}Iterator) Restart() {
 // {{ .TypeName }} is a node in a tree.
 type {{ .TypeName }} struct {
 	Parent, FirstChild, NextSibling, LastChild, PrevSibling {{ .OutputType }}
+
+	{{- range $key, $value := .Data }}
+	{{ $key }} {{ $value }}
+	{{- end }}
 }
 
 // Iterator implements the Tree.Noder interface.
@@ -558,7 +638,7 @@ func ({{ .VariableName }} {{ .OutputType }}) AddChild(child tr.Noder) {
 		return
 	}
 
-	c, ok := child.({{ .OutputType }}
+	c, ok := child.({{ .OutputType }})
 	if !ok {
 		return
 	}
@@ -717,7 +797,7 @@ func ({{ .VariableName }} {{ .OutputType }}) IsRoot() bool {
 
 // AddChildren is a convenience function to add multiple children to the node at once.
 // It is more efficient than adding them one by one. Therefore, the behaviors are the
-// same as the behaviors of the {{ TypeName }}.AddChild function.
+// same as the behaviors of the {{ .TypeName }}.AddChild function.
 //
 // Parameters:
 //   - children: The children to add.
@@ -771,7 +851,7 @@ func ({{ .VariableName }} {{ .OutputType }}) AddChildren(children []{{ .OutputTy
 func ({{ .VariableName }} {{ .OutputType }}) GetChildren() []tr.Noder {
 	var children []tr.Noder
 
-	for c := n.FirstChild; c != nil; c = c.NextSibling {
+	for c := {{ .VariableName }}.FirstChild; c != nil; c = c.NextSibling {
 		children = append(children, c)
 	}
 
