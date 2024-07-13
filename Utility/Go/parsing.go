@@ -304,3 +304,46 @@ func ParseFields(str string) (map[string]string, error) {
 
 	return field_map, nil
 }
+
+// ParseGenerics parses a string representing a list of generic types enclosed in square brackets.
+//
+// Parameters:
+//   - str: The string to parse.
+//
+// Return types:
+//   - []rune: An array of runes representing the parsed generic types.
+//   - error: An error if the parsing fails.
+func ParseGenerics(str string) ([]rune, error) {
+	ok := strings.HasSuffix(str, "]")
+	if !ok {
+		return nil, nil
+	}
+
+	idx := strings.Index(str, "[")
+	if idx == -1 {
+		err := errors.New("missing opening square bracket")
+		return nil, err
+	}
+
+	generic := str[idx+1 : len(str)-1]
+	if generic == "" {
+		err := errors.New("empty generic type")
+		return nil, err
+	}
+
+	fields := strings.Split(generic, ",")
+
+	var letters []rune
+
+	for i, field := range fields {
+		letter, err := IsGenericsID(field)
+		if err != nil {
+			err := uc.NewErrAt(i+1, "field", err)
+			return nil, err
+		}
+
+		letters = append(letters, letter)
+	}
+
+	return letters, nil
+}

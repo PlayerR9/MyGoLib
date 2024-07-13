@@ -24,9 +24,12 @@ var (
 
 func init() {
 	calculate_split_ratio = func(candidate *TextSplit) (float64, bool) {
-		uc.Assert(candidate != nil, "in calculateSplitRatio: candidate is nil")
+		uc.Assert(candidate != nil, "in calculate_split_ratio: candidate is nil")
 
-		values := make([]float64, 0, candidate.GetHeight())
+		height := candidate.GetHeight()
+		uc.AssertF(height > 0, "in calculate_split_ratio: %s", uc.NewErrVariableError("height", uc.NewErrGT(0)).Error())
+
+		values := make([]float64, 0, height)
 
 		for _, line := range candidate.lines {
 			values = append(values, float64(line.len))
