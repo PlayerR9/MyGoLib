@@ -16,12 +16,14 @@ import (
 //   - error: An error if the input string is not a valid single upper case letter.
 func IsGenericsID(str string) (rune, error) {
 	if str == "" {
-		return '\000', errors.New("empty generic type")
+		err := errors.New("generic type is empty")
+		return '\000', err
 	}
 
 	size := utf8.RuneCountInString(str)
 	if size > 1 {
-		return '\000', errors.New("generic type is not a single character")
+		err := errors.New("generic type is not a single character")
+		return '\000', err
 	}
 
 	letter := rune(str[0])
