@@ -40,6 +40,13 @@ var (
 //	SetOutputFlag("", false) <-> SetOutputFlag("[no location]", false)
 //	SetOutputFlag("path/to/file.go", false)
 //	SetOutputFlag("", true) <-> SetOutputFlag("path/to/file.go", true)
+//
+// Documentation:
+//
+// **Flag: Output File**
+//
+// This optional flag is used to specify the output file. If not specified, the output will be written to
+// standard output, that is, the file "<type_name>_treenode.go" in the root of the current directory.
 func SetOutputFlag(def_value string, required bool) {
 	var usage string
 
@@ -206,6 +213,37 @@ func (s *StructFieldsVal) Set(value string) error {
 //   - brief: A brief description of the flag.
 //
 // Any negative number will be interpreted as unlimited number of fields. Also, the value 0 will not set the flag.
+//
+// Documentation:
+//
+// **Flag: Fields**
+//
+// The "fields" flag is used to specify the fields that the tree node contains. Because it doesn't make
+// a lot of sense to have a tree node without fields, this flag must be set.
+//
+// Its argument is specified as a list of key-value pairs where each pair is separated by a comma (",") and
+// a slash ("/") is used to separate the key and the value.
+//
+// The key indicates the name of the field while the value indicates the type of the field.
+//
+// For instance, running the following command:
+//
+//	//go:generate treenode -type="TreeNode" -fields=a/int,b/int,name/string
+//
+// will generate a tree node with the following fields:
+//
+//	type TreeNode struct {
+//		// Node pointers.
+//
+//		a int
+//		b int
+//		name string
+//	}
+//
+// It is important to note that spaces are not allowed.
+//
+// Also, it is possible to specify generics by following the value with the generics between square brackets;
+// like so: "a/MyType[T,C]"
 func SetStructFieldsFlag(flag_name string, is_required bool, count int, brief string) {
 	if count == 0 {
 		return
@@ -330,6 +368,33 @@ func (s *GenericsSignVal) Set(value string) error {
 // Parameters:
 //   - flag_name: The name of the flag.
 //   - is_required: Whether the flag is required or not.
+//
+// Documentation:
+//
+// **Flag: Generics**
+//
+// This optional flag is used to specify the type(s) of the generics. However, this only applies if at least one
+// generic type is specified in the fields flag. If none, then this flag is ignored.
+//
+// As an edge case, if this flag is not specified but the fields flag contains generics, then
+// all generics are set to the default value of "any".
+//
+// As with the fields flag, its argument is specified as a list of key-value pairs where each pair is separated
+// by a comma (",") and a slash ("/") is used to separate the key and the value. The key indicates the name of
+// the generic and the value indicates the type of the generic.
+//
+// For instance, running the following command:
+//
+//	//go:generate treenode -type="TreeNode" -fields=a/MyType[T],b/MyType[C] -g=T/any,C/int
+//
+// will generate a tree node with the following fields:
+//
+//	type TreeNode[T any, C int] struct {
+//		// Node pointers.
+//
+//		a T
+//		b C
+//	}
 func SetGenericsSignFlag(flag_name string, is_required bool, count int) {
 	if count == 0 {
 		return
@@ -550,7 +615,7 @@ func (s *TypeListVal) Set(value string) error {
 	return nil
 }
 
-// SetStructFieldsFlag sets the flag that specifies the fields of the struct to generate the code for.
+// SetTypeListFlag sets the flag that specifies the fields of the struct to generate the code for.
 //
 // Parameters:
 //   - flag_name: The name of the flag.
@@ -559,7 +624,34 @@ func (s *TypeListVal) Set(value string) error {
 //   - brief: A brief description of the flag.
 //
 // Any negative number will be interpreted as unlimited number of fields. Also, the value 0 will not set the flag.
-func SetTypeListValFlag(flag_name string, is_required bool, count int, brief string) {
+//
+// Documentation:
+//
+// **Flag: Types**
+//
+// The "types" flag is used to specify a list of types that are accepted by the generator.
+//
+// Its argument is specidied as a list of Go types separated by commas without spaces.
+//
+// For instance, running the following command:
+//
+//	//go:generate table -name=IntTable -type=int -fields=a/int,b/int,name/string
+//
+// will generate a tree node with the following fields:
+//
+//	type TreeNode struct {
+//		// Node pointers.
+//
+//		a int
+//		b int
+//		name string
+//	}
+//
+// It is important to note that spaces are not allowed.
+//
+// Also, it is possible to specify generics by following the value with the generics between square brackets;
+// like so: "a/MyType[T,C]"
+func SetTypeListFlag(flag_name string, is_required bool, count int, brief string) {
 	if count == 0 {
 		return
 	}
