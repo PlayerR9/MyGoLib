@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
-	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
 // LimitedArrayStack is a generic type that represents a stack data structure with
@@ -156,18 +155,6 @@ func (stack *LimitedArrayStack[T]) GoString() string {
 	builder.WriteString(" →]]")
 
 	return builder.String()
-}
-
-// CutNilValues is a method of the LimitedArrayStack type. It is used to remove all nil
-// values from the stack.
-func (stack *LimitedArrayStack[T]) CutNilValues() {
-	for i := 0; i < len(stack.values); {
-		if gen.IsNil(stack.values[i]) {
-			stack.values = append(stack.values[:i], stack.values[i+1:]...)
-		} else {
-			i++
-		}
-	}
 }
 
 // Slice is a method of the LimitedArrayStack type. It is used to return a slice of the

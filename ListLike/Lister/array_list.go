@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
-	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
 // ArrayList is a generic type that represents a list data structure with
@@ -167,18 +166,6 @@ func (list *ArrayList[T]) PeekLast() (T, bool) {
 	elm := list.values[len(list.values)-1]
 
 	return elm, true
-}
-
-// CutNilValues is a method of the ArrayList type. It is used to remove all nil
-// values from the list.
-func (list *ArrayList[T]) CutNilValues() {
-	for i := 0; i < len(list.values); {
-		if gen.IsNil(list.values[i]) {
-			list.values = append(list.values[:i], list.values[i+1:]...)
-		} else {
-			i++
-		}
-	}
 }
 
 // Slice is a method of the ArrayList type that returns a slice of type T

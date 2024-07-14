@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
-	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
 // LimitedLinkedQueue is a generic type that represents a queue data structure with
@@ -199,64 +198,6 @@ func (queue *LimitedLinkedQueue[T]) GoString() string {
 	builder.WriteString("]]")
 
 	return builder.String()
-}
-
-// CutNilValues is a method of the LimitedLinkedQueue type. It is used to remove all nil
-// values from the queue.
-func (queue *LimitedLinkedQueue[T]) CutNilValues() {
-	if queue.front == nil {
-		return // Queue is empty
-	}
-
-	if gen.IsNil(queue.front.Value) && queue.front == queue.back {
-		// Single node
-		queue.front = nil
-		queue.back = nil
-		queue.size = 0
-
-		return
-	}
-
-	var toDelete *QueueNode[T] = nil
-
-	// 1. First node
-	if gen.IsNil(queue.front.Value) {
-		toDelete = queue.front
-
-		queue.front = queue.front.Next()
-
-		toDelete.SetNext(nil)
-		queue.size--
-	}
-
-	prev := queue.front
-
-	// 2. Subsequent nodes (except last)
-	for node := queue.front.Next(); node.Next() != nil; node = node.Next() {
-		if !gen.IsNil(node.Value) {
-			prev = node
-		} else {
-			prev.SetNext(node.Next())
-			queue.size--
-
-			if toDelete != nil {
-				toDelete.SetNext(nil)
-			}
-
-			toDelete = node
-		}
-	}
-
-	if toDelete != nil {
-		toDelete.SetNext(nil)
-	}
-
-	// 3. Last node
-	if gen.IsNil(queue.back.Value) {
-		prev.SetNext(nil)
-		queue.back = prev
-		queue.size--
-	}
 }
 
 // Slice is a method of the LimitedLinkedQueue type. It is used to return a slice of the

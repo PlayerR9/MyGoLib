@@ -16,9 +16,9 @@ func TestMakeVariableName(t *testing.T) {
 }
 
 func TestIsValidName(t *testing.T) {
-	ok := IsValidName("tn", []string{"child"})
-	if !ok {
-		t.Errorf("IsValidName failed")
+	err := IsValidName("tn", []string{"child"})
+	if err != nil {
+		t.Errorf("IsValidName failed: %s", err.Error())
 	}
 }
 

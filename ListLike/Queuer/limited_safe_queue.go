@@ -6,7 +6,6 @@ import (
 	"sync"
 
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
-	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
 // LimitedSafeQueue is a generic type that represents a thread-safe queue data
@@ -259,70 +258,6 @@ func (queue *LimitedSafeQueue[T]) GoString() string {
 	builder.WriteString("]]")
 
 	return builder.String()
-}
-
-// CutNilValues is a method of the LimitedSafeQueue type. It is used to remove all nil
-// values from the queue.
-func (queue *LimitedSafeQueue[T]) CutNilValues() {
-	queue.frontMutex.Lock()
-	defer queue.frontMutex.Unlock()
-
-	queue.backMutex.Lock()
-	defer queue.backMutex.Unlock()
-
-	if queue.front == nil {
-		return // Queue is empty
-	}
-
-	if gen.IsNil(queue.front.Value) && queue.front == queue.back {
-		// Single node
-		queue.front = nil
-		queue.back = nil
-		queue.size = 0
-
-		return
-	}
-
-	var toDelete *QueueSafeNode[T] = nil
-
-	// 1. First node
-	if gen.IsNil(queue.front.Value) {
-		toDelete = queue.front
-
-		queue.front = queue.front.Next()
-
-		toDelete.SetNext(nil)
-		queue.size--
-	}
-
-	prev := queue.front
-
-	// 2. Subsequent nodes (except last)
-	for node := queue.front.Next(); node.Next() != nil; node = node.Next() {
-		if !gen.IsNil(node.Value) {
-			prev = node
-		} else {
-			prev.SetNext(node.Next())
-			queue.size--
-
-			if toDelete != nil {
-				toDelete.SetNext(nil)
-			}
-
-			toDelete = node
-		}
-	}
-
-	if toDelete != nil {
-		toDelete.SetNext(nil)
-	}
-
-	// 3. Last node
-	if gen.IsNil(queue.back.Value) {
-		queue.back = prev
-		queue.back.SetNext(nil)
-		queue.size--
-	}
 }
 
 // Slice is a method of the LimitedSafeQueue type. It is used to return a slice of the

@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
-	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
 // LinkedList is a generic type that represents a list data structure with
@@ -260,66 +259,6 @@ func (list *LinkedList[T]) PeekLast() (T, bool) {
 	}
 
 	return list.back.Value, true
-}
-
-// CutNilValues is a method of the LinkedList type. It is used to remove all nil
-// values from the list.
-func (list *LinkedList[T]) CutNilValues() {
-	if list.front == nil {
-		return // List is empty
-	}
-
-	if gen.IsNil(list.front.Value) && list.front == list.back {
-		// Single node
-		list.front = nil
-		list.back = nil
-		list.size = 0
-
-		return
-	}
-
-	var toDelete *ListNode[T] = nil
-
-	// 1. First node
-	if gen.IsNil(list.front.Value) {
-		toDelete = list.front
-
-		list.front = list.front.Next()
-		list.front.SetPrev(nil)
-
-		toDelete.SetNext(nil)
-		list.size--
-	}
-
-	prev := list.front
-
-	// 2. Subsequent nodes (except last)
-	for node := list.front.Next(); node.Next() != nil; node = node.Next() {
-		if !gen.IsNil(node.Value) {
-			prev = node
-		} else {
-			prev.SetNext(node.Next())
-			node.Next().SetPrev(prev)
-			list.size--
-
-			if toDelete != nil {
-				toDelete.SetNext(nil)
-			}
-
-			toDelete = node
-		}
-	}
-
-	if toDelete != nil {
-		toDelete.SetNext(nil)
-	}
-
-	// 3. Last node
-	if gen.IsNil(list.back.Value) {
-		list.back = prev
-		list.back.SetNext(nil)
-		list.size--
-	}
 }
 
 // Slice is a method of the LinkedList type that returns a slice of type T

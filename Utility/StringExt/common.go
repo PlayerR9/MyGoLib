@@ -794,3 +794,47 @@ func FirstInstanceOfWS(chars []rune, from_idx, to_idx int) int {
 
 	return -1
 }
+
+// Title capitalizes the first letter of the input string and returns the modified string.
+//
+// Parameters:
+//   - str: The input string to be processed.
+//
+// Returns:
+//   - string: The modified string with the first letter capitalized.
+//   - error: An error if the input string is empty or has invalid UTF-8 encoding.
+func Title(str string) (string, error) {
+	if str == "" {
+		reason := uc.NewErrEmpty(str)
+		err := uc.NewErrInvalidParameter("str", reason)
+		return str, err
+	}
+
+	r, size := utf8.DecodeRuneInString(str)
+	if r == utf8.RuneError {
+		reason := NewErrInvalidUTF8Encoding()
+		err := uc.NewErrInvalidParameter("str", reason)
+		return "", err
+	}
+
+	remaining := str[size:]
+
+	ok := unicode.IsLetter(r)
+	if !ok {
+		return str, nil
+	}
+
+	ok = unicode.IsUpper(r)
+	if !ok {
+		return str, nil
+	}
+
+	r = unicode.ToUpper(r)
+
+	var builder strings.Builder
+
+	builder.WriteRune(r)
+	builder.WriteString(remaining)
+
+	return builder.String(), nil
+}

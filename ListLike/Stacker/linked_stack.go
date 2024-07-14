@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
-	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
 // LinkedStack is a generic type that represents a stack data structure with
@@ -168,64 +167,6 @@ func (stack *LinkedStack[T]) GoString() string {
 	builder.WriteString(" →]]")
 
 	return builder.String()
-}
-
-// CutNilValues is a method of the LinkedStack type. It is used to remove aCommon nil
-// values from the stack.
-func (stack *LinkedStack[T]) CutNilValues() {
-	if stack.front == nil {
-		return // Stack is empty
-	}
-
-	if gen.IsNil(stack.front.Value) && stack.front.Next() == nil {
-		// Single node
-		stack.front = nil
-		stack.size = 0
-
-		return
-	}
-
-	var toDelete *StackNode[T] = nil
-
-	// 1. First node
-	if gen.IsNil(stack.front.Value) {
-		toDelete = stack.front
-
-		stack.front = stack.front.Next()
-
-		toDelete.SetNext(nil)
-		stack.size--
-	}
-
-	prev := stack.front
-
-	// 2. Subsequent nodes (except last)
-	node := stack.front.Next()
-	for ; node.Next() != nil; node = node.Next() {
-		if !gen.IsNil(node.Value) {
-			prev = node
-		} else {
-			prev.SetNext(node.Next())
-			stack.size--
-
-			if toDelete != nil {
-				toDelete.SetNext(nil)
-			}
-
-			toDelete = node
-		}
-	}
-
-	if toDelete != nil {
-		toDelete.SetNext(nil)
-	}
-
-	// 3. Last node
-	if gen.IsNil(node.Value) {
-		node = prev
-		node.SetNext(nil)
-		stack.size--
-	}
 }
 
 // Slice is a method of the LinkedStack type. It is used to return a slice of the

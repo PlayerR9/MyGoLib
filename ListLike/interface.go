@@ -39,10 +39,6 @@ type ListLike[T any] interface {
 	//   - bool: True if the list is full, false otherwise.
 	IsFull() bool
 
-	// CutNilValues is a method that removes all nil values from the list.
-	// It is useful for cleaning up the list and removing any empty or nil elements.
-	CutNilValues()
-
 	// Slice is a method that returns a slice of the elements in the list.
 	//
 	// Returns:

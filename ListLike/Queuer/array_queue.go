@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
-	gen "github.com/PlayerR9/MyGoLib/Utility/General"
 )
 
 // ArrayQueue is a generic type that represents a queue data structure with
@@ -117,18 +116,6 @@ func (queue *ArrayQueue[T]) GoString() string {
 	builder.WriteString("]}")
 
 	return builder.String()
-}
-
-// CutNilValues is a method of the ArrayQueue type. It is used to remove aCommon nil
-// values from the queue.
-func (queue *ArrayQueue[T]) CutNilValues() {
-	for i := 0; i < len(queue.values); {
-		if gen.IsNil(queue.values[i]) {
-			queue.values = append(queue.values[:i], queue.values[i+1:]...)
-		} else {
-			i++
-		}
-	}
 }
 
 // Slice is a method of the ArrayQueue type. It is used to return a slice of the

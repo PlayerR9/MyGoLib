@@ -17,6 +17,15 @@ type Stacker[T any] interface {
 	//   - bool: True if the value was successfully added to the stack, false otherwise.
 	Push(value T) bool
 
+	// PushMany is a method that adds multiple values of type T to the end of the stack.
+	//
+	// Parameters:
+	//   - values: The values of type T to add to the stack.
+	//
+	// Returns:
+	//   - int: The number of values that were successfully added to the stack.
+	PushMany(values []T) int
+
 	// Pop is a method that pops an element from the stack and returns it.
 	//
 	// Returns:
@@ -62,10 +71,6 @@ type Stacker[T any] interface {
 	//
 	//   - bool: True if the list is full, false otherwise.
 	IsFull() bool
-
-	// CutNilValues is a method that removes all nil values from the list.
-	// It is useful for cleaning up the list and removing any empty or nil elements.
-	CutNilValues()
 
 	uc.Slicer[T]
 	uc.Copier

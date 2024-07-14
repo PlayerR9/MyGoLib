@@ -166,57 +166,6 @@ func (c *PopCmd[T]) Value() T {
 	return c.value
 }
 
-// CutNilValuesCmd is a command that removes nil values from the
-// stack.
-type CutNilValuesCmd[T any] struct {
-	// data is a backup of the stack.
-	data Stacker[T]
-}
-
-// Execute implements the Debugging.Commander interface.
-//
-// Never errors.
-func (c *CutNilValuesCmd[T]) Execute(data Stacker[T]) error {
-	c.data = data.Copy().(Stacker[T])
-
-	data.CutNilValues()
-
-	return nil
-}
-
-// Undo implements the Debugging.Commander interface.
-func (c *CutNilValuesCmd[T]) Undo(data Stacker[T]) error {
-	data.Clear()
-
-	values := c.data.Slice()
-
-	for _, val := range values {
-		ok := data.Push(val)
-		if !ok {
-			return fmt.Errorf("could not push value %v", val)
-		}
-	}
-
-	return nil
-}
-
-// Copy implements the Debugging.Commander interface.
-func (c *CutNilValuesCmd[T]) Copy() uc.Copier {
-	cCopy := &CutNilValuesCmd[T]{
-		data: c.data.Copy().(Stacker[T]),
-	}
-
-	return cCopy
-}
-
-// CutNilValues is a method that removes aCommon nil values from the stack.
-//
-// It also removes any empty or nil elements in the auxiliary stack.
-func NewCutNilValues[T any]() *CutNilValuesCmd[T] {
-	cmd := &CutNilValuesCmd[T]{}
-	return cmd
-}
-
 // NewStackWithHistory creates a new stack that uses a specified stack as
 // the main stack.
 //

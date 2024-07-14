@@ -2,7 +2,6 @@ package Go
 
 import (
 	"errors"
-	"slices"
 	"strconv"
 	"strings"
 	"unicode"
@@ -106,32 +105,6 @@ func MakeVariableName(type_name string) (string, error) {
 	return str, nil
 }
 
-// IsValidName checks if the given variable name is valid.
-//
-// This function checks if the variable name is not empty and if it is not a
-// Go reserved keyword. It also checks if the variable name is not in the list
-// of keywords.
-//
-// Parameters:
-//   - variable_name: The variable name to check.
-//   - keywords: The list of keywords to check against.
-//
-// Returns:
-//   - bool: True if the variable name is valid. False otherwise.
-func IsValidName(variable_name string, keywords []string) bool {
-	if variable_name == "" {
-		return false
-	}
-
-	ok := slices.Contains(GoReservedKeywords, variable_name)
-	if ok {
-		return false
-	}
-
-	ok = slices.Contains(keywords, variable_name)
-	return !ok
-}
-
 // fix_variable_name is an helper function that fixes the given variable name by checking whether
 // or not the name trimmed to the minimum length is valid. If it is not valid, the function tries
 // the remaining characters one by one until a valid name is found.
@@ -143,16 +116,16 @@ func IsValidName(variable_name string, keywords []string) bool {
 //
 // Returns:
 //   - string: The fixed variable name.
-//   - bool: True if the variable name is valid. False otherwise.
-func fix_variable_name(var_name string, keywords []string, min int) (string, bool) {
+//   - error: An error if the variable name is invalid.
+func fix_variable_name(var_name string, keywords []string, min int) (string, error) {
 	size := utf8.RuneCountInString(var_name)
 	if size <= min {
-		ok := IsValidName(var_name, keywords)
-		if ok {
-			return var_name, true
+		err := IsValidName(var_name, keywords)
+		if err != nil {
+			return "", err
 		}
 
-		return "", false
+		return var_name, nil
 	}
 
 	chars, err := utse.ToUTF8Runes(var_name)
@@ -166,22 +139,22 @@ func fix_variable_name(var_name string, keywords []string, min int) (string, boo
 
 	str := builder.String()
 
-	ok := IsValidName(str, keywords)
-	if ok {
-		return str, true
+	err = IsValidName(str, keywords)
+	if err == nil {
+		return str, nil
 	}
 
 	for i := min; i < size; i++ {
 		builder.WriteRune(chars[i])
 		str := builder.String()
 
-		ok := IsValidName(str, keywords)
-		if ok {
-			return str, true
+		err := IsValidName(str, keywords)
+		if err == nil {
+			return str, nil
 		}
 	}
 
-	return "", false
+	return "", errors.New("could not fix variable name")
 }
 
 // FixVariableName fixes the given variable name by checking whether or not the name
@@ -215,16 +188,16 @@ func FixVariableName(variable_name string, keywords []string, min int, suffix st
 		suffix = "_"
 	}
 
-	var_name, ok := fix_variable_name(variable_name, keywords, min)
-	if ok {
+	var_name, err := fix_variable_name(variable_name, keywords, min)
+	if err == nil {
 		return var_name, true
 	}
 
 	for {
 		variable_name = variable_name + suffix
 
-		ok := IsValidName(variable_name, keywords)
-		if ok {
+		err := IsValidName(variable_name, keywords)
+		if err == nil {
 			return variable_name, true
 		}
 	}
@@ -255,16 +228,16 @@ func FixVarNameIncremental(variable_name string, keywords []string, min int, sta
 		start = 0
 	}
 
-	var_name, ok := fix_variable_name(variable_name, keywords, min)
-	if ok {
+	var_name, err := fix_variable_name(variable_name, keywords, min)
+	if err == nil {
 		return var_name, true
 	}
 
 	for i := start; ; i++ {
 		tmp := variable_name + strconv.Itoa(i)
 
-		ok := IsValidName(tmp, keywords)
-		if ok {
+		err := IsValidName(tmp, keywords)
+		if err == nil {
 			return tmp, true
 		}
 	}
