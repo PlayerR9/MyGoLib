@@ -2,6 +2,7 @@ package Go
 
 import (
 	"errors"
+	"slices"
 	"strconv"
 	"strings"
 	"unicode"
@@ -41,6 +42,39 @@ func check_letter(c rune) (bool, bool) {
 
 	ok = unicode.IsUpper(c)
 	return ok, true
+}
+
+// IsValidName checks if the given variable name is valid.
+//
+// This function checks if the variable name is not empty and if it is not a
+// Go reserved keyword. It also checks if the variable name is not in the list
+// of keywords.
+//
+// Parameters:
+//   - variable_name: The variable name to check.
+//   - keywords: The list of keywords to check against.
+//
+// Returns:
+//   - error: An error if the variable name is invalid.
+func IsValidName(variable_name string, keywords []string) error {
+	if variable_name == "" {
+		err := uc.NewErrEmpty(variable_name)
+		return err
+	}
+
+	ok := slices.Contains(GoReservedKeywords, variable_name)
+	if ok {
+		err := errors.New("name is a reserved keyword")
+		return err
+	}
+
+	ok = slices.Contains(keywords, variable_name)
+	if ok {
+		err := errors.New("name is not allowed")
+		return err
+	}
+
+	return nil
 }
 
 // MakeVariableName converts a type name to a variable name.

@@ -8,17 +8,25 @@ import (
 	"strconv"
 	"strings"
 	"unicode"
-	"unicode/utf8"
 
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
 )
 
 var (
-	// OutputLoc is a pointer to the output_flag flag.
-	OutputLoc *string
+	// OutputLocFlag is a flag that specifies the location of the output file.
+	OutputLocFlag *string
 
-	// IsOutputLocRequired is a flag that specifies whether the output_flag flag is required or not.
-	IsOutputLocRequired bool
+	// IsOutputLocRequiredFlag is a flag that specifies whether the output location is required or not.
+	IsOutputLocRequiredFlag bool
+
+	// StructFieldsFlag is a pointer to the fields_flag flag.
+	StructFieldsFlag *StructFieldsVal
+
+	// GenericsSigFlag is a pointer to the generics_flag flag.
+	GenericsSigFlag *GenericsSignVal
+
+	// TypeListFlag is a pointer to the type_list_flag flag.
+	TypeListFlag *TypeListVal
 )
 
 // SetOutputFlag sets the flag that specifies the location of the output file.
@@ -63,16 +71,205 @@ func SetOutputFlag(def_value string, required bool) {
 		usage = builder.String()
 	}
 
-	OutputLoc = flag.String("-o", "", usage)
-	IsOutputLocRequired = required
+	OutputLocFlag = flag.String("o", "", usage)
+	IsOutputLocRequiredFlag = required
 }
 
-type GenericsValue struct {
+// GetOutputLoc gets the location of the output file.
+//
+// Returns:
+//   - string: The location of the output file.
+//   - error: An error of type *common.ErrInvalidUsage if the output location was not defined
+//     prior to calling this function.
+func GetOutputLoc() (string, error) {
+	if OutputLocFlag == nil {
+		return "", uc.NewErrInvalidUsage(
+			errors.New("output location was not defined"),
+			"Please call the go_generator.SetOutputFlag() function before calling this function.",
+		)
+	}
+
+	return *OutputLocFlag, nil
+}
+
+// StructFieldsVal is a struct that represents the fields value.
+type StructFieldsVal struct {
+	// fields is a map of the fields and their types.
+	fields map[string]string
+
+	// generics is a map of the generics and their types.
+	generics map[rune]string
+
+	// is_required is a flag that specifies whether the fields value is required or not.
+	is_required bool
+
+	// count is the number of fields expected. -1 for unlimited number of fields.
+	count int
+}
+
+// String implements the flag.Value interface.
+//
+// Format:
+//
+//	"<value1> <type1>, <value2> <type2>, ..."
+func (s *StructFieldsVal) String() string {
+	if len(s.fields) == 0 {
+		return ""
+	}
+
+	var values []string
+	var builder strings.Builder
+
+	for name, t := range s.fields {
+		builder.WriteString(name)
+		builder.WriteRune(' ')
+		builder.WriteString(t)
+
+		str := builder.String()
+		values = append(values, str)
+
+		builder.Reset()
+	}
+
+	joined_str := strings.Join(values, ", ")
+	quoted := strconv.Quote(joined_str)
+
+	return quoted
+}
+
+// Set implements the flag.Value interface.
+func (s *StructFieldsVal) Set(value string) error {
+	if value == "" && s.is_required {
+		return errors.New("value must be set")
+	}
+
+	fields := strings.Split(value, ",")
+
+	parsed := make(map[string]string)
+
+	for i, field := range fields {
+		if field == "" {
+			continue
+		}
+
+		sub_fields := strings.Split(field, "/")
+
+		if len(sub_fields) == 1 {
+			reason := errors.New("missing type")
+			err := uc.NewErrAt(i+1, "field", reason)
+			return err
+		} else if len(sub_fields) > 2 {
+			reason := errors.New("too many fields")
+			err := uc.NewErrAt(i+1, "field", reason)
+			return err
+		}
+
+		parsed[sub_fields[0]] = sub_fields[1]
+	}
+
+	if s.count != -1 && len(parsed) != s.count {
+		return fmt.Errorf("wrong number of fields: expected %d, got %d", s.count, len(parsed))
+	}
+
+	s.fields = parsed
+
+	// Find generics
+	generics := make(map[rune]string)
+
+	for _, field_type := range s.fields {
+		chars, err := ParseGenerics(field_type)
+		ok := IsErrNotGeneric(err)
+		if ok {
+			continue
+		} else if err != nil {
+			err := fmt.Errorf("syntax error for type %q: %w", field_type, err)
+			return err
+		}
+
+		for _, char := range chars {
+			_, ok := generics[char]
+			if !ok {
+				generics[char] = ""
+			}
+		}
+	}
+
+	return nil
+}
+
+// SetStructFieldsFlag sets the flag that specifies the fields of the struct to generate the code for.
+//
+// Parameters:
+//   - flag_name: The name of the flag.
+//   - is_required: Whether the flag is required or not.
+//   - count: The number of fields expected. -1 for unlimited number of fields.
+//   - brief: A brief description of the flag.
+//
+// Any negative number will be interpreted as unlimited number of fields. Also, the value 0 will not set the flag.
+func SetStructFieldsFlag(flag_name string, is_required bool, count int, brief string) {
+	if count == 0 {
+		return
+	}
+
+	if count < 0 {
+		count = -1
+	}
+
+	StructFieldsFlag = &StructFieldsVal{
+		fields:      make(map[string]string),
+		generics:    make(map[rune]string),
+		is_required: is_required,
+		count:       count,
+	}
+
+	var usage strings.Builder
+
+	usage.WriteString(brief)
+
+	if is_required {
+		if count == -1 {
+			usage.WriteString("It must be set with at least one field.")
+		} else {
+			usage.WriteString(fmt.Sprintf("It must be set with exactly %d fields.", count))
+		}
+	} else {
+		if count == -1 {
+			usage.WriteString("It is optional but, if set, it must be set with at least one field.")
+		} else {
+			usage.WriteString(fmt.Sprintf("It is optional but, if set, it must be set with exactly %d fields.", count))
+		}
+	}
+
+	usage.WriteString("The syntax of the this flag is described in the documentation.")
+
+	flag.Var(StructFieldsFlag, flag_name, usage.String())
+}
+
+// GenericsSignVal is a struct that contains the values of the generics.
+type GenericsSignVal struct {
+	// letters is a slice that contains the letters of the generics.
 	letters []rune
-	types   []string
+
+	// types is a slice that contains the types of the generics.
+	types []string
+
+	// is_required is a flag that specifies whether the generics value is required or not.
+	is_required bool
+
+	// count is a flag that specifies the number of generics.
+	count int
 }
 
-func (s *GenericsValue) String() string {
+// String implements the flag.Value interface.
+//
+// Format:
+//
+//	[letter1 type1, letter2 type2, ...]
+func (s *GenericsSignVal) String() string {
+	if len(s.letters) == 0 {
+		return ""
+	}
+
 	var values []string
 	var builder strings.Builder
 
@@ -97,6 +294,90 @@ func (s *GenericsValue) String() string {
 	return str
 }
 
+// Set implements the flag.Value interface.
+func (s *GenericsSignVal) Set(value string) error {
+	if value == "" {
+		return nil
+	}
+
+	fields := strings.Split(value, ",")
+
+	for i, field := range fields {
+		if field == "" {
+			continue
+		}
+
+		letter, g_type, err := parse_generics_value(field)
+		if err != nil {
+			return uc.NewErrAt(i+1, "field", err)
+		}
+
+		err = s.add(letter, g_type)
+		if err != nil {
+			return uc.NewErrAt(i+1, "field", err)
+		}
+	}
+
+	if s.count != -1 && len(s.letters) != s.count {
+		return fmt.Errorf("invalid number of generics: expected %d, got %d", s.count, len(s.letters))
+	}
+
+	return nil
+}
+
+// SetGenericsSignFlag sets the flag that specifies the generics to generate the code for.
+//
+// Parameters:
+//   - flag_name: The name of the flag.
+//   - is_required: Whether the flag is required or not.
+func SetGenericsSignFlag(flag_name string, is_required bool, count int) {
+	if count == 0 {
+		return
+	}
+
+	if count < 0 {
+		count = -1
+	}
+
+	GenericsSigFlag = &GenericsSignVal{
+		letters:     make([]rune, 0),
+		types:       make([]string, 0),
+		is_required: is_required,
+		count:       count,
+	}
+
+	var usage strings.Builder
+
+	usage.WriteString("The signature of generics.")
+
+	if is_required {
+		usage.WriteString("It must be set.")
+	} else {
+		usage.WriteString("It is optional.")
+	}
+
+	usage.WriteString("The syntax of the this flag is described in the documentation.")
+
+	flag.Var(GenericsSigFlag, flag_name, usage.String())
+}
+
+// parse_generics_value is a helper function that is used to parse the generics
+// values.
+//
+// Parameters:
+//   - field: The field to parse.
+//
+// Returns:
+//   - rune: The letter of the generic.
+//   - string: The type of the generic.
+//   - error: An error if the parsing fails.
+//
+// Errors:
+//   - *ErrInvalidID: If the id is invalid.
+//   - error: If the parsing fails.
+//
+// Assertions:
+//   - field != ""
 func parse_generics_value(field string) (rune, string, error) {
 	uc.Assert(field != "", "field must not be an empty string")
 
@@ -110,21 +391,9 @@ func parse_generics_value(field string) (rune, string, error) {
 
 	left := sub_fields[0]
 
-	if left == "" {
-		return '\000', "", uc.NewErrEmpty(left)
-	}
-
-	size := utf8.RuneCountInString(left)
-	if size > 1 {
-		err := errors.New("id must be a single character")
+	letter, err := IsGenericsID(left)
+	if err != nil {
 		return '\000', "", err
-	}
-
-	letter := rune(left[0])
-
-	ok := unicode.IsUpper(letter)
-	if !ok {
-		return '\000', "", errors.New("id must be an upper case letter")
 	}
 
 	right := sub_fields[1]
@@ -132,8 +401,20 @@ func parse_generics_value(field string) (rune, string, error) {
 	return letter, right, nil
 }
 
-func (gv *GenericsValue) add(letter rune, g_type string) error {
-	uc.AssertParam("letter", unicode.IsLetter(letter) && unicode.IsUpper(letter), errors.New("letter must be an upper case letter"))
+// add is a helper function that is used to add a generic to the GenericsValue.
+//
+// Parameters:
+//   - letter: The letter of the generic.
+//   - g_type: The type of the generic.
+//
+// Errors:
+//   - error: If the parsing fails.
+//
+// Assertions:
+//   - letter is an upper case letter.
+//   - g_type != ""
+func (gv *GenericsSignVal) add(letter rune, g_type string) error {
+	uc.AssertParam("letter", unicode.IsUpper(letter), errors.New("letter must be an upper case letter"))
 	uc.AssertParam("g_type", g_type != "", errors.New("type must be set"))
 
 	pos, ok := slices.BinarySearch(gv.letters, letter)
@@ -152,25 +433,183 @@ func (gv *GenericsValue) add(letter rune, g_type string) error {
 	return nil
 }
 
-func (s *GenericsValue) Set(value string) error {
-	fields := strings.Split(value, ",")
+// GetSignature returns the signature of the generics.
+//
+// Format:
+//
+//	[T1, T2, T3]
+//
+// Returns:
+//   - string: The list of generics.
+func (gv *GenericsSignVal) GetSignature() string {
+	if len(gv.letters) == 0 {
+		return ""
+	}
 
-	for i, field := range fields {
-		if field == "" {
+	values := make([]string, 0, len(gv.letters))
+
+	for _, letter := range gv.letters {
+		str := string(letter)
+		values = append(values, str)
+	}
+
+	joined_str := strings.Join(values, ", ")
+
+	var builder strings.Builder
+
+	builder.WriteRune('[')
+	builder.WriteString(joined_str)
+	builder.WriteRune(']')
+
+	str := builder.String()
+
+	return str
+}
+
+// TypeListVal is a struct that represents a list of types.
+type TypeListVal struct {
+	// fields is a list of types.
+	types []string
+
+	// generics is a map of the generics and their types.
+	generics map[rune]string
+
+	// is_required is a flag that specifies whether the fields value is required or not.
+	is_required bool
+
+	// count is the number of fields expected.
+	count int
+}
+
+// String implements the flag.Value interface.
+//
+// Format:
+//
+//	"<type1>, <type2>, ..."
+func (s *TypeListVal) String() string {
+	if len(s.types) == 0 {
+		return ""
+	}
+
+	joined_str := strings.Join(s.types, ", ")
+	quoted := strconv.Quote(joined_str)
+
+	return quoted
+}
+
+// Set implements the flag.Value interface.
+func (s *TypeListVal) Set(value string) error {
+	if value == "" && s.is_required {
+		return errors.New("value must be set")
+	}
+
+	parsed := strings.Split(value, ",")
+
+	var top int
+
+	for i := 0; i < len(parsed); i++ {
+		if parsed[i] != "" {
+			parsed[top] = parsed[i]
+			top++
+		}
+	}
+
+	parsed = parsed[:top]
+
+	if s.count != -1 && len(parsed) != s.count {
+		return fmt.Errorf("wrong number of types: expected %d, got %d", s.count, len(parsed))
+	}
+
+	if s.count != -1 && len(parsed) != s.count {
+		return fmt.Errorf("wrong number of fields: expected %d, got %d", s.count, len(parsed))
+	}
+
+	s.types = parsed
+
+	// Find generics
+	generics := make(map[rune]string)
+
+	for _, field_type := range s.types {
+		chars, err := ParseGenerics(field_type)
+		ok := IsErrNotGeneric(err)
+		if ok {
 			continue
-		}
-
-		letter, g_type, err := parse_generics_value(field)
-		if err != nil {
-			err := uc.NewErrAt(i+1, "field", err)
+		} else if err != nil {
+			err := fmt.Errorf("syntax error for type %q: %w", field_type, err)
 			return err
 		}
 
-		err = s.add(letter, g_type)
-		if err != nil {
-			return err
+		for _, char := range chars {
+			_, ok := generics[char]
+			if !ok {
+				generics[char] = ""
+			}
 		}
 	}
 
 	return nil
+}
+
+// SetStructFieldsFlag sets the flag that specifies the fields of the struct to generate the code for.
+//
+// Parameters:
+//   - flag_name: The name of the flag.
+//   - is_required: Whether the flag is required or not.
+//   - count: The number of fields expected. -1 for unlimited number of fields.
+//   - brief: A brief description of the flag.
+//
+// Any negative number will be interpreted as unlimited number of fields. Also, the value 0 will not set the flag.
+func SetTypeListValFlag(flag_name string, is_required bool, count int, brief string) {
+	if count == 0 {
+		return
+	}
+
+	if count < 0 {
+		count = -1
+	}
+
+	TypeListFlag = &TypeListVal{
+		types:       make([]string, 0),
+		generics:    make(map[rune]string),
+		is_required: is_required,
+		count:       count,
+	}
+
+	var usage strings.Builder
+
+	usage.WriteString(brief)
+
+	if is_required {
+		if count == -1 {
+			usage.WriteString("It must be set with at least one field.")
+		} else {
+			usage.WriteString(fmt.Sprintf("It must be set with exactly %d fields.", count))
+		}
+	} else {
+		if count == -1 {
+			usage.WriteString("It is optional but, if set, it must be set with at least one field.")
+		} else {
+			usage.WriteString(fmt.Sprintf("It is optional but, if set, it must be set with exactly %d fields.", count))
+		}
+	}
+
+	usage.WriteString("The syntax of the this flag is described in the documentation.")
+
+	flag.Var(TypeListFlag, flag_name, usage.String())
+}
+
+// GetType returns the type at the given index.
+//
+// Parameters:
+//   - idx: The index of the type to return.
+//
+// Return:
+//   - string: The type at the given index.
+//   - error: An error of type *uc.ErrInvalidParameter if the index is out of bounds.
+func (s *TypeListVal) GetType(idx int) (string, error) {
+	if idx < 0 || idx >= len(s.types) {
+		return "", uc.NewErrInvalidParameter("idx", uc.NewErrOutOfBounds(idx, 0, len(s.types)))
+	}
+
+	return s.types[idx], nil
 }

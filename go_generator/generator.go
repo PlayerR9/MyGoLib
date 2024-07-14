@@ -3,9 +3,11 @@ package go_generator
 import (
 	"bytes"
 	"errors"
+	"flag"
+	"fmt"
 	"log"
 	"os"
-	"path/filepath"
+	"slices"
 	"strings"
 	"text/template"
 
@@ -38,13 +40,104 @@ func InitLogger(prefix string) *log.Logger {
 	return logger
 }
 
-// Generate generates code using the given generator and writes it to the given destination file.
-//
-// WARNING: Remember to call this function iff the function go_generator.SetOutputFlag() was called
-// and only after the function flag.Parse() was called.
+// align_generics is a helper function that aligns the generics in the given StructFieldsVal and GenericsSignVal.
 //
 // Parameters:
-//   - actual_loc: The actual location of the generated code.
+//   - fv: The StructFieldsVal.
+//   - gv: The GenericsSignVal.
+//
+// Returns:
+//   - error: An error if the alignment fails (i.e., either the StructFieldsVal or the GenericsSignVal is nil when the other is not).
+func align_generics(fv *StructFieldsVal, tv *TypeListVal, gv *GenericsSignVal) error {
+	if gv == nil {
+		if fv != nil && tv != nil {
+			return uc.NewErrInvalidUsage(
+				errors.New("not specified the *StructFieldsVal and *TypeListVal but specified the *GenericsSignVal"),
+				"Make sure to call go_generator.SetStructFieldsFlag() and go_generator.SetTypeListFlag() as well",
+			)
+		}
+	} else {
+		if fv == nil && tv == nil {
+			return uc.NewErrInvalidUsage(
+				errors.New("not specified the *StructFieldsVal and *TypeListVal but specified the *GenericsSignVal"),
+				"Make sure to call go_generator.SetStructFieldsFlag() and go_generator.SetTypeListFlag() as well",
+			)
+		}
+	}
+
+	var all_generics []rune
+
+	if fv != nil {
+		for generic_id := range fv.generics {
+			pos, ok := slices.BinarySearch(all_generics, generic_id)
+			if ok {
+				continue
+			}
+
+			all_generics = slices.Insert(all_generics, pos, generic_id)
+		}
+	}
+
+	if tv != nil {
+		for generic_id := range tv.generics {
+			pos, ok := slices.BinarySearch(all_generics, generic_id)
+			if ok {
+				continue
+			}
+
+			all_generics = slices.Insert(all_generics, pos, generic_id)
+		}
+	}
+
+	for _, generic_id := range all_generics {
+		pos, ok := slices.BinarySearch(gv.letters, generic_id)
+		if ok {
+			continue
+		}
+
+		gv.letters = slices.Insert(gv.letters, pos, generic_id)
+		gv.types = slices.Insert(gv.types, pos, "any")
+	}
+
+	return nil
+}
+
+// ParseFlags parses the command line flags.
+//
+// Returns:
+//   - error: An error if any.
+func ParseFlags() error {
+	flag.Parse()
+
+	err := align_generics(StructFieldsFlag, TypeListFlag, GenericsSigFlag)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Generater is the interface that all generators must implement.
+type Generater interface {
+	// SetPackageName sets the package name for the generated code.
+	//
+	// Parameters:
+	//   - pkg_name: The package name to use for the generated code.
+	//
+	// Returns:
+	//   - Generater: The same instance of the Generater. Never nil and of the same type as the caller.
+	SetPackageName(pkg_name string) Generater
+}
+
+// Generate generates code using the given generator and writes it to the given destination file.
+//
+// WARNING:
+//   - Remember to call this function iff the function go_generator.SetOutputFlag() was called
+//     and only after the function flag.Parse() was called.
+//   - output_loc is the result of the FixOutputLoc() function.
+//
+// Parameters:
+//   - output_loc: The location of the output file.
 //   - data: The data to use for the generated code.
 //   - t: The template to use for the generated code.
 //
@@ -55,47 +148,29 @@ func InitLogger(prefix string) *log.Logger {
 //   - *common.ErrInvalidParameter: If any of the parameters is nil or if the actual_loc is an empty string when the
 //     IsOutputLocRequired flag was set and the output location was not defined.
 //   - error: Any other type of error that may have occurred.
-//
-// The parameter actual_loc is only used if the OutputLoc flag was not specified and the IsOutputLocRequired flag
-// was not set. Otherwise, it is ignored.
-func Generate(actual_loc string, data any, t *template.Template) error {
-	if data == nil {
-		return uc.NewErrNilParameter("data")
-	} else if t == nil {
+func Generate[T Generater](output_loc string, data T, t *template.Template) error {
+	if t == nil {
 		return uc.NewErrNilParameter("t")
 	}
 
-	var output_loc string
-
-	if OutputLoc == nil {
-		return uc.NewErrInvalidUsage(
-			errors.New("output location was not defined"),
-			"Please call the go_generator.SetOutputFlag() function before calling this function.",
-		)
-	} else {
-		output_loc = *OutputLoc
+	pkg_name, err := FixImportDir(output_loc)
+	if err != nil {
+		return fmt.Errorf("failed to fix import path: %w", err)
 	}
 
-	if output_loc == "" {
-		if IsOutputLocRequired {
-			return errors.New("flag must be set")
-		} else if actual_loc == "" {
-			return uc.NewErrInvalidParameter("actual_loc", uc.NewErrEmpty(actual_loc))
-		}
-
-		output_loc = actual_loc
+	tmp := data.SetPackageName(pkg_name)
+	if tmp == nil {
+		return uc.NewErrNilParameter("data")
 	}
 
-	ext := filepath.Ext(output_loc)
-	if ext == "" {
-		return errors.New("location cannot be a directory")
-	} else if ext != ".go" {
-		return errors.New("location must be a .go file")
+	data, ok := tmp.(T)
+	if !ok {
+		return uc.NewErrInvalidParameter("data", uc.NewErrUnexpectedType("data", tmp))
 	}
 
 	var buff bytes.Buffer
 
-	err := t.Execute(&buff, data)
+	err = t.Execute(&buff, data)
 	if err != nil {
 		return err
 	}
