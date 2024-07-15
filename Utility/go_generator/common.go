@@ -127,12 +127,12 @@ func FixImportDir(dest string) (string, error) {
 
 	dir := filepath.Dir(dest)
 	if dir == "." {
-		pkg, err := build.ImportDir(".", 0)
+		uc, err := build.ImportDir(".", 0)
 		if err != nil {
 			return "", err
 		}
 
-		return pkg.Name, nil
+		return uc.Name, nil
 	}
 
 	_, right := filepath.Split(dir)
