@@ -149,7 +149,7 @@ type Generater interface {
 //   - *common.ErrInvalidParameter: If any of the parameters is nil or if the actual_loc is an empty string when the
 //     IsOutputLocRequired flag was set and the output location was not defined.
 //   - error: Any other type of error that may have occurred.
-func Generate[T Generater](output_loc string, data T, t *template.Template, doFunc ...func(T) T) error {
+func Generate[T Generater](output_loc string, data T, t *template.Template, doFunc ...func(*T) error) error {
 	if t == nil {
 		return uc.NewErrNilParameter("t")
 	}
@@ -174,7 +174,10 @@ func Generate[T Generater](output_loc string, data T, t *template.Template, doFu
 			continue
 		}
 
-		data = f(data)
+		err := f(&data)
+		if err != nil {
+			return err
+		}
 	}
 
 	var buff bytes.Buffer

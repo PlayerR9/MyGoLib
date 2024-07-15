@@ -287,8 +287,8 @@ func SetStructFieldsFlag(flag_name string, is_required bool, count int, brief st
 //
 // Returns:
 //   - map[string]string: A map of field names and their types.
-func GetFields() map[string]string {
-	return StructFieldsFlag.fields
+func (s *StructFieldsVal) GetFields() map[string]string {
+	return s.fields
 }
 
 // GenericsSignVal is a struct that contains the values of the generics.
