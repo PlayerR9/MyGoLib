@@ -1,57 +1,109 @@
-package pkg
+// -type=<type> [ -name=<name> ]
+//
+// **Flag: Type**
+//
+// The flag "type" is used to specify the data type of the linked stack. This must be set and it specifies the data
+// type of the linked stack. For instance, using the flag "type=int" will create a linked stack of integers.
+//
+// **Flag: Name**
+//
+// The flag "name" is used to specify a custom name for the linked stack. If set it must be a valid Go identifier that
+// starts with an uppercase letter. On the other hand, if not set, the default name of "Linked<DataType>Stack" will
+// be used instead; where <DataType> is the data type of the linked stack.
+package main
 
 import (
-	"bytes"
-	"html/template"
-	"strings"
+	"flag"
+	"log"
+	"text/template"
+
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
+	utgo "github.com/PlayerR9/MyGoLib/Utility/Go"
+	ggen "github.com/PlayerR9/MyGoLib/Utility/go_generator"
 )
 
-type generator struct {
-	type_name string
-	data_type string
-	pkg_name  string
+var (
+	// Logger is the logger to use.
+	Logger *log.Logger
+
+	// t is the template to use.
+	t *template.Template
+)
+
+func init() {
+	Logger = ggen.InitLogger("stack")
+
+	t = template.Must(template.New("").Parse(templ))
 }
 
-func (g *generator) Generate() ([]byte, error) {
-	t := template.Must(
-		template.New("stack").Parse(templ),
-	)
+var (
+	// DataType is the data type of the linked stack.
+	DataType *string
 
-	type GenData struct {
-		TypeName    string
-		DataType    string
-		CanBeNil    bool
-		PackageName string
-	}
+	// TypeName is the name of the linked stack.
+	TypeName *string
+)
 
-	can_be_nil := strings.HasPrefix(g.data_type, "*") // Not only this, but interfaces as well
+func init() {
+	ggen.SetOutputFlag("<type>_stack.go", false)
 
-	data := GenData{
-		CanBeNil:    can_be_nil,
-		DataType:    g.data_type,
-		TypeName:    g.type_name,
-		PackageName: g.pkg_name,
-	}
+	DataType = flag.String("type", "", "the data type of the linked stack. This must be set and it is "+
+		"the data type of the linked stack.")
 
-	var buff bytes.Buffer
-
-	err := t.Execute(&buff, data)
-	if err != nil {
-		return nil, err
-	}
-
-	res := buff.Bytes()
-	return res, nil
+	TypeName = flag.String("name", "", "the name of the linked stack. Must be a valid Go identifier. If not set, "+
+		"the default name of 'Linked<DataType>Stack' will be used instead.")
 }
 
-func NewGenerator() *generator {
-	g := &generator{
-		type_name: *TypeName,
-		data_type: *DataType,
-		pkg_name:  *OutputDir,
-	}
+type GenData struct {
+	TypeName    string
+	DataType    string
+	PackageName string
+}
+
+func (g GenData) SetPackageName(name string) ggen.Generater {
+	g.PackageName = name
 
 	return g
+}
+
+func main() {
+	err := ggen.ParseFlags()
+	if err != nil {
+		Logger.Fatalf("Invalid flags: %s", err.Error())
+	}
+
+	data_type := uc.AssertNil(DataType, "DataType")
+
+	err = ggen.IsValidName(data_type, nil, ggen.Exported)
+	if err != nil {
+		Logger.Fatalf("Name of the data type is invalid: %s", err.Error())
+	}
+
+	data_type = "Linked" + data_type + "Stack"
+
+	dest := "stack.go"
+
+	output_loc, err := utgo.FixImportDir(dest)
+	if err != nil {
+		Logger.Fatalf("Could not fix import dir: %s", err.Error())
+	}
+
+	err = ggen.Generate(output_loc, GenData{}, t,
+		func(data *GenData) error {
+			type_name := uc.AssertNil(TypeName, "TypeName")
+			data.TypeName = type_name
+
+			return nil
+		},
+		func(data *GenData) error {
+			data.DataType = data_type
+
+			return nil
+		},
+	)
+	if err != nil {
+		Logger.Fatalf("Could not generate code: %s", err.Error())
+	}
 }
 
 const templ = `// Code generated with go generate. DO NOT EDIT.
@@ -62,7 +114,10 @@ import (
 	"strings"
 
 	"github.com/PlayerR9/MyGoLib/Units/common"
-	{{- if ne .PackageName "stack" }} "github.com/PlayerR9/stack" {{- end }}
+
+	{{- if ne .PackageName "stack" }}
+		"github.com/PlayerR9/stack"
+	{{- end }}
 )
 
 type stack_node_{{ .DataType }} struct {
@@ -232,15 +287,9 @@ func (s *{{ .TypeName }}) Slice() []{{ .DataType }} {
 	return slice
 }
 
-{{- if ne .CanBeNil }}
-// Copy implements the Stacker interface.
-//
-// The copy is a deep copy.
-{{- else }}
 // Copy implements the Stacker interface.
 //
 // The copy is a shallow copy.
-{{- end }}
 func (s *{{ .TypeName }}) Copy() common.Copier {
 	if s.front == nil {
 		return &{{ .TypeName }}{}
