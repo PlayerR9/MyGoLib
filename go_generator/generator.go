@@ -140,6 +140,7 @@ type Generater interface {
 //   - output_loc: The location of the output file.
 //   - data: The data to use for the generated code.
 //   - t: The template to use for the generated code.
+//   - doFunc: Functions to perform on the data before generating the code.
 //
 // Returns:
 //   - error: An error if occurred.
@@ -148,7 +149,7 @@ type Generater interface {
 //   - *common.ErrInvalidParameter: If any of the parameters is nil or if the actual_loc is an empty string when the
 //     IsOutputLocRequired flag was set and the output location was not defined.
 //   - error: Any other type of error that may have occurred.
-func Generate[T Generater](output_loc string, data T, t *template.Template) error {
+func Generate[T Generater](output_loc string, data T, t *template.Template, doFunc ...func(T) T) error {
 	if t == nil {
 		return uc.NewErrNilParameter("t")
 	}
@@ -166,6 +167,14 @@ func Generate[T Generater](output_loc string, data T, t *template.Template) erro
 	data, ok := tmp.(T)
 	if !ok {
 		return uc.NewErrInvalidParameter("data", uc.NewErrUnexpectedType("data", tmp))
+	}
+
+	for _, f := range doFunc {
+		if f == nil {
+			continue
+		}
+
+		data = f(data)
 	}
 
 	var buff bytes.Buffer

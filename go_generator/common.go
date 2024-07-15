@@ -304,11 +304,28 @@ func IsValidName(variable_name string, keywords []string, exported GoExport) err
 	return nil
 }
 
-func MakeParameterList(fields map[string]string) (string, error) {
+// MakeParameterList makes a string representing a list of parameters.
+//
+// WARNING: Call this function only if StructFieldsFlag is set.
+//
+// Parameters:
+//   - fields: A map of field names and their types.
+//
+// Returns:
+//   - string: A string representing the parameters.
+//   - error: An error if any.
+func MakeParameterList() (string, error) {
+	if StructFieldsFlag == nil {
+		return "", uc.NewErrInvalidUsage(
+			errors.New("cannot make parameter list without StructFieldsFlag"),
+			"Make sure to set StructFieldsFlag before calling this function",
+		)
+	}
+
 	var field_list []string
 	var type_list []string
 
-	for k, v := range fields {
+	for k, v := range StructFieldsFlag.fields {
 		if k == "" {
 			err := errors.New("found type name with empty name")
 			return "", err
@@ -355,11 +372,28 @@ func MakeParameterList(fields map[string]string) (string, error) {
 	return joined_str, nil
 }
 
-func MakeAssignmentList(fields map[string]string) (map[string]string, error) {
+// MakeAssignmentList makes a string representing a list of assignments.
+//
+// WARNING: Call this function only if StructFieldsFlag is set.
+//
+// Parameters:
+//   - fields: A map of field names and their types.
+//
+// Returns:
+//   - string: A string representing the assignments.
+//   - error: An error if any.
+func MakeAssignmentList() (map[string]string, error) {
+	if StructFieldsFlag == nil {
+		return nil, uc.NewErrInvalidUsage(
+			errors.New("cannot make assignment list without StructFieldsFlag"),
+			"Make sure to set the StructFieldsFlag before calling this function",
+		)
+	}
+
 	var field_list []string
 	var type_list []string
 
-	for k, v := range fields {
+	for k, v := range StructFieldsFlag.fields {
 		if k == "" {
 			err := errors.New("found type name with empty name")
 			return nil, err

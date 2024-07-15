@@ -283,6 +283,14 @@ func SetStructFieldsFlag(flag_name string, is_required bool, count int, brief st
 	flag.Var(StructFieldsFlag, flag_name, usage.String())
 }
 
+// GetFields returns the fields of the struct.
+//
+// Returns:
+//   - map[string]string: A map of field names and their types.
+func GetFields() map[string]string {
+	return StructFieldsFlag.fields
+}
+
 // GenericsSignVal is a struct that contains the values of the generics.
 type GenericsSignVal struct {
 	// letters is a slice that contains the letters of the generics.
