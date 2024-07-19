@@ -123,4 +123,41 @@ if err != nil {
 }
 ```
 
-	
+
+***Type Signatures***
+
+For handling type signatures, I provided the `MakeTypeSig()` function. Here's an example:
+```go
+sig, err := ggen.MakeTypeSig("foo", "bar")
+if err != nil {
+   // Handle the error. (e.g. print the error message)
+}
+```
+
+This function will create a type signature "foobar" because the first parameter is the name of the type and the second parameter is the suffix.
+
+One particular thing of this function is that it also handles generics. In fact, if the flag `GenericsSigFlag` is set, then the function will add the generics signature to the type signature. As such, it is useful for handling methods that have generics.
+
+
+For example:
+```go
+// Assuming that the GenericsSigFlag is set as: "foo/T,bar/C"
+
+sig, err := ggen.MakeTypeSig("foo", "bar")
+if err != nil {
+   // Handle the error. (e.g. print the error message)
+}
+
+// The output will be: "foobar[T, C]"
+```
+
+Likewise, to have the full type signature, we can call the `String()` method of the `GenericsSigFlag`:
+```go
+// Assuming that the GenericsSigFlag is set as: "foo/T,bar/C"
+
+type_name := "foobar" + GenericsSigFlag.String()
+
+// The output will be: "foobar[T any, C any]"
+```
+
+Of course, if the `GenericsSigFlag` is set but no generics are specified, then the function will return an empty string.
