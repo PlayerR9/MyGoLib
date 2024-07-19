@@ -1,8 +1,6 @@
 package Go
 
 import (
-	"go/build"
-	"path/filepath"
 	"slices"
 	"strings"
 
@@ -97,31 +95,4 @@ func IsNonNilTypeID(id string) TypeNillability {
 	}
 
 	return IsUnknown
-}
-
-// FixImportDir takes a destination string and manipulates it to get the correct import path.
-//
-// Parameters:
-//   - dest: The destination path.
-//
-// Returns:
-//   - string: The correct import path.
-//   - error: An error if there is any.
-func FixImportDir(dest string) (string, error) {
-	if dest == "" {
-		dest = "."
-	}
-
-	dir := filepath.Dir(dest)
-	if dir == "." {
-		pkg, err := build.ImportDir(".", 0)
-		if err != nil {
-			return "", err
-		}
-
-		return pkg.Name, nil
-	}
-
-	_, right := filepath.Split(dir)
-	return right, nil
 }

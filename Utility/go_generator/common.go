@@ -304,6 +304,86 @@ func IsValidName(variable_name string, keywords []string, exported GoExport) err
 	return nil
 }
 
+// FixVariableName acts in the same way as IsValidName but fixes the variable name if it is invalid.
+//
+// Parameters:
+//   - variable_name: The variable name to check.
+//   - keywords: The list of keywords to check against.
+//   - exported: Whether the variable is exported or not.
+//
+// Returns:
+//   - string: The fixed variable name.
+//   - error: An error if the variable name is invalid.
+func FixVariableName(variable_name string, keywords []string, exported GoExport) (string, error) {
+	if variable_name == "" {
+		err := uc.NewErrEmpty(variable_name)
+		return "", err
+	}
+
+	switch exported {
+	case NotExported:
+		r, size := utf8.DecodeRuneInString(variable_name)
+		if r == utf8.RuneError {
+			return "", errors.New("invalid UTF-8 encoding")
+		}
+
+		if !unicode.IsLetter(r) {
+			return "", errors.New("identifier must start with a letter")
+		}
+
+		ok := unicode.IsLower(r)
+		if !ok {
+			r = unicode.ToLower(r)
+			variable_name = variable_name[size:]
+
+			var builder strings.Builder
+
+			builder.WriteRune(r)
+			builder.WriteString(variable_name)
+
+			variable_name = builder.String()
+		}
+
+		ok = slices.Contains(GoReservedKeywords, variable_name)
+		if ok {
+			return "", fmt.Errorf("variable (%q) is a reserved keyword", variable_name)
+		}
+
+		return variable_name, nil
+	case Exported:
+		r, size := utf8.DecodeRuneInString(variable_name)
+		if r == utf8.RuneError {
+			return "", errors.New("invalid UTF-8 encoding")
+		}
+
+		if !unicode.IsLetter(r) {
+			return "", errors.New("identifier must start with a letter")
+		}
+
+		ok := unicode.IsUpper(r)
+		if !ok {
+			r = unicode.ToUpper(r)
+			variable_name = variable_name[size:]
+
+			var builder strings.Builder
+
+			builder.WriteRune(r)
+			builder.WriteString(variable_name)
+
+			variable_name = builder.String()
+		}
+
+		return variable_name, nil
+	}
+
+	ok := slices.Contains(keywords, variable_name)
+	if ok {
+		return "", fmt.Errorf("variable (%q) is already used", variable_name)
+	}
+
+	return variable_name, nil
+}
+
 // MakeParameterList makes a string representing a list of parameters.
 //
 // WARNING: Call this function only if StructFieldsFlag is set.
