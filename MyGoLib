@@ -1,0 +1,224 @@
+// Code generated with go generate. DO NOT EDIT.
+package MyGoLib
+
+import (
+	"strconv"
+	"strings"
+
+	"github.com/PlayerR9/MyGoLib/Units/common"
+		"github.com/PlayerR9/stack"
+)
+
+type stack_node_LinkedintStack struct {
+	value LinkedintStack
+	next *stack_node_LinkedintStack
+}
+
+// IntStack is a stack of LinkedintStack values implemented without a maximum capacity
+// and using a linked list.
+type IntStack struct {
+	front *stack_node_LinkedintStack
+	size int
+}
+
+// NewIntStack creates a new linked stack.
+//
+// Returns:
+//   - *IntStack: A pointer to the newly created stack.
+func NewIntStack() *IntStack {
+	return &IntStack{
+		size: 0,
+	}
+}
+
+// Push implements the Stacker interface.
+//
+// Always returns true.
+func (s *IntStack) Push(value LinkedintStack) bool {
+	node := &stack_node_LinkedintStack{
+		value: value,
+	}
+
+	if s.front != nil {
+		node.next = s.front
+	}
+
+	s.front = node
+	s.size++
+
+	return true
+}
+
+// PushMany implements the Stacker interface.
+//
+// Always returns the number of values pushed onto the stack.
+func (s *IntStack) PushMany(values []LinkedintStack) int {
+	if len(values) == 0 {
+		return 0
+	}
+
+	node := &stack_node_LinkedintStack{
+		value: value,
+	}
+
+	if s.front != nil {
+		node.next = s.front
+	}
+
+	s.front = node
+
+	for i := 1; i < len(values); i++ {
+		node := &stack_node_LinkedintStack{
+			value: value,
+			next:  s.front,
+		}
+
+		s.front = node
+	}
+
+	s.size += len(values)
+	
+	return len(values)
+}
+
+// Pop implements the Stacker interface.
+func (s *IntStack) Pop() (LinkedintStack, bool) {
+	if s.front == nil {
+		return *new(LinkedintStack), false
+	}
+
+	to_remove := s.front
+	s.front = s.front.next
+
+	s.size--
+	to_remove.next = nil
+
+	return to_remove.value, true
+}
+
+// Peek implements the Stacker interface.
+func (s *IntStack) Peek() (LinkedintStack, bool) {
+	if s.front == nil {
+		return *new(LinkedintStack), false
+	}
+
+	return s.front.value, true
+}
+
+// IsEmpty implements the Stacker interface.
+func (s *IntStack) IsEmpty() bool {
+	return s.front == nil
+}
+
+// Size implements the Stacker interface.
+func (s *IntStack) Size() int {
+	return s.size
+}
+
+// Iterator implements the Stacker interface.
+func (s *IntStack) Iterator() common.Iterater[LinkedintStack] {
+	var builder common.Builder[LinkedintStack]
+
+	for node := s.front; node != nil; node = node.next {
+		builder.Add(node.value)
+	}
+
+	return builder.Build()
+}
+
+// Clear implements the Stacker interface.
+func (s *IntStack) Clear() {
+	if s.front == nil {
+		return
+	}
+
+	prev := s.front
+
+	for node := s.front.next; node != nil; node = node.next {
+		prev = node
+		prev.next = nil
+	}
+
+	prev.next = nil
+
+	s.front = nil
+	s.size = 0
+}
+
+// GoString implements the Stacker interface.
+func (s *IntStack) GoString() string {
+	values := make([]string, 0, s.size)
+	for node := s.front; node != nil; node = node.next {
+		values = append(values, common.StringOf(node.value))
+	}
+
+	var builder strings.Builder
+
+	builder.WriteString("IntStack[size=")
+	builder.WriteString(strconv.Itoa(s.size))
+	builder.WriteString(", values=[")
+	builder.WriteString(strings.Join(values, ", "))
+	builder.WriteString(" →]]")
+
+	return builder.String()
+}
+
+// Slice implements the Stacker interface.
+//
+// The 0th element is the top of the stack.
+func (s *IntStack) Slice() []LinkedintStack {
+	slice := make([]LinkedintStack, 0, s.size)
+
+	for node := s.front; node != nil; node = node.next {
+		slice = append(slice, node.value)
+	}
+
+	return slice
+}
+
+// Copy implements the Stacker interface.
+//
+// The copy is a shallow copy.
+func (s *IntStack) Copy() common.Copier {
+	if s.front == nil {
+		return &IntStack{}
+	}
+
+	s_copy := &IntStack{
+		size: s.size,
+	}
+
+	node_copy := &stack_node_LinkedintStack{
+		value: s.front.value,
+	}
+
+	s_copy.front = node_copy
+
+	prev := node_copy
+
+	for node := s.front.next; node != nil; node = node.next {
+		node_copy := &stack_node_LinkedintStack{
+			value: node.value,
+		}
+
+		prev.next = node_copy
+
+		prev = node_copy
+	}
+
+	return s_copy
+}
+
+// Capacity implements the Stacker interface.
+//
+// Always returns -1.
+func (s *IntStack) Capacity() int {
+	return -1
+}
+
+// IsFull implements the Stacker interface.
+//
+// Always returns false.
+func (s *IntStack) IsFull() bool {
+	return false
+}

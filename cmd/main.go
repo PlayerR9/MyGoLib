@@ -18,7 +18,6 @@ import (
 	"text/template"
 
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
-	utgo "github.com/PlayerR9/MyGoLib/Utility/Go"
 	ggen "github.com/PlayerR9/MyGoLib/Utility/go_generator"
 )
 
@@ -37,9 +36,6 @@ func init() {
 }
 
 var (
-	// DataType is the data type of the linked stack.
-	DataType *string
-
 	// TypeName is the name of the linked stack.
 	TypeName *string
 )
@@ -47,8 +43,7 @@ var (
 func init() {
 	ggen.SetOutputFlag("<type>_stack.go", false)
 
-	DataType = flag.String("type", "", "the data type of the linked stack. This must be set and it is "+
-		"the data type of the linked stack.")
+	ggen.SetTypeListFlag("type", true, 1, "The data type of the linked stack.")
 
 	TypeName = flag.String("name", "", "the name of the linked stack. Must be a valid Go identifier. If not set, "+
 		"the default name of 'Linked<DataType>Stack' will be used instead.")
@@ -72,9 +67,14 @@ func main() {
 		Logger.Fatalf("Invalid flags: %s", err.Error())
 	}
 
-	data_type := uc.AssertNil(DataType, "DataType")
+	data_type, err := ggen.TypeListFlag.GetType(0)
+	if err != nil {
+		Logger.Fatalf("Could not get type: %s", err.Error())
+	}
 
-	err = ggen.IsValidName(data_type, nil, ggen.Exported)
+	type_name := uc.AssertNil(TypeName, "TypeName")
+
+	err = ggen.IsValidName(type_name, nil, ggen.Exported)
 	if err != nil {
 		Logger.Fatalf("Name of the data type is invalid: %s", err.Error())
 	}
@@ -83,7 +83,7 @@ func main() {
 
 	dest := "stack.go"
 
-	output_loc, err := utgo.FixImportDir(dest)
+	output_loc, err := ggen.FixImportDir(dest)
 	if err != nil {
 		Logger.Fatalf("Could not fix import dir: %s", err.Error())
 	}
