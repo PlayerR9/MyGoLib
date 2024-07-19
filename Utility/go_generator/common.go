@@ -509,3 +509,79 @@ func MakeAssignmentList() (map[string]string, error) {
 
 	return assignment_map, nil
 }
+
+var (
+	// ZeroValueTypes is a list of types that have a default value of zero.
+	ZeroValueTypes []string
+
+	// NillablePrefix is a list of prefixes that indicate a type is nillable.
+	NillablePrefix []string
+)
+
+func init() {
+	ZeroValueTypes = []string{
+		"byte",
+		"complex64",
+		"complex128",
+		"uint",
+		"uint8",
+		"uint16",
+		"uint32",
+		"uint64",
+		"uintptr",
+		"int",
+		"int8",
+		"int16",
+		"int32",
+		"int64",
+	}
+
+	NillablePrefix = []string{
+		"[]",
+		"map",
+		"*",
+		"chan",
+		"func",
+		"interface",
+		"<-",
+	}
+}
+
+// ZeroValueOf returns the zero value of a type.
+//
+// Parameters:
+//   - type_name: The name of the type.
+//
+// Returns:
+//   - string: The zero value of the type.
+func ZeroValueOf(type_name string) string {
+	if type_name == "" {
+		return ""
+	}
+
+	for _, prefix := range NillablePrefix {
+		if strings.HasPrefix(type_name, prefix) {
+			return "nil"
+		}
+	}
+
+	switch type_name {
+	case "bool":
+		return "false"
+	case "error", "any":
+		return "nil"
+	case "float32", "float64":
+		return "0.0"
+	case "rune":
+		return "'\\u0000'"
+	case "string":
+		return "\"\""
+	}
+
+	ok := slices.Contains(ZeroValueTypes, type_name)
+	if ok {
+		return "0"
+	}
+
+	return "*new(" + type_name + ")"
+}
