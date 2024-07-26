@@ -1,9 +1,11 @@
 package StringExt
 
 import (
+	"fmt"
 	"strings"
 
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
+	utstr "github.com/PlayerR9/MyGoLib/Utility/strings"
 )
 
 // RuneTable is a table of runes.
@@ -36,9 +38,9 @@ func NewRuneTable(lines []string) (*RuneTable, error) {
 	table := make([][]rune, 0, len(lines))
 
 	for i, line := range lines {
-		row, err := ToUTF8Runes(line)
-		if err != nil {
-			return nil, uc.NewErrAt(i+1, "line", err)
+		row, idx := utstr.ToUtf8(line)
+		if idx != -1 {
+			return nil, uc.NewErrAt(i+1, "line", fmt.Errorf("invalid UTF-8 encoding at index %d", idx))
 		}
 
 		table = append(table, row)

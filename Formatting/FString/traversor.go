@@ -8,7 +8,7 @@ import (
 
 	pkg "github.com/PlayerR9/MyGoLib/Formatting/FString/pkg"
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
-	utse "github.com/PlayerR9/MyGoLib/Utility/StringExt"
+	utstr "github.com/PlayerR9/MyGoLib/Utility/strings"
 )
 
 var (
@@ -135,24 +135,24 @@ func (trav *Traversor) writeRune(r rune) error {
 //   - str: The string to append.
 //
 // Returns:
-//   - error: An error if the string could not be appended.
-func (trav *Traversor) writeString(str string) error {
+//   - int: The index of the first invalid UTF-8 character. -1 if there is no error.
+func (trav *Traversor) writeString(str string) int {
 	trav.writeIndent()
 
 	if str == "" {
-		return nil
+		return -1
 	}
 
-	chars, err := utse.ToUTF8Runes(str)
-	if err != nil {
-		return err
+	chars, idx := utstr.ToUtf8(str)
+	if idx != -1 {
+		return idx
 	}
 
 	for _, r := range chars {
 		trav.source.Write(r)
 	}
 
-	return nil
+	return -1
 }
 
 // writeLine writes a line to the traversor. If there is any in-progress line,
@@ -175,9 +175,9 @@ func (trav *Traversor) writeLine(line string) error {
 	if line == "" {
 		trav.source.WriteEmptyLine(trav.rightDelim)
 	} else {
-		chars, err := utse.ToUTF8Runes(line)
-		if err != nil {
-			return err
+		chars, idx := utstr.ToUtf8(line)
+		if idx != -1 {
+			return fmt.Errorf("invalid UTF-8 encoding at index %d", idx)
 		}
 
 		for _, r := range chars {
@@ -198,8 +198,8 @@ func (trav *Traversor) writeLine(line string) error {
 // Returns:
 //   - error: An error if the rune could not be appended.
 //
-// Errors:
-//   - *Errors.ErrInvalidRune: If the rune is invalid.
+// common:
+//   - *common.ErrInvalidRune: If the rune is invalid.
 //
 // Behaviors:
 //   - If the half-line is nil, then a new half-line is created.
@@ -222,8 +222,7 @@ func (trav *Traversor) AppendRune(r rune) error {
 //   - str: The string to append.
 //
 // Returns:
-//   - error: An error of type *Errors.ErrInvalidRuneAt if there is an invalid rune
-//     in the string.
+//   - error: An error if the string is not valid UTF-8.
 //
 // Behaviors:
 //   - IF str is empty: nothing is done.
@@ -232,9 +231,9 @@ func (trav *Traversor) AppendString(str string) error {
 		return nil
 	}
 
-	err := trav.writeString(str)
-	if err != nil {
-		return err
+	idx := trav.writeString(str)
+	if idx != -1 {
+		return fmt.Errorf("invalid UTF-8 encoding at index %d", idx)
 	}
 
 	return nil
@@ -246,7 +245,7 @@ func (trav *Traversor) AppendString(str string) error {
 //   - strs: The strings to append.
 //
 // Returns:
-//   - error: An error of type *Errors.ErrAt if there is an error appending a string.
+//   - error: An error of type *common.ErrAt if there is an error appending a string.
 //
 // Behaviors:
 //   - This is equivalent to calling AppendString for each string in strs but more efficient.
@@ -256,9 +255,9 @@ func (trav *Traversor) AppendStrings(strs []string) error {
 	}
 
 	for i, str := range strs {
-		err := trav.writeString(str)
-		if err != nil {
-			return uc.NewErrAt(i, "string", err)
+		idx := trav.writeString(str)
+		if idx != -1 {
+			return uc.NewErrAt(i, "string", fmt.Errorf("invalid UTF-8 encoding at index %d", idx))
 		}
 	}
 
@@ -272,8 +271,7 @@ func (trav *Traversor) AppendStrings(strs []string) error {
 //   - fields: The fields to join.
 //
 // Returns:
-//   - error: An error of type *Errors.ErrInvalidRuneAt if there is an invalid rune
-//     in the string.
+//   - error: An error if some field or the separator is not valid UTF-8 encoding.
 //
 // Behaviors:
 //   - This is equivalent to calling AppendString(strings.Join(fields, sep)).
@@ -284,9 +282,9 @@ func (trav *Traversor) AppendJoinedString(sep string, fields ...string) error {
 
 	str := strings.Join(fields, sep)
 
-	err := trav.writeString(str)
-	if err != nil {
-		return err
+	idx := trav.writeString(str)
+	if idx != -1 {
+		return fmt.Errorf("invalid UTF-8 encoding at index %d", idx)
 	}
 
 	return nil
@@ -322,7 +320,7 @@ func (trav *Traversor) AcceptLine() {
 //   - line: The line to add.
 //
 // Returns:
-//   - error: An error of type *Errors.ErrAt if there is an error adding the line.
+//   - error: An error of type *common.ErrAt if there is an error adding the line.
 //
 // Behaviors:
 //   - If line is empty, then an empty line is added to the source.
@@ -346,7 +344,7 @@ func (trav *Traversor) AddLine(line string) error {
 //   - lines: The lines to add.
 //
 // Returns:
-//   - error: An error of type *Errors.ErrAt if there is an error adding a line.
+//   - error: An error of type *common.ErrAt if there is an error adding a line.
 //
 // Behaviors:
 //   - If there are no lines, then nothing is done.
@@ -373,7 +371,7 @@ func (trav *Traversor) AddLines(lines []string) error {
 //   - fields: The fields to join.
 //
 // Returns:
-//   - error: An error of type *Errors.ErrInvalidRuneAt if there is an invalid rune
+//   - error: An error of type *common.ErrInvalidRuneAt if there is an invalid rune
 //     in the line.
 //
 // Behaviors:

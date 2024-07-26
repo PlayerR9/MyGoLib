@@ -192,7 +192,7 @@ func SprintFString[T FStringer](form *FormatConfig, elem T) ([][][][]string, err
 //
 // Returns:
 //   - [][][][]string: The pages of the formatted strings.
-//   - error: An error if the printing fails.
+//   - error: An error if the printing fails because of an invalid UTF-8 encoding.
 //
 // Behaviors:
 //   - If the formatter is nil, the function uses the default formatter.
@@ -209,9 +209,9 @@ func Sprint(form *FormatConfig, strs ...string) ([][][][]string, error) {
 	trav := newTraversor(form, buff)
 
 	for i, str := range strs {
-		err := trav.writeString(str)
-		if err != nil {
-			return nil, uc.NewErrAt(i, "string", err)
+		idx := trav.writeString(str)
+		if idx != -1 {
+			return nil, uc.NewErrAt(i, "string", fmt.Errorf("invalid UTF-8 encoding at index %d", idx))
 		}
 	}
 
@@ -231,7 +231,7 @@ func Sprint(form *FormatConfig, strs ...string) ([][][][]string, error) {
 //
 // Returns:
 //   - [][][][]string: The pages of the formatted strings.
-//   - error: An error if the printing fails.
+//   - error: An error if the printing fails because of an invalid UTF-8 encoding.
 //
 // Behaviors:
 //   - If the formatter is nil, the function uses the default formatter.
@@ -249,9 +249,9 @@ func Sprintj(form *FormatConfig, sep string, strs ...string) ([][][][]string, er
 
 	str := strings.Join(strs, sep)
 
-	err := trav.writeString(str)
-	if err != nil {
-		return nil, err
+	idx := trav.writeString(str)
+	if idx != -1 {
+		return nil, fmt.Errorf("invalid UTF-8 encoding at index %d", idx)
 	}
 
 	tabSize, fieldSpacing := form.GetTabSize(), form.GetSpacingSize()

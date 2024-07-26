@@ -2,6 +2,7 @@ package Go
 
 import (
 	"errors"
+	"fmt"
 	"slices"
 	"strconv"
 	"strings"
@@ -9,7 +10,7 @@ import (
 	"unicode/utf8"
 
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
-	utse "github.com/PlayerR9/MyGoLib/Utility/StringExt"
+	utstr "github.com/PlayerR9/MyGoLib/Utility/strings"
 )
 
 var (
@@ -96,9 +97,9 @@ func MakeVariableName(type_name string) (string, error) {
 		return "", err
 	}
 
-	chars, err := utse.ToUTF8Runes(type_name)
-	if err != nil {
-		return "", err
+	chars, idx := utstr.ToUtf8(type_name)
+	if idx != -1 {
+		return "", fmt.Errorf("invalid UTF-8 encoding at index %d", idx)
 	}
 
 	var builder strings.Builder
@@ -162,8 +163,8 @@ func fix_variable_name(var_name string, keywords []string, min int) (string, err
 		return var_name, nil
 	}
 
-	chars, err := utse.ToUTF8Runes(var_name)
-	uc.AssertErr(err, "ToUTF8Runes(%s)", var_name)
+	chars, idx := utstr.ToUtf8(var_name)
+	uc.AssertF(idx == -1, "ToUtf8(%q) = %d but expected -1", var_name, idx)
 
 	var builder strings.Builder
 
@@ -173,7 +174,7 @@ func fix_variable_name(var_name string, keywords []string, min int) (string, err
 
 	str := builder.String()
 
-	err = IsValidName(str, keywords)
+	err := IsValidName(str, keywords)
 	if err == nil {
 		return str, nil
 	}

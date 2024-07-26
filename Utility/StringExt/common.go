@@ -4,7 +4,6 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"math"
-	"slices"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -12,6 +11,7 @@ import (
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
 	us "github.com/PlayerR9/MyGoLib/Units/slice"
 	mext "github.com/PlayerR9/MyGoLib/Utility/MathExt"
+	utstr "github.com/PlayerR9/MyGoLib/Utility/strings"
 )
 
 var (
@@ -40,57 +40,6 @@ func init() {
 
 		return sqm, true
 	}
-}
-
-// ToUTF8Runes converts a string to a slice of runes.
-//
-// Parameters:
-//   - s: The string to convert.
-//
-// Returns:
-//   - runes: The slice of runes.
-//   - error: An error of type *common.ErrAt if an invalid UTF-8 encoding is found.
-//
-// Behaviors:
-//   - An empty string returns a nil slice with no errors.
-//   - The function stops at the first invalid UTF-8 encoding; returning an
-//     error and the runes found up to that point.
-//   - The function converts '\r\n' to '\n'.
-func ToUTF8Runes(s string) (runes []rune, err error) {
-	if s == "" {
-		return
-	}
-
-	for i := 0; len(s) > 0; i++ {
-		r, size := utf8.DecodeRuneInString(s)
-		if r == utf8.RuneError {
-			err = uc.NewErrAt(i+1, "character", NewErrInvalidUTF8Encoding())
-			return
-		}
-
-		s = s[size:]
-
-		if r != '\r' || len(s) == 0 {
-			runes = append(runes, r)
-			continue
-		}
-
-		other_r, size := utf8.DecodeRuneInString(s)
-		if other_r == utf8.RuneError {
-			err = uc.NewErrAt(i+2, "character", NewErrInvalidUTF8Encoding())
-			return
-		}
-
-		if other_r == '\n' {
-			runes = append(runes, '\n')
-		} else {
-			runes = append(runes, r, other_r)
-		}
-
-		s = s[size:]
-	}
-
-	return
 }
 
 // ReplaceSuffix replaces the end of the given string with the provided suffix.
@@ -145,87 +94,6 @@ func ReplaceSuffix(str, suffix string) (string, bool) {
 	s := builder.String()
 
 	return s, true
-}
-
-// FindContentIndexes searches for the positions of opening and closing
-// tokens in a slice of strings.
-//
-// Parameters:
-//   - op_token: The string that marks the beginning of the content.
-//   - cl_token: The string that marks the end of the content.
-//   - tokens: The slice of strings in which to search for the tokens.
-//
-// Returns:
-//   - result: An array of two integers representing the start and end indexes
-//     of the content.
-//   - err: Any error that occurred while searching for the tokens.
-//
-// Errors:
-//   - *uc.ErrInvalidParameter: If the openingToken or closingToken is an
-//     empty string.
-//   - *ErrTokenNotFound: If the opening or closing token is not found in the
-//     content.
-//   - *ErrNeverOpened: If the closing token is found without any
-//     corresponding opening token.
-//
-// Behaviors:
-//   - The first index of the content is inclusive, while the second index is
-//     exclusive.
-//   - This function returns a partial result when errors occur. ([-1, -1] if
-//     errors occur before finding the opening token, [index, 0] if the opening
-//     token is found but the closing token is not found.
-func FindContentIndexes(op_token, cl_token string, tokens []string) (result [2]int, err error) {
-	result[0] = -1
-	result[1] = -1
-
-	if op_token == "" {
-		err = uc.NewErrInvalidParameter("openingToken", uc.NewErrEmpty(op_token))
-		return
-	} else if cl_token == "" {
-		err = uc.NewErrInvalidParameter("closingToken", uc.NewErrEmpty(cl_token))
-		return
-	}
-
-	op_tok_idx := slices.Index(tokens, op_token)
-	if op_tok_idx < 0 {
-		err = NewErrTokenNotFound(op_token, OpToken)
-		return
-	} else {
-		result[0] = op_tok_idx + 1
-	}
-
-	balance := 1
-	cl_tok_idx := -1
-
-	for i := result[0]; i < len(tokens) && cl_tok_idx == -1; i++ {
-		curr_tok := tokens[i]
-
-		if curr_tok == cl_token {
-			balance--
-
-			if balance == 0 {
-				cl_tok_idx = i
-			}
-		} else if curr_tok == op_token {
-			balance++
-		}
-	}
-
-	if cl_tok_idx != -1 {
-		result[1] = cl_tok_idx + 1
-		return
-	}
-
-	if balance < 0 {
-		err = NewErrNeverOpened(op_token, cl_token)
-		return
-	} else if balance != 1 || cl_token != "\n" {
-		err = NewErrTokenNotFound(cl_token, ClToken)
-		return
-	}
-
-	result[1] = len(tokens)
-	return
 }
 
 // GenerateID generates a random ID of the specified size (in bytes).
@@ -611,8 +479,8 @@ func NewLevenshteinTable(words ...string) (*LavenshteinTable, error) {
 //
 // If this fails, it means that the word could not be converted to UTF-8 runes.
 func (lt *LavenshteinTable) AddWord(word string) bool {
-	chars, err := ToUTF8Runes(word)
-	if err != nil {
+	chars, idx := utstr.ToUtf8(word)
+	if idx != -1 {
 		return false
 	}
 
