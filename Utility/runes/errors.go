@@ -104,3 +104,52 @@ func NewErrNeverOpened(openingToken, closingToken rune) *ErrNeverOpened {
 	}
 	return e
 }
+
+// ErrInvalidUTF8Encoding is an error type for invalid UTF-8 encoding.
+type ErrInvalidUTF8Encoding struct {
+	// At is the index of the invalid UTF-8 encoding.
+	At int
+}
+
+// Error implements the error interface.
+//
+// Message: "invalid UTF-8 encoding"
+func (e *ErrInvalidUTF8Encoding) Error() string {
+	var builder strings.Builder
+
+	builder.WriteString("invalid UTF-8 encoding at index ")
+	builder.WriteString(strconv.Itoa(e.At))
+
+	return builder.String()
+}
+
+// NewErrInvalidUTF8Encoding creates a new ErrInvalidUTF8Encoding error.
+//
+// Parameters:
+//   - at: The index of the invalid UTF-8 encoding.
+//
+// Returns:
+//   - *ErrInvalidUTF8Encoding: A pointer to the newly created error.
+func NewErrInvalidUTF8Encoding(at int) *ErrInvalidUTF8Encoding {
+	return &ErrInvalidUTF8Encoding{
+		At: at,
+	}
+}
+
+// ErrNoClosestWordFound is an error when no closest word is found.
+type ErrNoClosestWordFound struct{}
+
+// Error implements the error interface.
+//
+// Message: "no closest word was found"
+func (e *ErrNoClosestWordFound) Error() string {
+	return "no closest word was found"
+}
+
+// NewErrNoClosestWordFound creates a new ErrNoClosestWordFound.
+//
+// Returns:
+//   - *ErrNoClosestWordFound: The new ErrNoClosestWordFound.
+func NewErrNoClosestWordFound() *ErrNoClosestWordFound {
+	return &ErrNoClosestWordFound{}
+}

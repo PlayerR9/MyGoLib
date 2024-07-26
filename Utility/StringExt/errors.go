@@ -3,28 +3,7 @@ package StringExt
 import (
 	"strconv"
 	"strings"
-
-	uc "github.com/PlayerR9/MyGoLib/Units/common"
 )
-
-// ErrInvalidUTF8Encoding is an error type for invalid UTF-8 encoding.
-type ErrInvalidUTF8Encoding struct{}
-
-// Error implements the error interface.
-//
-// Message: "invalid UTF-8 encoding"
-func (e *ErrInvalidUTF8Encoding) Error() string {
-	return "invalid UTF-8 encoding"
-}
-
-// NewErrInvalidUTF8Encoding creates a new ErrInvalidUTF8Encoding error.
-//
-// Returns:
-//   - *ErrInvalidUTF8Encoding: A pointer to the newly created error.
-func NewErrInvalidUTF8Encoding() *ErrInvalidUTF8Encoding {
-	e := &ErrInvalidUTF8Encoding{}
-	return e
-}
 
 // ErrLongerSuffix is a struct that represents an error when the suffix is
 // longer than the string.
@@ -84,9 +63,13 @@ type ErrLinesGreaterThanWords struct {
 func (e *ErrLinesGreaterThanWords) Error() string {
 	values := []string{
 		"number of lines",
-		uc.QuoteInt(e.NumberOfLines),
+		"(",
+		strconv.Itoa(e.NumberOfLines),
+		")",
 		"is greater than the number of words",
-		uc.QuoteInt(e.NumberOfWords),
+		"(",
+		strconv.Itoa(e.NumberOfWords),
+		")",
 	}
 
 	msg := strings.Join(values, " ")
@@ -126,24 +109,5 @@ func (e *ErrNoCandidateFound) Error() string {
 //   - *ErrNoCandidateFound: A pointer to the newly created error.
 func NewErrNoCandidateFound() *ErrNoCandidateFound {
 	e := &ErrNoCandidateFound{}
-	return e
-}
-
-// ErrNoClosestWordFound is an error when no closest word is found.
-type ErrNoClosestWordFound struct{}
-
-// Error implements the error interface.
-//
-// Message: "no closest word was found"
-func (e *ErrNoClosestWordFound) Error() string {
-	return "no closest word was found"
-}
-
-// NewErrNoClosestWordFound creates a new ErrNoClosestWordFound.
-//
-// Returns:
-//   - *ErrNoClosestWordFound: The new ErrNoClosestWordFound.
-func NewErrNoClosestWordFound() *ErrNoClosestWordFound {
-	e := &ErrNoClosestWordFound{}
 	return e
 }

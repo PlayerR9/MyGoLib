@@ -7,7 +7,7 @@ import (
 	"unicode"
 
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
-	utstr "github.com/PlayerR9/MyGoLib/Utility/strings"
+	utch "github.com/PlayerR9/MyGoLib/Utility/runes"
 )
 
 type Parser struct {
@@ -249,14 +249,19 @@ func parse_field(p *Parser) (string, []string, error) {
 // Returns:
 //   - map[string]string: A map of field names to their corresponding types.
 //   - error: An error if parsing encounters any issues.
+//
+// Errors:
+//   - *runes.ErrInvalidUTF8Encoding: If the string contains invalid UTF-8
+//     encoding.
+//   - error: any other parsing error.
 func ParseFields(str string) (map[string]string, error) {
 	if str == "" {
 		return nil, nil
 	}
 
-	chars, idx := utstr.ToUtf8(str)
-	if idx != -1 {
-		return nil, fmt.Errorf("invalid UTF-8 encoding at index %d", idx)
+	chars, err := utch.StringToUtf8(str)
+	if err != nil {
+		return nil, err
 	}
 
 	p := &Parser{

@@ -1,4 +1,4 @@
-package StringExt
+package runes
 
 import (
 	"errors"

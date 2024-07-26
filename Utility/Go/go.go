@@ -2,7 +2,6 @@ package Go
 
 import (
 	"errors"
-	"fmt"
 	"slices"
 	"strconv"
 	"strings"
@@ -10,7 +9,7 @@ import (
 	"unicode/utf8"
 
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
-	utstr "github.com/PlayerR9/MyGoLib/Utility/strings"
+	utch "github.com/PlayerR9/MyGoLib/Utility/runes"
 )
 
 var (
@@ -88,18 +87,16 @@ func IsValidName(variable_name string, keywords []string) error {
 //   - error: An error if the type name is invalid.
 //
 // Errors:
-//   - *common.ErrInvalidParameter: If the type name is empty.
+//   - *common.ErrInvalidParameter: If the type name is empty or not valid UTF-8.
 //   - *common.ErrAt: If the type name is invalid at a specific position.
 func MakeVariableName(type_name string) (string, error) {
 	if type_name == "" {
-		reason := uc.NewErrEmpty(type_name)
-		err := uc.NewErrInvalidParameter("type_name", reason)
-		return "", err
+		return "", uc.NewErrInvalidParameter("type_name", uc.NewErrEmpty(type_name))
 	}
 
-	chars, idx := utstr.ToUtf8(type_name)
-	if idx != -1 {
-		return "", fmt.Errorf("invalid UTF-8 encoding at index %d", idx)
+	chars, err := utch.StringToUtf8(type_name)
+	if err != nil {
+		return "", uc.NewErrInvalidParameter("type_name", err)
 	}
 
 	var builder strings.Builder
@@ -163,8 +160,8 @@ func fix_variable_name(var_name string, keywords []string, min int) (string, err
 		return var_name, nil
 	}
 
-	chars, idx := utstr.ToUtf8(var_name)
-	uc.AssertF(idx == -1, "ToUtf8(%q) = %d but expected -1", var_name, idx)
+	chars, err := utch.StringToUtf8(var_name)
+	uc.AssertErr(err, "StringToUtf8(%q)", var_name)
 
 	var builder strings.Builder
 
@@ -174,7 +171,7 @@ func fix_variable_name(var_name string, keywords []string, min int) (string, err
 
 	str := builder.String()
 
-	err := IsValidName(str, keywords)
+	err = IsValidName(str, keywords)
 	if err == nil {
 		return str, nil
 	}

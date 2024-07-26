@@ -1,11 +1,11 @@
-package strings
+package slice
 
 import (
-	"slices"
+	"fmt"
 	"strconv"
 	"strings"
 
-	uc "github.com/PlayerR9/MyGoLib/Units/common"
+	"golang.org/x/exp/slices"
 )
 
 // filter_equals returns the indices of the other in the data.
@@ -18,7 +18,7 @@ import (
 //
 // Returns:
 //   - []int: The indices.
-func filter_equals(indices []int, data []string, other string, offset int) []int {
+func filter_equals[T comparable](indices []int, data []T, other T, offset int) []int {
 	var top int
 
 	for i := 0; i < len(indices); i++ {
@@ -45,7 +45,7 @@ func filter_equals(indices []int, data []string, other string, offset int) []int
 //
 // Returns:
 //   - []int: The indices.
-func IndicesOf(data []string, sep []string, exclude_sep bool) []int {
+func IndicesOf[T comparable](data []T, sep []T, exclude_sep bool) []int {
 	if len(data) == 0 || len(sep) == 0 {
 		return nil
 	}
@@ -95,7 +95,6 @@ func IndicesOf(data []string, sep []string, exclude_sep bool) []int {
 //   - err: Any error that occurred while searching for the tokens.
 //
 // Errors:
-//   - *uc.ErrInvalidParameter: If the closingToken is an empty string.
 //   - *ErrTokenNotFound: If the opening or closing token is not found in the
 //     content.
 //   - *ErrNeverOpened: If the closing token is found without any
@@ -107,18 +106,13 @@ func IndicesOf(data []string, sep []string, exclude_sep bool) []int {
 //   - This function returns a partial result when errors occur. ([-1, -1] if
 //     errors occur before finding the opening token, [index, 0] if the opening
 //     token is found but the closing token is not found.
-func FindContentIndexes(op_token, cl_token string, tokens []string) (result [2]int, err error) {
+func FindContentIndexes[T comparable](op_token, cl_token T, tokens []T) (result [2]int, err error) {
 	result[0] = -1
 	result[1] = -1
 
-	if cl_token == "" {
-		err = uc.NewErrInvalidParameter("cl_token", uc.NewErrEmpty(cl_token))
-		return
-	}
-
 	op_tok_idx := slices.Index(tokens, op_token)
 	if op_tok_idx < 0 {
-		err = NewErrTokenNotFound(op_token, true)
+		err = NewErrTokenNotFound(true)
 		return
 	} else {
 		result[0] = op_tok_idx + 1
@@ -147,10 +141,10 @@ func FindContentIndexes(op_token, cl_token string, tokens []string) (result [2]i
 	}
 
 	if balance < 0 {
-		err = NewErrNeverOpened(op_token, cl_token)
+		err = NewErrNeverOpened()
 		return
-	} else if balance != 1 || cl_token != "\n" {
-		err = NewErrTokenNotFound(cl_token, false)
+	} else if balance != 1 {
+		err = NewErrTokenNotFound(false)
 		return
 	}
 
@@ -159,39 +153,48 @@ func FindContentIndexes(op_token, cl_token string, tokens []string) (result [2]i
 }
 
 // EitherOrString is a function that returns a string representation of a slice
-// of strings.
+// of elements.
 //
 // Parameters:
-//   - values: The values to convert to a string.
-//   - quote: True if the values should be quoted, false otherwise.
+//   - values: The elements to convert to a string.
+//   - quote: True if the elements should be quoted, false otherwise.
 //
 // Returns:
 //   - string: The string representation.
-//
-// Example:
-//
-//	EitherOrString([]string{"a", "b", "c"}, false) // "a, b or c"
-func EitherOrString(values []string, quote bool) string {
+func EitherOrString[T fmt.Stringer](values []T, quote bool) string {
 	if len(values) == 0 {
 		return ""
-	}
-
-	if len(values) == 1 {
-		if !quote {
-			return values[0]
-		} else {
-			return strconv.Quote(values[0])
-		}
 	}
 
 	var elems []string
 
 	if quote {
 		for _, v := range values {
-			elems = append(elems, strconv.Quote(v))
+			str := v.String()
+			str = strings.TrimSpace(str)
+
+			if str == "" {
+				continue
+			}
+
+			elems = append(elems, strconv.Quote(str))
 		}
 	} else {
-		elems = values
+		for _, v := range values {
+			str := v.String()
+			str = strings.TrimSpace(str)
+			if str == "" {
+				continue
+			}
+
+			elems = append(elems, str)
+		}
+	}
+
+	if len(elems) == 0 {
+		return ""
+	} else if len(elems) == 1 {
+		return elems[0]
 	}
 
 	var builder strings.Builder
@@ -211,32 +214,50 @@ func EitherOrString(values []string, quote bool) string {
 }
 
 // OrString is a function that returns a string representation of a slice of
-// strings.
+// elements.
 //
 // Parameters:
-//   - values: The values to convert to a string.
-//   - quote: True if the values should be quoted, false otherwise.
+//   - values: The elements to convert to a string.
+//   - quote: True if the elements should be quoted, false otherwise.
 //   - is_negative: True if the string should use "nor" instead of "or", false
 //     otherwise.
 //
 // Returns:
 //   - string: The string representation.
-//
-// Example:
-//
-//	OrString([]string{"a", "b", "c"}, false, true) // "a, b, nor c"
-func OrString(values []string, quote, is_negative bool) string {
-	values = TrimEmpty(values)
+func OrString[T fmt.Stringer](values []T, quote, is_negative bool) string {
 	if len(values) == 0 {
 		return ""
 	}
 
-	if len(values) == 1 {
-		if !quote {
-			return values[0]
-		} else {
-			return strconv.Quote(values[0])
+	var elems []string
+
+	if quote {
+		for _, v := range values {
+			str := v.String()
+			str = strings.TrimSpace(str)
+
+			if str == "" {
+				continue
+			}
+
+			elems = append(elems, strconv.Quote(str))
 		}
+	} else {
+		for _, v := range values {
+			str := v.String()
+			str = strings.TrimSpace(str)
+			if str == "" {
+				continue
+			}
+
+			elems = append(elems, str)
+		}
+	}
+
+	if len(elems) == 0 {
+		return ""
+	} else if len(elems) == 1 {
+		return elems[0]
 	}
 
 	var sep string
@@ -245,16 +266,6 @@ func OrString(values []string, quote, is_negative bool) string {
 		sep = " nor "
 	} else {
 		sep = " or "
-	}
-
-	var elems []string
-
-	if quote {
-		for _, v := range values {
-			elems = append(elems, strconv.Quote(v))
-		}
-	} else {
-		elems = values
 	}
 
 	var builder strings.Builder
@@ -270,53 +281,4 @@ func OrString(values []string, quote, is_negative bool) string {
 	builder.WriteString(elems[len(elems)-1])
 
 	return builder.String()
-}
-
-// QuoteInt returns a quoted string of an integer prefixed and suffixed with
-// square brackets.
-//
-// Parameters:
-//   - value: The integer to quote.
-//
-// Returns:
-//   - string: The quoted integer.
-func QuoteInt(value int) string {
-	var builder strings.Builder
-
-	builder.WriteRune('[')
-	builder.WriteString(strconv.Itoa(value))
-	builder.WriteRune(']')
-
-	return builder.String()
-}
-
-// TrimEmpty removes empty strings from a slice of strings.
-// Empty spaces at the beginning and end of the strings are also removed from
-// the strings.
-//
-// Parameters:
-//   - values: The slice of strings to trim.
-//
-// Returns:
-//   - []string: The slice of strings with empty strings removed.
-func TrimEmpty(values []string) []string {
-	if len(values) == 0 {
-		return values
-	}
-
-	var top int
-
-	for i := 0; i < len(values); i++ {
-		current_value := values[i]
-
-		str := strings.TrimSpace(current_value)
-		if str != "" {
-			values[top] = str
-			top++
-		}
-	}
-
-	values = values[:top]
-
-	return values
 }

@@ -2,65 +2,11 @@ package bytes
 
 import (
 	"bytes"
-	"unicode/utf8"
+	"strconv"
+	"strings"
 
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
 )
-
-// ToUtf8 is a function that converts bytes to runes.
-//
-// Parameters:
-//   - data: The bytes to convert.
-//
-// Returns:
-//   - []rune: The runes.
-//   - int: The index of the error rune. -1 if there is no error.
-//
-// This function also converts '\r\n' to '\n'. Plus, whenever an error occurs, it returns the runes
-// decoded so far and the index of the error rune.
-func ToUtf8(data []byte) ([]rune, int) {
-	if len(data) == 0 {
-		return nil, -1
-	}
-
-	var chars []rune
-	var i int
-
-	for len(data) > 0 {
-		c, size := utf8.DecodeRune(data)
-		if c == utf8.RuneError {
-			return chars, i
-		}
-
-		data = data[size:]
-		i += size
-
-		if c != '\r' {
-			chars = append(chars, c)
-			continue
-		}
-
-		if len(data) == 0 {
-			return chars, i
-		}
-
-		c, size = utf8.DecodeRune(data)
-		if c == utf8.RuneError {
-			return chars, i
-		}
-
-		data = data[size:]
-		i += size
-
-		if c != '\n' {
-			return chars, i
-		}
-
-		chars = append(chars, '\n')
-	}
-
-	return chars, -1
-}
 
 // filter_equals returns the indices of the other in the data.
 //
@@ -234,4 +180,153 @@ func FindContentIndexes(op_token, cl_token []byte, tokens [][]byte) (result [2]i
 
 	result[1] = len(tokens)
 	return
+}
+
+// TrimEmpty removes empty bytes from a slice of bytes; including any empty
+// spaces at the beginning and end of the bytes.
+//
+// Parameters:
+//   - values: The values to trim.
+//
+// Returns:
+//   - [][]byte: The trimmed values.
+func TrimEmpty(values [][]byte) [][]byte {
+	if len(values) == 0 {
+		return values
+	}
+
+	var top int
+
+	for i := 0; i < len(values); i++ {
+		current_value := values[i]
+
+		res := bytes.TrimSpace(current_value)
+		if len(res) > 0 {
+			values[top] = res
+			top++
+		}
+	}
+
+	values = values[:top]
+
+	return values
+}
+
+// EitherOrString is a function that returns a string representation of a slice
+// of bytes.
+//
+// Parameters:
+//   - values: The values to convert to a string.
+//   - quote: True if the values should be quoted, false otherwise.
+//
+// Returns:
+//   - string: The string representation.
+//
+// Example:
+//
+//	EitherOrString(bytes.Fields([]byte("a b c"}, false) // "a, b or c"
+func EitherOrString(values [][]byte, quote bool) string {
+	values = TrimEmpty(values)
+	if len(values) == 0 {
+		return ""
+	}
+
+	if len(values) == 1 {
+		if !quote {
+			return string(values[0])
+		} else {
+			return strconv.Quote(string(values[0]))
+		}
+	}
+
+	elems := make([]string, 0, len(values))
+
+	if quote {
+		for _, v := range values {
+			elems = append(elems, strconv.Quote(string(v)))
+		}
+	} else {
+		for _, v := range values {
+			elems = append(elems, string(v))
+		}
+	}
+
+	var builder strings.Builder
+
+	builder.WriteString("either ")
+	builder.WriteString(elems[0])
+
+	if len(values) > 2 {
+		builder.WriteString(strings.Join(elems[1:len(elems)-1], ", "))
+		builder.WriteRune(',')
+	}
+
+	builder.WriteString(" or ")
+	builder.WriteString(elems[len(elems)-1])
+
+	return builder.String()
+}
+
+// OrString is a function that returns a string representation of a slice of
+// bytes.
+//
+// Parameters:
+//   - values: The values to convert to a string.
+//   - quote: True if the values should be quoted, false otherwise.
+//   - is_negative: True if the string should use "nor" instead of "or", false
+//     otherwise.
+//
+// Returns:
+//   - string: The string representation.
+//
+// Example:
+//
+//	OrString(bytes.Fields([]byte("a b c"), false, true) // "a, b, nor c"
+func OrString(values [][]byte, quote, is_negative bool) string {
+	values = TrimEmpty(values)
+	if len(values) == 0 {
+		return ""
+	}
+
+	if len(values) == 1 {
+		if !quote {
+			return string(values[0])
+		} else {
+			return strconv.Quote(string(values[0]))
+		}
+	}
+
+	var sep string
+
+	if is_negative {
+		sep = " nor "
+	} else {
+		sep = " or "
+	}
+
+	elems := make([]string, 0, len(values))
+
+	if quote {
+		for _, v := range values {
+			elems = append(elems, strconv.Quote(string(v)))
+		}
+	} else {
+		for _, v := range values {
+			elems = append(elems, string(v))
+		}
+	}
+
+	var builder strings.Builder
+
+	builder.WriteString(elems[0])
+
+	if len(values) > 2 {
+		builder.WriteString(strings.Join(elems[1:len(elems)-1], ", "))
+		builder.WriteRune(',')
+	}
+
+	builder.WriteString(sep)
+	builder.WriteString(elems[len(elems)-1])
+
+	return builder.String()
 }

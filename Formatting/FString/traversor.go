@@ -8,7 +8,7 @@ import (
 
 	pkg "github.com/PlayerR9/MyGoLib/Formatting/FString/pkg"
 	uc "github.com/PlayerR9/MyGoLib/Units/common"
-	utstr "github.com/PlayerR9/MyGoLib/Utility/strings"
+	utch "github.com/PlayerR9/MyGoLib/Utility/runes"
 )
 
 var (
@@ -135,24 +135,25 @@ func (trav *Traversor) writeRune(r rune) error {
 //   - str: The string to append.
 //
 // Returns:
-//   - int: The index of the first invalid UTF-8 character. -1 if there is no error.
-func (trav *Traversor) writeString(str string) int {
+//   - error: An error of type *runes.ErrInvalidUTF8Encoding if the string is not
+//     valid UTF-8.
+func (trav *Traversor) writeString(str string) error {
 	trav.writeIndent()
 
 	if str == "" {
-		return -1
+		return nil
 	}
 
-	chars, idx := utstr.ToUtf8(str)
-	if idx != -1 {
-		return idx
+	chars, err := utch.StringToUtf8(str)
+	if err != nil {
+		return err
 	}
 
 	for _, r := range chars {
 		trav.source.Write(r)
 	}
 
-	return -1
+	return err
 }
 
 // writeLine writes a line to the traversor. If there is any in-progress line,
@@ -163,7 +164,8 @@ func (trav *Traversor) writeString(str string) int {
 //   - line: The line to write.
 //
 // Returns:
-//   - error: An error if the line could not be written.
+//   - error: An error of type *runes.ErrInvalidUTF8Encoding if the string is not
+//     valid UTF-8.
 //
 // Behaviors:
 //   - If line is empty, then an empty line is added to the source.
@@ -175,9 +177,9 @@ func (trav *Traversor) writeLine(line string) error {
 	if line == "" {
 		trav.source.WriteEmptyLine(trav.rightDelim)
 	} else {
-		chars, idx := utstr.ToUtf8(line)
-		if idx != -1 {
-			return fmt.Errorf("invalid UTF-8 encoding at index %d", idx)
+		chars, err := utch.StringToUtf8(line)
+		if err != nil {
+			return err
 		}
 
 		for _, r := range chars {
@@ -222,7 +224,8 @@ func (trav *Traversor) AppendRune(r rune) error {
 //   - str: The string to append.
 //
 // Returns:
-//   - error: An error if the string is not valid UTF-8.
+//   - error: An error of type *runes.ErrInvalidUTF8Encoding if the string is not
+//     valid UTF-8.
 //
 // Behaviors:
 //   - IF str is empty: nothing is done.
@@ -231,9 +234,9 @@ func (trav *Traversor) AppendString(str string) error {
 		return nil
 	}
 
-	idx := trav.writeString(str)
-	if idx != -1 {
-		return fmt.Errorf("invalid UTF-8 encoding at index %d", idx)
+	err := trav.writeString(str)
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -255,9 +258,9 @@ func (trav *Traversor) AppendStrings(strs []string) error {
 	}
 
 	for i, str := range strs {
-		idx := trav.writeString(str)
-		if idx != -1 {
-			return uc.NewErrAt(i, "string", fmt.Errorf("invalid UTF-8 encoding at index %d", idx))
+		err := trav.writeString(str)
+		if err != nil {
+			return uc.NewErrAt(i+1, "string", err)
 		}
 	}
 
@@ -271,7 +274,8 @@ func (trav *Traversor) AppendStrings(strs []string) error {
 //   - fields: The fields to join.
 //
 // Returns:
-//   - error: An error if some field or the separator is not valid UTF-8 encoding.
+//   - error: An error of type *runes.ErrInvalidUTF8Encoding if some field or the separator is not
+//     valid UTF-8 encoding.
 //
 // Behaviors:
 //   - This is equivalent to calling AppendString(strings.Join(fields, sep)).
@@ -282,9 +286,9 @@ func (trav *Traversor) AppendJoinedString(sep string, fields ...string) error {
 
 	str := strings.Join(fields, sep)
 
-	idx := trav.writeString(str)
-	if idx != -1 {
-		return fmt.Errorf("invalid UTF-8 encoding at index %d", idx)
+	err := trav.writeString(str)
+	if err != nil {
+		return err
 	}
 
 	return nil

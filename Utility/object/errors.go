@@ -3,8 +3,6 @@ package object
 import (
 	"strconv"
 	"strings"
-
-	uc "github.com/PlayerR9/MyGoLib/Units/common"
 )
 
 // ErrValueMustExists is an error indicating that a value must exist.
@@ -113,14 +111,18 @@ func (e *ErrFixAt) Error() string {
 			"failed to fix field",
 			strconv.Quote(e.Field),
 			"at index",
-			uc.QuoteInt(e.Idx),
+			"(",
+			strconv.Itoa(e.Idx),
+			")",
 		}
 	} else {
 		values = []string{
 			"field",
 			strconv.Quote(e.Field),
 			"at index",
-			uc.QuoteInt(e.Idx),
+			"(",
+			strconv.Itoa(e.Idx),
+			")",
 			"failed to fix:",
 			e.Reason.Error(),
 		}

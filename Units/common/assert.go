@@ -132,7 +132,7 @@ func AssertOk(ok bool, format string, args ...any) {
 	panic(msg)
 }
 
-// AssertNotNil panics if the element is nil but returns the element dereferenced
+// AssertNil panics if the element is nil but returns the element dereferenced
 // if it is not nil.
 //
 // Parameters:
@@ -143,20 +143,45 @@ func AssertOk(ok bool, format string, args ...any) {
 //   - T: The element if it is not nil.
 //
 // The panic message is the message "Parameter \"param_name\" must not be nil".
-func AssertNil[T any](elem *T, param_name string) T {
+func AssertDerefNil[T any](elem *T, param_name string) T {
 	if elem != nil {
 		return *elem
 	}
 
-	param_name = strconv.Quote(param_name)
+	values := []string{
+		"Parameter",
+		"(",
+		strconv.Quote(param_name),
+		")",
+		"must not be nil",
+	}
 
-	var builder strings.Builder
+	panic(strings.Join(values, " "))
+}
 
-	builder.WriteString("Parameter ")
-	builder.WriteString(param_name)
-	builder.WriteString("must not be nil")
+// AssertNil panics if the element is nil but returns the element dereferenced
+// if it is not nil.
+//
+// Parameters:
+//   - elem: The element to check.
+//   - param_name: The name of the parameter.
+//
+// Returns:
+//   - T: The element if it is not nil.
+//
+// The panic message is the message "Parameter \"param_name\" must not be nil".
+func AssertNil[T any](elem *T, param_name string) {
+	if elem != nil {
+		return
+	}
 
-	msg := builder.String()
+	values := []string{
+		"Parameter",
+		"(",
+		strconv.Quote(param_name),
+		")",
+		"must not be nil",
+	}
 
-	panic(msg)
+	panic(strings.Join(values, " "))
 }

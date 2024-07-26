@@ -29,3 +29,12 @@ func TestFindContentIndexes(t *testing.T) {
 		t.Errorf("expected 9, got %d instead", indices[1])
 	}
 }
+
+func TestOrString(t *testing.T) {
+	TestValues := []string{"a", "b", "c "}
+
+	str := OrString(TestValues, false, false)
+	if str != "a, b, or c" {
+		t.Errorf("OrString(%q) = %q; want %q", TestValues, str, "a, b, or c")
+	}
+}
