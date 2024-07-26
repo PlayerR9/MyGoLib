@@ -16,13 +16,14 @@ import (
 //
 // Returns:
 //   - []rune: The runes.
-//   - int: The index of the error rune. -1 if there is no error.
+//   - error: An error of type *ErrInvalidUTF8Encoding if the bytes are not
+//     valid UTF-8.
 //
 // This function also converts '\r\n' to '\n'. Plus, whenever an error occurs, it returns the runes
 // decoded so far and the index of the error rune.
-func BytesToUtf8(data []byte) ([]rune, int) {
+func BytesToUtf8(data []byte) ([]rune, error) {
 	if len(data) == 0 {
-		return nil, -1
+		return nil, nil
 	}
 
 	var chars []rune
@@ -31,7 +32,7 @@ func BytesToUtf8(data []byte) ([]rune, int) {
 	for len(data) > 0 {
 		c, size := utf8.DecodeRune(data)
 		if c == utf8.RuneError {
-			return chars, i
+			return chars, NewErrInvalidUTF8Encoding(i)
 		}
 
 		data = data[size:]
@@ -43,25 +44,25 @@ func BytesToUtf8(data []byte) ([]rune, int) {
 		}
 
 		if len(data) == 0 {
-			return chars, i
+			return chars, NewErrInvalidUTF8Encoding(i)
 		}
 
 		c, size = utf8.DecodeRune(data)
 		if c == utf8.RuneError {
-			return chars, i
+			return chars, NewErrInvalidUTF8Encoding(i)
 		}
 
 		data = data[size:]
 		i += size
 
 		if c != '\n' {
-			return chars, i
+			return chars, NewErrInvalidUTF8Encoding(i)
 		}
 
 		chars = append(chars, '\n')
 	}
 
-	return chars, -1
+	return chars, nil
 }
 
 // StringToUtf8 converts a string to a slice of runes.
