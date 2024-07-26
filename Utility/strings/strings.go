@@ -158,6 +158,54 @@ func FindContentIndexes(op_token, cl_token string, tokens []string) (result [2]i
 	return
 }
 
+// AndString is a function that returns a string representation of a slice
+// of strings.
+//
+// Parameters:
+//   - values: The values to convert to a string.
+//   - quote: Whether to quote the values.
+//
+// Returns:
+//   - string: The string representation of the values.
+func AndString(values []string, quote bool) string {
+	values = TrimEmpty(values)
+	if len(values) == 0 {
+		return ""
+	}
+
+	if len(values) == 1 {
+		if !quote {
+			return values[0]
+		} else {
+			return strconv.Quote(values[0])
+		}
+	}
+
+	var elems []string
+
+	if quote {
+		for i := 0; i < len(values); i++ {
+			elems = append(elems, strconv.Quote(values[i]))
+		}
+	} else {
+		elems = values
+	}
+
+	var builder strings.Builder
+
+	builder.WriteString(elems[0])
+
+	if len(elems) > 2 {
+		builder.WriteString(strings.Join(elems[1:len(elems)-1], ", "))
+		builder.WriteRune(',')
+	}
+
+	builder.WriteString(" and ")
+	builder.WriteString(elems[len(elems)-1])
+
+	return builder.String()
+}
+
 // EitherOrString is a function that returns a string representation of a slice
 // of strings.
 //

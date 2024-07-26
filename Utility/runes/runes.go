@@ -269,6 +269,55 @@ func FindContentIndexes(op_token, cl_token rune, tokens []rune) (result [2]int, 
 	return
 }
 
+// AndString is a function that returns a string representation of a slice
+// of runes.
+//
+// Parameters:
+//   - values: The values to convert to a string.
+//   - quote: Whether to quote the values.
+//
+// Returns:
+//   - string: The string representation of the values.
+func AndString(values []rune, quote bool) string {
+	if len(values) == 0 {
+		return ""
+	}
+
+	if len(values) == 1 {
+		if !quote {
+			return string(values[0])
+		} else {
+			return strconv.QuoteRune(values[0])
+		}
+	}
+
+	elems := make([]string, 0, len(values))
+
+	if quote {
+		for i := 0; i < len(values); i++ {
+			elems = append(elems, strconv.QuoteRune(values[i]))
+		}
+	} else {
+		for i := 0; i < len(values); i++ {
+			elems = append(elems, string(values[i]))
+		}
+	}
+
+	var builder strings.Builder
+
+	builder.WriteString(elems[0])
+
+	if len(elems) > 2 {
+		builder.WriteString(strings.Join(elems[1:len(elems)-1], ", "))
+		builder.WriteRune(',')
+	}
+
+	builder.WriteString(" and ")
+	builder.WriteString(elems[len(elems)-1])
+
+	return builder.String()
+}
+
 // EitherOrString is a function that returns a string representation of a slice
 // of runes.
 //

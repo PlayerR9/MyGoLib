@@ -152,6 +152,66 @@ func FindContentIndexes[T comparable](op_token, cl_token T, tokens []T) (result 
 	return
 }
 
+// AndString is a function that returns a string representation of a slice
+// of strings.
+//
+// Parameters:
+//   - values: The values to convert to a string.
+//   - quote: Whether to quote the values.
+//
+// Returns:
+//   - string: The string representation of the values.
+func AndString[T fmt.Stringer](values []T, quote bool) string {
+	if len(values) == 0 {
+		return ""
+	}
+
+	var elems []string
+
+	if quote {
+		for i := 0; i < len(values); i++ {
+			str := values[i].String()
+			str = strings.TrimSpace(str)
+			if str == "" {
+				continue
+			}
+
+			elems = append(elems, strconv.Quote(str))
+		}
+	} else {
+		for i := 0; i < len(values); i++ {
+			str := values[i].String()
+			str = strings.TrimSpace(str)
+
+			if str == "" {
+				continue
+			}
+
+			elems = append(elems, str)
+		}
+	}
+
+	if len(elems) == 0 {
+		return ""
+	} else if len(elems) == 1 {
+		return elems[0]
+	}
+
+	var builder strings.Builder
+
+	builder.WriteString(elems[0])
+
+	if len(elems) > 2 {
+		builder.WriteString(strings.Join(elems[1:len(elems)-1], ", "))
+		builder.WriteRune(',')
+	}
+
+	builder.WriteString(" and ")
+	builder.WriteString(elems[len(elems)-1])
+
+	return builder.String()
+}
+
 // EitherOrString is a function that returns a string representation of a slice
 // of elements.
 //
@@ -172,7 +232,6 @@ func EitherOrString[T fmt.Stringer](values []T, quote bool) string {
 		for _, v := range values {
 			str := v.String()
 			str = strings.TrimSpace(str)
-
 			if str == "" {
 				continue
 			}
