@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 )
 
 // TokenTyper is an interface that defines the behavior of a token type.
@@ -70,4 +71,12 @@ func NewToken[T TokenTyper](t T, d string, at int, lookahead *Token[T]) *Token[T
 		Lookahead: lookahead,
 		At:        at,
 	}
+}
+
+// Size returns the number of runes in the token's data.
+//
+// Returns:
+//   - int: The number of runes in the token's data.
+func (t *Token[T]) Size() int {
+	return utf8.RuneCountInString(t.Data)
 }
