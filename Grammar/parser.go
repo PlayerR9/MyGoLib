@@ -31,12 +31,6 @@ type Parser[T TokenTyper] interface {
 	//   - bool: True if the parser could shift the input stream, false otherwise.
 	Shift() bool
 
-	// Reset resets the parser.
-	//
-	// This utility function allows to reset the information contained in the parser
-	// so that it can be used multiple times.
-	Reset()
-
 	// Pop pops the top token of the stack.
 	//
 	// Returns:
@@ -72,6 +66,14 @@ type Parser[T TokenTyper] interface {
 	Accept()
 }
 
+// apply_reduce applies a reduce action to the parser.
+//
+// Parameters:
+//   - parser: The parser.
+//   - rule: The rule to reduce.
+//
+// Returns:
+//   - error: An error if the parser encounters an error while applying the reduce action.
 func apply_reduce[T TokenTyper](parser Parser[T], rule *Rule[T]) error {
 	uc.AssertParam("parser", parser != nil, errors.New("value cannot be nil"))
 	uc.AssertNil(rule, "rule")
@@ -98,12 +100,12 @@ func apply_reduce[T TokenTyper](parser Parser[T], rule *Rule[T]) error {
 	popped := parser.GetPopped()
 	last_token := popped[len(popped)-1]
 
+	parser.Accept()
+
 	tk, err := NewToken(rule.lhs, popped, last_token.At, last_token.Lookahead)
 	uc.AssertErr(err, "NewToken(%s, popped, %d, %d)", rule.lhs.String(), last_token.At, last_token.Lookahead)
 
 	parser.Push(tk)
-
-	parser.Accept()
 
 	return nil
 }
@@ -149,8 +151,6 @@ func FullParse[T TokenTyper](parser Parser[T], tokens []*Token[T]) ([]*Token[T],
 	}
 
 	parser.SetInputStream(tokens)
-
-	parser.Reset()
 
 	ok := parser.Shift() // initial shift
 	if !ok {
