@@ -1,7 +1,9 @@
 package Lister
 
 import (
-	"github.com/PlayerR9/MyGoLib/ListLike"
+	"fmt"
+
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
 )
 
 // Lister is an interface that defines methods for a list data structure.
@@ -56,7 +58,47 @@ type Lister[T any] interface {
 	//   - bool: True if the value was successfully peeked, false otherwise.
 	PeekLast() (T, bool)
 
-	ListLike.ListLike[T]
+	// IsEmpty is a method that checks whether the list is empty.
+	//
+	// Returns:
+	//
+	//   - bool: True if the list is empty, false otherwise.
+	IsEmpty() bool
+
+	// Size method returns the number of elements currently in the list.
+	//
+	// Returns:
+	//
+	//   - int: The number of elements in the list.
+	Size() int
+
+	// Clear method is used to remove all elements from the list, making it empty.
+	Clear()
+
+	// Capacity is a method that returns the maximum number of elements that the list can hold.
+	//
+	// Returns:
+	//
+	//   - int: The maximum number of elements that the list can hold. -1 if there is no limit.
+	Capacity() int
+
+	// IsFull is a method that checks whether the list is full.
+	//
+	// Returns:
+	//
+	//   - bool: True if the list is full, false otherwise.
+	IsFull() bool
+
+	// Slice is a method that returns a slice of the elements in the list.
+	//
+	// Returns:
+	//  	- []T: A slice of the elements in the list.
+	Slice() []T
+
+	uc.Iterable[T]
+
+	uc.Copier
+	fmt.GoStringer
 }
 
 // ListNode represents a node in a linked list. It holds a value of a generic type

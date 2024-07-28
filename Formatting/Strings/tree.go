@@ -50,6 +50,7 @@ type Printer[T Noder] struct {
 func PrintTree[T Noder](root T) (string, error) {
 	p := &Printer[T]{
 		lines: make([]string, 0),
+		seen:  make(map[Noder]bool),
 	}
 
 	se := &StackElement[T]{
@@ -89,6 +90,8 @@ func PrintTree[T Noder](root T) (string, error) {
 //   - []*StackElement: The list of stack elements.
 //   - error: An error if traversing fails.
 func (p *Printer[T]) trav(elem *StackElement[T]) ([]*StackElement[T], error) {
+	uc.AssertNil(elem, "elem")
+
 	var builder strings.Builder
 
 	if elem.indent != "" {
