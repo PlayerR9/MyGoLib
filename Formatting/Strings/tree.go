@@ -34,6 +34,9 @@ type StackElement[T Noder] struct {
 type Printer[T Noder] struct {
 	// lines is the list of lines.
 	lines []string
+
+	// seen is the list of seen nodes.
+	seen map[Noder]bool
 }
 
 // PrintTree prints the tree.
@@ -99,9 +102,21 @@ func (p *Printer[T]) trav(elem *StackElement[T]) ([]*StackElement[T], error) {
 		}
 	}
 
+	// Prevent cycles.
+	_, ok := p.seen[elem.node]
+	if ok {
+		builder.WriteString("... WARNING: Cycle detected!")
+
+		p.lines = append(p.lines, builder.String())
+
+		return nil, nil
+	}
+
 	builder.WriteString(elem.node.String())
 
 	p.lines = append(p.lines, builder.String())
+
+	p.seen[elem.node] = true
 
 	iter := elem.node.Iterator()
 	if iter == nil {
@@ -130,16 +145,16 @@ func (p *Printer[T]) trav(elem *StackElement[T]) ([]*StackElement[T], error) {
 		}
 
 		node, ok := value.(T)
-		if !ok {
-			return nil, fmt.Errorf("expected %T, got %T", *new(T), value)
-		}
+		uc.Assert(ok, fmt.Sprintf("expected %T, got %T", *new(T), value))
 
-		elems = append(elems, &StackElement[T]{
+		se := &StackElement[T]{
 			indent:     indent.String(),
 			node:       node,
 			same_level: false,
 			is_last:    false,
-		})
+		}
+
+		elems = append(elems, se)
 	}
 
 	if len(elems) == 0 {
@@ -147,8 +162,8 @@ func (p *Printer[T]) trav(elem *StackElement[T]) ([]*StackElement[T], error) {
 	}
 
 	if len(elems) >= 2 {
-		for i := 0; i < len(elems); i++ {
-			elems[i].same_level = true
+		for _, e := range elems {
+			e.same_level = true
 		}
 	}
 

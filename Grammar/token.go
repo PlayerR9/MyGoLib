@@ -5,9 +5,14 @@ import (
 	"strconv"
 	"strings"
 	"unicode/utf8"
+
+	fs "github.com/PlayerR9/MyGoLib/Formatting/Strings"
+	uc "github.com/PlayerR9/MyGoLib/Units/common"
 )
 
 // TokenTyper is an interface that defines the behavior of a token type.
+//
+// Value of 0 is reserved for the EOF token.
 type TokenTyper interface {
 	~int
 
@@ -20,17 +25,41 @@ type Token[T TokenTyper] struct {
 	Type T
 
 	// Data is the data of the token.
-	Data string
+	// Can only be a string or []*Token[T].
+	//
+	// For nil values, an empty string should be used.
+	Data any
 
 	// Lookahead is the lookahead token.
 	Lookahead *Token[T]
 
-	// At is the position of the token in the input. It is the byte position
-	// of the token in the input.
+	// At is the position of the token in the input. It is the rune position of the token in
+	// the input string.
 	At int
 }
 
-// String implements the fmt.Stringer interface.
+// IsLeaf implements the Strings.Noder interface.
+func (t *Token[T]) IsLeaf() bool {
+	_, ok := t.Data.(string)
+	return ok
+}
+
+// Iterator implements the Strings.Noder interface.
+func (t *Token[T]) Iterator() uc.Iterater[fs.Noder] {
+	children, ok := t.Data.([]*Token[T])
+	if !ok {
+		return nil
+	}
+
+	nodes := make([]fs.Noder, 0, len(children))
+	for _, child := range children {
+		nodes = append(nodes, child)
+	}
+
+	return uc.NewSimpleIterator(nodes)
+}
+
+// String implements the Strings.Noder interface.
 //
 // Format:
 //
@@ -41,9 +70,10 @@ func (t *Token[T]) String() string {
 	builder.WriteString("Token[T][")
 	builder.WriteString(t.Type.String())
 
-	if t.Data != "" {
+	data, ok := t.Data.(string)
+	if ok && data != "" {
 		builder.WriteString(" (")
-		builder.WriteString(strconv.Quote(t.Data))
+		builder.WriteString(strconv.Quote(data))
 		builder.WriteRune(')')
 	}
 
@@ -63,13 +93,24 @@ func (t *Token[T]) String() string {
 //   - lookahead: The lookahead token.
 //
 // Returns:
-//   - *Token[T]: A pointer to the newly created token. Never returns nil.
-func NewToken[T TokenTyper](t T, d string, at int, lookahead *Token[T]) *Token[T] {
-	return &Token[T]{
-		Type:      t,
-		Data:      d,
-		Lookahead: lookahead,
-		At:        at,
+//   - *Token[T]: A pointer to the newly created token.
+//   - error: An error of type *common.ErrInvalidParameter if the data is nil or not
+//     of type string or []*Token[T].
+func NewToken[T TokenTyper](t T, d any, at int, lookahead *Token[T]) (*Token[T], error) {
+	if d == nil {
+		return nil, uc.NewErrNilParameter("d")
+	}
+
+	switch d := d.(type) {
+	case string, []*Token[T]:
+		return &Token[T]{
+			Type:      t,
+			Data:      d,
+			Lookahead: lookahead,
+			At:        at,
+		}, nil
+	default:
+		return nil, uc.NewErrInvalidParameter("d", fmt.Errorf("expected string or []*Token[T], got %T instead", d))
 	}
 }
 
@@ -78,5 +119,16 @@ func NewToken[T TokenTyper](t T, d string, at int, lookahead *Token[T]) *Token[T
 // Returns:
 //   - int: The number of runes in the token's data.
 func (t *Token[T]) Size() int {
-	return utf8.RuneCountInString(t.Data)
+	switch data := t.Data.(type) {
+	case string:
+		return utf8.RuneCountInString(data)
+	case []*Token[T]:
+		var size int
+		for _, token := range data {
+			size += token.Size()
+		}
+		return size
+	default:
+		return 0
+	}
 }
