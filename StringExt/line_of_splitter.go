@@ -4,7 +4,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	uc "github.com/PlayerR9/MyGoLib/Units/common"
+	uc "github.com/PlayerR9/lib_units/common"
 )
 
 // lineOfSplitter is a helper struct used in the SplitTextInEqualSizedLines function.

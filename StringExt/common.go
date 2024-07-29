@@ -9,9 +9,9 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	uc "github.com/PlayerR9/MyGoLib/Units/common"
-	us "github.com/PlayerR9/MyGoLib/Units/slice"
-	mext "github.com/PlayerR9/MyGoLib/Utility/MathExt"
+	uc "github.com/PlayerR9/lib_units/common"
+	hlp "github.com/PlayerR9/lib_units/helpers"
+	mext "github.com/PlayerR9/lib_units/math"
 )
 
 var (
@@ -19,7 +19,7 @@ var (
 	// TextSplit instance.
 	//
 	// Never false.
-	calculate_split_ratio us.WeightFunc[*TextSplit]
+	calculate_split_ratio hlp.WeightFunc[*TextSplit]
 )
 
 func init() {
@@ -420,15 +420,15 @@ func SplitInEqualSizedLines(text []string, width, height int) (*TextSplit, error
 
 	// 4.2. Calculate the SQM of each candidate and returns the ones with the lowest SQM.
 
-	weights := us.ApplyWeightFunc(candidates, calculate_split_ratio)
+	weights := hlp.ApplyWeightFunc(candidates, calculate_split_ratio)
 	if len(weights) == 0 {
 		err := NewErrNoCandidateFound()
 		return nil, err
 	}
 
 	// 4.3. Return the candidates with the lowest SQM.
-	weights = us.FilterByNegativeWeight(weights)
-	candidates = us.ExtractResults(weights)
+	weights = hlp.FilterByNegativeWeight(weights)
+	candidates = hlp.ExtractResults(weights)
 
 	// If we have more than one candidate, we have to choose one
 	// of them by following other criteria.
