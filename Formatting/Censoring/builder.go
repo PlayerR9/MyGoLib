@@ -6,8 +6,8 @@ import (
 	"slices"
 	"strings"
 
-	uc "github.com/PlayerR9/MyGoLib/Units/common"
-	slext "github.com/PlayerR9/MyGoLib/Units/slice"
+	uc "github.com/PlayerR9/lib_units/common"
+	slext "github.com/PlayerR9/lib_units/slices"
 )
 
 // Builder is a type that provides a fluent interface for constructing a

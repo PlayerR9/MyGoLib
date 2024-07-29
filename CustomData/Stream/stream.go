@@ -1,7 +1,7 @@
 package Stream
 
 import (
-	uc "github.com/PlayerR9/MyGoLib/Units/common"
+	uc "github.com/PlayerR9/lib_units/common"
 )
 
 // Stream is a stream of items.

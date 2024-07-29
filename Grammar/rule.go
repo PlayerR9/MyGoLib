@@ -1,7 +1,7 @@
 package Grammar
 
 import (
-	uc "github.com/PlayerR9/MyGoLib/Units/common"
+	uc "github.com/PlayerR9/lib_units/common"
 )
 
 // Rule is a struct that represents a rule of type T.

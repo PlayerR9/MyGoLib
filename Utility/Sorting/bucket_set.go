@@ -3,8 +3,8 @@ package Sorting
 import (
 	"slices"
 
-	uc "github.com/PlayerR9/MyGoLib/Units/common"
-	us "github.com/PlayerR9/MyGoLib/Units/slice"
+	uc "github.com/PlayerR9/lib_units/common"
+	us "github.com/PlayerR9/lib_units/slices"
 )
 
 // CopyBucketSet copies the given map of buckets.

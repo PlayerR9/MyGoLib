@@ -1,6 +1,6 @@
 package Grammar
 
-import uc "github.com/PlayerR9/MyGoLib/Units/common"
+import uc "github.com/PlayerR9/lib_units/common"
 
 // Actioner is an interface that defines the behavior of an action.
 type Actioner interface {

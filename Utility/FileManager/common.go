@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	uc "github.com/PlayerR9/MyGoLib/Units/common"
+	uc "github.com/PlayerR9/lib_units/common"
 )
 
 // FileExists checks if a file exists at the specified location.

@@ -4,7 +4,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	com "github.com/PlayerR9/MyGoLib/Units/common"
+	com "github.com/PlayerR9/lib_units/common"
 )
 
 // String represents a unit of data in a draw table with a specific style.

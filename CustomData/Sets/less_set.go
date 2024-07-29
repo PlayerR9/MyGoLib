@@ -3,8 +3,8 @@ package Sets
 import (
 	"strings"
 
-	uc "github.com/PlayerR9/MyGoLib/Units/common"
 	uts "github.com/PlayerR9/MyGoLib/Utility/Sorting"
+	uc "github.com/PlayerR9/lib_units/common"
 	"golang.org/x/exp/slices"
 )
 

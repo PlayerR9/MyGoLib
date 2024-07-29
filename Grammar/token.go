@@ -7,7 +7,7 @@ import (
 	"unicode/utf8"
 
 	fs "github.com/PlayerR9/MyGoLib/Formatting/Strings"
-	uc "github.com/PlayerR9/MyGoLib/Units/common"
+	uc "github.com/PlayerR9/lib_units/common"
 )
 
 // TokenTyper is an interface that defines the behavior of a token type.

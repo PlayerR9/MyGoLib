@@ -4,7 +4,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/PlayerR9/MyGoLib/Utility/object"
+	"github.com/PlayerR9/lib_units/object"
 )
 
 // sectionBuilder is a type that represents a section of a page.

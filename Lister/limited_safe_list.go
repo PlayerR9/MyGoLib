@@ -5,7 +5,7 @@ import (
 	"strings"
 	"sync"
 
-	uc "github.com/PlayerR9/MyGoLib/Units/common"
+	uc "github.com/PlayerR9/lib_units/common"
 )
 
 // LimitedSafeList is a generic type that represents a thread-safe list data

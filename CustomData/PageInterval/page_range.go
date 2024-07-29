@@ -6,7 +6,8 @@ import (
 	"strings"
 
 	ffs "github.com/PlayerR9/MyGoLib/Formatting/FString"
-	uc "github.com/PlayerR9/MyGoLib/Units/common"
+	uc "github.com/PlayerR9/lib_units/common"
+	lup "github.com/PlayerR9/lib_units/pair"
 )
 
 // PageRange represents a pair of integers that represent the start and end
@@ -16,7 +17,7 @@ import (
 //
 // For instance, the PageRange [1, 5] represents the interval from page 1 to
 // page 5.
-type PageRange uc.Pair[int, int]
+type PageRange lup.Pair[int, int]
 
 // FString returns the string representation of the PageRange using the given
 // traversor and options.

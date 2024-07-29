@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"strings"
 
-	utstr "github.com/PlayerR9/MyGoLib/Utility/strings"
+	utstr "github.com/PlayerR9/lib_units/strings"
 )
 
 // ErrUnexpectedToken is an error that occurs when an unexpected token is

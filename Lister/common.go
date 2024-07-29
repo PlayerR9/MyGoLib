@@ -3,7 +3,7 @@ package Lister
 import (
 	"fmt"
 
-	uc "github.com/PlayerR9/MyGoLib/Units/common"
+	uc "github.com/PlayerR9/lib_units/common"
 )
 
 // Lister is an interface that defines methods for a list data structure.

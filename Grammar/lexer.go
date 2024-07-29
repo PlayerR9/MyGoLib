@@ -3,7 +3,7 @@ package Grammar
 import (
 	"fmt"
 
-	uc "github.com/PlayerR9/MyGoLib/Units/common"
+	uc "github.com/PlayerR9/lib_units/common"
 )
 
 // Lexer is an interface that defines the behavior of a lexer.

@@ -3,7 +3,7 @@ package Debugging
 import (
 	"strings"
 
-	uc "github.com/PlayerR9/MyGoLib/Units/common"
+	uc "github.com/PlayerR9/lib_units/common"
 )
 
 const (

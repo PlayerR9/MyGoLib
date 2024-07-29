@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"strings"
 
-	uc "github.com/PlayerR9/MyGoLib/Units/common"
+	uc "github.com/PlayerR9/lib_units/common"
 )
 
 // UpCounter represents a counter that increments upwards until it

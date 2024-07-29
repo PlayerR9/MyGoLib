@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	fs "github.com/PlayerR9/MyGoLib/Formatting/Strings"
-	uc "github.com/PlayerR9/MyGoLib/Units/common"
+	uc "github.com/PlayerR9/lib_units/common"
 )
 
 type AstNoder interface {

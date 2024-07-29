@@ -3,7 +3,7 @@ package Tray
 import (
 	"slices"
 
-	uc "github.com/PlayerR9/MyGoLib/Units/common"
+	uc "github.com/PlayerR9/lib_units/common"
 )
 
 // SimpleTray is a struct that represents a tape.

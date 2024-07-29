@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	pkg "github.com/PlayerR9/MyGoLib/Formatting/FString/pkg"
-	uc "github.com/PlayerR9/MyGoLib/Units/common"
+	uc "github.com/PlayerR9/lib_units/common"
 )
 
 // ApplyMany applies a format to a stringer.

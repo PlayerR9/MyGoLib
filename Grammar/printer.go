@@ -4,8 +4,8 @@ import (
 	"unicode"
 
 	fs "github.com/PlayerR9/MyGoLib/Formatting/Strings"
-	uc "github.com/PlayerR9/MyGoLib/Units/common"
-	utby "github.com/PlayerR9/MyGoLib/Utility/bytes"
+	utby "github.com/PlayerR9/lib_units/bytes"
+	uc "github.com/PlayerR9/lib_units/common"
 )
 
 // make_arrow is a helper function that creates an arrow pointing to the faulty token.

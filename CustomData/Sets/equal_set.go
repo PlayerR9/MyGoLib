@@ -3,8 +3,8 @@ package Sets
 import (
 	"strings"
 
-	uc "github.com/PlayerR9/MyGoLib/Units/common"
-	us "github.com/PlayerR9/MyGoLib/Units/slice"
+	uc "github.com/PlayerR9/lib_units/common"
+	us "github.com/PlayerR9/lib_units/slices"
 )
 
 // EqualSet is a set that uses the Equals method to compare elements.

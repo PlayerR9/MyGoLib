@@ -3,8 +3,9 @@ package OrderedMap
 import (
 	"slices"
 
-	uc "github.com/PlayerR9/MyGoLib/Units/common"
 	uts "github.com/PlayerR9/MyGoLib/Utility/Sorting"
+	uc "github.com/PlayerR9/lib_units/common"
+	lup "github.com/PlayerR9/lib_units/pair"
 )
 
 // MapKeyer is an interface that represents a key of a map.
@@ -130,18 +131,18 @@ func (s *LessMap[K, V]) Keys() []K {
 // GetEntries returns the entries in the sorted map.
 //
 // Returns:
-//   - []*uc.Pair[K, V]: The entries in the sorted map.
+//   - []*lup.Pair[K, V]: The entries in the sorted map.
 //
 // Behaviors:
 //   - The entries are returned in the order of the keys.
 //   - There are no nil pairs in the returned slice.
 //   - Prefer using Iterator() method for iterating over the entries
 //     instead of this method.
-func (s *LessMap[K, V]) GetEntries() []uc.Pair[K, V] {
-	entries := make([]uc.Pair[K, V], 0, len(s.keys))
+func (s *LessMap[K, V]) GetEntries() []lup.Pair[K, V] {
+	entries := make([]lup.Pair[K, V], 0, len(s.keys))
 
 	for i, key := range s.keys {
-		p := uc.NewPair(key, s.values[i])
+		p := lup.NewPair(key, s.values[i])
 
 		entries = append(entries, p)
 	}
@@ -197,15 +198,15 @@ func (s *LessMap[K, V]) ModifyValueFunc(key K, f ModifyValueFunc[V]) error {
 // Iterator returns an iterator for the sorted map.
 //
 // Returns:
-//   - uc.Iterater[*uc.Pair[K, V]]: An iterator for the sorted map.
+//   - uc.Iterater[*lup.Pair[K, V]]: An iterator for the sorted map.
 //
 // Behaviors:
 //   - The iterator returns the entries in the order of the keys as pairs.
-func (s *LessMap[K, V]) Iterator() uc.Iterater[uc.Pair[K, V]] {
-	var builder uc.Builder[uc.Pair[K, V]]
+func (s *LessMap[K, V]) Iterator() uc.Iterater[lup.Pair[K, V]] {
+	var builder uc.Builder[lup.Pair[K, V]]
 
 	for i, key := range s.keys {
-		p := uc.NewPair(key, s.values[i])
+		p := lup.NewPair(key, s.values[i])
 
 		builder.Add(p)
 	}

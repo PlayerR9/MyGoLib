@@ -5,7 +5,7 @@ import (
 	"os"
 	"path"
 
-	uc "github.com/PlayerR9/MyGoLib/Units/common"
+	uc "github.com/PlayerR9/lib_units/common"
 )
 
 // Item is a struct that represents a directory entry with its location.

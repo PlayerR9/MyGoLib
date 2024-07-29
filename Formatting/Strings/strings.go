@@ -7,7 +7,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	uc "github.com/PlayerR9/MyGoLib/Units/common"
+	uc "github.com/PlayerR9/lib_units/common"
 )
 
 // DateStringer prints the date in the format "1st January, 2006".

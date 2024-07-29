@@ -8,8 +8,8 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	uc "github.com/PlayerR9/MyGoLib/Units/common"
-	utch "github.com/PlayerR9/MyGoLib/Utility/runes"
+	uc "github.com/PlayerR9/lib_units/common"
+	utch "github.com/PlayerR9/lib_units/runes"
 )
 
 var (

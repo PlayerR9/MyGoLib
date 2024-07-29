@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"strings"
 
-	uc "github.com/PlayerR9/MyGoLib/Units/common"
+	uc "github.com/PlayerR9/lib_units/common"
 )
 
 // LimitedArrayList is a generic type that represents a list data structure with

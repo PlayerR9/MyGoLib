@@ -1,8 +1,8 @@
 package Tray
 
 import (
-	ud "github.com/PlayerR9/MyGoLib/Units/Debugging"
-	uc "github.com/PlayerR9/MyGoLib/Units/common"
+	ud "github.com/PlayerR9/MyGoLib/Utility/Debugging"
+	uc "github.com/PlayerR9/lib_units/common"
 )
 
 // NewSimpleTrayWithHistory creates a new SimpleTray with the given tape and history.

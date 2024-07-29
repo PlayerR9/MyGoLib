@@ -5,8 +5,8 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	uc "github.com/PlayerR9/MyGoLib/Units/common"
-	"github.com/PlayerR9/MyGoLib/Utility/object"
+	uc "github.com/PlayerR9/lib_units/common"
+	"github.com/PlayerR9/lib_units/object"
 )
 
 const (

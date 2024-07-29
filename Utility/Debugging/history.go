@@ -1,7 +1,7 @@
 package Debugging
 
 import (
-	uc "github.com/PlayerR9/MyGoLib/Units/common"
+	uc "github.com/PlayerR9/lib_units/common"
 )
 
 // Commander is an interface that represents a command that can be
