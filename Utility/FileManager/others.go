@@ -2,81 +2,12 @@ package FileManager
 
 import (
 	"fmt"
-	"io"
-	"net/http"
 	"os"
 	"path"
 	"path/filepath"
-	"strings"
 
 	"golang.org/x/exp/slices"
 )
-
-// MediaDownloader downloads a file from the given URL and saves it
-// to the specified destination.
-//
-// The name of the file is derived from the URL and it does not
-// download the file if the name already exists in the destination.
-//
-// Parameters:
-//   - dest: A string representing the path to the directory where the file
-//     will be saved.
-//   - url: A string representing the URL of the file to download.
-//
-// Returns:
-//   - string: The path to the downloaded file.
-//   - error: An error if the download fails.
-//
-// Example:
-//
-//	file_path, err := MediaDownloader("/path/to/destination", "http://example.com/file.mp3")
-//	if err != nil {
-//	    log.Fatal(err)
-//	}
-//	fmt.Println(file_path) // Output: /path/to/destination/file.mp3
-func MediaDownloader(dest, url string, force bool) (string, error) {
-	err := os.MkdirAll(dest, os.ModePerm)
-	if err != nil {
-		return "", fmt.Errorf("could not create directory: %w", err)
-	}
-
-	// Extract the name of the file from the URL
-	fields := strings.Split(url, "/")
-	filePath := path.Join(dest, fields[len(fields)-1])
-
-	exists, err := FileExists(filePath)
-	if err != nil {
-		return "", fmt.Errorf("could not check if file exists: %w", err)
-	}
-
-	if exists && !force {
-		// Do nothing
-		return filePath, nil
-	}
-
-	resp, err := http.Get(url)
-	if err != nil {
-		return "", fmt.Errorf("could not send GET request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("file does not exist on the server: %s", url)
-	}
-
-	file, err := os.Create(filePath)
-	if err != nil {
-		return "", fmt.Errorf("could not create file: %w", err)
-	}
-	defer file.Close()
-
-	_, err = io.Copy(file, resp.Body)
-	if err != nil {
-		return "", fmt.Errorf("could not copy file: %w", err)
-	}
-
-	return filePath, nil
-}
 
 // GetAllFileNamesInDirectory is a function that retrieves all file names
 // in a given directory and their extensions.
