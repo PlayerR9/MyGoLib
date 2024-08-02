@@ -18,6 +18,23 @@ type DownCounter struct {
 	retreatCount int
 }
 
+// GoString implements the fmt.GoStringer interface.
+func (c DownCounter) GoString() string {
+	var builder strings.Builder
+
+	builder.WriteString("DownCounter[startingCount=")
+	builder.WriteString(strconv.Itoa(c.startingCount))
+	builder.WriteString(", currentCount=")
+	builder.WriteString(strconv.Itoa(c.currentCount))
+	builder.WriteString(", retreatCount=")
+	builder.WriteString(strconv.Itoa(c.retreatCount))
+	builder.WriteString(", isDone=")
+	builder.WriteString(strconv.FormatBool(c.IsDone()))
+	builder.WriteRune(']')
+
+	return builder.String()
+}
+
 // NewDownCounter creates a new DownCounter with the specified starting count.
 //
 // Parameters:
@@ -46,121 +63,74 @@ func (c DownCounter) IsDone() bool {
 // Advance decrements the current count of the DownCounter by one.
 //
 // Returns:
+//   - DownCounter: A new DownCounter with the decremented current count.
 //   - bool: true if the counter has not reached zero, false otherwise.
-func (c *DownCounter) Advance() bool {
+func (c DownCounter) Advance() (DownCounter, bool) {
 	if c.currentCount-c.retreatCount <= 0 {
-		return false
+		return c, false
 	}
 
 	c.currentCount--
 
-	return true
+	return c, true
 }
 
 // Retreat increments the retrat count of the DownCounter by one and, as a
 // result, decrements the current count by one.
 //
 // Returns:
+//   - DownCounter: A new DownCounter with the decremented current count.
 //   - bool: true if the counter has not reached zero, false otherwise.
-func (c *DownCounter) Retreat() bool {
+func (c DownCounter) Retreat() (DownCounter, bool) {
 	if c.currentCount-c.retreatCount <= 0 {
-		return false
+		return c, false
 	}
 
 	c.retreatCount++
 
-	return true
+	return c, true
 }
 
-// GetRetreatCount returns the number of times the DownCounter
+// RetreatCount returns the number of times the DownCounter
 // has been retreated.
 //
 // Returns:
 //   - int: The number of times the DownCounter has been retreated.
-func (c *DownCounter) GetRetreatCount() int {
+func (c DownCounter) RetreatCount() int {
 	return c.retreatCount
 }
 
-// GetDistance returns the current count of the DownCounter.
+// Distance returns the current count of the DownCounter.
 // This is equivalent to the distance from zero, as the DownCounter
 // decrements towards zero.
 //
 // Returns:
 //   - int: The current count of the DownCounter.
-func (c *DownCounter) GetDistance() int {
+func (c DownCounter) Distance() int {
 	return c.currentCount - c.retreatCount
 }
 
-// GetCurrentCount returns the current count of the DownCounter.
+// CurrentCount returns the current count of the DownCounter.
 //
 // Returns:
 //   - int: The current count of the DownCounter.
-func (c *DownCounter) GetCurrentCount() int {
+func (c DownCounter) CurrentCount() int {
 	return c.currentCount
 }
 
-// GetInitialCount returns the starting count of the DownCounter,
+// InitialCount returns the starting count of the DownCounter,
 // which is the initial count.
 //
 // Returns:
 //   - int: The starting count of the DownCounter.
-func (c *DownCounter) GetInitialCount() int {
+func (c DownCounter) InitialCount() int {
 	return c.startingCount
 }
 
-// String returns a string representation of the DownCounter.
-// The string includes the starting count, current count, retreat
-// count, and whether the counter is done.
-//
-// This is used for debugging and logging purposes.
-//
-// Returns:
-//   - string: A string representation of the DownCounter.
-func (c *DownCounter) String() string {
-	var builder strings.Builder
-
-	builder.WriteString("DownCounter[startingCount=")
-	builder.WriteString(strconv.Itoa(c.startingCount))
-	builder.WriteString(", currentCount=")
-	builder.WriteString(strconv.Itoa(c.currentCount))
-	builder.WriteString(", retreatCount=")
-	builder.WriteString(strconv.Itoa(c.retreatCount))
-	builder.WriteString(", isDone=")
-	builder.WriteString(strconv.FormatBool(c.IsDone()))
-	builder.WriteRune(']')
-
-	return builder.String()
-}
-
 // Reset resets the DownCounter to its initial state.
-func (c *DownCounter) Reset() {
+func (c DownCounter) Reset() DownCounter {
 	c.currentCount = c.startingCount
 	c.retreatCount = 0
-}
 
-// Equals is a method that checks if two DownCounters are equal.
-//
-// Parameters:
-//   - other: The other DownCounter to compare with.
-//
-// Returns:
-//   - bool: True if the DownCounters are equal, false otherwise.
-//
-// If the other DownCounter is nil, it returns false.
-func (c *DownCounter) Equals(other *DownCounter) bool {
-	if other == nil {
-		return false
-	}
-
-	return c.startingCount == other.startingCount &&
-		c.currentCount == other.currentCount &&
-		c.retreatCount == other.retreatCount
-}
-
-// Copy creates a shallow copy of the DownCounter.
-//
-// Returns:
-//   - *DownCounter: A shallow copy of the DownCounter.
-func (c *DownCounter) Copy() *DownCounter {
-	return &DownCounter{c.startingCount, c.currentCount, c.retreatCount}
+	return c
 }

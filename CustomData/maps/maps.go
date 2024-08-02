@@ -9,9 +9,9 @@ type SeenMap[T comparable] struct {
 // NewSeenMap creates a new SeenMap.
 //
 // Returns:
-//   - *SeenMap[T]: A pointer to the new SeenMap. Never returns nil.
-func NewSeenMap[T comparable]() *SeenMap[T] {
-	return &SeenMap[T]{
+//   - SeenMap[T]: The new SeenMap.
+func NewSeenMap[T comparable]() SeenMap[T] {
+	return SeenMap[T]{
 		table: make(map[T]bool),
 	}
 }
@@ -20,7 +20,7 @@ func NewSeenMap[T comparable]() *SeenMap[T] {
 //
 // Parameters:
 //   - key: The key to mark as seen.
-func (s *SeenMap[T]) See(key T) {
+func (s SeenMap[T]) See(key T) {
 	s.table[key] = true
 }
 
@@ -31,7 +31,7 @@ func (s *SeenMap[T]) See(key T) {
 //
 // Returns:
 //   - bool: True if the key has been seen, false otherwise.
-func (s *SeenMap[T]) IsSeen(key T) bool {
+func (s SeenMap[T]) IsSeen(key T) bool {
 	v, ok := s.table[key]
 	return ok && v
 }
@@ -43,7 +43,7 @@ func (s *SeenMap[T]) IsSeen(key T) bool {
 //
 // Returns:
 //   - []T: The elements that have not been seen.
-func (s *SeenMap[T]) FilterSeen(elems []T) []T {
+func (s SeenMap[T]) FilterSeen(elems []T) []T {
 	var top int
 
 	for i := 0; i < len(elems); i++ {
@@ -55,5 +55,5 @@ func (s *SeenMap[T]) FilterSeen(elems []T) []T {
 		}
 	}
 
-	return elems[:top]
+	return elems[:top:top]
 }
