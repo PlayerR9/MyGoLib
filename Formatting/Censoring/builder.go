@@ -6,8 +6,8 @@ import (
 	"slices"
 	"strings"
 
-	uc "github.com/PlayerR9/lib_units/common"
 	slext "github.com/PlayerR9/lib_units/slices"
+	lustr "github.com/PlayerR9/lib_units/strings"
 )
 
 // Builder is a type that provides a fluent interface for constructing a
@@ -135,7 +135,7 @@ func WithValues(values ...any) BuilderOption {
 				// uncensored string representation
 				x.Apply(func(s string) { str = s })
 			default:
-				str = uc.StringOf(value)
+				str = lustr.GoStringOf(value)
 			}
 
 			stringValues = append(stringValues, str)

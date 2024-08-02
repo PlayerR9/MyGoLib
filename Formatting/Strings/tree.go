@@ -90,7 +90,7 @@ func PrintTree[T Noder](root T) (string, error) {
 //   - []*StackElement: The list of stack elements.
 //   - error: An error if traversing fails.
 func (p *Printer[T]) trav(elem *StackElement[T]) ([]*StackElement[T], error) {
-	uc.AssertNil(elem, "elem")
+	// uc.AssertNil(elem, "elem")
 
 	var builder strings.Builder
 
@@ -147,8 +147,8 @@ func (p *Printer[T]) trav(elem *StackElement[T]) ([]*StackElement[T], error) {
 			return nil, err
 		}
 
-		node, ok := value.(T)
-		uc.Assert(ok, fmt.Sprintf("expected %T, got %T", *new(T), value))
+		node, _ := value.(T)
+		// uc.Assert(ok, fmt.Sprintf("expected %T, got %T", *new(T), value))
 
 		se := &StackElement[T]{
 			indent:     indent.String(),

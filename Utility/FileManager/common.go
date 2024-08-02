@@ -197,7 +197,7 @@ func Lines(loc string, create bool) ([]string, error) {
 // Behaviors:
 //   - The function reads the file line by line and applies the function f to each line.
 //   - If an error occurs, the function returns the error and the values processed up to that point.
-func PerLine[T any](loc string, create bool, f uc.EvalOneFunc[string, T]) ([]T, error) {
+func PerLine[T any](loc string, create bool, f func(string) (T, error)) ([]T, error) {
 	exists, err := FileExists(loc)
 	if err != nil {
 		return nil, err

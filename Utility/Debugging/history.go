@@ -1,9 +1,5 @@
 package Debugging
 
-import (
-	uc "github.com/PlayerR9/lib_units/common"
-)
-
 // Commander is an interface that represents a command that can be
 // executed and undone.
 type Commander[T any] interface {
@@ -24,8 +20,6 @@ type Commander[T any] interface {
 	// Returns:
 	//   - error: An error if the undo fails.
 	Undo(data T) error
-
-	uc.Copier
 }
 
 // Command represents a generic command that can be executed and undone.
@@ -55,16 +49,6 @@ func (c *Command[T]) Undo(data T) error {
 	}
 
 	return nil
-}
-
-// Copy implements the Commander interface.
-func (c *Command[T]) Copy() uc.Copier {
-	cCopy := &Command[T]{
-		execute: c.execute,
-		undo:    c.undo,
-	}
-
-	return cCopy
 }
 
 // NewCommand creates a new command with the given execute and undo functions.
@@ -98,21 +82,6 @@ type History[T any] struct {
 
 	// commands represents the commands that have been executed.
 	commands []Commander[T]
-}
-
-// Copy implements the uc.Copier interface.
-func (h *History[T]) Copy() uc.Copier {
-	hCopy := &History[T]{
-		data:     uc.CopyOf(h.data).(T),
-		commands: make([]Commander[T], len(h.commands)),
-	}
-
-	for i, cmd := range h.commands {
-		cmdCopy := cmd.Copy().(Commander[T])
-		hCopy.commands[i] = cmdCopy
-	}
-
-	return hCopy
 }
 
 // NewHistory creates a new history with the given data.

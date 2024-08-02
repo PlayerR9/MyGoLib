@@ -3,8 +3,6 @@ package StringExt
 import (
 	"strings"
 	"unicode/utf8"
-
-	uc "github.com/PlayerR9/lib_units/common"
 )
 
 // lineOfSplitter is a helper struct used in the SplitTextInEqualSizedLines function.
@@ -18,8 +16,11 @@ type lineOfSplitter struct {
 	len int
 }
 
-// Copy implements the common.Copier interface.
-func (sl *lineOfSplitter) Copy() uc.Copier {
+// Copy is a method that creates a copy of the line of splitter.
+//
+// Returns:
+//   - *lineOfSplitter: A copy of the line of splitter.
+func (sl *lineOfSplitter) Copy() *lineOfSplitter {
 	newLine := make([]string, len(sl.line))
 	copy(newLine, sl.line)
 

@@ -5,7 +5,8 @@ import (
 	"strings"
 
 	pkg "github.com/PlayerR9/MyGoLib/Formatting/FString/pkg"
-	uc "github.com/PlayerR9/lib_units/common"
+
+	luint "github.com/PlayerR9/lib_units/ints"
 )
 
 // ApplyMany applies a format to a stringer.
@@ -34,7 +35,7 @@ func ApplyMany[T FStringer](trav *Traversor, elems []T) error {
 	for i, elem := range elems {
 		err := elem.FString(trav)
 		if err != nil {
-			return uc.NewErrAt(i+1, "FStringer element", err)
+			return luint.NewErrAt(i+1, "FStringer element", err)
 		}
 	}
 
@@ -63,7 +64,7 @@ func ApplyFuncMany[T any](trav *Traversor, f FStringFunc[T], elems []T) error {
 	for i, elem := range elems {
 		err := f(trav, elem)
 		if err != nil {
-			return uc.NewErrAt(i+1, "element", err)
+			return luint.NewErrAt(i+1, "element", err)
 		}
 	}
 
@@ -99,7 +100,7 @@ func (p *StdPrinter) Clean() {
 //   - If the formatter is nil, the function uses the default formatter.
 func NewStdPrinter(form *FormatConfig) (*StdPrinter, *Traversor) {
 	if form == nil {
-		form = DefaultFormatter.Copy().(*FormatConfig)
+		form = DefaultFormatter.Copy()
 	}
 
 	p := &StdPrinter{
@@ -125,7 +126,7 @@ func NewStdPrinter(form *FormatConfig) (*StdPrinter, *Traversor) {
 //   - If the configuration is nil, the function uses the default configuration.
 //   - Panics if an invalid configuration type is given (i.e., not IndentConfig, DelimiterConfig,
 //     or SeparatorConfig).
-func NewStdPrinterFromConfig(opts ...uc.Copier) (*StdPrinter, *Traversor) {
+func NewStdPrinterFromConfig(opts ...any) (*StdPrinter, *Traversor) {
 	p := &StdPrinter{
 		buff:      pkg.NewBuffer(),
 		formatter: NewFormatter(opts...),
@@ -165,7 +166,7 @@ func (p *StdPrinter) GetPages() [][][][]string {
 //   - If the formatter is nil, the function uses the default formatter.
 func SprintFString[T FStringer](form *FormatConfig, elem T) ([][][][]string, error) {
 	if form == nil {
-		form = DefaultFormatter.Copy().(*FormatConfig)
+		form = DefaultFormatter.Copy()
 	}
 
 	buff := pkg.NewBuffer()
@@ -202,7 +203,7 @@ func Sprint(form *FormatConfig, strs ...string) ([][][][]string, error) {
 	}
 
 	if form == nil {
-		form = DefaultFormatter.Copy().(*FormatConfig)
+		form = DefaultFormatter.Copy()
 	}
 
 	buff := pkg.NewBuffer()
@@ -211,7 +212,7 @@ func Sprint(form *FormatConfig, strs ...string) ([][][][]string, error) {
 	for i, str := range strs {
 		err := trav.writeString(str)
 		if err != nil {
-			return nil, uc.NewErrAt(i, "string", err)
+			return nil, luint.NewErrAt(i, "string", err)
 		}
 	}
 
@@ -241,7 +242,7 @@ func Sprintj(form *FormatConfig, sep string, strs ...string) ([][][][]string, er
 	}
 
 	if form == nil {
-		form = DefaultFormatter.Copy().(*FormatConfig)
+		form = DefaultFormatter.Copy()
 	}
 
 	buff := pkg.NewBuffer()
@@ -279,7 +280,7 @@ func Sfprint(form *FormatConfig, a ...interface{}) ([][][][]string, error) {
 	}
 
 	if form == nil {
-		form = DefaultFormatter.Copy().(*FormatConfig)
+		form = DefaultFormatter.Copy()
 	}
 
 	buff := pkg.NewBuffer()
@@ -316,7 +317,7 @@ func Sfprintf(form *FormatConfig, format string, a ...interface{}) ([][][][]stri
 	}
 
 	if form == nil {
-		form = DefaultFormatter.Copy().(*FormatConfig)
+		form = DefaultFormatter.Copy()
 	}
 
 	buff := pkg.NewBuffer()
@@ -352,7 +353,7 @@ func Sprintln(form *FormatConfig, lines ...string) ([][][][]string, error) {
 	}
 
 	if form == nil {
-		form = DefaultFormatter.Copy().(*FormatConfig)
+		form = DefaultFormatter.Copy()
 	}
 
 	buff := pkg.NewBuffer()
@@ -361,7 +362,7 @@ func Sprintln(form *FormatConfig, lines ...string) ([][][][]string, error) {
 	for i, line := range lines {
 		err := trav.writeLine(line)
 		if err != nil {
-			return nil, uc.NewErrAt(i, "line", err)
+			return nil, luint.NewErrAt(i, "line", err)
 		}
 	}
 
@@ -391,7 +392,7 @@ func Sprintjln(form *FormatConfig, sep string, lines ...string) ([][][][]string,
 	}
 
 	if form == nil {
-		form = DefaultFormatter.Copy().(*FormatConfig)
+		form = DefaultFormatter.Copy()
 	}
 
 	buff := pkg.NewBuffer()
@@ -429,7 +430,7 @@ func Sfprintln(form *FormatConfig, a ...interface{}) ([][][][]string, error) {
 	}
 
 	if form == nil {
-		form = DefaultFormatter.Copy().(*FormatConfig)
+		form = DefaultFormatter.Copy()
 	}
 
 	buff := pkg.NewBuffer()
@@ -593,7 +594,7 @@ func Fprint(out io.Writer, form FormatConfig, strs ...string) error {
 	for i, str := range strs {
 		err := trav.writeString(str)
 		if err != nil {
-			return uc.NewErrAt(i, "string", err)
+			return luint.NewErrAt(i, "string", err)
 		}
 	}
 
@@ -751,7 +752,7 @@ func Fprintln(out io.Writer, form FormatConfig, lines ...string) error {
 	for i, line := range lines {
 		err := trav.writeLine(line)
 		if err != nil {
-			return uc.NewErrAt(i, "line", err)
+			return luint.NewErrAt(i, "line", err)
 		}
 	}
 

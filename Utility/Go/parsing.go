@@ -6,7 +6,6 @@ import (
 	"strings"
 	"unicode"
 
-	uc "github.com/PlayerR9/lib_units/common"
 	utch "github.com/PlayerR9/lib_units/runes"
 )
 
@@ -118,7 +117,7 @@ func (p *Parser) skipWS() {
 //   - []string: The parsed fields.
 //   - int: The length of the parsed fields. -1 if no fields are found.
 func sub_parse_fields(p *Parser) []string {
-	uc.AssertParam("p", p != nil, errors.New("p cannot be nil"))
+	// uc.AssertParam("p", p != nil, errors.New("p cannot be nil"))
 
 	if p.idx >= len(p.chars) {
 		return nil
@@ -163,7 +162,7 @@ func sub_parse_fields(p *Parser) []string {
 //   - string: the parsed type name.
 //   - error: an error if the parsing fails.
 func parse_type_name(p *Parser) (string, error) {
-	uc.AssertParam("p", p != nil, errors.New("p cannot be nil"))
+	// uc.AssertParam("p", p != nil, errors.New("p cannot be nil"))
 
 	var builder strings.Builder
 
@@ -215,7 +214,7 @@ func parse_type_name(p *Parser) (string, error) {
 //
 // When two or more names are present, then they all share the specified type.
 func parse_field(p *Parser) (string, []string, error) {
-	uc.AssertParam("p", p != nil, errors.New("p cannot be nil"))
+	// uc.AssertParam("p", p != nil, errors.New("p cannot be nil"))
 
 	// Field = Field1 type .
 	//

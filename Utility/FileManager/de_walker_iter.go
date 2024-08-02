@@ -113,7 +113,7 @@ func (iter *DEWalkerIter) Consume() (*ItemList, error) {
 	}
 
 	if len(iter.toSee) == 0 {
-		return nil, iter.el.GetErrors()[0]
+		return nil, iter.el.Errors()[0]
 	}
 
 	var todo []Item

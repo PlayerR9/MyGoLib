@@ -3,8 +3,6 @@ package General
 import (
 	"os/exec"
 	"strings"
-
-	uc "github.com/PlayerR9/lib_units/common"
 )
 
 // RunInPowerShell is a function that returns a function that runs a program in
@@ -20,7 +18,7 @@ import (
 //
 // Return:
 //   - MainFunc: A function that runs the program in a new PowerShell process.
-func RunInPowerShell(program string, args ...string) uc.MainFunc {
+func RunInPowerShell(program string, args ...string) func() error {
 	var builder strings.Builder
 
 	builder.WriteString("'-NoExit', '")

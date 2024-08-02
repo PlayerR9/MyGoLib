@@ -9,6 +9,7 @@ import (
 
 	ffs "github.com/PlayerR9/MyGoLib/Formatting/FString"
 	uc "github.com/PlayerR9/lib_units/common"
+	luint "github.com/PlayerR9/lib_units/ints"
 )
 
 // PageInterval represents a collection of page intervals, where each
@@ -74,7 +75,7 @@ func (pi *PageInterval) FString(trav *ffs.Traversor, opts ...ffs.Option) error {
 
 		err = trav.AppendString(str)
 		if err != nil {
-			return uc.NewErrAt(i+1, "interval", err)
+			return luint.NewErrAt(i+1, "interval", err)
 		}
 
 		trav.AcceptWord()

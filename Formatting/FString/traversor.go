@@ -8,6 +8,7 @@ import (
 
 	pkg "github.com/PlayerR9/MyGoLib/Formatting/FString/pkg"
 	uc "github.com/PlayerR9/lib_units/common"
+	luint "github.com/PlayerR9/lib_units/ints"
 	utch "github.com/PlayerR9/lib_units/runes"
 )
 
@@ -260,7 +261,7 @@ func (trav *Traversor) AppendStrings(strs []string) error {
 	for i, str := range strs {
 		err := trav.writeString(str)
 		if err != nil {
-			return uc.NewErrAt(i+1, "string", err)
+			return luint.NewErrAt(i+1, "string", err)
 		}
 	}
 
@@ -360,7 +361,7 @@ func (trav *Traversor) AddLines(lines []string) error {
 	for i, line := range lines {
 		err := trav.writeLine(line)
 		if err != nil {
-			return uc.NewErrAt(i, "line", err)
+			return luint.NewErrAt(i, "line", err)
 		}
 	}
 
@@ -475,7 +476,7 @@ func (trav *Traversor) Println(a ...interface{}) error {
 // Returns:
 //   - FormatConfig: A copy of the configuration of the traversor.
 func (trav *Traversor) GetConfig(options ...ConfigOption) *FormatConfig {
-	configCopy := trav.config.Copy().(*FormatConfig)
+	configCopy := trav.config.Copy()
 
 	for _, option := range options {
 		option(configCopy)

@@ -6,6 +6,8 @@ import (
 	uts "github.com/PlayerR9/MyGoLib/Utility/Sorting"
 	uc "github.com/PlayerR9/lib_units/common"
 	"golang.org/x/exp/slices"
+
+	lustr "github.com/PlayerR9/lib_units/strings"
 )
 
 // LessSet is a set that uses the Equals method to compare elements.
@@ -257,7 +259,7 @@ func (s *LessSet[T]) String() string {
 
 	values := make([]string, 0, len(s.elems))
 	for _, k := range s.elems[1:] {
-		values = append(values, uc.StringOf(k))
+		values = append(values, lustr.GoStringOf(k))
 	}
 
 	var builder strings.Builder
@@ -276,22 +278,17 @@ func (s *LessSet[T]) String() string {
 //
 // Returns:
 //   - bool: True if the sets are equal, false otherwise.
-func (s *LessSet[T]) Equals(other uc.Equaler) bool {
+func (s *LessSet[T]) Equals(other *LessSet[T]) bool {
 	if other == nil {
 		return false
 	}
 
-	otherSet, ok := other.(*LessSet[T])
-	if !ok {
-		return false
-	}
-
-	if len(s.elems) != len(otherSet.elems) {
+	if len(s.elems) != len(other.elems) {
 		return false
 	}
 
 	for _, k := range s.elems {
-		if !otherSet.HasElem(k) {
+		if !other.HasElem(k) {
 			return false
 		}
 	}
@@ -303,7 +300,7 @@ func (s *LessSet[T]) Equals(other uc.Equaler) bool {
 //
 // Returns:
 //   - *LessSet[T]: A copy of the set.
-func (s *LessSet[T]) Copy() uc.Copier {
+func (s *LessSet[T]) Copy() *LessSet[T] {
 	newElems := make([]T, len(s.elems))
 	copy(newElems, s.elems)
 

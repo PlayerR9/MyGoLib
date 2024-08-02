@@ -5,7 +5,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	uc "github.com/PlayerR9/lib_units/common"
+	luint "github.com/PlayerR9/lib_units/ints"
 	"github.com/PlayerR9/lib_units/object"
 )
 
@@ -244,7 +244,7 @@ func (b *Buffer) WriteBytes(data []byte) (int, error) {
 	for count = 0; len(data) > 0; count++ {
 		r, size := utf8.DecodeRune(data)
 		if r == utf8.RuneError {
-			return count, uc.NewErrAt(count+1, "byte", errors.New("invalid UTF-8 encoding"))
+			return count, luint.NewErrAt(count+1, "byte", errors.New("invalid UTF-8 encoding"))
 		}
 
 		b.Write(r)

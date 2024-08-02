@@ -11,6 +11,7 @@ import (
 
 	uc "github.com/PlayerR9/lib_units/common"
 	hlp "github.com/PlayerR9/lib_units/helpers"
+	luint "github.com/PlayerR9/lib_units/ints"
 	mext "github.com/PlayerR9/lib_units/math"
 )
 
@@ -24,10 +25,10 @@ var (
 
 func init() {
 	calculate_split_ratio = func(candidate *TextSplit) (float64, bool) {
-		uc.Assert(candidate != nil, "in calculate_split_ratio: candidate is nil")
+		// uc.Assert(candidate != nil, "in calculate_split_ratio: candidate is nil")
 
 		height := candidate.GetHeight()
-		uc.AssertF(height > 0, "in calculate_split_ratio: %s", uc.NewErrVariableError("height", uc.NewErrGT(0)).Error())
+		// uc.AssertF(height > 0, "in calculate_split_ratio: %s", uc.NewErrVariableError("height", uc.NewErrGT(0)).Error())
 
 		values := make([]float64, 0, height)
 
@@ -35,8 +36,8 @@ func init() {
 			values = append(values, float64(line.len))
 		}
 
-		sqm, ok := mext.SQM(values)
-		uc.Assert(ok, "in calculateSplitRatio: failed to calculate SQM as slice is empty")
+		sqm, _ := mext.SQM(values)
+		// uc.Assert(ok, "in calculateSplitRatio: failed to calculate SQM as slice is empty")
 
 		return sqm, true
 	}
@@ -316,7 +317,7 @@ func CalculateNumberOfLines(text []string, width int) (int, error) {
 // the text within the width using the CalculateNumberOfLines function.
 func SplitInEqualSizedLines(text []string, width, height int) (*TextSplit, error) {
 	if len(text) == 0 {
-		err := uc.NewErrInvalidParameter("text", uc.NewErrEmpty(text))
+		err := uc.NewErrInvalidParameter("text", uc.NewErrEmpty("[]string"))
 		return nil, err
 	}
 
@@ -354,8 +355,8 @@ func SplitInEqualSizedLines(text []string, width, height int) (*TextSplit, error
 	//		*** World, this ***
 	//		 *** is a test ***
 
-	group, err := NewTextSplit(width, height)
-	uc.AssertErr(err, "NewTextSplit(%d, %d)", width, height)
+	group, _ := NewTextSplit(width, height)
+	// uc.AssertErr(err, "NewTextSplit(%d, %d)", width, height)
 
 	for _, word := range text {
 		ok := group.InsertWord(word)
@@ -412,7 +413,7 @@ func SplitInEqualSizedLines(text []string, width, height int) (*TextSplit, error
 			}
 
 			// Copy the candidate as we don't want to modify the original one.
-			candidateCopy := candidate.Copy().(*TextSplit)
+			candidateCopy := candidate.Copy()
 			candidateCopy.shiftUp(j)
 			candidates = append(candidates, candidateCopy)
 		}
@@ -538,7 +539,7 @@ func Title(str string) (string, error) {
 
 	r, size := utf8.DecodeRuneInString(str)
 	if r == utf8.RuneError {
-		return "", uc.NewErrAt(1, "character", errors.New("first rune in str is invalid UTF-8 encoding"))
+		return "", luint.NewErrAt(1, "character", errors.New("first rune in str is invalid UTF-8 encoding"))
 	}
 
 	remaining := str[size:]

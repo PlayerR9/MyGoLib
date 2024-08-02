@@ -3,8 +3,6 @@ package String
 import (
 	"strings"
 	"unicode/utf8"
-
-	com "github.com/PlayerR9/lib_units/common"
 )
 
 // String represents a unit of data in a draw table with a specific style.
@@ -17,17 +15,12 @@ type String struct {
 }
 
 // Equals implements common.Objecter.
-func (s *String) Equals(other com.Equaler) bool {
+func (s *String) Equals(other *String) bool {
 	if other == nil {
 		return false
 	}
 
-	otherS, ok := other.(*String)
-	if !ok {
-		return false
-	}
-
-	return s.content == otherS.content
+	return s.content == other.content
 }
 
 // String returns the content of the unit as a string.
@@ -41,8 +34,8 @@ func (s *String) String() string {
 // Copy returns a copy of the unit.
 //
 // Returns:
-//   - com.Copier: A copy of the unit.
-func (s *String) Copy() com.Copier {
+//   - *String: A copy of the unit.
+func (s *String) Copy() *String {
 	return &String{
 		content: s.content,
 		length:  s.length,
@@ -206,7 +199,7 @@ func (s *String) ReplaceSuffix(suffix string) bool {
 //   - If the limit is greater than the length of the string, the string is unchanged.
 func (s *String) TrimEnd(limit int) *String {
 	if s.content == "" || limit >= s.length {
-		return s.Copy().(*String)
+		return s.Copy()
 	}
 
 	if limit <= 0 {

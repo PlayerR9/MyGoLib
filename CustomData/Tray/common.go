@@ -1,9 +1,5 @@
 package Tray
 
-import (
-	uc "github.com/PlayerR9/lib_units/common"
-)
-
 // Trayable is an interface that represents a type that can be converted to a Tray.
 type Trayable[T any] interface {
 	// ToTray converts the Trayable to a Tray.
@@ -101,6 +97,4 @@ type Trayer[T any] interface {
 		ShiftRightOfArrow(n int)
 
 	*/
-
-	uc.Copier
 }

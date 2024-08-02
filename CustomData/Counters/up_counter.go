@@ -20,20 +20,20 @@ type UpCounter struct {
 	retreatCount int
 }
 
-// Equals implements common.Objecter.
-func (c *UpCounter) Equals(other uc.Equaler) bool {
+// Equals is a method that checks if two UpCounters are equal.
+//
+// Returns:
+//   - bool: true if the counters are equal, false otherwise.
+//
+// If the other UpCounter is nil, it returns false.
+func (c *UpCounter) Equals(other *UpCounter) bool {
 	if other == nil {
 		return false
 	}
 
-	otherC, ok := other.(*UpCounter)
-	if !ok {
-		return false
-	}
-
-	return c.upperLimit == otherC.upperLimit &&
-		c.currentCount == otherC.currentCount &&
-		c.retreatCount == otherC.retreatCount
+	return c.upperLimit == other.upperLimit &&
+		c.currentCount == other.currentCount &&
+		c.retreatCount == other.retreatCount
 }
 
 // IsDone checks if the UpCounter has reached its upper limit.
@@ -145,8 +145,8 @@ func (c *UpCounter) Reset() {
 // Copy creates a shallow copy of the UpCounter.
 //
 // Returns:
-//   - uc.Copier: A shallow copy of the UpCounter.
-func (c *UpCounter) Copy() uc.Copier {
+//   - *UpCounter: A shallow copy of the UpCounter.
+func (c *UpCounter) Copy() *UpCounter {
 	return &UpCounter{
 		upperLimit:   c.upperLimit,
 		currentCount: c.currentCount,

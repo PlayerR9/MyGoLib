@@ -3,6 +3,7 @@ package OrderedMap
 import (
 	ffs "github.com/PlayerR9/MyGoLib/Formatting/FString"
 	uc "github.com/PlayerR9/lib_units/common"
+	luint "github.com/PlayerR9/lib_units/ints"
 	lup "github.com/PlayerR9/lib_units/pair"
 )
 
@@ -78,7 +79,7 @@ func (mip *MapIterPrinter[T]) FString(trav *ffs.Traversor, opts ...ffs.Option) e
 			entry.Second,
 		)
 		if err != nil {
-			return uc.NewErrAt(at+1, mip.Name, err)
+			return luint.NewErrAt(at+1, mip.Name, err)
 		}
 	}
 

@@ -2,8 +2,6 @@ package FString
 
 import (
 	"strings"
-
-	uc "github.com/PlayerR9/lib_units/common"
 )
 
 const (
@@ -40,8 +38,11 @@ type IndentConfig struct {
 	level int
 }
 
-// Copy implements the uc.Copier interface.
-func (c *IndentConfig) Copy() uc.Copier {
+// Copy is a method that creates a copy of the indentation configuration.
+//
+// Returns:
+//   - *IndentConfig: A copy of the indentation configuration.
+func (c *IndentConfig) Copy() *IndentConfig {
 	return &IndentConfig{
 		str:   c.str,
 		level: c.level,
@@ -108,8 +109,11 @@ type SeparatorConfig struct {
 	includeFinal bool
 }
 
-// Copy implements the uc.Copier interface.
-func (c *SeparatorConfig) Copy() uc.Copier {
+// Copy is a method that creates a copy of the separator configuration.
+//
+// Returns:
+//   - *SeparatorConfig: A copy of the separator configuration.
+func (c *SeparatorConfig) Copy() *SeparatorConfig {
 	return &SeparatorConfig{
 		str:          c.str,
 		includeFinal: c.includeFinal,
@@ -156,8 +160,11 @@ type DelimiterConfig struct {
 	left bool
 }
 
-// Copy implements the uc.Copier interface.
-func (c *DelimiterConfig) Copy() uc.Copier {
+// Copy is a method that creates a copy of the delimiter configuration.
+//
+// Returns:
+//   - *DelimiterConfig: A copy of the delimiter configuration.
+func (c *DelimiterConfig) Copy() *DelimiterConfig {
 	return &DelimiterConfig{
 		str:      c.str,
 		isInline: c.isInline,
@@ -195,8 +202,11 @@ type FormatterConfig struct {
 	spacingSize int
 }
 
-// Copy implements the uc.Copier interface.
-func (c *FormatterConfig) Copy() uc.Copier {
+// Copy is a method that creates a copy of the formatter configuration.
+//
+// Returns:
+//   - *FormatterConfig: A copy of the formatter configuration.
+func (c *FormatterConfig) Copy() *FormatterConfig {
 	return &FormatterConfig{
 		tabSize:     c.tabSize,
 		spacingSize: c.spacingSize,

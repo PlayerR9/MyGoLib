@@ -8,6 +8,7 @@ import (
 	"unicode/utf8"
 
 	uc "github.com/PlayerR9/lib_units/common"
+	luint "github.com/PlayerR9/lib_units/ints"
 )
 
 // DateStringer prints the date in the format "1st January, 2006".
@@ -22,7 +23,7 @@ import (
 func DateStringer(date time.Time) string {
 	var builder strings.Builder
 
-	builder.WriteString(uc.GetOrdinalSuffix(date.Day()))
+	builder.WriteString(luint.GetOrdinalSuffix(date.Day()))
 	builder.WriteRune(' ')
 	builder.WriteString(date.Month().String())
 	builder.WriteString(", ")
@@ -283,7 +284,7 @@ func TableEntriesAlign(table [][]string, tabSize int) ([][]string, error) {
 	for i := 0; i < width; i++ {
 		table, err = TabAlign(table, i, tabSize)
 		if err != nil {
-			return nil, uc.NewErrAt(i+1, "column", err)
+			return nil, luint.NewErrAt(i+1, "column", err)
 		}
 	}
 

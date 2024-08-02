@@ -3,7 +3,7 @@ package FString
 import (
 	"fmt"
 
-	uc "github.com/PlayerR9/lib_units/common"
+	luint "github.com/PlayerR9/lib_units/ints"
 )
 
 var (
@@ -46,32 +46,35 @@ type FormatConfig struct {
 	format *FormatterConfig
 }
 
-// Copy implements the uc.Copier interface.
-func (form *FormatConfig) Copy() uc.Copier {
+// Copy is a method that creates a copy of the formatter configuration.
+//
+// Returns:
+//   - *FormatterConfig: A copy of the formatter configuration.
+func (form *FormatConfig) Copy() *FormatConfig {
 	formCopy := new(FormatConfig)
 
 	if form.indentation != nil {
-		configCopy := form.indentation.Copy().(*IndentConfig)
+		configCopy := form.indentation.Copy()
 		formCopy.indentation = configCopy
 	}
 
 	if form.delimiterLeft != nil {
-		configCopy := form.delimiterLeft.Copy().(*DelimiterConfig)
+		configCopy := form.delimiterLeft.Copy()
 		formCopy.delimiterLeft = configCopy
 	}
 
 	if form.delimiterRight != nil {
-		configCopy := form.delimiterRight.Copy().(*DelimiterConfig)
+		configCopy := form.delimiterRight.Copy()
 		formCopy.delimiterRight = configCopy
 	}
 
 	if form.separator != nil {
-		configCopy := form.separator.Copy().(*SeparatorConfig)
+		configCopy := form.separator.Copy()
 		formCopy.separator = configCopy
 	}
 
 	if form.format != nil {
-		configCopy := form.format.Copy().(*FormatterConfig)
+		configCopy := form.format.Copy()
 		formCopy.format = configCopy
 	}
 
@@ -90,7 +93,7 @@ func (form *FormatConfig) Copy() uc.Copier {
 //   - The function panics if an invalid configuration type is given. (i.e., not IndentConfig,
 //     DelimiterConfig, or SeparatorConfig)
 //   - If no formatter configuration is given, the default formatter configuration is used.
-func NewFormatter(options ...uc.Copier) *FormatConfig {
+func NewFormatter(options ...any) *FormatConfig {
 	form := new(FormatConfig)
 
 	for _, opt := range options {
@@ -191,7 +194,7 @@ func ApplyFormMany[T FStringer](form *FormatConfig, trav *Traversor, elems []T) 
 	for i, elem := range elems {
 		err := elem.FString(otherTrav)
 		if err != nil {
-			return uc.NewErrAt(i+1, "FStringer element", err)
+			return luint.NewErrAt(i+1, "FStringer element", err)
 		}
 	}
 
@@ -250,7 +253,7 @@ func ApplyFormManyFunc[T any](form *FormatConfig, trav *Traversor, elems []T, f 
 	for i, elem := range elems {
 		err := f(otherTrav, elem)
 		if err != nil {
-			return uc.NewErrAt(i+1, "FStringer element", err)
+			return luint.NewErrAt(i+1, "FStringer element", err)
 		}
 	}
 
@@ -271,14 +274,14 @@ func MergeForm(form1, form2 *FormatConfig) *FormatConfig {
 		var res *FormatConfig
 
 		if form2 == nil {
-			res = DefaultFormatter.Copy().(*FormatConfig)
+			res = DefaultFormatter.Copy()
 		} else {
-			res = form2.Copy().(*FormatConfig)
+			res = form2.Copy()
 		}
 
 		return res
 	} else if form2 == nil {
-		res := form1.Copy().(*FormatConfig)
+		res := form1.Copy()
 		return res
 	}
 

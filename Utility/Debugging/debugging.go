@@ -2,8 +2,6 @@ package Debugging
 
 import (
 	"strings"
-
-	uc "github.com/PlayerR9/lib_units/common"
 )
 
 const (
@@ -70,7 +68,7 @@ type Backuper[T any] interface {
 //   - If the function fails or does not accept the subject object, the
 //     subject object is restored from the backup. Otherwise, the subject
 //     object is left as is.
-func DoWithBackup[T Backuper[E], E any](subject T, f uc.EvalOneFunc[T, bool]) error {
+func DoWithBackup[T Backuper[E], E any](subject T, f func(T) (bool, error)) error {
 	backup := subject.Backup()
 
 	accept, err := f(subject)

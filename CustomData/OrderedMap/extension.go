@@ -1,9 +1,5 @@
 package OrderedMap
 
-import (
-	uc "github.com/PlayerR9/lib_units/common"
-)
-
 // PredicateFilter is a type that defines a map filter function.
 //
 // Parameters:
@@ -309,6 +305,7 @@ func RemoveDuplicates[K comparable, V comparable](S map[K]V) map[K]V {
 	return unique
 }
 
+/*
 // RemoveDuplicatesFunc removes duplicate elements from the map.
 //
 // Parameters:
@@ -351,6 +348,7 @@ func RemoveDuplicatesFunc[K comparable, V uc.Objecter](S map[K]V) map[K]V {
 
 	return unique
 }
+*/
 
 // KeyOfDuplicate returns the index of the first duplicate element in the map.
 //
@@ -378,7 +376,7 @@ func KeyOfDuplicate[K, V comparable](S map[K]V) (K, bool) {
 	return *new(K), false
 }
 
-// KeyOfDuplicateFunc returns the index of the first duplicate element in the map.
+/* // KeyOfDuplicateFunc returns the index of the first duplicate element in the map.
 //
 // Parameters:
 //   - S: map of elements.
@@ -411,7 +409,7 @@ func KeyOfDuplicateFunc[K comparable, V uc.Objecter](S map[K]V) (K, bool) {
 	}
 
 	return *new(K), false
-}
+} */
 
 // PurgeKeysNotIn removes elements from the map whose keys are not in the validKeys slice.
 //

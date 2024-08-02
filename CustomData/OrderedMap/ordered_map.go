@@ -6,6 +6,7 @@ import (
 
 	uc "github.com/PlayerR9/lib_units/common"
 	lup "github.com/PlayerR9/lib_units/pair"
+	lustr "github.com/PlayerR9/lib_units/strings"
 )
 
 // OrderedMap is a generic data structure that represents a sorted map.
@@ -17,23 +18,21 @@ type OrderedMap[K comparable, V any] struct {
 	keys []K
 }
 
-// Equals implements common.Objecter.
-func (s *OrderedMap[K, V]) Equals(other uc.Equaler) bool {
+/* // Equals is a method that checks if two OrderedMaps are equal.
+//
+// Returns:
+//   - bool: true if the maps are equal, false otherwise.
+func (s *OrderedMap[K, V]) Equals(other *OrderedMap[K, V]) bool {
 	if other == nil {
 		return false
 	}
 
-	otherMap, ok := other.(*OrderedMap[K, V])
-	if !ok {
-		return false
-	}
-
-	if len(s.keys) != len(otherMap.keys) {
+	if len(s.keys) != len(other.keys) {
 		return false
 	}
 
 	for key, value := range s.mapping {
-		val, ok := otherMap.mapping[key]
+		val, ok := other.mapping[key]
 		if !ok {
 			return false
 		}
@@ -44,7 +43,7 @@ func (s *OrderedMap[K, V]) Equals(other uc.Equaler) bool {
 	}
 
 	return true
-}
+} */
 
 // String implements common.Objecter.
 func (s *OrderedMap[K, V]) String() string {
@@ -54,9 +53,9 @@ func (s *OrderedMap[K, V]) String() string {
 		var builder strings.Builder
 
 		builder.WriteRune('{')
-		builder.WriteString(uc.StringOf(s.keys[0]))
+		builder.WriteString(lustr.GoStringOf(s.keys[0]))
 		builder.WriteString(" : ")
-		builder.WriteString(uc.StringOf(s.mapping[s.keys[0]]))
+		builder.WriteString(lustr.GoStringOf(s.mapping[s.keys[0]]))
 		builder.WriteRune('}')
 
 		return builder.String()
@@ -65,15 +64,15 @@ func (s *OrderedMap[K, V]) String() string {
 	var builder strings.Builder
 
 	builder.WriteRune('{')
-	builder.WriteString(uc.StringOf(s.keys[0]))
+	builder.WriteString(lustr.GoStringOf(s.keys[0]))
 	builder.WriteString(" : ")
-	builder.WriteString(uc.StringOf(s.mapping[s.keys[0]]))
+	builder.WriteString(lustr.GoStringOf(s.mapping[s.keys[0]]))
 
 	for _, key := range s.keys[1:] {
 		builder.WriteString(", ")
-		builder.WriteString(uc.StringOf(key))
+		builder.WriteString(lustr.GoStringOf(key))
 		builder.WriteString(" : ")
-		builder.WriteString(uc.StringOf(s.mapping[key]))
+		builder.WriteString(lustr.GoStringOf(s.mapping[key]))
 	}
 
 	builder.WriteRune('}')
@@ -84,8 +83,8 @@ func (s *OrderedMap[K, V]) String() string {
 // Copy creates a shallow copy of the sorted map.
 //
 // Returns:
-//   - uc.Copier: A shallow copy of the sorted map.
-func (s *OrderedMap[K, V]) Copy() uc.Copier {
+//   - *SortedMap[K, V]: A shallow copy of the sorted map.
+func (s *OrderedMap[K, V]) Copy() *OrderedMap[K, V] {
 	sCopy := &OrderedMap[K, V]{
 		mapping: make(map[K]V),
 		keys:    make([]K, len(s.keys)),

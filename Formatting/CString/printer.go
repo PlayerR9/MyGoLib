@@ -2,6 +2,7 @@ package CString
 
 import (
 	uc "github.com/PlayerR9/lib_units/common"
+	luint "github.com/PlayerR9/lib_units/ints"
 	"github.com/gdamore/tcell"
 )
 
@@ -43,7 +44,7 @@ func NewPrinter(form FormatConfig) *Printer {
 //   - If the configuration is nil, the function uses the default configuration.
 //   - Panics if an invalid configuration type is given (i.e., not IndentConfig, DelimiterConfig,
 //     or SeparatorConfig).
-func NewPrinterFromConfig(opts ...Configer) *Printer {
+func NewPrinterFromConfig(opts ...any) *Printer {
 	return &Printer{
 		buff:      newBuffer(),
 		formatter: NewFormatter(opts...),
@@ -120,7 +121,7 @@ func ApplyMany[T CStringer](p *Printer, elems []T) error {
 	for i, elem := range elems {
 		err := elem.CString(newTraversor(p.formatter, p.buff))
 		if err != nil {
-			return uc.NewErrAt(i+1, "CStringer element", err)
+			return luint.NewErrAt(i+1, "CStringer element", err)
 		}
 	}
 
@@ -181,7 +182,7 @@ func ApplyFuncMany[T any](p *Printer, f CStringFunc[T], elems []T) error {
 	for i, elem := range elems {
 		err := f(newTraversor(p.formatter, p.buff), elem)
 		if err != nil {
-			return uc.NewErrAt(i+1, "element", err)
+			return luint.NewErrAt(i+1, "element", err)
 		}
 	}
 

@@ -1,12 +1,6 @@
 package Sets
 
-import (
-	"strings"
-
-	uc "github.com/PlayerR9/lib_units/common"
-	us "github.com/PlayerR9/lib_units/slices"
-)
-
+/*
 // EqualSet is a set that uses the Equals method to compare elements.
 type EqualSet[T uc.Objecter] struct {
 	// elems is the slice of elements in the set.
@@ -248,16 +242,16 @@ func (s *EqualSet[T]) String() string {
 	}
 
 	if len(s.elems) == 1 {
-		return "{" + uc.StringOf(s.elems[0]) + "}"
+		return "{" + lustr.GoStringOf(s.elems[0]) + "}"
 	}
 
 	var builder strings.Builder
 
 	builder.WriteRune('{')
-	builder.WriteString(uc.StringOf(s.elems[0]))
+	builder.WriteString(lustr.GoStringOf(s.elems[0]))
 	for _, k := range s.elems[1:] {
 		builder.WriteString(", ")
-		builder.WriteString(uc.StringOf(k))
+		builder.WriteString(lustr.GoStringOf(k))
 	}
 	builder.WriteRune('}')
 
@@ -332,3 +326,4 @@ func NewEqualSet[T uc.Objecter](elems []T) *EqualSet[T] {
 		elems: us.UniquefyEquals(elems, true),
 	}
 }
+*/

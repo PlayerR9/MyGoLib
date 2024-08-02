@@ -6,6 +6,7 @@ import (
 	"unicode/utf8"
 
 	uc "github.com/PlayerR9/lib_units/common"
+	luint "github.com/PlayerR9/lib_units/ints"
 	"github.com/gdamore/tcell"
 )
 
@@ -60,7 +61,7 @@ func ApplyTravFuncMany[T any](trav *Traversor, f CStringFunc[T], elems []T) erro
 	for i, elem := range elems {
 		err := f(trav, elem)
 		if err != nil {
-			return uc.NewErrAt(i+1, "element", err)
+			return luint.NewErrAt(i+1, "element", err)
 		}
 	}
 
@@ -174,7 +175,7 @@ func (trav *Traversor) writeString(str string, style tcell.Style) error {
 
 	n := checkString(str)
 	if n != -1 {
-		return uc.NewErrAt(n, "rune", uc.NewErrInvalidRune(nil))
+		return luint.NewErrAt(n, "rune", uc.NewErrInvalidRune(nil))
 	}
 
 	trav.source.writeString(str, style)
@@ -204,7 +205,7 @@ func (trav *Traversor) writeLine(line string, style tcell.Style) error {
 	} else {
 		n := checkString(line)
 		if n != -1 {
-			return uc.NewErrAt(n, "rune", uc.NewErrInvalidRune(nil))
+			return luint.NewErrAt(n, "rune", uc.NewErrInvalidRune(nil))
 		}
 
 		trav.source.writeString(line, style)
@@ -273,7 +274,7 @@ func (trav *Traversor) AppendStrings(strs []string, style tcell.Style) error {
 	for i, str := range strs {
 		err := trav.writeString(str, style)
 		if err != nil {
-			return uc.NewErrAt(i, "string", err)
+			return luint.NewErrAt(i, "string", err)
 		}
 	}
 
@@ -368,7 +369,7 @@ func (trav *Traversor) AddLines(lines []string, style tcell.Style) error {
 	for i, line := range lines {
 		err := trav.writeLine(line, style)
 		if err != nil {
-			return uc.NewErrAt(i, "line", err)
+			return luint.NewErrAt(i, "line", err)
 		}
 	}
 
@@ -568,9 +569,10 @@ func WithModifiedIndent(by int) ConfigOption {
 func (trav *Traversor) GetConfig(options ...ConfigOption) FormatConfig {
 	var configCopy FormatConfig
 
-	for i := 0; i < 4; i++ {
+	// FIXME: This is a hack.
+	/* for i := 0; i < 4; i++ {
 		configCopy[i] = trav.config[i].Copy()
-	}
+	} */
 
 	for _, option := range options {
 		option(configCopy)

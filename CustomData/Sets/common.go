@@ -96,6 +96,8 @@ type Seter[T any] interface {
 	Clear()
 
 	fmt.Stringer
-	uc.Objecter
-	uc.Slicer[T]
+
+	Slice() []T
+
+	uc.Iterable[T]
 }

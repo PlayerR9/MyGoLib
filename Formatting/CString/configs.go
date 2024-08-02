@@ -1,7 +1,6 @@
 package CString
 
 import (
-	uc "github.com/PlayerR9/lib_units/common"
 	"github.com/gdamore/tcell"
 )
 
@@ -33,11 +32,6 @@ var (
 	DefaultSeparatorConfig *SeparatorConfig = NewSeparator(DefaultSeparator, false)
 )
 
-// Configer is an interface that defines the behavior of a type that can be copied.
-type Configer interface {
-	uc.Copier
-}
-
 // IndentConfig is a type that represents the configuration for indentation.
 type IndentConfig struct {
 	// str is the string that is used for indentation.
@@ -50,15 +44,15 @@ type IndentConfig struct {
 // Copy is a method of uc.Copier interface.
 //
 // Returns:
-//   - uc.Copier: A copy of the indentation configuration.
-func (c *IndentConfig) Copy() uc.Copier {
+//   - *IndentConfig: A copy of the indentation configuration.
+func (c *IndentConfig) Copy() *IndentConfig {
 	configCopy := &IndentConfig{
 		level: c.level,
 		units: make([]*Unit, 0, len(c.units)),
 	}
 
 	for _, unit := range c.units {
-		configCopy.units = append(configCopy.units, unit.Copy().(*Unit))
+		configCopy.units = append(configCopy.units, unit.Copy())
 	}
 
 	return configCopy
@@ -128,8 +122,8 @@ type SeparatorConfig struct {
 // Copy is a method of uc.Copier interface.
 //
 // Returns:
-//   - uc.Copier: A copy of the separator configuration.
-func (c *SeparatorConfig) Copy() uc.Copier {
+//   - *SeparatorConfig: A copy of the separator configuration.
+func (c *SeparatorConfig) Copy() *SeparatorConfig {
 	return &SeparatorConfig{
 		str:          c.str,
 		includeFinal: c.includeFinal,
@@ -172,8 +166,8 @@ type DelimiterConfig struct {
 // Copy is a method of uc.Copier interface.
 //
 // Returns:
-//   - uc.Copier: A copy of the delimiter configuration.
-func (c *DelimiterConfig) Copy() uc.Copier {
+//   - *DelimiterConfig: A copy of the delimiter configuration.
+func (c *DelimiterConfig) Copy() *DelimiterConfig {
 	return &DelimiterConfig{
 		str:      c.str,
 		isInline: c.isInline,
@@ -211,8 +205,8 @@ type StyleConfig struct {
 // Copy is a method of uc.Copier interface.
 //
 // Returns:
-//   - uc.Copier: A copy of the style configuration.
-func (c *StyleConfig) Copy() uc.Copier {
+//   - *StyleConfig: A copy of the style configuration.
+func (c *StyleConfig) Copy() *StyleConfig {
 	return &StyleConfig{
 		defaultStyle: c.defaultStyle,
 	}

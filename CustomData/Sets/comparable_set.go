@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	uc "github.com/PlayerR9/lib_units/common"
+	lustr "github.com/PlayerR9/lib_units/strings"
 )
 
 // ComparableSet is a set that uses the == operator to compare elements.
@@ -233,16 +234,16 @@ func (s *ComparableSet[T]) String() string {
 	}
 
 	if len(allKeys) == 1 {
-		return "{" + uc.StringOf(allKeys[0]) + "}"
+		return "{" + lustr.GoStringOf(allKeys[0]) + "}"
 	}
 
 	var builder strings.Builder
 
 	builder.WriteRune('{')
-	builder.WriteString(uc.StringOf(allKeys[0]))
+	builder.WriteString(lustr.GoStringOf(allKeys[0]))
 	for _, k := range allKeys[1:] {
 		builder.WriteString(", ")
-		builder.WriteString(uc.StringOf(k))
+		builder.WriteString(lustr.GoStringOf(k))
 	}
 	builder.WriteRune('}')
 
@@ -256,22 +257,17 @@ func (s *ComparableSet[T]) String() string {
 //
 // Returns:
 //   - bool: True if the sets are equal, false otherwise.
-func (s *ComparableSet[T]) Equals(other uc.Equaler) bool {
+func (s *ComparableSet[T]) Equals(other *ComparableSet[T]) bool {
 	if other == nil {
 		return false
 	}
 
-	otherCs, ok := other.(*ComparableSet[T])
-	if !ok {
-		return false
-	}
-
-	if len(s.elems) != len(otherCs.elems) {
+	if len(s.elems) != len(other.elems) {
 		return false
 	}
 
 	for k := range s.elems {
-		_, ok := otherCs.elems[k]
+		_, ok := other.elems[k]
 		if !ok {
 			return false
 		}
@@ -284,7 +280,7 @@ func (s *ComparableSet[T]) Equals(other uc.Equaler) bool {
 //
 // Returns:
 //   - *ComparableSet[T]: A copy of the set.
-func (s *ComparableSet[T]) Copy() uc.Copier {
+func (s *ComparableSet[T]) Copy() *ComparableSet[T] {
 	newElems := make(map[T]bool)
 
 	for k := range s.elems {

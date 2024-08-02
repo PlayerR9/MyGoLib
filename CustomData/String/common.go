@@ -20,7 +20,7 @@ func Join(elems []*String, sep string) *String {
 	case 0:
 		return nil
 	case 1:
-		return elems[0].Copy().(*String)
+		return elems[0].Copy()
 	default:
 		var builder strings.Builder
 
@@ -45,7 +45,7 @@ func Join(elems []*String, sep string) *String {
 //   - []*String: The fields of the string.
 func FieldsFunc(s *String, sep string) []*String {
 	if sep == "" {
-		return []*String{s.Copy().(*String)}
+		return []*String{s.Copy()}
 	} else {
 		fields := make([]*String, 0)
 		var builder strings.Builder

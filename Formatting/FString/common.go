@@ -3,7 +3,8 @@ package FString
 import (
 	"strings"
 
-	uc "github.com/PlayerR9/lib_units/common"
+	luint "github.com/PlayerR9/lib_units/ints"
+	lustr "github.com/PlayerR9/lib_units/strings"
 )
 
 // Stringify converts a formatted string to a string.
@@ -120,7 +121,7 @@ func init() {
 //   - If the format is nil, the function uses ArrayLikeFormat.
 func FStringArray(format *FormatConfig, values []string) (string, error) {
 	if format == nil {
-		format = ArrayLikeFormat.Copy().(*FormatConfig)
+		format = ArrayLikeFormat.Copy()
 	}
 
 	doc, err := Sprint(format, values...)
@@ -184,11 +185,11 @@ func (sp *SimplePrinter[T]) FString(trav *Traversor) error {
 //   - *SimplePrinter: The new SimplePrinter.
 //
 // Behaviors:
-//   - If the function is nil, the function uses uc.StringOf to convert the value to a string.
+//   - If the function is nil, the function uses lustr.GoStringOf to convert the value to a string.
 func NewSimplePrinter[T comparable](name string, value T, fn func(T) (string, error)) *SimplePrinter[T] {
 	if fn == nil {
 		fn = func(v T) (string, error) {
-			return uc.StringOf(v), nil
+			return lustr.GoStringOf(v), nil
 		}
 	}
 
@@ -245,7 +246,7 @@ func ApplyTravFuncMany[T any](trav *Traversor, f FStringFunc[T], elems []T) erro
 	for i, elem := range elems {
 		err := f(trav, elem)
 		if err != nil {
-			return uc.NewErrAt(i+1, "element", err)
+			return luint.NewErrAt(i+1, "element", err)
 		}
 	}
 

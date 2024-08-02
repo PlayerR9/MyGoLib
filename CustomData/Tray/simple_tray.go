@@ -108,7 +108,7 @@ func (t *SimpleTray[T]) Move(n int) int {
 // Write implements the Trayer interface.
 func (t *SimpleTray[T]) Write(elem T) error {
 	if len(t.tape) == 0 {
-		return uc.NewErrEmpty(t)
+		return uc.NewErrEmpty("T")
 	}
 
 	t.tape[t.arrow] = elem
@@ -119,7 +119,7 @@ func (t *SimpleTray[T]) Write(elem T) error {
 // Read implements the Trayer interface.
 func (t *SimpleTray[T]) Read() (T, error) {
 	if len(t.tape) == 0 {
-		return *new(T), uc.NewErrEmpty(t)
+		return *new(T), uc.NewErrEmpty("[]T")
 	}
 
 	return t.tape[t.arrow], nil
@@ -269,7 +269,7 @@ func (t *GeneralTray[T]) ShiftRightOfArrow(n int) {
 */
 
 // Copy implements the Trayer interface.
-func (t *SimpleTray[T]) Copy() uc.Copier {
+func (t *SimpleTray[T]) Copy() *SimpleTray[T] {
 	tapeCopy := make([]T, len(t.tape))
 	copy(tapeCopy, t.tape)
 

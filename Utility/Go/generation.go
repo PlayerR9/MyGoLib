@@ -3,8 +3,6 @@ package Go
 import (
 	"slices"
 	"strings"
-
-	uc "github.com/PlayerR9/lib_units/common"
 )
 
 var (
@@ -21,8 +19,8 @@ func init() {
 		"int", "int8", "int16", "int32", "int64", "rune", "string", "uint",
 		"uint8", "uint16", "uint32", "uint64", "uintptr",
 	} {
-		pos, ok := slices.BinarySearch(NonNilTypeList, elem)
-		uc.Assert(ok, "duplicate type in NonNilTypeList")
+		pos, _ := slices.BinarySearch(NonNilTypeList, elem)
+		// uc.Assert(ok, "duplicate type in NonNilTypeList")
 
 		NonNilTypeList = slices.Insert(NonNilTypeList, pos, elem)
 	}

@@ -3,7 +3,6 @@ package CString
 import (
 	"unicode/utf8"
 
-	uc "github.com/PlayerR9/lib_units/common"
 	"github.com/gdamore/tcell"
 )
 
@@ -19,8 +18,8 @@ type Unit struct {
 // Copy is a method that creates a copy of the unit.
 //
 // Returns:
-//   - uc.Copier: The copy of the unit.
-func (u *Unit) Copy() uc.Copier {
+//   - *Unit: The copy of the unit.
+func (u *Unit) Copy() *Unit {
 	return &Unit{
 		Content: u.Content,
 		Style:   u.Style,

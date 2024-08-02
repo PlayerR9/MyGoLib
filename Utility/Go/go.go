@@ -9,6 +9,7 @@ import (
 	"unicode/utf8"
 
 	uc "github.com/PlayerR9/lib_units/common"
+	luint "github.com/PlayerR9/lib_units/ints"
 	utch "github.com/PlayerR9/lib_units/runes"
 )
 
@@ -104,7 +105,7 @@ func MakeVariableName(type_name string) (string, error) {
 	is_upper, ok := check_letter(chars[0])
 	if !ok || !is_upper {
 		reason := errors.New("not an upper case letter")
-		err := uc.NewErrAt(0, "character", reason)
+		err := luint.NewErrAt(0, "character", reason)
 		return "", err
 	}
 
@@ -123,7 +124,7 @@ func MakeVariableName(type_name string) (string, error) {
 
 		is_upper, ok := check_letter(c)
 		if !ok {
-			err := uc.NewErrAt(i+1, "character", errors.New("neither a letter nor a number"))
+			err := luint.NewErrAt(i+1, "character", errors.New("neither a letter nor a number"))
 			return "", err
 		}
 
@@ -160,8 +161,8 @@ func fix_variable_name(var_name string, keywords []string, min int) (string, err
 		return var_name, nil
 	}
 
-	chars, err := utch.StringToUtf8(var_name)
-	uc.AssertErr(err, "StringToUtf8(%q)", var_name)
+	chars, _ := utch.StringToUtf8(var_name)
+	// uc.AssertErr(err, "StringToUtf8(%q)", var_name)
 
 	var builder strings.Builder
 
@@ -171,7 +172,7 @@ func fix_variable_name(var_name string, keywords []string, min int) (string, err
 
 	str := builder.String()
 
-	err = IsValidName(str, keywords)
+	err := IsValidName(str, keywords)
 	if err == nil {
 		return str, nil
 	}

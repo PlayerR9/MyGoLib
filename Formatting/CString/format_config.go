@@ -3,7 +3,7 @@ package CString
 import (
 	"fmt"
 
-	uc "github.com/PlayerR9/lib_units/common"
+	luint "github.com/PlayerR9/lib_units/ints"
 	"github.com/gdamore/tcell"
 )
 
@@ -29,7 +29,7 @@ func DefaultFormatter(style tcell.Style) FormatConfig {
 
 // FormatConfig is a type that represents a configuration for formatting.
 // [Indentation] [Left Delimiter] [Right Delimiter] [Separator]
-type FormatConfig [5]Configer
+type FormatConfig [5]any
 
 const (
 	// ConfInd_Idx is the index for the indentation configuration.
@@ -59,7 +59,7 @@ const (
 // Behaviors:
 //   - The function panics if an invalid configuration type is given. (i.e., not IndentConfig,
 //     DelimiterConfig, or SeparatorConfig)
-func NewFormatter(options ...Configer) (form FormatConfig) {
+func NewFormatter(options ...any) (form FormatConfig) {
 	if len(options) == 0 {
 		return
 	}
@@ -132,7 +132,7 @@ func ApplyFormMany[T CStringer](form FormatConfig, trav *Traversor, elems []T) e
 	for i, elem := range elems {
 		err := elem.CString(newTraversor(form, trav.source))
 		if err != nil {
-			return uc.NewErrAt(i+1, "CStringer element", err)
+			return luint.NewErrAt(i+1, "CStringer element", err)
 		}
 	}
 

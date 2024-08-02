@@ -1,10 +1,6 @@
 package Tray
 
-import (
-	ud "github.com/PlayerR9/MyGoLib/Utility/Debugging"
-	uc "github.com/PlayerR9/lib_units/common"
-)
-
+/*
 // NewSimpleTrayWithHistory creates a new SimpleTray with the given tape and history.
 //
 // Parameters:
@@ -55,8 +51,11 @@ func (mc *MoveCmd[T]) Undo(data *SimpleTray[T]) error {
 	return nil
 }
 
-// Copy implements the Debugging.Commander interface.
-func (mc *MoveCmd[T]) Copy() uc.Copier {
+// Copy is a method that returns a copy of the MoveCmd.
+//
+// Returns:
+//   - *MoveCmd: A pointer to the new MoveCmd.
+func (mc *MoveCmd[T]) Copy() *MoveCmd[T] {
 	mcCopy := &MoveCmd[T]{
 		n:         mc.n,
 		excess:    mc.excess,
@@ -457,3 +456,4 @@ func NewArrowEndCmd[T any]() *ArrowEndCmd[T] {
 
 	return cmd
 }
+*/

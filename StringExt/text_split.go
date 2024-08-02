@@ -19,13 +19,20 @@ type TextSplit struct {
 	maxHeight int
 }
 
-// Copy implements the common.Copier interface.
-func (ts *TextSplit) Copy() uc.Copier {
-	linesCopy := uc.SliceCopy(ts.lines)
+// Copy is a method that creates a copy of the TextSplit.
+//
+// Returns:
+//   - *TextSplit: A copy of the TextSplit.
+func (ts *TextSplit) Copy() *TextSplit {
+	lines_copy := make([]*lineOfSplitter, 0, len(ts.lines))
+
+	for _, line := range ts.lines {
+		lines_copy = append(lines_copy, line.Copy())
+	}
 
 	tsCopy := &TextSplit{
 		maxWidth:  ts.maxWidth,
-		lines:     linesCopy,
+		lines:     lines_copy,
 		maxHeight: ts.maxHeight,
 	}
 
